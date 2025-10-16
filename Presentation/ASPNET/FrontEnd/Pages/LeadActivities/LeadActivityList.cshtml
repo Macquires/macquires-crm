@@ -1,0 +1,103 @@
+﻿@page
+@{
+    ViewData["Title"] = "Lead Activity List";
+}
+
+<div id="app" v-cloak>
+    <div class="row">
+        <div class="col-12">
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" aria-hidden="true" tabindex="-1" data-bs-focus="false" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ state.mainTitle }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" id="Id" name="Id" />
+                    <form id="MainForm">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Lead Activity Info</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="LeadId">Lead</label>
+                                                <div ref="leadIdRef"></div>
+                                                <label class="text-danger">{{ state.errors.leadId }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="Number">Number</label>
+                                                <input ref="numberRef" v-model="state.number" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="Summary">Summary</label>
+                                                <input ref="summaryRef" v-model="state.summary" required>
+                                                <label class="text-danger">{{ state.errors.summary }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="Type">Activity Type</label>
+                                                <div ref="typeRef"></div>
+                                                <label class="text-danger">{{ state.errors.type }}</label>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="FromDate">From Date</label>
+                                                <input ref="fromDateRef" />
+                                                <label class="text-danger">{{ state.errors.fromDate }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="ToDate">To Date</label>
+                                                <input ref="toDateRef" />
+                                                <label class="text-danger">{{ state.errors.toDate }}</label>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-12">
+                                                <label for="Description">Description</label>
+                                                <textarea class="form-control" rows="3" v-model="state.description"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button"
+                            id="MainSaveButton"
+                            class="btn"
+                            v-bind:class="state.deleteMode ? 'btn-danger' : 'btn-primary'"
+                            v-on:click="handler.handleSubmit"
+                            v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
+                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
+                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/LeadActivities/LeadActivityList.cshtml.js"></script>
+}

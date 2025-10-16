@@ -1,0 +1,17 @@
+﻿@page
+@{
+    Layout = "~/FrontEnd/Pages/Shared/_LandingPage.cshtml";
+    ViewData["Title"] = "Home page";
+}
+<div class="lock-overlay">
+    <div class="rounded p-4 p-sm-5 my-4 mx-3" style="width: 400px; height: 300px;">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-12 text-center">
+                <h1 class="lock-welcome">Welcome.</h1>
+                <a asp-area="" asp-page="/Accounts/Login">
+                    <i class="fas fa-lock lock-icon"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

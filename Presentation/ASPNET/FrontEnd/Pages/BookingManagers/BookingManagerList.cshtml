@@ -1,0 +1,129 @@
+﻿@page
+@{
+    ViewData["Title"] = "Booking List";
+}
+
+<div id="app" v-cloak>
+    <div class="row">
+        <div class="col-12">
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" aria-hidden="true" tabindex="-1" data-bs-focus="false" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ state.mainTitle }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" id="Id" name="Id" />
+                    <form id="MainForm">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Main Info</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="Subject">Subject</label>
+                                                <input ref="subjectRef" v-model="state.subject">
+                                                <label class="text-danger">{{ state.errors.subject }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="Number">Number</label>
+                                                <input ref="numberRef" v-model="state.number" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="Location">Location</label>
+                                                <input ref="locationRef" v-model="state.location">
+                                                <label class="text-danger">{{ state.errors.location }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-check mt-4">
+                                                            <input v-model="state.isAllDay" id="IsAllDay" name="IsAllDay" type="checkbox" class="form-check-input">
+                                                            <label for="IsAllDay" class="form-check-label">Is All Day</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check mt-4">
+                                                            <input v-model="state.isReadOnly" id="IsReadOnly" name="IsReadOnly" type="checkbox" class="form-check-input">
+                                                            <label for="IsReadOnly" class="form-check-label">Is Read Only</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-check mt-4">
+                                                            <input v-model="state.isBlock" id="IsBlock" name="IsBlock" type="checkbox" class="form-check-input">
+                                                            <label for="IsBlock" class="form-check-label">Is Block</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="StartTime">Start Time</label>
+                                                <input ref="startTimeRef"/>
+                                                <label class="text-danger">{{ state.errors.startTime }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="EndTime">End Time</label>
+                                                <input ref="endTimeRef"/>
+                                                <label class="text-danger">{{ state.errors.endTime }}</label>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="BookingResourceId">Booking Resource</label>
+                                                <div ref="bookingResourceIdRef"></div>
+                                                <label class="text-danger">{{ state.errors.bookingResourceId }}</label>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="Status">Status</label>
+                                                <div ref="statusRef"></div>
+                                                <label class="text-danger">{{ state.errors.status }}</label>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-md-12">
+                                                <label for="Description">Description</label>
+                                                <textarea v-model="state.description" id="Description" name="Description" class="form-control" rows="3" placeholder=""></textarea>
+                                                <label class="text-danger">{{ state.errors.description }}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button"
+                            id="MainSaveButton"
+                            class="btn"
+                            v-bind:class="state.deleteMode ? 'btn-danger' : 'btn-primary'"
+                            v-on:click="handler.handleSubmit"
+                            v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
+                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
+                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/BookingManagers/BookingManagerList.cshtml.js"></script>
+}

@@ -1,0 +1,68 @@
+﻿@page
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div id="app" class="container-fluid" v-cloak>
+    <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="bg-white rounded p-4 p-sm-5 my-4 mx-3">
+            <div class="row">
+                <div class="col-md-12 text-center mb-3">
+                    <h3 class="text-dark">Log In</h3>
+                    <a asp-page="/Index" class="">
+                        <p><i class="fas fa-home me-2" style="color: var(--primary);"></i><span class="text-dark">INDOTALENT</span></p>
+                    </a>
+                </div>
+                <div class="col-md-12">
+                    <form v-on:submit.prevent="handleSubmit">
+                        <div class="form-group mb-2">
+                            <label for="Email">Email address</label>
+                            <input id="Email"
+                                   name="Email"
+                                   type="email"
+                                   class="form-control"
+                                   placeholder="name@example.com"
+                                   v-model="state.email"
+                                   v-on:input="state.errors.email = ''">
+                            <label v-if="state.errors.email" class="text-danger">{{ state.errors.email }}</label>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label for="Password">Password</label>
+                            <input id="Password"
+                                   name="Password"
+                                   type="password"
+                                   class="form-control"
+                                   placeholder="Password"
+                                   v-model="state.password"
+                                   v-on:input="state.errors.password = ''">
+                            <label v-if="state.errors.password" class="text-danger">{{ state.errors.password }}</label>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-end mb-2">
+                            <a asp-page="/Accounts/ForgotPassword">Forgot Password</a>
+                        </div>
+                        <button type="submit"
+                                v-bind:disabled="state.isSubmitting"
+                                class="btn btn-primary w-100 mb-2">
+                            <span class="spinner-border spinner-border-sm me-2"
+                                  v-if="state.isSubmitting"
+                                  role="status"
+                                  aria-hidden="true"></span>
+                            <span>{{ state.isSubmitting ? 'Logging In...' : 'Log In' }}</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="text-start mb-0">Don't have an Account? <a asp-page="/Accounts/Register">Register</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section scripts {
+    <script type ="module" src="~/FrontEnd/Pages/Accounts/Login.cshtml.js"></script>
+}

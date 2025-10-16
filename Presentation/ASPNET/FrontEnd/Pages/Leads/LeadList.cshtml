@@ -1,0 +1,361 @@
+﻿@page
+@{
+    ViewData["Title"] = "Lead List";
+}
+
+<div id="app" v-cloak>
+    <div class="row">
+        <div class="col-12">
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.mainTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" id="Id" name="Id" />
+                    <form id="MainForm">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Main Info</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="Title">Title</label>
+                                        <input ref="titleRef" v-model="state.title" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.title"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="Number">Number</label>
+                                        <input ref="numberRef" v-model="state.number" class="form-control" placeholder="" readonly />
+                                    </div>
+                                </div>                                
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <label for="Description">Description</label>
+                                        <textarea v-model="state.description" class="form-control" rows="3" placeholder=""></textarea>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="CompanyName">Company Name</label>
+                                        <input ref="companyNameRef" v-model="state.companyName" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.companyName"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="CampaignId">Campaign</label>
+                                        <div ref="campaignIdRef"></div>
+                                        <label class="text-danger" v-text="state.errors.campaignId"></label>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <label for="CompanyDescription">Company Description</label>
+                                        <textarea v-model="state.companyDescription" class="form-control" rows="3" placeholder=""></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Company Address</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="CompanyAddressStreet">Street</label>
+                                        <input ref="companyAddressStreetRef" v-model="state.companyAddressStreet" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.companyAddressStreet"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="CompanyAddressCity">City</label>
+                                        <input ref="companyAddressCityRef" v-model="state.companyAddressCity" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.companyAddressCity"></label>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="CompanyAddressState">State</label>
+                                        <input ref="companyAddressStateRef" v-model="state.companyAddressState" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.companyAddressState"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="CompanyAddressZipCode">Zip Code</label>
+                                        <input ref="companyAddressZipCodeRef" v-model="state.companyAddressZipCode" class="form-control" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="CompanyAddressCountry">Country</label>
+                                        <input ref="companyAddressCountryRef" v-model="state.companyAddressCountry" class="form-control" placeholder="" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Company Communication</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="CompanyPhoneNumber">Phone Number</label>
+                                        <input ref="companyPhoneNumberRef" v-model="state.companyPhoneNumber" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.companyPhoneNumber"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="CompanyFaxNumber">Fax Number</label>
+                                        <input ref="companyFaxNumberRef" v-model="state.companyFaxNumber" class="form-control" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="CompanyEmail">Email</label>
+                                        <input ref="companyEmailRef" v-model="state.companyEmail" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.companyEmail"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="CompanyWebsite">Website</label>
+                                        <input ref="companyWebsiteRef" v-model="state.companyWebsite" class="form-control" placeholder="" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Company Social Media</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-4">
+                                        <label for="CompanyWhatsApp">WhatsApp</label>
+                                        <input ref="companyWhatsAppRef" v-model="state.companyWhatsApp" class="form-control" placeholder="" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="CompanyLinkedIn">LinkedIn</label>
+                                        <input ref="companyLinkedInRef" v-model="state.companyLinkedIn" class="form-control" placeholder="" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="CompanyFacebook">Facebook</label>
+                                        <input ref="companyFacebookRef" v-model="state.companyFacebook" class="form-control" placeholder="" />
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-4">
+                                        <label for="CompanyInstagram">Instagram</label>
+                                        <input ref="companyInstagramRef" v-model="state.companyInstagram" class="form-control" placeholder="" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="CompanyTwitter">Twitter</label>
+                                        <input ref="companyTwitterRef" v-model="state.companyTwitter" class="form-control" placeholder="" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>BANT Score</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="BudgetScore">Budget Score</label>
+                                        <input type="text" ref="budgetScoreRef" v-model="state.budgetScore" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.budgetScore"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="AuthorityScore">Authority Score</label>
+                                        <input type="text" ref="authorityScoreRef" v-model="state.authorityScore" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.authorityScore"></label>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="NeedScore">Need Score</label>
+                                        <input type="text" ref="needScoreRef" v-model="state.needScore" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.needScore"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="TimelineScore">Timeline Score</label>
+                                        <input type="text" ref="timelineScoreRef" v-model="state.timelineScore" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.timelineScore"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Dates</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-4">
+                                        <label for="DateProspecting">Prospecting Date</label>
+                                        <input ref="dateProspectingRef" />
+                                        <label class="text-danger" v-text="state.errors.dateProspecting"></label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="DateClosingEstimation">Estimated Closing Date</label>
+                                        <input ref="dateClosingEstimationRef" />
+                                        <label class="text-danger" v-text="state.errors.dateClosingEstimation"></label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="DateClosingActual">Actual Closing Date</label>
+                                        <input ref="dateClosingActualRef" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Goals</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="AmountTargeted">Targeted Amount</label>
+                                        <input type="text" ref="amountTargetedRef" v-model="state.amountTargeted" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.amountTargeted"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="AmountClosed">Closed Amount</label>
+                                        <input type="text" ref="amountClosedRef" v-model="state.amountClosed" class="form-control" placeholder="" required />
+                                        <label class="text-danger" v-text="state.errors.amountClosed"></label>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="PipelineStage">Pipeline Stage</label>
+                                        <div ref="pipelineStageRef"></div>
+                                        <label class="text-danger" v-text="state.errors.pipelineStage"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="ClosingStatus">Closing Status</label>
+                                        <div ref="closingStatusRef"></div>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <label for="ClosingNote">Closing Note</label>
+                                        <textarea v-model="state.closingNote" class="form-control" rows="3" placeholder=""></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5>Sales Team</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
+                                        <label for="SalesTeamId">Sales Team</label>
+                                        <div ref="salesTeamIdRef"></div>
+                                        <label class="text-danger" v-text="state.errors.salesTeamId"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button"
+                            id="MainSaveButton"
+                            class="btn"
+                            v-bind:class="state.deleteMode ? 'btn-danger' : 'btn-primary'"
+                            v-on:click="handler.handleSubmit"
+                            v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
+                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
+                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="manageContactModalRef" id="ManageContactModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.manageContactTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" id="Id" name="Id" />
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Lead Contacts</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="grid-container">
+                                                <div ref="contactsGridRef"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="manageActivityModalRef" id="ManageActivityModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.manageActivityTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" id="Id" name="Id" />
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Lead Activities</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="grid-container">
+                                                <div ref="activitiesGridRef"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Leads/LeadList.cshtml.js"></script>
+}

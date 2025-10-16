@@ -1,0 +1,168 @@
+﻿<!-- JavaScript Libraries -->
+<script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="~/lib/axios/axios.min.js"></script>
+<script src="~/lib/sweetalert/sweetalert2v11.js"></script>
+<script src="~/lib/dropzone/dropzone.min.js"></script>
+<script src="~/lib/indotalent/storage-manager.js"></script>
+<script src="~/lib/indotalent/security-manager.js"></script>
+<script src="~/lib/indotalent/axios-manager.js"></script>
+<script src="~/lib/indotalent/number-format-manager.js"></script>
+<script src="~/lib/indotalent/date-format-manager.js"></script>
+<script src="~/lib/jspdf/html2canvas.min.js"></script>
+<script src="~/lib/jspdf/jspdf.umd.min.js"></script>
+
+
+<script>
+
+    // Sidebar Toggler
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggler = document.querySelector('.sidebar-toggler');
+        if (sidebarToggler) {
+            sidebarToggler.addEventListener('click', function(event) {
+                document.querySelector('.sidebar').classList.toggle("open");
+                document.querySelector('.content').classList.toggle("open");
+                event.preventDefault();
+            });
+        }
+    });
+
+    var hideSpinnerAndShowContent = () => {
+        const spinner = document.getElementById('spinner');
+        if (spinner) {
+            spinner.classList.remove('show');
+        }
+    }
+
+    var getDashminFileManagerHeight = () => {
+        var headerHeight = document.querySelector('.adminheader').offsetHeight;
+        var footerHeight = document.querySelector('.adminfooter').offsetHeight;
+        var screenHeight = window.innerHeight;
+        var bodyHeight = screenHeight - headerHeight - footerHeight;
+        return bodyHeight * 1;
+    }
+
+    var getDashminSchedulerHeight = () => {
+        var headerHeight = document.querySelector('.adminheader').offsetHeight;
+        var footerHeight = document.querySelector('.adminfooter').offsetHeight;
+        var screenHeight = window.innerHeight;
+        var bodyHeight = screenHeight - headerHeight - footerHeight;
+        return bodyHeight * 1;
+    }
+
+    var getDashminGridHeight = () => {
+        var screenHeight = window.innerHeight;
+        var headerHeight = document.querySelector('.adminheader').offsetHeight;
+        var footerHeight = document.querySelector('.adminfooter').offsetHeight;
+        var gridpager = 60;
+        var margin = 10;
+        var bodyHeight = screenHeight - headerHeight - footerHeight - (gridpager * 3) - margin;
+        return bodyHeight * 1;
+    }
+
+    var getDashminPivotHeight = () => {
+        var screenHeight = window.innerHeight;
+        var headerHeight = document.querySelector('.adminheader').offsetHeight;
+        var footerHeight = document.querySelector('.adminfooter').offsetHeight;
+        var gridpager = 5;
+        var margin = 5;
+        var bodyHeight = screenHeight - headerHeight - footerHeight - (gridpager * 3) - margin;
+        return bodyHeight * 1;
+    }
+
+    var getDashminBodyHeight = () => {
+        var headerHeight = document.querySelector('.adminheader').offsetHeight;
+        var footerHeight = document.querySelector('.adminfooter').offsetHeight;
+        var screenHeight = window.innerHeight;
+        var bodyHeight = screenHeight - headerHeight - footerHeight;
+        return bodyHeight * 1;
+    }
+
+    var setFormCardHeight = () => {
+        var maxHeight = getDashminBodyHeight();
+        var formCard = document.querySelector('.form-card');
+        if (formCard) {
+            formCard.style.height = maxHeight + 'px';
+        }
+    }
+
+    window.addEventListener('load', function () {
+        var formcard = document.getElementById('formcard');
+        if (formcard) {
+            var formcardPosition = sessionStorage.getItem('formcardPosition');
+            if (formcardPosition !== null) {
+                setTimeout(function () {
+                    formcard.scrollTop = parseInt(formcardPosition);
+                    sessionStorage.removeItem('formcardPosition');
+                }, 1000);
+            }
+        } else {
+            sessionStorage.setItem('formcardPosition', 0);
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        var formcard = document.getElementById('formcard');
+        if (formcard) {
+            sessionStorage.setItem('formcardPosition', formcard.scrollTop);
+        }
+    });
+
+</script>
+
+<script>
+    // for maintaining sidebar scroll position
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var sidebar = document.getElementById('navbarnav');
+        if (sidebar) {
+            var scrollPosition = sessionStorage.getItem('sidebarScrollPosition');
+            if (scrollPosition !== null) {
+                setTimeout(() => {
+                    sidebar.scrollTop = parseInt(scrollPosition);
+                    sessionStorage.removeItem('sidebarScrollPosition');
+                }, 0);
+            }
+
+            sidebar.addEventListener('scroll', function () {
+                sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
+            });
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        var sidebar = document.getElementById('navbarnav');
+        if (sidebar) {
+            sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
+        }
+    });
+
+</script>
+
+<script>
+    function showStatusMessage(statusMessage) {
+        if (statusMessage && statusMessage.includes("Error")) {
+            new ej.notifications.Toast({
+                content: statusMessage,
+                cssClass: "e-toast-danger",
+                icon: 'e-error toast-icons',
+                position: { X: "Left", Y: "Top" }
+            }, '#Toast').show();
+        } else {
+            new ej.notifications.Toast({
+                content: statusMessage,
+                cssClass: "e-toast-success",
+                icon: 'e-success toast-icons',
+                position: { X: "Left", Y: "Top" }
+            }, '#Toast').show();
+        }
+    }
+</script>
+
+<script>
+    function formatNumberToN2(number) {
+        return Number(number).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+</script>

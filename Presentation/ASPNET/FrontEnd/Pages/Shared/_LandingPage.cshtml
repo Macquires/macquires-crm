@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>@ViewData["Title"]</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet">
+    <link href="~/lib/bootstrap/dist/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="~/landing_template/css/style.css" rel="stylesheet">
+
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body>
+    @RenderBody()
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+﻿using System.ComponentModel;
+
+namespace Domain.Enums;
+
+
+public enum PurchaseRequisitionStatus
+{
+    [Description("Draft")]
+    Draft = 0,
+    [Description("Cancelled")]
+    Cancelled = 1,
+    [Description("Confirmed")]
+    Confirmed = 2,
+    [Description("Ordered")]
+    Ordered = 3
+}

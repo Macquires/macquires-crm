@@ -1,0 +1,24 @@
+﻿@page
+@{
+    ViewData["Title"] = "Booking Scheduler List";
+}
+
+<div id="app" v-cloak>
+    <div id="Schedule" ref="scheduleRef"></div>
+</div>
+
+@section Styles {
+    <style>
+        .e-today {
+            display: none !important;
+        }
+
+        .e-separator {
+            display: none !important;
+        }
+    </style>
+}
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/BookingSchedulers/BookingSchedulerList.cshtml.js"></script>
+}

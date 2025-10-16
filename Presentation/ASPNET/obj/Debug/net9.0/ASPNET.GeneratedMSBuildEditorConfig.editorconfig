@@ -1,0 +1,461 @@
+is_global = true
+build_property.TargetFramework = net9.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = ASPNET
+build_property.RootNamespace = ASPNET
+build_property.ProjectDir = C:\_asp\products\CRM-Katenjo-FS-VueJS-src-customer\Indotalent\Presentation\ASPNET\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 9.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\_asp\products\CRM-Katenjo-FS-VueJS-src-customer\Indotalent\Presentation\ASPNET
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 9.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/EmailConfirm.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcRW1haWxDb25maXJtLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/ForgotPassword.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcRm9yZ290UGFzc3dvcmQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/ForgotPasswordConfirmation.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcRm9yZ290UGFzc3dvcmRDb25maXJtYXRpb24uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcTG9naW4uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/Logout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcTG9nb3V0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/Register.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcUmVnaXN0ZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Accounts/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/BillReports/BillReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQmlsbFJlcG9ydHNcQmlsbFJlcG9ydExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Bills/BillList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQmlsbHNcQmlsbExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Bills/BillPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQmlsbHNcQmlsbFBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/BookingGroups/BookingGroupList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQm9va2luZ0dyb3Vwc1xCb29raW5nR3JvdXBMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/BookingManagers/BookingManagerList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQm9va2luZ01hbmFnZXJzXEJvb2tpbmdNYW5hZ2VyTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/BookingResources/BookingResourceList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQm9va2luZ1Jlc291cmNlc1xCb29raW5nUmVzb3VyY2VMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/BookingSchedulers/BookingSchedulerList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQm9va2luZ1NjaGVkdWxlcnNcQm9va2luZ1NjaGVkdWxlckxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Budgets/BudgetList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQnVkZ2V0c1xCdWRnZXRMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Campaigns/CampaignList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ2FtcGFpZ25zXENhbXBhaWduTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Companies/MyCompany.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ29tcGFuaWVzXE15Q29tcGFueS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/CreditNotes/CreditNoteList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3JlZGl0Tm90ZXNcQ3JlZGl0Tm90ZUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/CreditNotes/CreditNotePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3JlZGl0Tm90ZXNcQ3JlZGl0Tm90ZVBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/CustomerCategories/CustomerCategoryList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJDYXRlZ29yaWVzXEN1c3RvbWVyQ2F0ZWdvcnlMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/CustomerContacts/CustomerContactList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJDb250YWN0c1xDdXN0b21lckNvbnRhY3RMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/CustomerGroups/CustomerGroupList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJHcm91cHNcQ3VzdG9tZXJHcm91cExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Customers/CustomerList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJzXEN1c3RvbWVyTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xEZWZhdWx0RGFzaGJvYXJkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/DebitNotes/DebitNoteList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGViaXROb3Rlc1xEZWJpdE5vdGVMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/DebitNotes/DebitNotePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGViaXROb3Rlc1xEZWJpdE5vdGVQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/DeliveryOrders/DeliveryOrderList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGVsaXZlcnlPcmRlcnNcRGVsaXZlcnlPcmRlckxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/DeliveryOrders/DeliveryOrderPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGVsaXZlcnlPcmRlcnNcRGVsaXZlcnlPcmRlclBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/DeliveryReports/DeliveryReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGVsaXZlcnlSZXBvcnRzXERlbGl2ZXJ5UmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Expenses/ExpenseList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRXhwZW5zZXNcRXhwZW5zZUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/GoodsReceives/GoodsReceiveList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcR29vZHNSZWNlaXZlc1xHb29kc1JlY2VpdmVMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/GoodsReceives/GoodsReceivePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcR29vZHNSZWNlaXZlc1xHb29kc1JlY2VpdmVQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/InvoiceReports/InvoiceReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcSW52b2ljZVJlcG9ydHNcSW52b2ljZVJlcG9ydExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Invoices/InvoiceList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcSW52b2ljZXNcSW52b2ljZUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Invoices/InvoicePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcSW52b2ljZXNcSW52b2ljZVBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/LeadActivities/LeadActivityList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTGVhZEFjdGl2aXRpZXNcTGVhZEFjdGl2aXR5TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/LeadContacts/LeadContactList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTGVhZENvbnRhY3RzXExlYWRDb250YWN0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Leads/LeadList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTGVhZHNcTGVhZExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/MovementReports/MovementReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTW92ZW1lbnRSZXBvcnRzXE1vdmVtZW50UmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/NegativeAdjustments/NegativeAdjustmentList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTmVnYXRpdmVBZGp1c3RtZW50c1xOZWdhdGl2ZUFkanVzdG1lbnRMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/NegativeAdjustments/NegativeAdjustmentPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTmVnYXRpdmVBZGp1c3RtZW50c1xOZWdhdGl2ZUFkanVzdG1lbnRQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/NumberSequences/NumberSequenceList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTnVtYmVyU2VxdWVuY2VzXE51bWJlclNlcXVlbmNlTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentDisburseReports/PaymentDisburseReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudERpc2J1cnNlUmVwb3J0c1xQYXltZW50RGlzYnVyc2VSZXBvcnRMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentDisburses/PaymentDisburseList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudERpc2J1cnNlc1xQYXltZW50RGlzYnVyc2VMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentDisburses/PaymentDisbursePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudERpc2J1cnNlc1xQYXltZW50RGlzYnVyc2VQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentMethods/PaymentMethodList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudE1ldGhvZHNcUGF5bWVudE1ldGhvZExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentReceiveReports/PaymentReceiveReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudFJlY2VpdmVSZXBvcnRzXFBheW1lbnRSZWNlaXZlUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentReceives/PaymentReceiveList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudFJlY2VpdmVzXFBheW1lbnRSZWNlaXZlTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PaymentReceives/PaymentReceivePdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUGF5bWVudFJlY2VpdmVzXFBheW1lbnRSZWNlaXZlUGRmLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PositiveAdjustments/PositiveAdjustmentList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUG9zaXRpdmVBZGp1c3RtZW50c1xQb3NpdGl2ZUFkanVzdG1lbnRMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PositiveAdjustments/PositiveAdjustmentPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUG9zaXRpdmVBZGp1c3RtZW50c1xQb3NpdGl2ZUFkanVzdG1lbnRQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/ProductGroups/ProductGroupList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZHVjdEdyb3Vwc1xQcm9kdWN0R3JvdXBMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Products/ProductList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZHVjdHNcUHJvZHVjdExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Profiles/MyProfile.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZmlsZXNcTXlQcm9maWxlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/ProgramKanbans/ProgramKanbanList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZ3JhbUthbmJhbnNcUHJvZ3JhbUthbmJhbkxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/ProgramManagers/ProgramManagerList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZ3JhbU1hbmFnZXJzXFByb2dyYW1NYW5hZ2VyTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/ProgramResources/ProgramResourceList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZ3JhbVJlc291cmNlc1xQcm9ncmFtUmVzb3VyY2VMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseOrders/PurchaseOrderList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VPcmRlcnNcUHVyY2hhc2VPcmRlckxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseOrders/PurchaseOrderPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VPcmRlcnNcUHVyY2hhc2VPcmRlclBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseReports/PurchaseReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXBvcnRzXFB1cmNoYXNlUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseRequisitionReports/PurchaseRequisitionReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXF1aXNpdGlvblJlcG9ydHNcUHVyY2hhc2VSZXF1aXNpdGlvblJlcG9ydExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseRequisitions/PurchaseRequisitionList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXF1aXNpdGlvbnNcUHVyY2hhc2VSZXF1aXNpdGlvbkxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseRequisitions/PurchaseRequisitionPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXF1aXNpdGlvbnNcUHVyY2hhc2VSZXF1aXNpdGlvblBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseReturnReports/PurchaseReturnReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXR1cm5SZXBvcnRzXFB1cmNoYXNlUmV0dXJuUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseReturns/PurchaseReturnList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXR1cm5zXFB1cmNoYXNlUmV0dXJuTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/PurchaseReturns/PurchaseReturnPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHVyY2hhc2VSZXR1cm5zXFB1cmNoYXNlUmV0dXJuUGRmLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/ReceiveReports/ReceiveReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUmVjZWl2ZVJlcG9ydHNcUmVjZWl2ZVJlcG9ydExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Roles/RoleList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUm9sZXNcUm9sZUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesOrders/SalesOrderList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNPcmRlcnNcU2FsZXNPcmRlckxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesOrders/SalesOrderPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNPcmRlcnNcU2FsZXNPcmRlclBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesQuotationReports/SalesQuotationReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNRdW90YXRpb25SZXBvcnRzXFNhbGVzUXVvdGF0aW9uUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesQuotations/SalesQuotationList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNRdW90YXRpb25zXFNhbGVzUXVvdGF0aW9uTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesQuotations/SalesQuotationPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNRdW90YXRpb25zXFNhbGVzUXVvdGF0aW9uUGRmLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesReports/SalesReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNSZXBvcnRzXFNhbGVzUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesRepresentatives/SalesRepresentativeList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNSZXByZXNlbnRhdGl2ZXNcU2FsZXNSZXByZXNlbnRhdGl2ZUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesReturnReports/SalesReturnReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNSZXR1cm5SZXBvcnRzXFNhbGVzUmV0dXJuUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesReturns/SalesReturnList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNSZXR1cm5zXFNhbGVzUmV0dXJuTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesReturns/SalesReturnPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNSZXR1cm5zXFNhbGVzUmV0dXJuUGRmLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/SalesTeams/SalesTeamList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2FsZXNUZWFtc1xTYWxlc1RlYW1MaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Scrappings/ScrappingList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2NyYXBwaW5nc1xTY3JhcHBpbmdMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Scrappings/ScrappingPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2NyYXBwaW5nc1xTY3JhcHBpbmdQZGYuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX0xheW91dC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19jc3MuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__footer.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19mb290ZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19qcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__navbar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19uYXZiYXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__sidebar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19zaWRlYmFyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/AuthTemplate/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEF1dGhUZW1wbGF0ZVxfTGF5b3V0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Shared/_LandingPage.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXF9MYW5kaW5nUGFnZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/StockCounts/StockCountList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU3RvY2tDb3VudHNcU3RvY2tDb3VudExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/StockCounts/StockCountPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU3RvY2tDb3VudHNcU3RvY2tDb3VudFBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/StockReports/StockReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU3RvY2tSZXBvcnRzXFN0b2NrUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Taxs/TaxList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGF4c1xUYXhMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/TodoItems/TodoItemList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVG9kb0l0ZW1zXFRvZG9JdGVtTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Todos/TodoList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVG9kb3NcVG9kb0xpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/TransactionReports/TransactionReportList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVHJhbnNhY3Rpb25SZXBvcnRzXFRyYW5zYWN0aW9uUmVwb3J0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/TransferIns/TransferInList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVHJhbnNmZXJJbnNcVHJhbnNmZXJJbkxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/TransferIns/TransferInPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVHJhbnNmZXJJbnNcVHJhbnNmZXJJblBkZi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/TransferOuts/TransferOutList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVHJhbnNmZXJPdXRzXFRyYW5zZmVyT3V0TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/TransferOuts/TransferOutPdf.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVHJhbnNmZXJPdXRzXFRyYW5zZmVyT3V0UGRmLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/UnitMeasures/UnitMeasureList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVW5pdE1lYXN1cmVzXFVuaXRNZWFzdXJlTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Users/UserList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVXNlcnNcVXNlckxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/VendorCategories/VendorCategoryList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVmVuZG9yQ2F0ZWdvcmllc1xWZW5kb3JDYXRlZ29yeUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/VendorContacts/VendorContactList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVmVuZG9yQ29udGFjdHNcVmVuZG9yQ29udGFjdExpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/VendorGroups/VendorGroupList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVmVuZG9yR3JvdXBzXFZlbmRvckdyb3VwTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Vendors/VendorList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVmVuZG9yc1xWZW5kb3JMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/Warehouses/WarehouseList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcV2FyZWhvdXNlc1xXYXJlaG91c2VMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/_asp/products/CRM-Katenjo-FS-VueJS-src-customer/Indotalent/Presentation/ASPNET/FrontEnd/Pages/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 

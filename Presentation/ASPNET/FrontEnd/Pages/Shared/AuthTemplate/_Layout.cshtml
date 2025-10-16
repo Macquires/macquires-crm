@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>@ViewData["Title"]</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Stylesheet Libraries -->
+    <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet">
+    <link href="~/lib/bootstrap/dist/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="~/auth_template/css/style.css" rel="stylesheet">
+    @await RenderSectionAsync("styles", required: false)
+    <style>
+        [v-cloak] {
+            display: none !important;
+        }
+    </style>
+
+    @* vue *@
+    <script src="~/lib/vue/vue.global.prod.js"></script>
+
+    <!-- JavaScript Libraries -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.min.js" defer></script>
+    <script src="~/lib/axios/axios.min.js" defer></script>
+    <script src="~/lib/sweetalert/sweetalert2v11.js" defer></script>
+    <script src="~/lib/indotalent/storage-manager.js" defer></script>
+    <script src="~/lib/indotalent/security-manager.js" defer></script>
+    <script src="~/lib/indotalent/axios-manager.js" defer></script>
+
+
+</head>
+
+<body>
+    <div class="row m-0 p-0">
+        <div class="col-5 m-0 p-0 bg-white auth-area">
+            <div class="container-fluid position-relative d-flex p-0 col-10">
+                @RenderBody()
+            </div>
+        </div>
+        <div class="col-7 m-0 p-0">
+            <div class="container-fluid position-relative d-flex align-items-center justify-content-center p-0" style="background-image: url('/auth_template/img/bg-dark.jpg'); background-size: cover; height: 100vh;">
+                <div class="text-center">
+                    <h1 class="text-white">Katenjo CRM</h1>
+                    <h5 class="text-white">Powerful CRM Solution with a Completely REST API on ASP.NET Core</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @await RenderSectionAsync("scripts", required: false)
+</body>
+
+</html>

@@ -1,0 +1,107 @@
+﻿@page
+@{
+	ViewData["Title"] = "Register";
+}
+<div id="app" class="container-fluid" v-cloak>
+	<div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+		<div class="bg-white rounded p-4 p-sm-5 my-4 mx-3">
+			<div class="row">
+				<div class="col-md-12 text-center mb-3">
+					<h3 class="text-dark">Register</h3>
+					<a href="/Index">
+						<p><i class="fas fa-home me-2" style="color: var(--primary);"></i><span class="text-dark">INDOTALENT</span></p>
+					</a>
+				</div>
+				<div class="col-md-12">
+					<form v-on:submit.prevent="handleSubmit">
+						<div class="row">
+							<div class="col-md-6 form-group mb-0">
+								<label for="Email">Email address</label>
+								<input id="Email"
+									   name="Email"
+									   type="email" 
+									   class="form-control" 
+									   v-model="state.email"
+									   v-on:input="state.errors.email = ''">
+								<label v-if="state.errors.email" class="text-danger small">{{ state.errors.email }}</label>
+							</div>
+							<div class="col-md-6 form-group mb-0">
+								<label for="CompanyName">Company Name</label>
+								<input id="CompanyName"
+									   name="CompanyName"
+									   type="text" 
+									   class="form-control" 
+									   v-model="state.companyName">
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-md-6 form-group mb-0">
+								<label for="Password">Password</label>
+								<input id="Password"
+									   name="Password"
+									   type="password" 
+									   class="form-control" 
+									   v-model="state.password"
+									   v-on:input="state.errors.password = ''">
+								<label v-if="state.errors.password" class="text-danger small">{{ state.errors.password }}</label>
+							</div>
+							<div class="col-md-6 form-group mb-0">
+								<label for="ConfirmPassword">Confirm Password</label>
+								<input id="ConfirmPassword"
+									   name="ConfirmPassword"
+									   type="password" 
+									   class="form-control" 
+									   v-model="state.confirmPassword"
+									   v-on:input="state.errors.confirmPassword = ''">
+								<label v-if="state.errors.confirmPassword" class="text-danger small">{{ state.errors.confirmPassword }}</label>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-md-6 form-group mb-0">
+								<label for="FirstName">First Name</label>
+								<input id="FirstName"
+									   name="FirstName"
+									   type="text" 
+									   class="form-control" 
+									   v-model="state.firstName"
+									   v-on:input="state.errors.firstName = ''">
+								<label v-if="state.errors.firstName" class="text-danger small">{{ state.errors.firstName }}</label>
+							</div>
+							<div class="col-md-6 form-group mb-2">
+								<label for="LastName">Last Name</label>
+								<input id="LastName"
+									   name="LastName"
+									   type="text" 
+									   class="form-control" 
+									   v-model="state.lastName"
+									   v-on:input="state.errors.lastName = ''">
+								<label v-if="state.errors.lastName" class="text-danger small">{{ state.errors.lastName }}</label>
+							</div>
+						</div>
+
+						<button type="submit"
+								v-bind:disabled="state.isSubmitting"
+								class="btn btn-primary w-100 mb-2">
+							<span class="spinner-border spinner-border-sm me-2"
+								  v-if="state.isSubmitting"
+								  role="status"
+								  aria-hidden="true"></span>
+							<span>{{ state.isSubmitting ? 'Registering...' : 'Register' }}</span>
+						</button>
+					</form>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-12">
+					<p class="text-start mb-0">Already have an Account? <a href="/Accounts/Login">Log In</a></p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section scripts {
+	<script type="module" src="~/FrontEnd/Pages/Accounts/Register.cshtml.js"></script>
+}

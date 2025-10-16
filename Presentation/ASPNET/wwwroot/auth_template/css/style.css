@@ -1,0 +1,38 @@
+/********** Template CSS **********/
+:root {
+    /*--primary: #009CFF;*/
+    /*--primary: #00d084;*/
+    --primary: #2a2a3c;
+    --light: #F3F6F9;
+    --dark: #757575;
+    --bs-blue: #1b84ff;
+    --bs-primary: #1b84ff;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--dark) !important;
+}
+
+a {
+    text-decoration: none;
+}
+
+.auth-area {
+    background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url('/auth_template/img/bg.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.form-control {
+    border-radius: 0px;
+}

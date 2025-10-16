@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>@ViewData["Title"]</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    @* syncfusion *@
+    <link href="~/lib/syncfusion/css/bootstrap5.css" rel="stylesheet" />
+    <script src="~/lib/syncfusion/js/ej2.min.js"></script>
+
+    <style>
+        [v-cloak] {
+            display: none !important;
+        }
+    </style>
+
+    @* vue *@
+    <script src="~/lib/vue/vue.global.prod.js"></script>
+
+
+    @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml")
+    @await RenderSectionAsync("styles", required: false)
+</head>
+
+<body>
+    <div class="container-fluid position-relative bg-white d-flex p-0">
+        <!-- Sidebar Start -->
+        @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__sidebar.cshtml")
+        <!-- Sidebar End -->
+        <!-- Content Start -->
+        <div class="content">
+            <!-- Navbar Start -->
+            @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__navbar.cshtml")
+            <!-- Navbar End -->
+            <!-- Blank Start -->
+            <div class="container-fluid pt-0 px-0 adminbody bg-light">
+                @Html.AntiForgeryToken()
+                <div id="Toast"></div>
+                <!-- Spinner Start -->
+                <div id="spinner" class="show position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+                    <div class="spinner-grow text-primary" style="width: 15rem; height: 15rem;" role="status"></div>
+                </div>
+                <!-- Spinner End -->
+                @RenderBody()
+            </div>
+            <!-- Blank End -->
+            <!-- Footer Start -->
+            @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__footer.cshtml")
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+    </div>
+
+    @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml")
+    @await RenderSectionAsync("scripts", required: false)
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            async function getAvatar() {
+                try {
+                    const avatar = StorageManager.getAvatar();
+                    const response = await AxiosManager.get('/FileImage/GetImage?imageName=' + avatar, {
+                        responseType: 'blob'
+                    });
+                    if (response.status === 200) {
+                        const reader = new FileReader();
+                        reader.onloadend = function () {
+                            const base64Image = reader.result;
+                            document.getElementById('AvatarImageSide').src = base64Image;
+                            document.getElementById('AvatarImageNav').src = base64Image;
+                        };
+                        reader.readAsDataURL(response.data);
+                    } else {
+                        console.error('Error:', response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+            getAvatar();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            async function getCompany() {
+                try {
+                    const response = await AxiosManager.get('/Company/GetCompanyList', {});
+                    const data = response?.data?.content?.data;
+
+                    if (data && data.length > 0) {
+                        StorageManager.saveCompany(data[0]);
+
+                        const companyName = data[0]?.name ?? 'Default Company';
+                        const companyWeb = data[0]?.website ?? '#';
+                        const year = new Date().getFullYear();
+                        const currency = data[0]?.currency ?? '---';
+
+                        document.getElementById('footerContent').innerHTML =
+                            `© ${year} <a href="${companyWeb}">${companyName}</a>, All Right Reserved.`;
+                        document.getElementById('topbarContent').innerHTML =
+                            `Currency: ${currency}`;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+            getCompany();
+        });
+    </script>
+
+
+
+</body>
+
+</html>

@@ -1,0 +1,49 @@
+﻿@{
+    var fullName = "Loading...";
+    var avatarUrl = "/noimage.png";
+    var currency = "Loading..."; 
+}
+
+<nav class="navbar navbar-expand bg-white px-4 py-0 adminheader">
+    <a asp-area="" asp-page="/Index" class="navbar-brand d-flex d-lg-none me-4">
+        <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2>
+    </a>
+    <a href="#" class="sidebar-toggler flex-shrink-0">
+        <i class="fa fa-bars"></i>
+    </a>
+    <div class="d-none d-md-flex ms-4">
+        <span>@ViewData["Title"]</span>
+    </div>
+    <div class="navbar-nav align-items-center ms-auto">
+        <div class="nav-item dropdown">
+            <span id="topbarContent">Currency: @currency</span>
+        </div>
+        <div class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                <img id="AvatarImageNav" class="rounded-circle me-lg-2" src="@avatarUrl" alt="Avatar" style="width: 40px; height: 40px;">
+                <span class="d-none d-lg-inline-flex" id="fullName">@fullName</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
+                <a asp-area="" asp-page="/Profiles/MyProfile" class="nav-link btn btn-link text-black dropdown-item">My Profile</a>
+                <a asp-area="" asp-page="/Accounts/Logout" class="nav-link btn btn-link text-black dropdown-item">Log Out</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+
+@* _navbar.cshtml *@
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const firstName = StorageManager.getFirstName();
+            const lastName = StorageManager.getLastName();
+            const fullName = `${firstName} ${lastName}`;
+            document.getElementById('fullName').textContent = fullName;
+        } catch (error) {
+            console.error('Error fetching data from StorageManager:', error);
+        }
+    });
+</script>
+
+

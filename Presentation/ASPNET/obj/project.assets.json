@@ -1,0 +1,127 @@
+{
+  "version": 3,
+  "targets": {
+    "net9.0": {
+      "Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Application.dll": {}
+        }
+      },
+      "Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Domain.dll": {}
+        }
+      },
+      "Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Application": "1.0.0",
+          "Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Infrastructure.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Application/1.0.0": {
+      "type": "project",
+      "path": "../../Core/Application/Application.csproj",
+      "msbuildProject": "../../Core/Application/Application.csproj"
+    },
+    "Domain/1.0.0": {
+      "type": "project",
+      "path": "../../Core/Domain/Domain.csproj",
+      "msbuildProject": "../../Core/Domain/Domain.csproj"
+    },
+    "Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../../Infrastructure/Infrastructure/Infrastructure.csproj",
+      "msbuildProject": "../../Infrastructure/Infrastructure/Infrastructure.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net9.0": [
+      "Application >= 1.0.0",
+      "Infrastructure >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\user\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Presentation\\ASPNET\\ASPNET.csproj",
+      "projectName": "ASPNET",
+      "projectPath": "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Presentation\\ASPNET\\ASPNET.csproj",
+      "packagesPath": "C:\\Users\\user\\.nuget\\packages\\",
+      "outputPath": "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Presentation\\ASPNET\\obj\\",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "C:\\Users\\user\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net9.0"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "projectReferences": {
+            "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Core\\Application\\Application.csproj": {
+              "projectPath": "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Core\\Application\\Application.csproj"
+            },
+            "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
+              "projectPath": "D:\\Source Code\\macquires-crm\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\Infrastructure\\Infrastructure\\Infrastructure.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "net9.0": {
+        "targetAlias": "net9.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}
