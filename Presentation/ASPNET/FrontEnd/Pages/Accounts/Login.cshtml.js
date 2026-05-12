@@ -51,6 +51,19 @@
 
                 if (response.data.code === 200) {
                     StorageManager.saveLoginResult(response.data);
+                    /** Syriatel Macquires: land on Telecom Hub when user has any telecom Identity role. */
+                    const loginPayload = response.data?.content?.data ?? {};
+                    const roles = Array.isArray(loginPayload.roles) ? loginPayload.roles : [];
+                    const telecomRoles = new Set([
+                        'TelecomAdmin',
+                        'TelecomShowroom',
+                        'TelecomBackOffice',
+                        'TelecomCallCenter',
+                        'TelecomManagement',
+                    ]);
+                    const hasTelecomRole = roles.some((r) => telecomRoles.has(r));
+                    const landingUrl = hasTelecomRole ? '/Telecom/TelecomHub' : '/Profiles/MyProfile';
+
                     Swal.fire({
                         icon: 'success',
                         title: 'Login Successful',
@@ -60,7 +73,7 @@
                     });
 
                     setTimeout(() => {
-                        window.location.href = '/Profiles/MyProfile';
+                        window.location.href = landingUrl;
                     }, 2000);
                 } else {
                     Swal.fire({
