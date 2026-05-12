@@ -1,0 +1,21 @@
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.userosscache
+*.suo
+*.cache
+_ReSharper*/
+*.DotSettings.user
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Logs & local data
+**/logs/
+**/app_data/logs/

@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    MSB3021 / MSB3027: Visual Studio / dotnet run locks DLLs under Presentation/ASPNET/bin/** while the host is running.
+    Clean workflow: Stop debugging (Shift+F5) or end the ASPNET process, then Rebuild Solution.
+    Copy retries below only help with brief/transient locks — not a substitute for stopping the host.
+  -->
+  <PropertyGroup>
+    <CopyRetryCount>30</CopyRetryCount>
+    <CopyRetryDelayMilliseconds>400</CopyRetryDelayMilliseconds>
+  </PropertyGroup>
+</Project>
