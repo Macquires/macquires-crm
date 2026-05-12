@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — lead contacts aligned with Syria Telecom demo geography.
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,12 @@ namespace Infrastructure.SeedManager.Demos;
 
 public class LeadContactSeeder
 {
+    private static readonly string[] ArabicNames =
+    [
+        "ليان أحمد", "سامر الخوري", "مها الزعبي", "كريم حداد", "رغد المصري",
+        "طارق بيطار", "هند العلي", "باسل مراد", "نور الدين", "سلمى يوسف"
+    ];
+
     private readonly ICommandRepository<LeadContact> _leadContactRepository;
     private readonly ICommandRepository<Lead> _leadRepository;
     private readonly NumberSequenceService _numberSequenceService;
@@ -34,32 +41,36 @@ public class LeadContactSeeder
 
         for (DateTime date = dateStart; date <= dateFinish; date = date.AddMonths(1))
         {
-            DateTime[] contactDates = GetRandomDays(date.Year, date.Month, 5);
+            DateTime[] contactDates = GetRandomDays(date.Year, date.Month, 5, random);
 
             foreach (var contactDate in contactDates)
             {
                 var leadId = GetRandomValue(leads, random);
+                var fullName = ArabicNames[random.Next(ArabicNames.Length)];
+                var prefix = random.Next(2) == 0 ? "093" : "099";
+                var mobile = $"{prefix}{random.Next(1000000, 9999999)}";
+
                 var leadContact = new LeadContact
                 {
                     LeadId = leadId,
                     Number = _numberSequenceService.GenerateNumber(nameof(LeadContact), "", "LC"),
-                    FullName = $"Contact {random.Next(1000, 9999)}",
-                    Description = "Sample contact description",
-                    AddressStreet = "456 Elm St",
-                    AddressCity = "Anytown",
-                    AddressState = "State",
-                    AddressZipCode = "67890",
-                    AddressCountry = "Country",
-                    PhoneNumber = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    FaxNumber = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    MobileNumber = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    Email = $"contact{random.Next(1000, 9999)}@company.com",
-                    Website = $"www.contact{random.Next(1000, 9999)}.com",
-                    WhatsApp = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    LinkedIn = $"linkedin.com/in/contact{random.Next(1000, 9999)}",
-                    Facebook = $"facebook.com/contact{random.Next(1000, 9999)}",
-                    Twitter = $"twitter.com/contact{random.Next(1000, 9999)}",
-                    Instagram = $"instagram.com/contact{random.Next(1000, 9999)}",
+                    FullName = fullName,
+                    Description = $"جهة اتصال للمتابعة — فرصة سوريا تيليكوم — تاريخ {contactDate:yyyy-MM-dd}.",
+                    AddressStreet = "شارع بغداد — بناء الخدمات",
+                    AddressCity = "دمشق",
+                    AddressState = "دمشق",
+                    AddressZipCode = "0000",
+                    AddressCountry = "سوريا",
+                    PhoneNumber = $"011{random.Next(1000000, 9999999)}",
+                    FaxNumber = $"011{random.Next(1000000, 9999999)}",
+                    MobileNumber = mobile,
+                    Email = $"contact{random.Next(100, 999)}@syriatelecom-lead.demo",
+                    Website = "https://syriatelecom-demo.local",
+                    WhatsApp = mobile,
+                    LinkedIn = "linkedin.com/syriatelecom-demo",
+                    Facebook = "facebook.com/syriatelecom-demo",
+                    Twitter = "twitter.com/syriatelecom-demo",
+                    Instagram = "instagram.com/syriatelecom-demo",
                     AvatarName = $"avatar_{random.Next(1, 100)}.jpg"
                 };
 
@@ -75,13 +86,12 @@ public class LeadContactSeeder
         return list[random.Next(list.Count)];
     }
 
-    private static DateTime[] GetRandomDays(int year, int month, int count)
+    private static DateTime[] GetRandomDays(int year, int month, int count, Random random)
     {
-        var random = new Random();
         var daysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(year, month)).ToList();
         var selectedDays = new List<int>();
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < count && daysInMonth.Count > 0; i++)
         {
             int day = daysInMonth[random.Next(daysInMonth.Count)];
             selectedDays.Add(day);

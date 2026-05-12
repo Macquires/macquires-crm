@@ -34,6 +34,10 @@ public record GetCustomerListDto
     public string? CustomerCategoryName { get; set; }
     public string? CreatedById { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
+    /// <summary>Primary line MSISDN from linked subscriber profile (telecom demo).</summary>
+    public string? PrimaryMsisdn { get; set; }
+    /// <summary>Prepaid / Postpaid / Hybrid from primary subscription.</summary>
+    public string? SubscriptionTypeName { get; set; }
 }
 
 public class GetCustomerListProfile : Profile
@@ -48,8 +52,19 @@ public class GetCustomerListProfile : Profile
             .ForMember(
                 dest => dest.CustomerCategoryName,
                 opt => opt.MapFrom(src => src.CustomerCategory != null ? src.CustomerCategory.Name : string.Empty)
-            );
-
+            )
+            .ForMember(dest => dest.PrimaryMsisdn, opt => opt.MapFrom(src =>
+                src.SubscriberProfiles
+                    .SelectMany(sp => sp.Subscriptions)
+                    .OrderByDescending(sub => sub.IsPrimaryLine)
+                    .Select(sub => sub.MsisdnAsset != null ? sub.MsisdnAsset.Msisdn : null)
+                    .FirstOrDefault()))
+            .ForMember(dest => dest.SubscriptionTypeName, opt => opt.MapFrom(src =>
+                src.SubscriberProfiles
+                    .SelectMany(sp => sp.Subscriptions)
+                    .OrderByDescending(x => x.IsPrimaryLine)
+                    .Select(x => x.SubscriptionType.ToString())
+                    .FirstOrDefault()));
     }
 }
 
@@ -83,6 +98,9 @@ public class GetCustomerListHandler : IRequestHandler<GetCustomerListRequest, Ge
             .IsDeletedEqualTo(request.IsDeleted)
             .Include(x => x.CustomerGroup)
             .Include(x => x.CustomerCategory)
+            .Include(x => x.SubscriberProfiles)
+                .ThenInclude(sp => sp.Subscriptions)
+                    .ThenInclude(sub => sub.MsisdnAsset)
             .AsQueryable();
 
         var entities = await query.ToListAsync(cancellationToken);

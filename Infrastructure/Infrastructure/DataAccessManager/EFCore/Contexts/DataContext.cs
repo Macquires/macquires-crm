@@ -78,6 +78,12 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
     public DbSet<DebitNote> DebitNote { get; set; }
     public DbSet<PaymentDisburse> PaymentDisburse { get; set; }
 
+    public DbSet<SubscriberProfile> SubscriberProfile { get; set; }
+    public DbSet<MsisdnAsset> MsisdnAsset { get; set; }
+    public DbSet<TelecomSubscription> TelecomSubscription { get; set; }
+    public DbSet<TelecomOperationRequest> TelecomOperationRequest { get; set; }
+    public DbSet<BillingIntegrationLog> BillingIntegrationLog { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -146,6 +152,12 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
         modelBuilder.ApplyConfiguration(new BillConfiguration());
         modelBuilder.ApplyConfiguration(new DebitNoteConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentDisburseConfiguration());
+
+        modelBuilder.ApplyConfiguration(new SubscriberProfileConfiguration());
+        modelBuilder.ApplyConfiguration(new MsisdnAssetConfiguration());
+        modelBuilder.ApplyConfiguration(new TelecomSubscriptionConfiguration());
+        modelBuilder.ApplyConfiguration(new TelecomOperationRequestConfiguration());
+        modelBuilder.ApplyConfiguration(new BillingIntegrationLogConfiguration());
 
     }
 

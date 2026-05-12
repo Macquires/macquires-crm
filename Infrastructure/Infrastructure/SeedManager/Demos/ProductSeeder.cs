@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only fictional Syria Telecom-style catalog for presentation datasets.
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -43,39 +44,25 @@ namespace Infrastructure.SeedManager.Demos
                 }
             }
 
-
             var products = new List<Product>
             {
+                // Mobile lines (virtual)
+                new Product { Name = "يا هلا شباب (Prepaid)", ServiceCode = "YAHALA_SHABAB", UnitPrice = 150.0, Physical = false, ProductGroupId = groupMapping["Mobile Lines"] },
+                new Product { Name = "سوريا تيليكوم ميكس (Hybrid)", ServiceCode = "SYR_MIX_HYBRID", UnitPrice = 250.0, Physical = false, ProductGroupId = groupMapping["Mobile Lines"] },
+                new Product { Name = "خط سوريا تيليكوم فاتورة — بلاتيني (Postpaid)", ServiceCode = "SYR_POST_PLAT", UnitPrice = 400.0, Physical = false, ProductGroupId = groupMapping["Mobile Lines"] },
+
+                // Data packages
+                new Product { Name = "سَبَا 10GB (باقة بيانات)", ServiceCode = "SABA_10GB", UnitPrice = 35.0, Physical = false, ProductGroupId = groupMapping["Data Packages"] },
+                new Product { Name = "باقة أعمال برو 50GB", ServiceCode = "BUSINESS_PRO_50", UnitPrice = 120.0, Physical = false, ProductGroupId = groupMapping["Data Packages"] },
+                new Product { Name = "باقة ليلية غير محدودة", ServiceCode = "NIGHT_UNL", UnitPrice = 45.0, Physical = false, ProductGroupId = groupMapping["Data Packages"] },
+
                 // Hardware
-                new Product { Name = "Dell Servers", UnitPrice = 5000.0, ProductGroupId = groupMapping["Hardware"] },
-                new Product { Name = "Dell Desktop Computers", UnitPrice = 2000.0, ProductGroupId = groupMapping["Hardware"] },
-                new Product { Name = "Dell Laptops", UnitPrice = 3000.0, ProductGroupId = groupMapping["Hardware"] },
+                new Product { Name = "راوتر سوريا تيليكوم 4G/5G", ServiceCode = "HW_ROUTER_5G", UnitPrice = 185.0, Physical = true, ProductGroupId = groupMapping["Hardware"] },
+                new Product { Name = "Wingle (USB Modem)", ServiceCode = "HW_WINGLE", UnitPrice = 95.0, Physical = true, ProductGroupId = groupMapping["Hardware"] },
 
-                // Networking
-                new Product { Name = "Network Cables", UnitPrice = 100.0, ProductGroupId = groupMapping["Networking"] },
-                new Product { Name = "Routers and Switches", UnitPrice = 1000.0, ProductGroupId = groupMapping["Networking"] },
-                new Product { Name = "Antennas and Signal Boosters", UnitPrice = 2000.0, ProductGroupId = groupMapping["Networking"] },
-                new Product { Name = "Wifii", UnitPrice = 1000.0, ProductGroupId = groupMapping["Networking"] },
-
-                // Storage
-                new Product { Name = "HDD 500", UnitPrice = 500.0, ProductGroupId = groupMapping["Storage"] },
-                new Product { Name = "HDD 1T", UnitPrice = 800.0, ProductGroupId = groupMapping["Storage"] },
-                new Product { Name = "SSD 500", UnitPrice = 1000.0, ProductGroupId = groupMapping["Storage"] },
-                new Product { Name = "SSD 1T", UnitPrice = 1500.0, ProductGroupId = groupMapping["Storage"] },
-
-                // Device
-                new Product { Name = "Dell Keyboard", UnitPrice = 700.0, ProductGroupId = groupMapping["Device"] },
-                new Product { Name = "Dell Mouse", UnitPrice = 500.0, ProductGroupId = groupMapping["Device"] },
-                new Product { Name = "Dell Monitor 27inch", UnitPrice = 1000.0, ProductGroupId = groupMapping["Device"] },
-                new Product { Name = "Dell Monitor 32inch", UnitPrice = 1500.0, ProductGroupId = groupMapping["Device"] },
-                new Product { Name = "Dell Webcams", UnitPrice = 500.0, ProductGroupId = groupMapping["Device"] },
-
-                // Software
-                new Product { Name = "D365 License", UnitPrice = 800.0, Physical = false, ProductGroupId = groupMapping["Software"] },
-
-                // Service
-                new Product { Name = "IT Security", UnitPrice = 500.0, Physical = false, ProductGroupId = groupMapping["Service"] },
-                new Product { Name = "Discount", UnitPrice = -10, Physical = false, ProductGroupId = groupMapping["Service"] }
+                // Ancillary services (for MIS / adjustments demos)
+                new Product { Name = "رسوم تفعيل خط", ServiceCode = "SRV_ACTIVATION", UnitPrice = 25.0, Physical = false, ProductGroupId = groupMapping["Service"] },
+                new Product { Name = "خصم ترويجي", ServiceCode = "SRV_PROMO_DISC", UnitPrice = -15.0, Physical = false, ProductGroupId = groupMapping["Service"] }
             };
 
             foreach (var product in products)
@@ -88,11 +75,6 @@ namespace Infrastructure.SeedManager.Demos
             }
 
             await _unitOfWork.SaveAsync();
-        }
-
-        private static T GetRandomValue<T>(T[] array, Random random)
-        {
-            return array[random.Next(array.Length)];
         }
     }
 }

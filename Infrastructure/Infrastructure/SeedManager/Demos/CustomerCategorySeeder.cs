@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — customer tiering for Syria Telecom datasets.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,11 +22,11 @@ public class CustomerCategorySeeder
     {
         var customerCategories = new List<CustomerCategory>
         {
-            new CustomerCategory { Name = "Enterprise" },
-            new CustomerCategory { Name = "Medium" },
-            new CustomerCategory { Name = "Small" },
-            new CustomerCategory { Name = "Startup" },
-            new CustomerCategory { Name = "Micro" }
+            new CustomerCategory { Name = "شريحة كبار — Enterprise" },
+            new CustomerCategory { Name = "شركات متوسطة" },
+            new CustomerCategory { Name = "شركات صغيرة ومتاجر" },
+            new CustomerCategory { Name = "شركات ناشئة" },
+            new CustomerCategory { Name = "أفراد — استهلاك منزلي" }
         };
 
         foreach (var category in customerCategories)
@@ -36,5 +37,3 @@ public class CustomerCategorySeeder
         await _unitOfWork.SaveAsync();
     }
 }
-
-

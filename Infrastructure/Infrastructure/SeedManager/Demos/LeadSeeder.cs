@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — B2B pipeline data for Syria Telecom demo (fictional companies).
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -8,6 +9,29 @@ namespace Infrastructure.SeedManager.Demos;
 
 public class LeadSeeder
 {
+    private static readonly string[] SyrianCompanyNames =
+    [
+        "مخابز الشام المتحدة", "شركة القاطع للاستيراد", "مجمع حمص الصناعي للبلاستيك", "فندق الأمويين دمشق",
+        "جامعة اليرموك الخاصة", "مستشفى المحبة", "شركة الفرات للأسمدة", "مؤسسة البادية للنقل",
+        "سوبرماركت النجمة الذهبية", "شركة الياسمين للاتصالات الصغيرة", "مخبز أهل الشام", "صيدلية الشفاء",
+        "شركة البناء الحديث", "مؤسسة غيث للمقاولات", "معمل حلب للنسيج", "شركة الساحل للسياحة",
+        "مخازن حماة المركزية", "شركة دمشق للأغذية", "مجموعة الكرامة التجارية", "شركة النور للتأمين",
+        "مؤسسة الشهداء للتعليم", "شركة الوفاء للخدمات", "معمل اللاذقية للمشروبات", "شركة درعا للزراعة",
+        "مؤسسة الفرات للطاقة", "شركة طرطوس للملاحة", "مجمع دير الزور التجاري", "شركة الحسكة للحبوب",
+        "مؤسسة السويداء للرخام", "شركة القنيطرة للخدمات", "مجموعة إدلب الغذائية", "شركة الرقة للتجارة"
+    ];
+
+    private static readonly string[] Streets =
+    [
+        "شارع بغداد", "كورنيش المزة", "طريق المطار", "شارع الجامعة", "سوق الحميدية",
+        "شارع العزيزية", "طريق حلب الدولي", "الوعر الصناعي", "المشروع السابع", "الكورنيش البحري"
+    ];
+
+    private static readonly string[] Cities =
+    [
+        "دمشق", "حلب", "حمص", "اللاذقية", "حماة", "طرطوس", "درعا", "دير الزور", "الحسكة", "السويداء"
+    ];
+
     private readonly ICommandRepository<Lead> _leadRepository;
     private readonly ICommandRepository<Campaign> _campaignRepository;
     private readonly ICommandRepository<SalesTeam> _salesTeamRepository;
@@ -54,35 +78,45 @@ public class LeadSeeder
             { PipelineStage.Closed, 15 }
         };
 
+        var leadIndex = 0;
+
         foreach (var stage in pipelineStageCounts)
         {
             for (int i = 0; i < stage.Value; i++)
             {
-                var prospectingDate = GetRandomDate(dateStart, dateFinish);
+                var prospectingDate = GetRandomDate(dateStart, dateFinish, random);
                 var closingEstimation = prospectingDate.AddDays(random.Next(30, 90));
                 var closingActual = closingEstimation.AddDays(random.Next(-10, 11));
+
+                var companyName = SyrianCompanyNames[leadIndex % SyrianCompanyNames.Length];
+                leadIndex++;
+
+                var city = Cities[random.Next(Cities.Length)];
+                var street = Streets[random.Next(Streets.Length)];
+                var prefix = random.Next(2) == 0 ? "093" : "099";
+                var mobile = $"{prefix}{random.Next(1000000, 9999999)}";
 
                 var lead = new Lead
                 {
                     Number = _numberSequenceService.GenerateNumber(nameof(Lead), "", "LEA"),
-                    Title = $"Lead from {prospectingDate:MMMM yyyy}",
-                    Description = $"Lead description for {prospectingDate:MMMM yyyy}",
-                    CompanyName = $"Company Name {random.Next(1000, 9999)}",
-                    CompanyDescription = "Sample company description",
-                    CompanyAddressStreet = "123 Main St",
-                    CompanyAddressCity = "Anytown",
-                    CompanyAddressState = "State",
-                    CompanyAddressZipCode = "12345",
-                    CompanyAddressCountry = "Country",
-                    CompanyPhoneNumber = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    CompanyFaxNumber = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    CompanyEmail = $"info{random.Next(1000, 9999)}@company.com",
-                    CompanyWebsite = $"www.company{random.Next(1000, 9999)}.com",
-                    CompanyWhatsApp = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    CompanyLinkedIn = $"linkedin.com/company{random.Next(1000, 9999)}",
-                    CompanyFacebook = $"facebook.com/company{random.Next(1000, 9999)}",
-                    CompanyInstagram = $"instagram.com/company{random.Next(1000, 9999)}",
-                    CompanyTwitter = $"twitter.com/company{random.Next(1000, 9999)}",
+                    Title = $"فرصة أعمال — {companyName}",
+                    Description = $"متابعة عرض سوريا تيليكوم: خطوط وبيانات وأجهزة — مرحلة {stage.Key} — تاريخ أول تواصل {prospectingDate:yyyy-MM-dd}.",
+                    CompanyName = companyName,
+                    CompanyDescription = "عميل أعمال محتمل ضمن بيئة العرض التجريبية لسوريا تيليكوم.",
+                    CompanyAddressStreet = street,
+                    CompanyAddressCity = city,
+                    CompanyAddressState = "سوريا",
+                    CompanyAddressZipCode = $"{1000 + random.Next(8000)}",
+                    CompanyAddressCountry = "سوريا",
+                    CompanyPhoneNumber = mobile,
+                    CompanyFaxNumber = $"011{random.Next(1000000, 9999999)}",
+                    CompanyEmail = $"info{random.Next(100, 999)}@syriatelecom-lead.demo",
+                    CompanyWebsite = $"https://lead-{random.Next(1000, 9999)}.syriatelecom-demo.local",
+                    CompanyWhatsApp = mobile,
+                    CompanyLinkedIn = "linkedin.com/syriatelecom-demo",
+                    CompanyFacebook = "facebook.com/syriatelecom-demo",
+                    CompanyInstagram = "instagram.com/syriatelecom-demo",
+                    CompanyTwitter = "twitter.com/syriatelecom-demo",
                     DateProspecting = prospectingDate,
                     DateClosingEstimation = closingEstimation,
                     DateClosingActual = closingActual,
@@ -94,7 +128,7 @@ public class LeadSeeder
                     TimelineScore = 10.0 * Math.Ceiling(random.NextDouble() * 10),
                     PipelineStage = stage.Key,
                     ClosingStatus = (ClosingStatus)random.Next(0, Enum.GetNames(typeof(ClosingStatus)).Length),
-                    ClosingNote = "Sample closing note",
+                    ClosingNote = "ملاحظة إغلاق ديمو — مرتبطة بحملات سوريا تيليكوم التجريبية.",
                     CampaignId = GetRandomValue(confirmedCampaigns, random),
                     SalesTeamId = GetRandomValue(salesTeamIds, random)
                 };
@@ -106,30 +140,15 @@ public class LeadSeeder
         await _unitOfWork.SaveAsync();
     }
 
-    private static DateTime GetRandomDate(DateTime startDate, DateTime endDate)
+    private static DateTime GetRandomDate(DateTime startDate, DateTime endDate, Random random)
     {
         var range = (endDate - startDate).Days;
-        return startDate.AddDays(new Random().Next(range));
+        if (range <= 0) return startDate;
+        return startDate.AddDays(random.Next(range));
     }
 
     private static string GetRandomValue(List<string> list, Random random)
     {
         return list[random.Next(list.Count)];
-    }
-
-    private static DateTime[] GetRandomDays(int year, int month, int count)
-    {
-        var random = new Random();
-        var daysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(year, month)).ToList();
-        var selectedDays = new List<int>();
-
-        for (int i = 0; i < count; i++)
-        {
-            int day = daysInMonth[random.Next(daysInMonth.Count)];
-            selectedDays.Add(day);
-            daysInMonth.Remove(day);
-        }
-
-        return selectedDays.Select(day => new DateTime(year, month, day)).ToArray();
     }
 }

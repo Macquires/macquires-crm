@@ -498,9 +498,10 @@
                         {
                             field: 'id', isPrimaryKey: true, headerText: 'Id', visible: false
                         },
-                        { field: 'number', headerText: 'Number', width: 150, minWidth: 150 },
-                        { field: 'orderDate', headerText: 'SO Date', width: 150, format: 'yyyy-MM-dd' },
-                        { field: 'customerName', headerText: 'Customer', width: 200, minWidth: 200 },
+                        { field: 'number', headerText: 'رقم الطلب', width: 150, minWidth: 150 },
+                        { field: 'orderDate', headerText: 'التاريخ', width: 150, format: 'yyyy-MM-dd' },
+                        { field: 'customerName', headerText: 'المشترك', width: 200, minWidth: 200 },
+                        { field: 'customerMsisdn', headerText: 'MSISDN', width: 130, minWidth: 130 },
                         { field: 'orderStatusName', headerText: 'Status', width: 150, minWidth: 150 },
                         { field: 'taxName', headerText: 'Tax', width: 150, minWidth: 150 },
                         { field: 'afterTaxAmount', headerText: 'Total Amount', width: 150, minWidth: 150, format: 'N2' },
@@ -518,7 +519,7 @@
                     beforeDataBound: () => { },
                     dataBound: function () {
                         mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'PrintPDFCustom'], false);
-                        mainGrid.obj.autoFitColumns(['number', 'orderDate', 'customerName', 'orderStatusName', 'taxName', 'afterTaxAmount', 'createdAtUtc']);
+                        mainGrid.obj.autoFitColumns(['number', 'orderDate', 'customerName', 'customerMsisdn', 'orderStatusName', 'taxName', 'afterTaxAmount', 'createdAtUtc']);
                     },
                     excelExportComplete: () => { },
                     rowSelected: () => {

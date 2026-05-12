@@ -1,4 +1,5 @@
-﻿using Infrastructure.SecurityManager.AspNetIdentity;
+﻿// Demo-only — profile users for Syria Telecom demo tenants.
+using Infrastructure.SecurityManager.AspNetIdentity;
 using Infrastructure.SecurityManager.Roles;
 using Microsoft.AspNetCore.Identity;
 
@@ -17,22 +18,22 @@ public class UserSeeder
     {
         var userNames = new List<string>
         {
-            "Alex", "Taylor", "Jordan", "Morgan", "Riley",
-            "Casey", "Peyton", "Cameron", "Jamie", "Drew",
-            "Dakota", "Avery", "Quinn", "Harper", "Rowan",
-            "Emerson", "Finley", "Skyler", "Charlie", "Sage"
+            "نورا", "ليث", "ميس", "طارق", "رانيا",
+            "بشار", "هبة", "كرم", "سلمى", "يامن",
+            "غادة", "فادي", "لينا", "زيد", "منار",
+            "عمر", "دانة", "سامي", "ريم", "مازن"
         };
 
-        var defaultPassword = "123456";
-        var domain = "@example.com";
+        const string defaultPassword = "123456";
 
-        foreach (var name in userNames)
+        for (var i = 0; i < userNames.Count; i++)
         {
-            var email = $"{name.ToLower()}{domain}";
+            var displayName = userNames[i];
+            var email = $"st-user{(i + 1):D2}@syriatelecom-demo.local";
 
             if (await _userManager.FindByEmailAsync(email) == null)
             {
-                var applicationUser = new ApplicationUser(email, name, "User")
+                var applicationUser = new ApplicationUser(email, displayName, "User")
                 {
                     EmailConfirmed = true
                 };

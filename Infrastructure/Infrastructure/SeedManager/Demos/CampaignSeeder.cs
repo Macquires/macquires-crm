@@ -48,12 +48,11 @@ public class CampaignSeeder
 
                 var status = GetRandomStatus(random);
                 string number = _numberSequenceService.GenerateNumber(nameof(Campaign), "", "CMP");
-                string firstFourChars = number.Length >= 4 ? number.Substring(0, 4) : number;
                 var campaign = new Campaign
                 {
                     Number = number,
-                    Title = $"{firstFourChars} Campaign for {campaignStart:MMMM yyyy}",
-                    Description = $"Description for campaign starting {campaignStart:MMMM yyyy}",
+                    Title = $"حملة سوريا تيليكوم — عروض بيانات {campaignStart:MMMM yyyy}",
+                    Description = $"حملة ديمو: استهداف شركات ومنازل — تفعيل باقات وبيانات ضمن خطة المبيعات الشهرية لـ {campaignStart:yyyy/MM}.",
                     TargetRevenueAmount = 10000 * Math.Ceiling((random.NextDouble() * 89) + 1),
                     CampaignDateStart = campaignStart,
                     CampaignDateFinish = campaignEnd,

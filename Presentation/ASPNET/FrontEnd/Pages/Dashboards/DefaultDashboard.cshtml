@@ -1,10 +1,48 @@
 ﻿@page
 @{
-    ViewData["Title"] = "Default Dashboard";
+    ViewData["Title"] = "لوحة التحكم — سوريا تيليكوم";
 }
 
 <div id="app" v-cloak>
     <div class="form-card" id="formcard">
+
+        <div class="container-fluid pt-3 px-4">
+            <div class="rounded-3 p-4 mb-2 telecom-dash-hero border">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                    <div>
+                        <h5 class="mb-1">مركز عمليات التليكوم (OSS/BSS)</h5>
+                        <p class="text-muted small mb-0">واجهة المعرض: أربع كبسات + بحث وتقارير — <a href="/Telecom/TelecomHub">افتح المركز الكامل</a></p>
+                    </div>
+                    <a class="btn btn-primary btn-sm" href="/Telecom/TelecomHub">انتقل إلى Telecom Hub</a>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6 col-lg-3">
+                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-activate text-decoration-none shadow-sm" href="/Telecom/TelecomHub">
+                            <div class="fw-semibold">تفعيل</div>
+                            <small>Activate</small>
+                        </a>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-migrate text-decoration-none shadow-sm" href="/Telecom/TelecomHub">
+                            <div class="fw-semibold">تحويل</div>
+                            <small>MGR</small>
+                        </a>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-takeover text-decoration-none shadow-sm" href="/Telecom/TelecomHub">
+                            <div class="fw-semibold">نقل ملكية</div>
+                            <small>Take Over</small>
+                        </a>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-support text-decoration-none shadow-sm" href="/ProgramManagers/ProgramManagerList">
+                            <div class="fw-semibold">دعم / شكوى</div>
+                            <small>Kanban</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="container-fluid pt-4 px-4">
             <div class="row g-4">
@@ -225,6 +263,17 @@
         </div>
     </div>
 </div>
+
+@section styles {
+    <style>
+        .telecom-dash-hero { background: linear-gradient(120deg, #f8fafc 0%, #eef2ff 100%); }
+        .telecom-dash-tile { border: none; border-radius: 12px; min-height: 100px; }
+        .telecom-dash-tile.tile-activate { background: linear-gradient(135deg, #0d6efd, #3d8bfd); }
+        .telecom-dash-tile.tile-migrate { background: linear-gradient(135deg, #fd7e14, #ffb347); }
+        .telecom-dash-tile.tile-takeover { background: linear-gradient(135deg, #6f42c1, #a98eda); }
+        .telecom-dash-tile.tile-support { background: linear-gradient(135deg, #198754, #51c685); }
+    </style>
+}
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml.js"></script>

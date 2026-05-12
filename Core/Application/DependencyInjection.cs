@@ -24,23 +24,26 @@ public static class DependencyInjection
             x.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
         });
 
-        //>>> Register services in Application.Features 
+        //>>> Register non-handler services in Application.Features
+        // MediatR already registers IRequestHandler<,> via RegisterServicesFromAssembly.
+        // Do not register framework interfaces (e.g. IEquatable<> on records/DTOs) — that breaks DI validation.
         var assembly = Assembly.GetExecutingAssembly();
         var featureTypes = assembly.GetTypes()
-            .Where(type => type.IsClass && !type.IsAbstract)
-            .Where(type => type.Namespace != null && type.Namespace.StartsWith("Application.Features"));
+            .Where(type => type is { IsClass: true, IsAbstract: false })
+            .Where(type => type.Namespace != null && type.Namespace.StartsWith("Application.Features", StringComparison.Ordinal));
 
         foreach (var type in featureTypes)
         {
-            var interfaces = type.GetInterfaces();
-            foreach (var serviceInterface in interfaces)
-            {
+            var allInterfaces = type.GetInterfaces();
+            var applicationInterfaces = allInterfaces
+                .Where(i => i.Namespace != null && i.Namespace.StartsWith("Application.", StringComparison.Ordinal))
+                .ToList();
+
+            foreach (var serviceInterface in applicationInterfaces)
                 services.AddScoped(serviceInterface, type);
-            }
-            if (!interfaces.Any())
-            {
+
+            if (allInterfaces.Length == 0)
                 services.AddScoped(type);
-            }
         }
 
         return services;

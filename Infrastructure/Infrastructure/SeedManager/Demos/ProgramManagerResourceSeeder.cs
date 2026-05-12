@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — internal teams for Syria Telecom Kanban demo.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos
@@ -21,11 +22,11 @@ namespace Infrastructure.SeedManager.Demos
         {
             var programResources = new List<ProgramManagerResource>
             {
-                new ProgramManagerResource { Name = "Information Technology" },
-                new ProgramManagerResource { Name = "Human Resource" },
-                new ProgramManagerResource { Name = "Operations" },
-                new ProgramManagerResource { Name = "Sales Marketing" },
-                new ProgramManagerResource { Name = "Finance Accounting" }
+                new ProgramManagerResource { Name = "شبكة الوصول — Access" },
+                new ProgramManagerResource { Name = "الشبكة الأساسية — Core" },
+                new ProgramManagerResource { Name = "تشغيل الميدان — NOC" },
+                new ProgramManagerResource { Name = "مبيعات الأعمال — B2B" },
+                new ProgramManagerResource { Name = "المالية والتحصيل" }
             };
 
             foreach (var programResource in programResources)

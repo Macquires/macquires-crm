@@ -40,13 +40,28 @@
             const currentUrl = window.location.pathname;
             const firstSegment = currentUrl.split('/')[1];
 
+            /** Syriatel telecom roles — must stay in sync with Infrastructure.SecurityManager.Roles.TelecomRoles */
+            const TELECOM_ROLES = new Set(['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement']);
+
+            function telecomRoleAllowsNav(role, segment) {
+                if (!TELECOM_ROLES.has(role)) return false;
+                const s = (segment || '').toLowerCase();
+                if (s === 'telecom' || s === 'customers' || s === 'dashboards') return true;
+                if (s === 'programmanagers') return role === 'TelecomAdmin' || role === 'TelecomCallCenter' || role === 'TelecomManagement';
+                return false;
+            }
+
+            function legacyRoleMatchesUrl(role, segment) {
+                return role.toLowerCase() === (segment || '').toLowerCase();
+            }
+
             function filterMenu(menuData, userRoles) {
+                const roles = userRoles || [];
                 const childMenus = menuData.filter(menu => {
-                    if (menu.navURL) {
-                        const firstSegment = menu.navURL.split('/')[1];
-                        return userRoles.some(role => role.toLowerCase() === firstSegment.toLowerCase());
-                    }
-                    return false;
+                    if (!menu.navURL) return false;
+                    const firstSegment = menu.navURL.split('/')[1];
+                    return roles.some(role =>
+                        telecomRoleAllowsNav(role, firstSegment) || legacyRoleMatchesUrl(role, firstSegment));
                 });
 
                 const validChildIds = new Set(childMenus.map(menu => menu.id));

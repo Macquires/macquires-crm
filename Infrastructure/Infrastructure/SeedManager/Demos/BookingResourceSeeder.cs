@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — resources must match BookingGroup names from BookingGroupSeeder.
+using Application.Common.Repositories;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,67 +24,66 @@ public class BookingResourceSeeder
 
     public async Task GenerateDataAsync()
     {
-        var vehicleGroup = await _groupRepository.GetQuery().Where(x => x.Name == "Vehicle").SingleOrDefaultAsync();
-        if (vehicleGroup != null)
+        var fleetGroup = await _groupRepository.GetQuery().Where(x => x.Name == "اسطول ميداني").SingleOrDefaultAsync();
+        if (fleetGroup != null)
         {
-            var vehicleResources = new List<BookingResource>
+            var fleetResources = new List<BookingResource>
             {
-                new BookingResource { Name = "Audi 01", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "Audi 02", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "Audi 03", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "BMW 01", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "BMW 02", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "BMW 03", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "Lexus 01", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "Lexus 02", BookingGroupId = vehicleGroup.Id },
-                new BookingResource { Name = "Lexus 03", BookingGroupId = vehicleGroup.Id }
+                new BookingResource { Name = "فان فني — دمشق 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "فان فني — دمشق 02", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "فان فني — حلب 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "فان فني — حمص 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "فان فني — الساحل 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "بيك أب فني — جنوب 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "بيك أب فني — شرق 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "فان تركيب FTTH — 01", BookingGroupId = fleetGroup.Id },
+                new BookingResource { Name = "فان تركيب FTTH — 02", BookingGroupId = fleetGroup.Id }
             };
 
-            foreach (var resource in vehicleResources)
+            foreach (var resource in fleetResources)
             {
                 await _resourceRepository.CreateAsync(resource);
             }
         }
 
-        var roomGroup = await _groupRepository.GetQuery().Where(x => x.Name == "Room").SingleOrDefaultAsync();
-        if (roomGroup != null)
+        var showroomGroup = await _groupRepository.GetQuery().Where(x => x.Name == "قاعات معارض").SingleOrDefaultAsync();
+        if (showroomGroup != null)
         {
-            var roomResources = new List<BookingResource>
+            var showroomResources = new List<BookingResource>
             {
-                new BookingResource { Name = "Room One", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Room Two", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Room Three", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Conference One", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Conference Two", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Conference Three", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Studio One", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Studio Two", BookingGroupId = roomGroup.Id },
-                new BookingResource { Name = "Studio Three", BookingGroupId = roomGroup.Id }
+                new BookingResource { Name = "قاعة عرض — دمشق الحجاز", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "قاعة عرض — حلب العزيزية", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "قاعة عرض — حمص المحطة", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "قاعة تدريب — اللاذقية", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "جناح B2B — دمشق", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "جناح B2B — حلب", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "استوديو بث — ديمو أونلاين", BookingGroupId = showroomGroup.Id },
+                new BookingResource { Name = "غرفة اجتماعات — الطابق الثاني", BookingGroupId = showroomGroup.Id }
             };
 
-            foreach (var resource in roomResources)
+            foreach (var resource in showroomResources)
             {
                 await _resourceRepository.CreateAsync(resource);
             }
         }
 
-        var electronicGroup = await _groupRepository.GetQuery().Where(x => x.Name == "Electronic").SingleOrDefaultAsync();
-        if (electronicGroup != null)
+        var kitGroup = await _groupRepository.GetQuery().Where(x => x.Name == "معدات عرض وتدريب").SingleOrDefaultAsync();
+        if (kitGroup != null)
         {
-            var electronicResources = new List<BookingResource>
+            var kitResources = new List<BookingResource>
             {
-                new BookingResource { Name = "Epson Projector", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Sony Projector", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Bose Speaker", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "JBL Speaker", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Microsoft Webcam", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Logitech Webcam", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Google Chromecast", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Apple TV", BookingGroupId = electronicGroup.Id },
-                new BookingResource { Name = "Samsung Monitor 49", BookingGroupId = electronicGroup.Id }
+                new BookingResource { Name = "طقم عرض 5G — متحرك", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "طقم عرض FTTH — ثابت", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "شاشة تفاعلية 75\"", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "راوترات تجريبية — كرتون ديمو", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "مجموعة Wingle للتجربة", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "جهاز قياس إشارة — Spectrum", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "كاميرا تسجيل جودة الخدمة", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "لابتوب مبيعات ميداني — 01", BookingGroupId = kitGroup.Id },
+                new BookingResource { Name = "لابتوب مبيعات ميداني — 02", BookingGroupId = kitGroup.Id }
             };
 
-            foreach (var resource in electronicResources)
+            foreach (var resource in kitResources)
             {
                 await _resourceRepository.CreateAsync(resource);
             }
@@ -92,5 +92,3 @@ public class BookingResourceSeeder
         await _unitOfWork.SaveAsync();
     }
 }
-
-

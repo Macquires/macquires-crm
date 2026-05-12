@@ -13,4 +13,7 @@ public class Product : BaseEntity
     public UnitMeasure? UnitMeasure { get; set; }
     public string? ProductGroupId { get; set; }
     public ProductGroup? ProductGroup { get; set; }
+
+    /// <summary>External provisioning / CBS service code (telecom catalog).</summary>
+    public string? ServiceCode { get; set; }
 }

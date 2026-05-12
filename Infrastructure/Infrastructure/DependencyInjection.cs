@@ -1,4 +1,5 @@
-﻿using Infrastructure.DataAccessManager.EFCore;
+﻿using Application.Common.Integrations;
+using Infrastructure.DataAccessManager.EFCore;
 using Infrastructure.EmailManager;
 using Infrastructure.FileDocumentManager;
 using Infrastructure.FileImageManager;
@@ -6,6 +7,7 @@ using Infrastructure.LogManager.Serilogs;
 using Infrastructure.SecurityManager.AspNetIdentity;
 using Infrastructure.SecurityManager.Tokens;
 using Infrastructure.SeedManager;
+using Infrastructure.TelecomIntegrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,6 +44,11 @@ public static class DependencyInjection
 
         //>>> FileImageManager
         services.RegisterFileImageManager(configuration);
+
+        services.Configure<TelecomBillingOptions>(configuration.GetSection(TelecomBillingOptions.SectionName));
+        services.AddScoped<IBillingSystemIntegration, HuaweiCbsBillingIntegration>();
+        services.AddScoped<IChargingSystemIntegration, ChargingSystemMockIntegration>();
+        services.AddScoped<ISmsGatewayIntegration, SmsGatewayMockIntegration>();
 
         return services;
     }

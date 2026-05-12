@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only fictional operator branding for presentation datasets.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Systems;
@@ -21,21 +22,22 @@ public class CompanySeeder
         {
             CreatedAtUtc = DateTime.UtcNow,
             IsDeleted = false,
-            Name = "Acme Corp",
-            Currency = "USD",
-            Street = "123 Main St",
-            City = "Metropolis",
-            State = "New York",
-            ZipCode = "10001",
-            Country = "USA",
-            PhoneNumber = "+1-212-555-1234",
-            FaxNumber = "+1-212-555-5678",
-            EmailAddress = "info@acmecorp.com",
-            Website = "https://www.acmecorp.com"
+            Name = "سوريا تيليكوم — بيئة العرض التجريبية",
+            Currency = "SYP",
+            Street = "كورنيش المزة — مجمع الاتصالات",
+            City = "دمشق",
+            State = "دمشق",
+            ZipCode = "",
+            Country = "سوريا",
+            PhoneNumber = "011-0000000",
+            FaxNumber = "011-0000001",
+            EmailAddress = "info@syriatelecom-demo.local",
+            Website = "https://syriatelecom-demo.local"
         };
 
         await _repository.CreateAsync(entity);
         await _unitOfWork.SaveAsync();
+
     }
 
 }

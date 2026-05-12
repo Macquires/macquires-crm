@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — Syria Telecom product catalog segments.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,12 +22,10 @@ public class ProductGroupSeeder
     {
         var productGroups = new List<ProductGroup>
         {
-            new ProductGroup { Name = "Hardware" },
-            new ProductGroup { Name = "Networking" },
-            new ProductGroup { Name = "Storage" },
-            new ProductGroup { Name = "Device" },
-            new ProductGroup { Name = "Software" },
-            new ProductGroup { Name = "Service" }
+            new ProductGroup { Name = "Mobile Lines", Description = "خطوط وباقات خط — سوريا تيليكوم (ديمو)" },
+            new ProductGroup { Name = "Data Packages", Description = "حزم إنترنت منزلية وأعمال (ديمو)" },
+            new ProductGroup { Name = "Hardware", Description = "أجهزة وصول — راوتر، Wingle، ملحقات (ديمو)" },
+            new ProductGroup { Name = "Service", Description = "رسوم وخدمات مساعدة — تفعيل، تركيب، خصومات (ديمو)" }
         };
 
         foreach (var productGroup in productGroups)

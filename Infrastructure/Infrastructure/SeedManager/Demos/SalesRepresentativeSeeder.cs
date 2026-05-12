@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — Arabic rep roster tied to Syria Telecom sales teams.
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,12 @@ namespace Infrastructure.SeedManager.Demos;
 
 public class SalesRepresentativeSeeder
 {
+    private static readonly string[] ArabicFirstNames =
+    [
+        "رنين", "ليث", "نورة", "طارق", "منار", "سامي", "هبة", "كرم", "لينا", "بشار",
+        "دانة", "فادي", "ميس", "زيد", "رنا", "عادل", "سلمى", "يامن", "غادة", "مازن"
+    ];
+
     private readonly ICommandRepository<SalesRepresentative> _salesRepRepository;
     private readonly ICommandRepository<SalesTeam> _salesTeamRepository;
     private readonly NumberSequenceService _numberSequenceService;
@@ -29,20 +36,26 @@ public class SalesRepresentativeSeeder
     {
         var random = new Random();
         var salesTeams = await _salesTeamRepository.GetQuery().ToListAsync();
+        var nameIndex = 0;
 
         foreach (var team in salesTeams)
         {
             for (int i = 1; i <= 5; i++)
             {
+                var first = ArabicFirstNames[nameIndex % ArabicFirstNames.Length];
+                nameIndex++;
+                var job = i == 1 ? "مدير مبيعات فرع" : "ممثل مبيعات — خطوط وبيانات";
+                var prefix = random.Next(2) == 0 ? "093" : "099";
+
                 var salesRep = new SalesRepresentative
                 {
-                    Name = $"Rep {i} - {team.Name}",
+                    Name = $"{first} — {team.Name}",
                     Number = _numberSequenceService.GenerateNumber(nameof(SalesRepresentative), "", "SR"),
-                    JobTitle = $"Sales " + (i == 1 ? "Manager" : "Representative"),
-                    EmployeeNumber = $"EMP-{random.Next(1000, 9999)}",
-                    PhoneNumber = $"+1{random.Next(100, 999)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}",
-                    EmailAddress = $"salesrep{i}@company.com",
-                    Description = $"Sales Rep for {team.Name}",
+                    JobTitle = job,
+                    EmployeeNumber = $"ST-EMP-{random.Next(10000, 99999)}",
+                    PhoneNumber = $"{prefix}{random.Next(1000000, 9999999)}",
+                    EmailAddress = $"rep.{nameIndex:D4}@syriatelecom-demo.local",
+                    Description = $"مندوب مبيعات ضمن {team.Name} — تغطية خطوط وباقات سوريا تيليكوم (ديمو).",
                     SalesTeamId = team.Id
                 };
 

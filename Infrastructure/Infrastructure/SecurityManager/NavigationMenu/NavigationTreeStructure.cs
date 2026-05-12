@@ -1,4 +1,5 @@
 ﻿using Application.Common.Services.SecurityManager;
+using Infrastructure.SecurityManager.Roles;
 using System.Text.Json;
 
 namespace Infrastructure.SecurityManager.NavigationMenu;
@@ -26,6 +27,11 @@ public static class NavigationTreeStructure
             "Name": "Dashboards",
             "IsModule": true,
             "Children": [
+                {
+                    "URL": "/Telecom/TelecomHub",
+                    "Name": "مركز التليكوم",
+                    "IsModule": false
+                },
                 {
                     "URL": "/Dashboards/DefaultDashboard",
                     "Name": "Default",
@@ -190,6 +196,23 @@ public static class NavigationTreeStructure
                 {
                     "URL": "/PaymentReceiveReports/PaymentReceiveReportList",
                     "Name": "Payment Receive Report",
+                    "IsModule": false
+                }
+            ]
+        },
+        {
+            "URL": "#",
+            "Name": "الاتصالات",
+            "IsModule": true,
+            "Children": [
+                {
+                    "URL": "/Telecom/TelecomHub",
+                    "Name": "مركز التليكوم",
+                    "IsModule": false
+                },
+                {
+                    "URL": "/ProgramManagers/ProgramManagerList",
+                    "Name": "تذاكر الشبكة (Kanban)",
                     "IsModule": false
                 }
             ]
@@ -532,6 +555,58 @@ public static class NavigationTreeStructure
         }
     }
 
+    /// <summary>True when the user has only Syriatel telecom roles (no CRM navigation roles like Customers as catalog role).</summary>
+    public static bool IsStrictTelecomWorkspaceUser(IReadOnlyList<string> roleNames)
+    {
+        if (roleNames == null || roleNames.Count == 0)
+        {
+            return false;
+        }
 
+        foreach (var r in roleNames)
+        {
+            if (!TelecomRoles.All.Contains(r, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Restricts the flat tree to telecom-relevant areas for strict telecom users.</summary>
+    public static List<MenuNavigationTreeNodeDto> ApplyStrictTelecomMenuFilter(
+        IReadOnlyList<string> roleNames,
+        List<MenuNavigationTreeNodeDto> nodes)
+    {
+        if (!IsStrictTelecomWorkspaceUser(roleNames) || nodes.Count == 0)
+        {
+            return nodes;
+        }
+
+        static bool LeafAllowed(string? url)
+        {
+            if (string.IsNullOrEmpty(url) || url == "#")
+            {
+                return false;
+            }
+
+            var seg = GetFirstSegmentFromUrlPath(url);
+            return seg is "Telecom" or "Customers" or "ProgramManagers" or "Dashboards";
+        }
+
+        var keep = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var leaf in nodes.Where(n => !n.HasChild && n.NavURL != null && LeafAllowed(n.NavURL)))
+        {
+            string? cursor = leaf.Id;
+            while (!string.IsNullOrEmpty(cursor))
+            {
+                keep.Add(cursor);
+                cursor = nodes.FirstOrDefault(n => n.Id == cursor)?.Pid;
+            }
+        }
+
+        return nodes.Where(n => keep.Contains(n.Id)).ToList();
+    }
 }
 

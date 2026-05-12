@@ -45,9 +45,29 @@ public class UserAdminSeeder
                 {
                     await _userManager.AddToRoleAsync(applicationUser, role);
                 }
-
             }
+        }
+    }
 
+    /// <summary>
+    /// Ensures the default admin user receives every role returned by <see cref="RoleHelper.GetAdminRoles"/> (idempotent).
+    /// </summary>
+    public async Task AssignAllCatalogRolesToDefaultAdminAsync()
+    {
+        var adminEmail = _identitySettings.DefaultAdmin.Email;
+        var applicationUser = await _userManager.FindByEmailAsync(adminEmail);
+        if (applicationUser == null)
+        {
+            return;
+        }
+
+        var roles = RoleHelper.GetAdminRoles();
+        foreach (var role in roles)
+        {
+            if (!await _userManager.IsInRoleAsync(applicationUser, role))
+            {
+                await _userManager.AddToRoleAsync(applicationUser, role);
+            }
         }
     }
 }

@@ -68,5 +68,10 @@ public interface IEntityDbSet
     public DbSet<Bill> Bill { get; set; }
     public DbSet<DebitNote> DebitNote { get; set; }
     public DbSet<PaymentDisburse> PaymentDisburse { get; set; }
+    public DbSet<SubscriberProfile> SubscriberProfile { get; set; }
+    public DbSet<MsisdnAsset> MsisdnAsset { get; set; }
+    public DbSet<TelecomSubscription> TelecomSubscription { get; set; }
+    public DbSet<TelecomOperationRequest> TelecomOperationRequest { get; set; }
+    public DbSet<BillingIntegrationLog> BillingIntegrationLog { get; set; }
 }
 

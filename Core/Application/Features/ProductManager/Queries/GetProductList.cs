@@ -19,6 +19,7 @@ public record GetProductListDto
     public string? UnitMeasureName { get; init; }
     public string? ProductGroupId { get; init; }
     public string? ProductGroupName { get; init; }
+    public string? ServiceCode { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
 }
 
@@ -34,8 +35,11 @@ public class GetProductListProfile : Profile
             .ForMember(
                 dest => dest.ProductGroupName,
                 opt => opt.MapFrom(src => src.ProductGroup != null ? src.ProductGroup.Name : string.Empty)
+            )
+            .ForMember(
+                dest => dest.ServiceCode,
+                opt => opt.MapFrom(src => src.ServiceCode ?? string.Empty)
             );
-
     }
 }
 

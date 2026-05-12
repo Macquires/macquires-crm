@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — regional & channel teams for Syria Telecom demo.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,16 +22,16 @@ public class SalesTeamSeeder
     {
         var salesTeams = new List<SalesTeam>
         {
-            new SalesTeam { Name = "The Trailblazers" },
-            new SalesTeam { Name = "Revenue Rockets" },
-            new SalesTeam { Name = "Deal Makers" },
-            new SalesTeam { Name = "Sales Ninjas" },
-            new SalesTeam { Name = "Profit Pioneers" },
-            new SalesTeam { Name = "Closing Crew" },
-            new SalesTeam { Name = "Growth Gurus" },
-            new SalesTeam { Name = "The Persuaders" },
-            new SalesTeam { Name = "Market Mavens" },
-            new SalesTeam { Name = "Sales Savants" }
+            new SalesTeam { Name = "فرع دمشق — مراكز الخدمة" },
+            new SalesTeam { Name = "فرع حلب — المعارض والتجزئة" },
+            new SalesTeam { Name = "فرع حمص والوسط" },
+            new SalesTeam { Name = "فرع الساحل — اللاذقية وطرطوس" },
+            new SalesTeam { Name = "قناة الأعمال — B2B" },
+            new SalesTeam { Name = "كول سنتر — مبيعات ومتابعة" },
+            new SalesTeam { Name = "فرع الجنوب — درعا والسويداء" },
+            new SalesTeam { Name = "فرع الشرقي — دير الزور والحسكة" },
+            new SalesTeam { Name = "فرع الساحلي — طرطوس" },
+            new SalesTeam { Name = "فرع العاصمة — تجزئة فاخرة" }
         };
 
         foreach (var salesTeam in salesTeams)

@@ -747,6 +747,20 @@
             };
         };
 
+        const resolveTelecomCustomerGridAccess = () => {
+            const roles = StorageManager.getUserRoles() || [];
+            const telecomAll = new Set(['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement']);
+            const isStrictTelecom = roles.length > 0 && roles.every((r) => telecomAll.has(r));
+            const canMutate =
+                !isStrictTelecom ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const showFullColumns =
+                !isStrictTelecom || roles.some((r) => ['TelecomAdmin', 'TelecomBackOffice'].includes(r));
+            return { isStrictTelecom, canMutate, showFullColumns };
+        };
+
+        const gridAccess = resolveTelecomCustomerGridAccess();
+
         const mainGrid = {
             obj: null,
             create: async (dataSource) => {
@@ -756,8 +770,8 @@
                     allowFiltering: true,
                     allowSorting: true,
                     allowSelection: true,
-                    allowGrouping: true,
-                    groupSettings: { columns: ['customerCategoryName'] },
+                    allowGrouping: gridAccess.showFullColumns,
+                    groupSettings: { columns: gridAccess.showFullColumns ? ['customerCategoryName'] : [] },
                     allowTextWrap: true,
                     allowResizing: true,
                     allowPaging: true,
@@ -776,29 +790,44 @@
                         },
                         { field: 'number', headerText: 'Number', width: 150, minWidth: 150 },
                         { field: 'name', headerText: 'Name', width: 200, minWidth: 200 },
-                        { field: 'customerGroupName', headerText: 'Group', width: 200, minWidth: 200 },
-                        { field: 'customerCategoryName', headerText: 'Category', width: 200, minWidth: 200 },
-                        { field: 'street', headerText: 'Street', width: 200, minWidth: 200 },
+                        { field: 'primaryMsisdn', headerText: 'MSISDN', width: 140, minWidth: 120 },
+                        { field: 'subscriptionTypeName', headerText: 'نوع الخط', width: 110, minWidth: 100 },
                         { field: 'phoneNumber', headerText: 'Phone', width: 200, minWidth: 200 },
-                        { field: 'emailAddress', headerText: 'Email', width: 200, minWidth: 200 },
+                        ...(gridAccess.showFullColumns
+                            ? [
+                                { field: 'customerGroupName', headerText: 'Group', width: 200, minWidth: 200 },
+                                { field: 'customerCategoryName', headerText: 'Category', width: 200, minWidth: 200 },
+                                { field: 'street', headerText: 'Street', width: 200, minWidth: 200 },
+                                { field: 'emailAddress', headerText: 'Email', width: 200, minWidth: 200 },
+                            ]
+                            : []),
                         { field: 'createdAtUtc', headerText: 'Created At UTC', width: 150, format: 'yyyy-MM-dd HH:mm' }
                     ],
-                    toolbar: [
-                        'ExcelExport', 'Search',
-                        { type: 'Separator' },
-                        { text: 'Add', tooltipText: 'Add', prefixIcon: 'e-add', id: 'AddCustom' },
-                        { text: 'Edit', tooltipText: 'Edit', prefixIcon: 'e-edit', id: 'EditCustom' },
-                        { text: 'Delete', tooltipText: 'Delete', prefixIcon: 'e-delete', id: 'DeleteCustom' },
-                        { type: 'Separator' },
-                        { text: 'Manage Contact', tooltipText: 'Manage Contact', id: 'ManageContactCustom' },
-                    ],
+                    toolbar: gridAccess.canMutate
+                        ? [
+                            'ExcelExport', 'Search',
+                            { type: 'Separator' },
+                            { text: 'Add', tooltipText: 'Add', prefixIcon: 'e-add', id: 'AddCustom' },
+                            { text: 'Edit', tooltipText: 'Edit', prefixIcon: 'e-edit', id: 'EditCustom' },
+                            { text: 'Delete', tooltipText: 'Delete', prefixIcon: 'e-delete', id: 'DeleteCustom' },
+                            { type: 'Separator' },
+                            { text: 'Manage Contact', tooltipText: 'Manage Contact', id: 'ManageContactCustom' },
+                        ]
+                        : ['ExcelExport', 'Search'],
                     beforeDataBound: () => { },
                     dataBound: function () {
-                        mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], false);
-                        mainGrid.obj.autoFitColumns(['name', 'customerGroupName', 'customerCategoryName', 'street', 'phoneNumber', 'emailAddress', 'createdAtUtc']);
+                        if (gridAccess.canMutate && mainGrid.obj.toolbarModule) {
+                            mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], false);
+                        }
+                        const fit = ['name', 'primaryMsisdn', 'subscriptionTypeName', 'phoneNumber', 'createdAtUtc'];
+                        if (gridAccess.showFullColumns) {
+                            fit.push('customerGroupName', 'customerCategoryName', 'street', 'emailAddress');
+                        }
+                        mainGrid.obj.autoFitColumns(fit);
                     },
                     excelExportComplete: () => { },
                     rowSelected: () => {
+                        if (!gridAccess.canMutate || !mainGrid.obj.toolbarModule) return;
                         if (mainGrid.obj.getSelectedRecords().length == 1) {
                             mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], true);
                         } else {
@@ -806,6 +835,7 @@
                         }
                     },
                     rowDeselected: () => {
+                        if (!gridAccess.canMutate || !mainGrid.obj.toolbarModule) return;
                         if (mainGrid.obj.getSelectedRecords().length == 1) {
                             mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], true);
                         } else {
@@ -922,7 +952,14 @@
                     allowResizing: true,
                     allowPaging: true,
                     allowExcelExport: true,
-                    editSettings: { allowEditing: true, allowAdding: true, allowDeleting: true, showDeleteConfirmDialog: true, mode: 'Normal', allowEditOnDblClick: true },
+                    editSettings: {
+                        allowEditing: gridAccess.canMutate,
+                        allowAdding: gridAccess.canMutate,
+                        allowDeleting: gridAccess.canMutate,
+                        showDeleteConfirmDialog: true,
+                        mode: 'Normal',
+                        allowEditOnDblClick: gridAccess.canMutate,
+                    },
                     filterSettings: { type: 'CheckBox' },
                     sortSettings: { columns: [{ field: 'createdAtUtc', direction: 'Descending' }] },
                     pageSettings: { currentPage: 1, pageSize: 50, pageSizes: ["10", "20", "50", "100", "200", "All"] },
@@ -942,16 +979,19 @@
                         { field: 'description', headerText: 'Description', width: 400, minWidth: 400 },
                         { field: 'createdAtUtc', headerText: 'Created At UTC', width: 150, format: 'yyyy-MM-dd HH:mm' }
                     ],
-                    toolbar: [
-                        'ExcelExport', 'Add', 'Edit', 'Delete', 'Update', 'Cancel', 'Search'
-                    ],
+                    toolbar: gridAccess.canMutate
+                        ? ['ExcelExport', 'Add', 'Edit', 'Delete', 'Update', 'Cancel', 'Search']
+                        : ['ExcelExport', 'Search'],
                     beforeDataBound: () => { },
                     dataBound: function () {
-                        secondaryGrid.obj.toolbarModule.enableItems(['Edit', 'Delete'], false);
+                        if (gridAccess.canMutate && secondaryGrid.obj.toolbarModule) {
+                            secondaryGrid.obj.toolbarModule.enableItems(['Edit', 'Delete'], false);
+                        }
                         secondaryGrid.obj.autoFitColumns(['name', 'jobTitle', 'phoneNumber', 'emailAddress', 'description', 'createdAtUtc']);
                     },
                     excelExportComplete: () => { },
                     rowSelected: () => {
+                        if (!gridAccess.canMutate || !secondaryGrid.obj.toolbarModule) return;
                         if (secondaryGrid.obj.getSelectedRecords().length == 1) {
                             secondaryGrid.obj.toolbarModule.enableItems(['Edit', 'Delete'], true);
                         } else {
@@ -959,6 +999,7 @@
                         }
                     },
                     rowDeselected: () => {
+                        if (!gridAccess.canMutate || !secondaryGrid.obj.toolbarModule) return;
                         if (secondaryGrid.obj.getSelectedRecords().length == 1) {
                             secondaryGrid.obj.toolbarModule.enableItems(['Edit', 'Delete'], true);
                         } else {

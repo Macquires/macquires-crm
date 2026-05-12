@@ -28,4 +28,5 @@ public class Customer : BaseEntity
     public string? CustomerCategoryId { get; set; }
     public CustomerCategory? CustomerCategory { get; set; }
     public ICollection<CustomerContact> CustomerContactList { get; set; } = new List<CustomerContact>();
+    public ICollection<SubscriberProfile> SubscriberProfiles { get; set; } = new List<SubscriberProfile>();
 }

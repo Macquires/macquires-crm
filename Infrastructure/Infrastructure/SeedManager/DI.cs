@@ -17,6 +17,7 @@ public static class DI
         services.AddScoped<UserAdminSeeder>();
         services.AddScoped<CompanySeeder>();
         services.AddScoped<SystemWarehouseSeeder>();
+        services.AddScoped<TelecomDemoIdentitySeeder>();
 
         return services;
     }
@@ -28,12 +29,13 @@ public static class DI
         var serviceProvider = scope.ServiceProvider;
 
         var context = serviceProvider.GetRequiredService<DataContext>();
+        var roleSeeder = serviceProvider.GetRequiredService<RoleSeeder>();
+        var userAdminSeeder = serviceProvider.GetRequiredService<UserAdminSeeder>();
+
         if (!context.Roles.Any()) //if empty, thats mean never been seeded before
         {
-            var roleSeeder = serviceProvider.GetRequiredService<RoleSeeder>();
             roleSeeder.GenerateDataAsync().Wait();
 
-            var userAdminSeeder = serviceProvider.GetRequiredService<UserAdminSeeder>();
             userAdminSeeder.GenerateDataAsync().Wait();
 
             var companySeeder = serviceProvider.GetRequiredService<CompanySeeder>();
@@ -41,8 +43,18 @@ public static class DI
 
             var systemWarehouseSeeder = serviceProvider.GetRequiredService<SystemWarehouseSeeder>();
             systemWarehouseSeeder.GenerateDataAsync().Wait();
-
         }
+        else
+        {
+            // Upgraded DB: pick up new navigation segments / telecom roles without wiping data
+            roleSeeder.GenerateDataAsync().Wait();
+        }
+
+        // Default admin keeps full catalog (including newly added telecom roles)
+        userAdminSeeder.AssignAllCatalogRolesToDefaultAdminAsync().Wait();
+
+        var telecomDemoIdentitySeeder = serviceProvider.GetRequiredService<TelecomDemoIdentitySeeder>();
+        telecomDemoIdentitySeeder.GenerateDataAsync().Wait();
 
         return host;
     }
@@ -102,6 +114,7 @@ public static class DI
         services.AddScoped<BillSeeder>();
         services.AddScoped<DebitNoteSeeder>();
         services.AddScoped<PaymentDisburseSeeder>();
+        services.AddScoped<TelecomSyriatelSeeder>();
         return services;
     }
     public static IHost SeedDemoData(this IHost host)
@@ -260,6 +273,13 @@ public static class DI
             paymentDisburseSeeder.GenerateDataAsync().Wait();
 
         }
+
+        if (!context.SubscriberProfile.Any())
+        {
+            var telecomSyriatelSeeder = serviceProvider.GetRequiredService<TelecomSyriatelSeeder>();
+            telecomSyriatelSeeder.GenerateDataAsync().Wait();
+        }
+
         return host;
     }
 }

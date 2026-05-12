@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — field visits & showroom slots across Syria (fictional addresses).
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -39,20 +40,19 @@ public class BookingSeeder
             .Select(x => x.Id)
             .ToListAsync();
 
-        var dummyLocations = new List<string>
+        var locations = new List<string>
         {
-            "123 Main St, New York",
-            "456 Elm St, Los Angeles",
-            "789 Pine St, Chicago",
-            "101 Maple St, Houston",
-            "202 Oak St, Phoenix",
-            "303 Birch St, Philadelphia",
-            "404 Cedar St, San Antonio",
-            "505 Walnut St, San Diego",
-            "606 Aspen St, Dallas",
-            "707 Spruce St, San Jose"
+            "دمشق — المزة — زبون أفراد",
+            "دمشق — الميدان — تركيب راوتر",
+            "ريف دمشق — ضاحية قدسيا — قياس تغطية",
+            "حلب — الجميلية — زيارة B2B",
+            "حمص — الوعر — صيانة خط",
+            "اللاذقية — المشروع السابع — تدريب موظفين",
+            "طرطوس — الكورنيش — جولة مبيعات",
+            "حماة — طريق حلب — اجتماع تشغيلي",
+            "درعا — الساحة — دعم فني",
+            "دير الزور — الحميدية — متابعة شبكة"
         };
-
 
         for (DateTime date = dateStart; date < dateEnd; date = date.AddMonths(1))
         {
@@ -72,7 +72,7 @@ public class BookingSeeder
                     EndTime = startTime.AddHours(random.Next(2, 12)),
                     BookingResourceId = GetRandomValue(bookingResources, random),
                     Status = (BookingStatus)random.Next(0, bookingStatusLength),
-                    Location = GetRandomValue(dummyLocations, random)
+                    Location = GetRandomValue(locations, random)
                 };
 
                 await _bookingRepository.CreateAsync(booking);

@@ -432,12 +432,13 @@
                         {
                             field: 'id', isPrimaryKey: true, headerText: 'Id', visible: false
                         },
-                        { field: 'number', headerText: 'Number', width: 200, minWidth: 200 },
-                        { field: 'name', headerText: 'Name', width: 200, minWidth: 200 },
-                        { field: 'productGroupName', headerText: 'Product Group', width: 150, minWidth: 150 },
-                        { field: 'unitPrice', headerText: 'Unit Price', width: 150, minWidth: 150, format: 'N2' },
-                        { field: 'unitMeasureName', headerText: 'Unit Measure', width: 150, minWidth: 150 },
-                        { field: 'physical', headerText: 'Physical Product', width: 200, minWidth: 200, textAlign: 'Center', type: 'boolean', displayAsCheckBox: true },
+                        { field: 'number', headerText: 'الرقم', width: 200, minWidth: 200 },
+                        { field: 'name', headerText: 'اسم المنتج', width: 200, minWidth: 200 },
+                        { field: 'serviceCode', headerText: 'رمز الخدمة (CBS)', width: 160, minWidth: 140 },
+                        { field: 'productGroupName', headerText: 'المجموعة', width: 150, minWidth: 150 },
+                        { field: 'unitPrice', headerText: 'السعر', width: 150, minWidth: 150, format: 'N2' },
+                        { field: 'unitMeasureName', headerText: 'الوحدة', width: 150, minWidth: 150 },
+                        { field: 'physical', headerText: 'مخزون مادي', width: 160, minWidth: 160, textAlign: 'Center', type: 'boolean', displayAsCheckBox: true },
                         { field: 'createdAtUtc', headerText: 'Created At UTC', width: 150, format: 'yyyy-MM-dd HH:mm' }
                     ],
                     toolbar: [
@@ -451,7 +452,7 @@
                     beforeDataBound: () => { },
                     dataBound: function () {
                         mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom'], false);
-                        mainGrid.obj.autoFitColumns(['number', 'name', 'productGroupName', 'unitPrice', 'unitMeasureName', 'physical', 'createdAtUtc']);
+                        mainGrid.obj.autoFitColumns(['number', 'name', 'serviceCode', 'productGroupName', 'unitPrice', 'unitMeasureName', 'physical', 'createdAtUtc']);
                     },
                     excelExportComplete: () => { },
                     rowSelected: () => {

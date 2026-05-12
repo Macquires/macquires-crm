@@ -46,8 +46,8 @@ public class ExpenseSeeder
                 var expense = new Expense
                 {
                     Number = _numberSequenceService.GenerateNumber(nameof(Expense), "", "EXP"),
-                    Title = $"Expense for {expenseDate:MMMM yyyy}",
-                    Description = $"Description for expense on {expenseDate:MMMM yyyy}",
+                    Title = $"مصروف حملة — سوريا تيليكوم — {expenseDate:MMMM yyyy}",
+                    Description = $"مصروف ديمو (إعلانات، مطبوعات، فعاليات معارض) — {expenseDate:yyyy/MM}.",
                     ExpenseDate = expenseDate,
                     Status = status,
                     Amount = 1000 * Math.Ceiling((random.NextDouble() * 89) + 1),

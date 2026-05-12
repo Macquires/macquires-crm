@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — fictional Syria Telecom supply-chain partners (not real companies).
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -32,37 +33,40 @@ public class VendorSeeder
     {
         var groups = (await _groupRepository.GetQuery().ToListAsync()).Select(x => x.Id).ToArray();
         var categories = (await _categoryRepository.GetQuery().ToListAsync()).Select(x => x.Id).ToArray();
-        var cities = new string[] { "New York", "Los Angeles", "San Francisco", "Chicago" };
-        var streets = new string[] { "Main Street", "Broadway", "Elm Street", "Maple Avenue" };
-        var states = new string[] { "NY", "CA", "IL", "TX" };
-        var zipCodes = new string[] { "10001", "90001", "60601", "73301" };
-        var phoneNumbers = new string[] { "123-456-7890", "987-654-3210", "555-123-4567", "111-222-3333" };
-        var emails = new string[] { "vendor1@example.com", "vendor2@example.com", "vendor3@example.com", "vendor4@example.com" };
+        var cityRows = new (string City, string Street, string State)[]
+        {
+            ("دمشق", "شارع بغداد — مجمع التجار", "دمشق"),
+            ("دمشق", "المزة — طريق الجامعة", "دمشق"),
+            ("حلب", "الجميلية — سوق الإلكترونيات", "حلب"),
+            ("حمص", "الوعر — شارع الصناعة", "حمص"),
+            ("اللاذقية", "الغنيمة — المنطقة الحرة", "اللاذقية"),
+            ("حماة", "طريق حلب", "حماة"),
+            ("طرطوس", "الكورنيش البحري", "طرطوس"),
+            ("درعا", "الساحة — مجمع الأعمال", "درعا")
+        };
 
         var random = new Random();
 
         var vendors = new List<Vendor>
         {
-            new Vendor { Name = "Quantum Industries" },
-            new Vendor { Name = "Apex Ventures" },
-            new Vendor { Name = "Horizon Enterprises" },
-            new Vendor { Name = "Nova Innovations" },
-            new Vendor { Name = "Phoenix Holdings" },
-            new Vendor { Name = "Titan Group" },
-            new Vendor { Name = "Zenith Corporation" },
-            new Vendor { Name = "Prime Solutions" },
-            new Vendor { Name = "Cascade Enterprises" },
-            new Vendor { Name = "Aurora Holdings" },
-            new Vendor { Name = "Vanguard Industries" },
-            new Vendor { Name = "Empyrean Ventures" },
-            new Vendor { Name = "Genesis Corporation" },
-            new Vendor { Name = "Equinox Enterprises" },
-            new Vendor { Name = "Summit Holdings" },
-            new Vendor { Name = "Sovereign Solutions" },
-            new Vendor { Name = "Spectrum Corporation" },
-            new Vendor { Name = "Elysium Enterprises" },
-            new Vendor { Name = "Infinity Holdings" },
-            new Vendor { Name = "Momentum Ventures" }
+            new Vendor { Name = "هواوي — مكتب تمثيل سوريا (ديمو)" },
+            new Vendor { Name = "ZTE الشرق الأوسط — فرع دمشق" },
+            new Vendor { Name = "إريكسون — شريك تقني (ديمو)" },
+            new Vendor { Name = "شركة الشام للوجستيات والتوزيع" },
+            new Vendor { Name = "مؤسسة البركة لتوريد الأبراج والهياكل" },
+            new Vendor { Name = "شركة الفجر لأنظمة الطاقة الاحتياطية" },
+            new Vendor { Name = "مجموعة النور لمعدات الـ FTTH" },
+            new Vendor { Name = "شركة بردى لخدمات المواقع الميدانية" },
+            new Vendor { Name = "مؤسسة قاسيون لتركيبات الشبكة الداخلية" },
+            new Vendor { Name = "شركة يافا لحلول الدفع الإلكتروني" },
+            new Vendor { Name = "مكتب حماة للاستيراد والتخليص" },
+            new Vendor { Name = "شركة البادية لنقل الشحنات السريعة" },
+            new Vendor { Name = "مؤسسة غوطة شرقية للمقاولات الخفيفة" },
+            new Vendor { Name = "شركة كاسل لكابلات النحاس والألياف" },
+            new Vendor { Name = "مجموعة الفرات لتجهيزات غرف السيرفر" },
+            new Vendor { Name = "شركة الساحل لصيانة أبراج الجيل الرابع" },
+            new Vendor { Name = "مؤسسة تدمر للمعدات الصناعية" },
+            new Vendor { Name = "شركة الخابور لخدمات الـ B2B" }
         };
 
         foreach (var vendor in vendors)
@@ -70,12 +74,16 @@ public class VendorSeeder
             vendor.Number = _numberSequenceService.GenerateNumber(nameof(Vendor), "", "VND");
             vendor.VendorGroupId = GetRandomValue(groups, random);
             vendor.VendorCategoryId = GetRandomValue(categories, random);
-            vendor.City = GetRandomString(cities, random);
-            vendor.Street = GetRandomString(streets, random);
-            vendor.State = GetRandomString(states, random);
-            vendor.ZipCode = GetRandomString(zipCodes, random);
-            vendor.PhoneNumber = GetRandomString(phoneNumbers, random);
-            vendor.EmailAddress = GetRandomString(emails, random);
+
+            var row = cityRows[random.Next(cityRows.Length)];
+            vendor.City = row.City;
+            vendor.Street = row.Street;
+            vendor.State = row.State;
+            vendor.ZipCode = $"{1000 + random.Next(8000)}";
+
+            var prefix = random.Next(2) == 0 ? "093" : "099";
+            vendor.PhoneNumber = $"{prefix}{random.Next(1000000, 9999999)}";
+            vendor.EmailAddress = $"vendor{random.Next(100, 999)}@syriatelecom-demo.local";
 
             await _vendorRepository.CreateAsync(vendor);
         }
@@ -84,11 +92,6 @@ public class VendorSeeder
     }
 
     private static T GetRandomValue<T>(T[] array, Random random)
-    {
-        return array[random.Next(array.Length)];
-    }
-
-    private static string GetRandomString(string[] array, Random random)
     {
         return array[random.Next(array.Length)];
     }

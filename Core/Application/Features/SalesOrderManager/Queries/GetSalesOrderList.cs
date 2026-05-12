@@ -18,6 +18,8 @@ public record GetSalesOrderListDto
     public string? Description { get; init; }
     public string? CustomerId { get; init; }
     public string? CustomerName { get; init; }
+    /// <summary>Retail MSISDN (from customer phone in demo).</summary>
+    public string? CustomerMsisdn { get; init; }
     public string? TaxId { get; init; }
     public string? TaxName { get; init; }
     public double? BeforeTaxAmount { get; init; }
@@ -34,6 +36,10 @@ public class GetSalesOrderListProfile : Profile
             .ForMember(
                 dest => dest.CustomerName,
                 opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Name : string.Empty)
+            )
+            .ForMember(
+                dest => dest.CustomerMsisdn,
+                opt => opt.MapFrom(src => src.Customer != null ? src.Customer.PhoneNumber : string.Empty)
             )
             .ForMember(
                 dest => dest.TaxName,

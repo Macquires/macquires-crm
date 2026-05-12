@@ -1,8 +1,10 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — lead activities for Syria Telecom pipeline demo.
+using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+
 namespace Infrastructure.SeedManager.Demos;
 
 public class LeadActivitySeeder
@@ -34,7 +36,7 @@ public class LeadActivitySeeder
 
         for (DateTime date = dateStart; date <= dateFinish; date = date.AddMonths(1))
         {
-            DateTime[] activityDates = GetRandomDays(date.Year, date.Month, 10);
+            DateTime[] activityDates = GetRandomDays(date.Year, date.Month, 10, random);
 
             foreach (var activityDate in activityDates)
             {
@@ -46,12 +48,12 @@ public class LeadActivitySeeder
                 {
                     LeadId = leadId,
                     Number = _numberSequenceService.GenerateNumber(nameof(LeadActivity), "", "LA"),
-                    Summary = $"Activity on {fromDate:MMMM d, yyyy}",
-                    Description = $"Description for activity on {fromDate:MMMM d, yyyy}",
+                    Summary = $"نشاط متابعة — سوريا تيليكوم — {fromDate:yyyy-MM-dd}",
+                    Description = $"اتصال / زيارة / اجتماع عرض باقات وخطوط ضمن مسار المبيعات — {fromDate:MMMM dd}.",
                     FromDate = fromDate,
                     ToDate = toDate,
                     Type = (LeadActivityType)random.Next(0, Enum.GetNames(typeof(LeadActivityType)).Length),
-                    AttachmentName = random.Next(1, 100) % 2 == 0 ? $"file_{random.Next(1, 100)}.pdf" : null
+                    AttachmentName = random.Next(1, 100) % 2 == 0 ? $"عرض_سعر_{random.Next(1, 100)}.pdf" : null
                 };
 
                 await _leadActivityRepository.CreateAsync(leadActivity);
@@ -66,13 +68,12 @@ public class LeadActivitySeeder
         return list[random.Next(list.Count)];
     }
 
-    private static DateTime[] GetRandomDays(int year, int month, int count)
+    private static DateTime[] GetRandomDays(int year, int month, int count, Random random)
     {
-        var random = new Random();
         var daysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(year, month)).ToList();
         var selectedDays = new List<int>();
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < count && daysInMonth.Count > 0; i++)
         {
             int day = daysInMonth[random.Next(daysInMonth.Count)];
             selectedDays.Add(day);

@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Data;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using static Domain.Common.Constants;
@@ -88,9 +89,11 @@ public class SecurityService : ISecurityService
             throw new Exception("Invalid login credentials. NotSucceeded.");
         }
 
-        var accessToken = _tokenService.GenerateToken(user, null);
-        var refreshToken = _tokenService.GenerateRefreshToken();
         var roles = await _userManager.GetRolesAsync(user);
+        var rolesList = roles.ToList();
+        var roleClaims = rolesList.ConvertAll(r => new Claim(ClaimTypes.Role, r));
+        var accessToken = _tokenService.GenerateToken(user, roleClaims);
+        var refreshToken = _tokenService.GenerateRefreshToken();
 
         var tokens = await _context.Token.Where(x => x.UserId == user.Id).ToListAsync(cancellationToken);
         foreach (var item in tokens)
@@ -109,6 +112,9 @@ public class SecurityService : ISecurityService
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        var menuNodes = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode();
+        menuNodes = NavigationTreeStructure.ApplyStrictTelecomMenuFilter(rolesList, menuNodes);
+
         return new LoginResultDto
         {
             UserId = user.Id,
@@ -118,8 +124,8 @@ public class SecurityService : ISecurityService
             CompanyName = user.CompanyName,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            MenuNavigation = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode(),
-            Roles = roles.ToList(),
+            MenuNavigation = menuNodes,
+            Roles = rolesList,
             Avatar = user.ProfilePictureName
         };
     }
@@ -310,9 +316,11 @@ public class SecurityService : ISecurityService
         }
         _context.Token.Remove(registeredToken!);
 
-        var newAccessToken = _tokenService.GenerateToken(user, null);
-        var newRefreshToken = _tokenService.GenerateRefreshToken();
         var roles = await _userManager.GetRolesAsync(user);
+        var rolesList = roles.ToList();
+        var roleClaims = rolesList.ConvertAll(r => new Claim(ClaimTypes.Role, r));
+        var newAccessToken = _tokenService.GenerateToken(user, roleClaims);
+        var newRefreshToken = _tokenService.GenerateRefreshToken();
 
         var token = new Token();
         token.UserId = user.Id;
@@ -325,6 +333,9 @@ public class SecurityService : ISecurityService
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        var menuNodes = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode();
+        menuNodes = NavigationTreeStructure.ApplyStrictTelecomMenuFilter(rolesList, menuNodes);
+
         return new RefreshTokenResultDto
         {
             UserId = user.Id,
@@ -334,8 +345,8 @@ public class SecurityService : ISecurityService
             CompanyName = user.CompanyName,
             AccessToken = newAccessToken,
             RefreshToken = newRefreshToken,
-            MenuNavigation = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode(),
-            Roles = roles.ToList(),
+            MenuNavigation = menuNodes,
+            Roles = rolesList,
             Avatar = user.ProfilePictureName
         };
     }

@@ -21,10 +21,10 @@ public class TaxSeeder
     {
         var taxes = new List<Tax>
         {
-            new Tax { Name = "NOTAX", Percentage = 0.0 },
-            new Tax { Name = "T10", Percentage = 10.0 },
-            new Tax { Name = "T15", Percentage = 15.0 },
-            new Tax { Name = "T20", Percentage = 20.0 }
+            new Tax { Name = "معفى — 0%", Percentage = 0.0 },
+            new Tax { Name = "ضريبة 10%", Percentage = 10.0 },
+            new Tax { Name = "ضريبة 15%", Percentage = 15.0 },
+            new Tax { Name = "ضريبة 20%", Percentage = 20.0 }
         };
 
         foreach (var tax in taxes)
@@ -35,4 +35,3 @@ public class TaxSeeder
         await _unitOfWork.SaveAsync();
     }
 }
-

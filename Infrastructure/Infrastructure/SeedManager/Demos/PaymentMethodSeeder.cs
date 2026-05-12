@@ -21,11 +21,11 @@ public class PaymentMethodSeeder
     {
         var paymentMethods = new List<PaymentMethod>
         {
-            new PaymentMethod { Name = "Credit Card" },
-            new PaymentMethod { Name = "Debit Card" },
-            new PaymentMethod { Name = "Bank Transfer" },
-            new PaymentMethod { Name = "PayPal" },
-            new PaymentMethod { Name = "Cash" }
+            new PaymentMethod { Name = "بطاقة بنكية — POS" },
+            new PaymentMethod { Name = "حوالة بنكية — ليرة سورية" },
+            new PaymentMethod { Name = "كاش — صندوق المعرض" },
+            new PaymentMethod { Name = "محفظة إلكترونية — ديمو" },
+            new PaymentMethod { Name = "شيك بنكي" }
         };
 
         foreach (var paymentMethod in paymentMethods)

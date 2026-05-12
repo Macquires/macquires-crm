@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — keep Name "unit" for ProductSeeder lookup; Arabic descriptions for UI.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,11 +22,11 @@ public class UnitMeasureSeeder
     {
         var unitMeasures = new List<UnitMeasure>
         {
-            new UnitMeasure { Name = "m" },
-            new UnitMeasure { Name = "kg" },
-            new UnitMeasure { Name = "hour" },
-            new UnitMeasure { Name = "unit" },
-            new UnitMeasure { Name = "pcs" }
+            new UnitMeasure { Name = "m", Description = "متر — أعمال مدنية / كابلات" },
+            new UnitMeasure { Name = "kg", Description = "كيلوغرام — توريدات" },
+            new UnitMeasure { Name = "hour", Description = "ساعة — خدمات ميدانية" },
+            new UnitMeasure { Name = "unit", Description = "وحدة — خطوط وباقات وأجهزة (ديمو)" },
+            new UnitMeasure { Name = "pcs", Description = "قطعة — ملحقات" }
         };
 
         foreach (var unitMeasure in unitMeasures)

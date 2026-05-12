@@ -58,8 +58,8 @@ public class BudgetSeeder
                     var budget = new Budget
                     {
                         Number = _numberSequenceService.GenerateNumber(nameof(Budget), "", "BUD"),
-                        Title = $"Budget for {transDate:MMMM yyyy}",
-                        Description = $"Description for budget on {transDate:MMMM yyyy}",
+                        Title = $"ميزانية حملة سوريا تيليكوم — {transDate:MMMM yyyy}",
+                        Description = $"اعتماد ميزانية ديمو لحملات البيانات والعروض — شهر {transDate:yyyy/MM}.",
                         BudgetDate = transDate,
                         Status = status,
                         Amount = 10000 * Math.Ceiling((random.NextDouble() * 89) + 1),

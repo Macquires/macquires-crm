@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — vendor types for telecom supply chain.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,11 +22,11 @@ public class VendorGroupSeeder
     {
         var vendorGroups = new List<VendorGroup>
         {
-            new VendorGroup { Name = "Manufacture" },
-            new VendorGroup { Name = "Supplier" },
-            new VendorGroup { Name = "Service Provider" },
-            new VendorGroup { Name = "Distributor" },
-            new VendorGroup { Name = "Freelancer" }
+            new VendorGroup { Name = "مصنّع أجهزة وشبكات" },
+            new VendorGroup { Name = "موزّع رئيسي" },
+            new VendorGroup { Name = "مزوّد خدمات ولوجستيات" },
+            new VendorGroup { Name = "مورّد قطع وملحقات" },
+            new VendorGroup { Name = "مقاول ميداني" }
         };
 
         foreach (var group in vendorGroups)

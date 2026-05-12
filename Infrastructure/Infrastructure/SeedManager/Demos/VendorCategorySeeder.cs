@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — vendor scale categories (telecom demo).
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,12 +22,11 @@ public class VendorCategorySeeder
     {
         var vendorCategories = new List<VendorCategory>
         {
-            new VendorCategory { Name = "Large" },
-            new VendorCategory { Name = "Medium" },
-            new VendorCategory { Name = "Small" },
-            new VendorCategory { Name = "Specialty" },
-            new VendorCategory { Name = "Local" },
-            new VendorCategory { Name = "Global" }
+            new VendorCategory { Name = "شريك استراتيجي" },
+            new VendorCategory { Name = "شريك إقليمي" },
+            new VendorCategory { Name = "شريك محلي" },
+            new VendorCategory { Name = "تخصصي — OEM" },
+            new VendorCategory { Name = "خدمات ميدانية" }
         };
 
         foreach (var category in vendorCategories)

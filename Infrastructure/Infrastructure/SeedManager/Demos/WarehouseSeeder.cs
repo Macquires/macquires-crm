@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — Syria Telecom regional service hubs (fictional addresses).
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos
@@ -21,10 +22,10 @@ namespace Infrastructure.SeedManager.Demos
         {
             var warehouses = new List<Warehouse>
             {
-                new Warehouse { Name = "New York" },
-                new Warehouse { Name = "San Francisco" },
-                new Warehouse { Name = "Chicago" },
-                new Warehouse { Name = "Los Angeles" }
+                new Warehouse { Name = "سوريا تيليكوم — مركز خدمة دمشق (الحجاز)" },
+                new Warehouse { Name = "سوريا تيليكوم — مركز خدمة حلب (العزيزية)" },
+                new Warehouse { Name = "سوريا تيليكوم — مركز خدمة اللاذقية (المشروع السابع)" },
+                new Warehouse { Name = "سوريا تيليكوم — مركز خدمة حمص (المحطة)" }
             };
 
             foreach (var warehouse in warehouses)

@@ -1,0 +1,416 @@
+@page
+@{
+    ViewData["Title"] = "مركز العمليات — سوريا تيليكوم";
+}
+
+<div id="app" v-cloak>
+    <div class="form-card" id="formcard" dir="rtl" lang="ar">
+        <div class="container-fluid py-3 px-3 px-lg-4 telecom-hub-root">
+
+            <div v-if="loadError" class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <span>{{ loadError }}</span>
+                <button type="button" class="btn btn-sm btn-outline-dark ms-auto" @@click="refreshAll">إعادة المحاولة</button>
+            </div>
+
+            <header class="telecom-hero card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-start">
+                        <div class="col-12 col-xl-7">
+                            <h1 class="h4 mb-2 fw-semibold">مركز التليكوم OSS/BSS</h1>
+                            <p class="text-muted mb-0 small lh-lg">
+                                أربع مسارات مربوطة بـ API الإنتاج: إنشاء <code>CreateTelecomOperation</code> ثم تسجيل الوثيقة <code>UploadTelecomOperationDocument</code> ثم تأكيد CBS من الجدول.
+                            </p>
+                        </div>
+                        <div class="col-12 col-xl-5">
+                            <label class="form-label small text-muted mb-1" for="telecomSearchInput">بحث موحّد</label>
+                            <div class="input-group input-group-lg telecom-search-group">
+                                <span class="input-group-text bg-white"><i class="fas fa-search text-muted" aria-hidden="true"></i></span>
+                                <input id="telecomSearchInput" type="search" class="form-control" v-model="searchTerm"
+                                       placeholder="MSISDN، اسم، أو رقم هوية…" autocomplete="off"
+                                       @@keyup.enter="runSearch" aria-describedby="telecomSearchHint" />
+                                <button class="btn btn-primary px-3" type="button" @@click="runSearch" :disabled="searchBusy">
+                                    <span v-if="searchBusy" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span v-else>بحث</span>
+                                </button>
+                            </div>
+                            <p id="telecomSearchHint" class="form-text small text-muted mb-0 mt-1">أدخل حرفين على الأقل ثم اضغط بحث.</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="mb-4" aria-label="مسارات التشغيل السريعة">
+                <div class="row g-3">
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-activate shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('activate')" aria-label="فتح معالج تفعيل خط جديد">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-sim-card"></i></span>
+                            <span class="fs-6 fw-semibold d-block">تفعيل</span>
+                            <small class="opacity-75">Activate</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-migrate shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('migrate')" aria-label="فتح معالج التحويل MGR">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-exchange-alt"></i></span>
+                            <span class="fs-6 fw-semibold d-block">تحويل</span>
+                            <small class="opacity-75">MGR</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-takeover shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('takeover')" aria-label="فتح معالج نقل الملكية">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-user-friends"></i></span>
+                            <span class="fs-6 fw-semibold d-block">نقل ملكية</span>
+                            <small class="opacity-75">Take Over</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-simswap shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('simswap')" aria-label="فتح معالج تبديل الشريحة">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-random"></i></span>
+                            <span class="fs-6 fw-semibold d-block">تبديل شريحة</span>
+                            <small class="opacity-75">SIM Swap</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-package shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('addpackage')" aria-label="فتح معالج إضافة باقة">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-box-open"></i></span>
+                            <span class="fs-6 fw-semibold d-block">إضافة باقة</span>
+                            <small class="opacity-75">Add package</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-support shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('support')" aria-label="فتح معالج الدعم الفني">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-headset"></i></span>
+                            <span class="fs-6 fw-semibold d-block">دعم</span>
+                            <small class="opacity-75">Support</small>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="wizard.visible" class="mb-4" aria-labelledby="wizardHeading">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                        <h2 id="wizardHeading" class="h6 mb-0 fw-semibold">المعالج — {{ wizardTitle }}</h2>
+                        <button type="button" class="btn-close" aria-label="إغلاق المعالج" @@click="closeWizard"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="telecom-stepper d-flex gap-2 mb-4 flex-wrap" role="list">
+                            <span v-for="s in 3" :key="s" class="telecom-step flex-grow-1 text-center small py-2 rounded"
+                                  :class="wizard.step >= s ? 'telecom-step-active' : 'telecom-step-muted'"
+                                  role="listitem">
+                                {{ s === 1 ? 'بيانات' : s === 2 ? 'تسجيل' : 'تم' }}
+                            </span>
+                        </div>
+
+                        <div v-show="wizard.step === 1" class="telecom-wizard-step">
+                            <p class="small text-muted mb-3">ابحث عن المشترك (اسم، هوية، أو رقم هاتف مرتبط بالملف) أو عن MSISDN. إذا اخترت رقماً غير مربوط بملف مشترك، لن يُقبل الطلب حتى تربطه أو تختار ملفاً.</p>
+                            <div class="row g-3">
+                                <div class="col-12 col-lg-6">
+                                    <label class="form-label fw-semibold small">المشترك الأساسي</label>
+                                    <div class="input-group input-group-sm mb-2">
+                                        <input type="search" class="form-control" v-model="wizard.primarySearchTerm" placeholder="بحث…" @@keyup.enter="runWizardPrimarySearch" />
+                                        <button class="btn btn-outline-primary" type="button" :disabled="wizard.primaryBusy" @@click="runWizardPrimarySearch">بحث</button>
+                                    </div>
+                                    <ul class="list-group list-group-flush border rounded small" style="max-height: 200px; overflow-y: auto;">
+                                        <li v-for="r in wizard.primaryResults" :key="'p'+r.id+r.resultType"
+                                            class="list-group-item list-group-item-action py-2"
+                                            :class="{ active: wizard.primaryRowKey === rowKey(r) }"
+                                            @@click="selectWizardPrimary(r)">
+                                            <span class="badge bg-secondary me-1">{{ r.resultType }}</span>
+                                            <strong>{{ r.title }}</strong>
+                                            <span class="text-muted d-block small">{{ r.subtitle }}</span>
+                                        </li>
+                                        <li v-if="!wizard.primaryBusy && wizard.primaryResults.length === 0" class="list-group-item text-muted small">لا نتائج — نفّذ بحثاً.</li>
+                                    </ul>
+                                    <div v-if="wizard.primaryLabel" class="alert alert-light border small py-2 mt-2 mb-0">
+                                        مختار: <strong>{{ wizard.primaryLabel }}</strong>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardPrimary">إلغاء</button>
+                                    </div>
+                                </div>
+                                <div v-if="needsSecondaryParty" class="col-12 col-lg-6">
+                                    <label class="form-label fw-semibold small">
+                                        طرف ثانٍ
+                                        <span v-if="secondaryRequired" class="text-danger">*</span>
+                                        <span v-else class="text-muted fw-normal">(اختياري)</span>
+                                    </label>
+                                    <div class="input-group input-group-sm mb-2">
+                                        <input type="search" class="form-control" v-model="wizard.secondarySearchTerm" placeholder="بحث عن مشترك ثانٍ…" @@keyup.enter="runWizardSecondarySearch" />
+                                        <button class="btn btn-outline-primary" type="button" :disabled="wizard.secondaryBusy" @@click="runWizardSecondarySearch">بحث</button>
+                                    </div>
+                                    <ul class="list-group list-group-flush border rounded small" style="max-height: 200px; overflow-y: auto;">
+                                        <li v-for="r in wizard.secondaryResults" :key="'s'+r.id+r.resultType"
+                                            class="list-group-item list-group-item-action py-2"
+                                            @@click="selectWizardSecondary(r)">
+                                            <span class="badge bg-secondary me-1">{{ r.resultType }}</span>
+                                            <strong>{{ r.title }}</strong>
+                                            <span class="text-muted d-block small">{{ r.subtitle }}</span>
+                                        </li>
+                                        <li v-if="!wizard.secondaryBusy && wizard.secondaryResults.length === 0" class="list-group-item text-muted small">لا نتائج.</li>
+                                    </ul>
+                                    <div v-if="wizard.secondaryLabel" class="alert alert-light border small py-2 mt-2 mb-0">
+                                        مختار: <strong>{{ wizard.secondaryLabel }}</strong>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardSecondary">إلغاء</button>
+                                    </div>
+                                </div>
+                                <div class="col-12" v-if="wizard.kind === 'migrate'">
+                                    <label class="form-label small" for="wizTargetOffer">الباقة / العرض الجديد (Migration)</label>
+                                    <input id="wizTargetOffer" type="text" class="form-control form-control-sm" v-model="wizard.targetOfferName"
+                                           placeholder="مثال: سيريتل ميكس، باقة الشباب…" maxlength="200" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small" for="wizNotes">ملاحظات التشغيل</label>
+                                    <textarea id="wizNotes" class="form-control form-control-sm" rows="2" v-model="wizard.notes" placeholder="رقم طلب، مرجع فرع، تفاصيل للفوترة…"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-show="wizard.step === 2" class="telecom-wizard-step">
+                            <p class="small text-muted mb-3">يتم إنشاء مسودة في قاعدة البيانات ثم تسجيل وثيقة الهوية (الواجهة الحالية تُعلِم النظام بأن الوثيقة مرفوعة — التخزين الثنائي يُضاف لاحقاً).</p>
+                            <div v-if="!wizard.createdOperationId" class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary" :disabled="wizardSubmitBusy" @@click="submitCreateOperation">
+                                    <span v-if="wizardSubmitBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                    إنشاء مسودة الطلب (CreateTelecomOperation)
+                                </button>
+                            </div>
+                            <div v-else class="border rounded p-3 bg-light">
+                                <p class="mb-2 small"><strong>رقم الطلب:</strong> {{ wizard.createdOperationNumber }}</p>
+                                <p class="mb-3 small text-muted">المعرف: {{ wizard.createdOperationId }}</p>
+                                <button v-if="!wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="wizardUploadBusy" @@click="submitMarkDocumentUploaded">
+                                    <span v-if="wizardUploadBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                    تسجيل رفع الوثيقة (UploadTelecomOperationDocument)
+                                </button>
+                                <p v-else class="mb-0 small text-success"><i class="fas fa-check-circle me-1"></i>تم تسجيل الوثيقة — يمكنك التأكيد عبر CBS من الجدول.</p>
+                            </div>
+                        </div>
+
+                        <div v-show="wizard.step === 3" class="telecom-wizard-step">
+                            <p class="mb-2">تم تسجيل العملية <strong>{{ wizard.createdOperationNumber }}</strong> في النظام.</p>
+                            <p class="small text-muted mb-3">استخدم زر «تأكيد CBS (أول مسودة جاهزة)» في جدول الطلبات بعد أن تصبح المسودة جاهزة للفوترة.</p>
+                            <button type="button" class="btn btn-primary" @@click="finishWizard">إغلاق وتحديث القائمة</button>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4 pt-2 border-top">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    :disabled="wizard.step === 1 || (wizard.step === 2 && wizard.createdOperationId)"
+                                    @@click="wizardStepPrev">السابق</button>
+                            <button v-if="wizard.step === 1" class="btn btn-primary" type="button" @@click="wizardStepNext">التالي: التسجيل</button>
+                            <button v-if="wizard.step === 2" class="btn btn-primary" type="button" :disabled="!canWizardGoToStep3" @@click="wizardStepNext">التالي: الخلاصة</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="row g-3 mb-4" aria-label="مؤشرات الأداء">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h6 text-muted mb-2">ARPU <span class="fw-normal small">(ديمو)</span></h3>
+                            <p class="telecom-kpi-value mb-0 fw-semibold text-primary">{{ formatMoney(kpis.arpuDemo) }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h6 text-muted mb-2">نسبة الانسحاب <span class="fw-normal small">(ديمو)</span></h3>
+                            <p class="telecom-kpi-value mb-0 fw-semibold text-warning">{{ kpis.churnPercentDemo }}%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h3 class="h6 text-muted mb-2">المرونة</h3>
+                            <p class="mb-0 small text-muted lh-lg">عند تعطل CBS المؤقت تُسجَّل المحاولات ثم يكتمل الإرسال بعد Polly — دون فقدان قرار التشغيل الداخلي.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="row g-3 mb-4">
+                <div class="col-lg-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">خريطة شبكة (Mock)</div>
+                        <div class="card-body">
+                            <div class="map-mock position-relative rounded border bg-light" style="height: 220px;" role="img" aria-label="توزيع وهمي للمدن">
+                                <span class="position-absolute badge bg-danger" style="top: 38%; inset-inline-start: 42%;">دمشق</span>
+                                <span class="position-absolute badge bg-warning text-dark" style="top: 22%; inset-inline-start: 18%;">حلب</span>
+                                <span class="position-absolute badge bg-info text-dark" style="top: 48%; inset-inline-start: 28%;">حمص</span>
+                                <span class="position-absolute badge bg-success" style="top: 30%; inset-inline-start: 8%;">اللاذقية</span>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0">نقاط عرض لشكاوى التغطية — ربط تذاكر Kanban من القائمة الجانبية.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">حرارة الفروع (إيراد ديمو)</div>
+                        <div class="card-body p-0">
+                            <ul v-if="kpis.branchHeat && kpis.branchHeat.length" class="list-group list-group-flush">
+                                <li v-for="b in kpis.branchHeat" :key="b.branchName" class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <span>{{ b.branchName }}</span>
+                                    <span class="fw-semibold text-nowrap">{{ formatMoney(b.revenueDemo) }}</span>
+                                </li>
+                            </ul>
+                            <p v-else class="text-muted small mb-0 p-4 text-center">لا بيانات فرع بعد التحميل.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                            <span class="fw-semibold">طلبات التليكوم</span>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" type="button" @@click="refreshAll" :disabled="loading" title="تحديث القوائم">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span v-else>تحديث</span>
+                                </button>
+                                <button class="btn btn-outline-primary" type="button" v-if="hubPermissions.canConfirmCbs"
+                                        @@click="confirmFirstReadyDraft" :disabled="loading">تأكيد CBS (أول مسودة جاهزة)</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0 telecom-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">الرقم</th>
+                                        <th scope="col">النوع</th>
+                                        <th scope="col">المشترك</th>
+                                        <th scope="col">الحالة</th>
+                                        <th scope="col">الوثائق</th>
+                                        <th scope="col">الباقة المستهدفة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="loading && (!operations || operations.length === 0)">
+                                        <td colspan="6" class="text-center text-muted py-5">
+                                            <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+                                            <span class="ms-2">جاري التحميل…</span>
+                                        </td>
+                                    </tr>
+                                    <tr v-for="o in operations" :key="o.id">
+                                        <td class="text-nowrap">{{ o.number }}</td>
+                                        <td>{{ o.kindName }}</td>
+                                        <td>{{ o.subscriberName }}</td>
+                                        <td><span class="badge rounded-pill" :class="statusBadge(o.status)">{{ o.statusName }}</span></td>
+                                        <td>{{ o.documentStatusName }}</td>
+                                        <td class="small text-muted">{{ o.targetOfferName || '—' }}</td>
+                                    </tr>
+                                    <tr v-if="!loading && (!operations || operations.length === 0)">
+                                        <td colspan="6" class="text-center text-muted py-5">لا توجد طلبات بعد.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">نتائج البحث الموحّد</div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <li v-for="r in searchResults" :key="r.id + r.resultType" class="list-group-item py-3">
+                                    <div class="fw-semibold">{{ r.title }}</div>
+                                    <div class="small text-muted">{{ r.resultType }} — {{ r.subtitle }}</div>
+                                </li>
+                                <li v-if="!searchBusy && searchResults.length === 0" class="list-group-item text-muted small py-4 text-center">
+                                    {{ hasSearched ? 'لا نتائج لهذا المصطلح.' : 'أدخل مصطلحاً (حرفان على الأقل) ثم اضغط بحث.' }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section v-if="hubPermissions.canSeeBillingLog" class="card border-0 shadow-sm mb-4" aria-label="سجل تكامل الفوترة">
+                <div class="card-header bg-white border-bottom fw-semibold py-3">سجل تكامل الفوترة (Huawei CBS mock)</div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0 telecom-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">طلب التشغيل</th>
+                                <th scope="col">المحاولة</th>
+                                <th scope="col">النتيجة</th>
+                                <th scope="col">الرسالة</th>
+                                <th scope="col">الوقت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="loading && (!billingLogs || billingLogs.length === 0)">
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+                                </td>
+                            </tr>
+                            <tr v-for="l in billingLogs" :key="l.id">
+                                <td class="text-nowrap">{{ l.operationNumber }}</td>
+                                <td>{{ l.attemptNumber }}</td>
+                                <td><span class="badge rounded-pill" :class="l.success ? 'bg-success' : 'bg-warning text-dark'">{{ l.success ? 'OK' : 'Pending/Retry' }}</span></td>
+                                <td class="small text-break">{{ l.message }}</td>
+                                <td class="small text-muted text-nowrap">{{ formatDate(l.createdAtUtc) }}</td>
+                            </tr>
+                            <tr v-if="!loading && (!billingLogs || billingLogs.length === 0)">
+                                <td colspan="5" class="text-center text-muted py-4">لا سجلات تكامل بعد.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="d-flex flex-wrap gap-2 pb-4" aria-label="اختصارات ذات صلة">
+                <a v-if="hubPermissions.showRetailShortcuts" class="btn btn-outline-secondary" href="/SalesOrders/SalesOrderList">طلبات المبيعات</a>
+                <a class="btn btn-outline-secondary" href="/ProgramManagers/ProgramManagerList">تذاكر الشبكة (Kanban)</a>
+                <a class="btn btn-outline-secondary" href="/Customers/CustomerList">المشتركون</a>
+            </nav>
+        </div>
+    </div>
+</div>
+
+@section styles {
+    <style>
+        .telecom-hub-root { max-width: 1400px; margin-inline: auto; }
+        .telecom-hero { background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); }
+        .telecom-search-group .form-control:focus { box-shadow: none; border-color: #ced4da; }
+        .telecom-search-group:focus-within { box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15); border-radius: 0.5rem; }
+        .big-tile { border: none; border-radius: 12px; min-height: 118px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .big-tile:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.12) !important; }
+        .big-tile:focus-visible { outline: 3px solid rgba(255,255,255,0.85); outline-offset: 3px; }
+        .tile-icon { font-size: 1.35rem; opacity: 0.95; }
+        .tile-activate { background: linear-gradient(135deg, #0d6efd, #3d8bfd); }
+        .tile-migrate { background: linear-gradient(135deg, #fd7e14, #ffb347); }
+        .tile-takeover { background: linear-gradient(135deg, #6f42c1, #a98eda); }
+        .tile-simswap { background: linear-gradient(135deg, #0dcaf0, #31d2f2); }
+        .tile-package { background: linear-gradient(135deg, #d63384, #ec8bb8); }
+        .tile-support { background: linear-gradient(135deg, #198754, #51c685); }
+        .map-mock { overflow: hidden; }
+        .telecom-kpi-value { font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.2; }
+        .telecom-step { border: 1px solid #dee2e6; }
+        .telecom-step-active { background: var(--bs-primary); color: #fff; border-color: var(--bs-primary); font-weight: 600; }
+        .telecom-step-muted { background: #f8f9fa; color: #6c757d; }
+        .telecom-table thead th { white-space: nowrap; font-weight: 600; font-size: 0.8125rem; }
+    </style>
+}
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Telecom/TelecomHub.cshtml.js"></script>
+}

@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+﻿// Demo-only — aligned with Syria Telecom retail & B2B segments.
+using Application.Common.Repositories;
 using Domain.Entities;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -21,12 +22,12 @@ public class CustomerGroupSeeder
     {
         var customerGroups = new List<CustomerGroup>
         {
-            new CustomerGroup { Name = "Corporate" },
-            new CustomerGroup { Name = "Government" },
-            new CustomerGroup { Name = "Foundation" },
-            new CustomerGroup { Name = "Military" },
-            new CustomerGroup { Name = "Education" },
-            new CustomerGroup { Name = "Hospitality" }
+            new CustomerGroup { Name = "عملاء أفراد — تجزئة" },
+            new CustomerGroup { Name = "شركات — أعمال" },
+            new CustomerGroup { Name = "جهات حكومية" },
+            new CustomerGroup { Name = "مؤسسات وجمعيات" },
+            new CustomerGroup { Name = "قطاع تعليمي" },
+            new CustomerGroup { Name = "قطاع ضيافة وسياحة" }
         };
 
         foreach (var group in customerGroups)
@@ -37,5 +38,3 @@ public class CustomerGroupSeeder
         await _unitOfWork.SaveAsync();
     }
 }
-
-
