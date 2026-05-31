@@ -1,5 +1,6 @@
 ﻿using Application.Common.Services.SecurityManager;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
+using Infrastructure.SecurityManager.NavigationMenu;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +46,7 @@ public static class DI
             .AddEntityFrameworkStores<DataContext>();
 
         services.AddScoped<ISecurityService, SecurityService>();
+        services.AddScoped<INavigationMenuService, NavigationMenuService>();
 
         return services;
     }

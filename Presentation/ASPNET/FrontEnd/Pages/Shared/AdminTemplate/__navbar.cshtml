@@ -1,31 +1,41 @@
-﻿@{
+﻿@using System.Globalization
+@inject IHtmlLocalizer<SharedResources> L
+@{
     var fullName = "Loading...";
     var avatarUrl = "/noimage.png";
-    var currency = "Loading..."; 
+    var currency = "Loading...";
+    var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
 }
 
-<nav class="navbar navbar-expand bg-white px-4 py-0 adminheader">
-    <a asp-area="" asp-page="/Index" class="navbar-brand d-flex d-lg-none me-4">
-        <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2>
-    </a>
-    <a href="#" class="sidebar-toggler flex-shrink-0">
-        <i class="fa fa-bars"></i>
-    </a>
-    <div class="d-none d-md-flex ms-4">
-        <span>@ViewData["Title"]</span>
+<nav class="navbar navbar-expand bg-white px-3 px-lg-4 py-2 adminheader syriatel-unified-header border-bottom shadow-sm"
+     dir="@(uiRtl ? "rtl" : "ltr")"
+     lang="@uiLang">
+    <div class="d-flex align-items-center flex-grow-1 min-w-0 syriatel-header-main">
+        <a href="#" class="sidebar-toggler flex-shrink-0 text-secondary" aria-label="@L["Nav_MenuToggle"]">
+            <i class="fa fa-bars"></i>
+        </a>
+        <a href="/Telecom/TelecomHub" class="syriatel-header-brand d-flex align-items-center gap-2 gap-md-3 text-decoration-none ms-2 ms-md-3 min-w-0">
+            <img src="@Url.Content("~/brand/logo.png")" alt="" class="syriatel-header-logo flex-shrink-0" width="180" height="48" loading="lazy" />
+            <span class="syriatel-header-title text-truncate">@L["Nav_PortalTitle"]</span>
+        </a>
     </div>
-    <div class="navbar-nav align-items-center ms-auto">
-        <div class="nav-item dropdown">
-            <span id="topbarContent">Currency: @currency</span>
+    <div class="navbar-nav flex-row align-items-center gap-2 gap-md-3 ms-auto flex-shrink-0 syriatel-header-actions">
+        <div class="nav-item d-none d-sm-block">
+            <span id="topbarContent" class="topbar-currency-wrap text-muted small">@currency</span>
+        </div>
+        <div class="nav-item syriatel-lang-toggle btn-group btn-group-sm" role="group" aria-label="@L["Nav_LangToggleAria"]">
+            <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="ar" id="syriatelLangAr">@L["Nav_LangArabic"]</button>
+            <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="en" id="syriatelLangEn">@L["Nav_LangEnglish"]</button>
         </div>
         <div class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                <img id="AvatarImageNav" class="rounded-circle me-lg-2" src="@avatarUrl" alt="Avatar" style="width: 40px; height: 40px;">
-                <span class="d-none d-lg-inline-flex" id="fullName">@fullName</span>
+            <a href="#" class="nav-link dropdown-toggle d-flex align-items-center gap-2 py-1 px-2" data-bs-toggle="dropdown" aria-expanded="false">
+                <img id="AvatarImageNav" class="rounded-circle flex-shrink-0" src="@avatarUrl" alt="" width="36" height="36" />
+                <span class="d-none d-lg-inline text-dark small fw-medium text-truncate" style="max-width: 11rem;" id="fullName">@fullName</span>
             </a>
             <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
-                <a asp-area="" asp-page="/Profiles/MyProfile" class="nav-link btn btn-link text-black dropdown-item">My Profile</a>
-                <a asp-area="" asp-page="/Accounts/Logout" class="nav-link btn btn-link text-black dropdown-item">Log Out</a>
+                <a asp-area="" asp-page="/Profiles/MyProfile" class="nav-link btn btn-link text-black dropdown-item">@L["Nav_Profile"]</a>
+                <a asp-area="" asp-page="/Accounts/Logout" class="nav-link btn btn-link text-black dropdown-item">@L["Nav_Logout"]</a>
             </div>
         </div>
     </div>
@@ -38,12 +48,128 @@
         try {
             const firstName = StorageManager.getFirstName();
             const lastName = StorageManager.getLastName();
-            const fullName = `${firstName} ${lastName}`;
-            document.getElementById('fullName').textContent = fullName;
+            const persona = StorageManager.getSyriatelOperatorConsoleDisplayName();
+            const fullName = persona || `${firstName} ${lastName}`;
+            const el = document.getElementById('fullName');
+            if (el) el.textContent = fullName;
         } catch (error) {
             console.error('Error fetching data from StorageManager:', error);
         }
+
+        const LANG_KEY = 'syriatelUiLang';
+        const CULTURE_COOKIE = '.AspNetCore.Culture';
+
+        function readCultureFromCookie() {
+            const prefix = CULTURE_COOKIE + '=';
+            const segment = document.cookie.split('; ').find(function (x) { return x.startsWith(prefix); });
+            if (!segment) return null;
+            var raw = segment.slice(prefix.length);
+            try { raw = decodeURIComponent(raw); } catch (_) { /* ignore */ }
+            var parts = raw.split('|');
+            for (var i = 0; i < parts.length; i++) {
+                var p = parts[i];
+                if (p.indexOf('c=') === 0) {
+                    var c = p.slice(2).toLowerCase();
+                    if (c.indexOf('en') === 0) return 'en';
+                    return 'ar';
+                }
+            }
+            return null;
+        }
+
+        function applySyriatelLang(lang, options) {
+            options = options || {};
+            var isAr = lang === 'ar';
+            try {
+                localStorage.setItem(LANG_KEY, isAr ? 'ar' : 'en');
+            } catch (_) { /* ignore */ }
+            document.documentElement.lang = isAr ? 'ar' : 'en';
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+            if (document.body) {
+                document.body.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+                document.body.setAttribute('lang', isAr ? 'ar' : 'en');
+            }
+            var content = document.querySelector('.content');
+            if (content) content.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+            document.querySelector('.syriatel-unified-header')?.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+            document.querySelector('.syriatel-unified-header')?.setAttribute('lang', isAr ? 'ar' : 'en');
+            document.getElementById('sidebar')?.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+            document.getElementById('sidebar')?.setAttribute('lang', isAr ? 'ar' : 'en');
+            document.querySelectorAll('.syriatel-lang-btn').forEach(function (btn) {
+                var on = btn.getAttribute('data-syriatel-lang') === (isAr ? 'ar' : 'en');
+                btn.classList.toggle('active', on);
+                btn.classList.toggle('btn-secondary', on);
+                btn.classList.toggle('btn-outline-secondary', !on);
+            });
+            if (!options.suppressLocaleEvent) {
+                document.documentElement.dispatchEvent(new CustomEvent('syriatel-locale-changed', { detail: { lang: isAr ? 'ar' : 'en' } }));
+            }
+        }
+
+        function resolveLangFromHints() {
+            var fromCookie = readCultureFromCookie();
+            if (fromCookie) return fromCookie;
+            try {
+                var saved = localStorage.getItem(LANG_KEY);
+                if (saved === 'en' || saved === 'ar') return saved;
+            } catch (_) { /* ignore */ }
+            var nav = (navigator.language || 'ar').toLowerCase();
+            return nav.indexOf('en') === 0 ? 'en' : 'ar';
+        }
+
+        async function persistCulture(lang) {
+            var url = '/culture/set?lang=' + encodeURIComponent(lang);
+            var res = await fetch(url, { credentials: 'same-origin', method: 'GET' });
+            if (!res.ok) throw new Error('culture');
+        }
+
+        function scheduleSyriatelGridHeaderRefresh() {
+            [0, 50, 150, 400, 1000, 3000, 8000].forEach(function (ms) {
+                setTimeout(function () {
+                    try {
+                        if (window.SyriatelGridI18n && typeof window.SyriatelGridI18n.refreshAllGrids === 'function') {
+                            window.SyriatelGridI18n.refreshAllGrids();
+                        }
+                        if (window.SyriatelGridI18n && typeof window.SyriatelGridI18n.refreshAllKanbans === 'function') {
+                            window.SyriatelGridI18n.refreshAllKanbans();
+                        }
+                        if (window.SyriatelGridI18n && typeof window.SyriatelGridI18n.applyModalChromeI18n === 'function') {
+                            window.SyriatelGridI18n.applyModalChromeI18n();
+                        }
+                    } catch (_) { /* ignore */ }
+                }, ms);
+            });
+        }
+
+        async function initSyriatelLang() {
+            var lang = resolveLangFromHints();
+            var hadCookie = !!readCultureFromCookie();
+            if (!hadCookie) {
+                try {
+                    await persistCulture(lang);
+                } catch (_) { /* server may be unreachable; UI still works */ }
+            }
+            applySyriatelLang(lang, { suppressLocaleEvent: true });
+            scheduleSyriatelGridHeaderRefresh();
+        }
+
+        async function switchSyriatelLang(lang) {
+            applySyriatelLang(lang, { suppressLocaleEvent: true });
+            try {
+                await persistCulture(lang);
+            } catch (_) {
+                window.location.reload();
+                return;
+            }
+            document.documentElement.dispatchEvent(new CustomEvent('syriatel-locale-changed', { detail: { lang: lang } }));
+        }
+
+        initSyriatelLang().catch(function () {
+            applySyriatelLang(resolveLangFromHints(), { suppressLocaleEvent: true });
+            scheduleSyriatelGridHeaderRefresh();
+        });
+
+        document.getElementById('syriatelLangAr')?.addEventListener('click', function () { switchSyriatelLang('ar'); });
+        document.getElementById('syriatelLangEn')?.addEventListener('click', function () { switchSyriatelLang('en'); });
     });
 </script>
-
-

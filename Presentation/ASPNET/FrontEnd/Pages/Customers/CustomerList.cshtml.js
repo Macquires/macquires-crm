@@ -1,13 +1,16 @@
-﻿const App = {
+const TEL_SUB_DEFAULT_PREPAID_ID = 'a0e0e0e0-0000-4000-8000-000000000001';
+
+const App = {
     setup() {
         const state = Vue.reactive({
             mainData: [],
             deleteMode: false,
             customerGroupListLookupData: [],
             customerCategoryListLookupData: [],
+            telecomLineTypes: [],
             secondaryData: [],
             mainTitle: null,
-            manageContactTitle: 'Manage Contact',
+            manageContactTitle: '',
             id: '',
             name: '',
             number: '',
@@ -40,8 +43,46 @@
                 country: '',
                 phoneNumber: '',
                 emailAddress: '',
+                nationalId: '',
+                commercialRegistration: '',
             },
-            isSubmitting: false
+            isSubmitting: false,
+            telecomMsisdn: '',
+            telecomMsisdnInitial: '',
+            telecomSubscriptionId: '',
+            telecomSubscriptionIdInitial: '',
+            telecomSubscriptionTypeId: TEL_SUB_DEFAULT_PREPAID_ID,
+            telecomSubscriptionTypeIdInitial: TEL_SUB_DEFAULT_PREPAID_ID,
+            telecomSubscriptionRows: [],
+            customerOnboardingActive: false,
+            customerOnboardingStep: 0,
+            addFlowBootstrapTelecom: false,
+            customerSearchNationalId: '',
+            customerSearchPhone: '',
+            customerSearchResults: [],
+            customerSearchBusy: false,
+            customerSearchAttempted: false,
+            isEmbedded: false,
+            activateAfterSave: false,
+            hlrSubscriberProfileId: '',
+            hlrLiveData: null,
+            hlrLiveBusy: false,
+            hlrResyncBusy: false,
+            customer360: null,
+            customer360Busy: false,
+            customer360Error: null,
+            lineWallets: {},
+            lineWalletsBusy: {},
+            rechargeBusy: '',
+            nationalIdMasked: '',
+            nationalIdRevealed: false,
+            nationalIdPersisted: '',
+            subscriberType: 0,
+            nationalId: '',
+            dateOfBirth: '',
+            commercialRegistration: '',
+            taxNumber: '',
+            authorizedSignatory: '',
         });
 
         const mainGridRef = Vue.ref(null);
@@ -71,26 +112,44 @@
         const services = {
             getMainData: async () => {
                 try {
-                    const response = await AxiosManager.get('/Customer/GetCustomerList', {});
+                    const pageQs = new URLSearchParams(window.location.search);
+                    const listQs = new URLSearchParams();
+                    listQs.set('isDeleted', 'false');
+                    const cid = pageQs.get('customerId');
+                    if (cid) {
+                        listQs.set('customerId', cid);
+                    }
+                    const response = await AxiosManager.get('/Customer/GetCustomerList?' + listQs.toString(), {});
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            createMainData: async (name, customerGroupId, customerCategoryId, description, street, city, state, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, createdById) => {
+            getTelecomLineTypes: async () => {
+                try {
+                    const response = await AxiosManager.get(
+                        '/TelecomSubscriptionType/GetTelecomSubscriptionTypeList?isDeleted=false&activeOnly=true',
+                        {}
+                    );
+                    return response;
+                } catch (error) {
+                    throw error;
+                }
+            },
+            createMainData: async (name, customerGroupId, customerCategoryId, description, street, city, stateVal, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, createdById, subscriberType, nationalId, dateOfBirth, commercialRegistration, taxNumber, authorizedSignatory) => {
                 try {
                     const response = await AxiosManager.post('/Customer/CreateCustomer', {
-                        name, customerGroupId, customerCategoryId, description, street, city, state, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, createdById
+                        name, customerGroupId, customerCategoryId, description, street, city, state: stateVal, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, createdById, subscriberType, nationalId, dateOfBirth, commercialRegistration, taxNumber, authorizedSignatory
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            updateMainData: async (id, name, customerGroupId, customerCategoryId, description, street, city, state, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, updatedById) => {
+            updateMainData: async (id, name, customerGroupId, customerCategoryId, description, street, city, stateVal, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, updatedById, subscriberType, nationalId, dateOfBirth, commercialRegistration, taxNumber, authorizedSignatory) => {
                 try {
                     const response = await AxiosManager.post('/Customer/UpdateCustomer', {
-                        id, name, customerGroupId, customerCategoryId, description, street, city, state, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, updatedById
+                        id, name, customerGroupId, customerCategoryId, description, street, city, state: stateVal, zipCode, country, phoneNumber, faxNumber, emailAddress, website, whatsApp, linkedIn, facebook, instagram, twitterX, tikTok, updatedById, subscriberType, nationalId, dateOfBirth, commercialRegistration, taxNumber, authorizedSignatory
                     });
                     return response;
                 } catch (error) {
@@ -172,12 +231,42 @@
                 const response = await services.getCustomerCategoryListLookupData();
                 state.customerCategoryListLookupData = response?.data?.content?.data;
             },
+            populateTelecomLineTypes: async () => {
+                try {
+                    const response = await services.getTelecomLineTypes();
+                    const rows = response?.data?.content?.data || [];
+                    state.telecomLineTypes = rows;
+                } catch {
+                    state.telecomLineTypes = [];
+                }
+            },
             populateMainData: async () => {
                 const response = await services.getMainData();
-                state.mainData = response?.data?.content?.data.map(item => ({
-                    ...item,
-                    createdAtUtc: new Date(item.createdAtUtc)
-                }));
+                const rows = response?.data?.content?.data;
+                state.mainData = Array.isArray(rows)
+                    ? rows.map((item) => {
+                          const createdRaw = item.createdAtUtc;
+                          const createdAtUtc =
+                              createdRaw == null || createdRaw === ''
+                                  ? null
+                                  : (() => {
+                                        const d = new Date(createdRaw);
+                                        return Number.isNaN(d.getTime()) ? null : d;
+                                    })();
+                          const badge = subscriberTypeBadgeFields(item);
+                          return {
+                              ...item,
+                              subscriberType: item.subscriberType || 'Individual',
+                              subscriptionTypeName: item.subscriptionTypeName || '—',
+                              subscriptionTypeDisplayColor: item.subscriptionTypeDisplayColor || '#333',
+                              telecomMsisdnsSummary: item.telecomMsisdnsSummary || '—',
+                              primaryMsisdn: item.primaryMsisdn || '—',
+                              createdAtUtc,
+                              subscriberTypeBadgeClass: badge.subscriberTypeBadgeClass,
+                              subscriberTypeLabel: badge.subscriberTypeLabel,
+                          };
+                      })
+                    : [];
             },
             populateSecondaryData: async (customerId) => {
                 const response = await services.getSecondaryData(customerId);
@@ -195,7 +284,7 @@
                     customerGroupListLookup.obj = new ej.dropdowns.DropDownList({
                         dataSource: state.customerGroupListLookupData,
                         fields: { value: 'id', text: 'name' },
-                        placeholder: 'Select a Customer Group',
+                        placeholder: MacquiresUiI18n.phByEn('Select a Customer Group'),
                         change: (e) => {
                             state.customerGroupId = e.value;
                         }
@@ -219,7 +308,7 @@
                     customerCategoryListLookup.obj = new ej.dropdowns.DropDownList({
                         dataSource: state.customerCategoryListLookupData,
                         fields: { value: 'id', text: 'name' },
-                        placeholder: 'Select a Customer Category',
+                        placeholder: MacquiresUiI18n.phByEn('Select a Customer Category'),
                         change: (e) => {
                             state.customerCategoryId = e.value;
                         }
@@ -240,7 +329,7 @@
             obj: null,
             create: () => {
                 nameText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Name',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Name'),
                 });
                 nameText.obj.appendTo(nameRef.value);
             },
@@ -255,7 +344,7 @@
             obj: null,
             create: () => {
                 numberText.obj = new ej.inputs.TextBox({
-                    placeholder: '[auto]',
+                    placeholder: MacquiresUiI18n.phByEn('[auto]'),
                     readonly: true
                 });
                 numberText.obj.appendTo(numberRef.value);
@@ -271,7 +360,7 @@
             obj: null,
             create: () => {
                 streetText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Street',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Street'),
                 });
                 streetText.obj.appendTo(streetRef.value);
             },
@@ -286,7 +375,7 @@
             obj: null,
             create: () => {
                 cityText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter City',
+                    placeholder: MacquiresUiI18n.phByEn('Enter City'),
                 });
                 cityText.obj.appendTo(cityRef.value);
             },
@@ -301,7 +390,7 @@
             obj: null,
             create: () => {
                 stateText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter State',
+                    placeholder: MacquiresUiI18n.phByEn('Enter State'),
                 });
                 stateText.obj.appendTo(stateRef.value);
             },
@@ -316,7 +405,7 @@
             obj: null,
             create: () => {
                 zipCodeText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Zip Code',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Zip Code'),
                 });
                 zipCodeText.obj.appendTo(zipCodeRef.value);
             },
@@ -331,7 +420,7 @@
             obj: null,
             create: () => {
                 countryText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Country',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Country'),
                 });
                 countryText.obj.appendTo(countryRef.value);
             },
@@ -346,7 +435,7 @@
             obj: null,
             create: () => {
                 phoneNumberText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Phone Number',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Phone Number'),
                 });
                 phoneNumberText.obj.appendTo(phoneNumberRef.value);
             },
@@ -361,7 +450,7 @@
             obj: null,
             create: () => {
                 faxNumberText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Fax Number',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Fax Number'),
                 });
                 faxNumberText.obj.appendTo(faxNumberRef.value);
             },
@@ -376,7 +465,7 @@
             obj: null,
             create: () => {
                 emailAddressText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Email Address',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Email Address'),
                 });
                 emailAddressText.obj.appendTo(emailAddressRef.value);
             },
@@ -391,7 +480,7 @@
             obj: null,
             create: () => {
                 websiteText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Website',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Website'),
                 });
                 websiteText.obj.appendTo(websiteRef.value);
             },
@@ -406,7 +495,7 @@
             obj: null,
             create: () => {
                 whatsAppText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter WhatsApp',
+                    placeholder: MacquiresUiI18n.phByEn('Enter WhatsApp'),
                 });
                 whatsAppText.obj.appendTo(whatsAppRef.value);
             },
@@ -421,7 +510,7 @@
             obj: null,
             create: () => {
                 linkedInText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter LinkedIn',
+                    placeholder: MacquiresUiI18n.phByEn('Enter LinkedIn'),
                 });
                 linkedInText.obj.appendTo(linkedInRef.value);
             },
@@ -436,7 +525,7 @@
             obj: null,
             create: () => {
                 facebookText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Facebook',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Facebook'),
                 });
                 facebookText.obj.appendTo(facebookRef.value);
             },
@@ -451,7 +540,7 @@
             obj: null,
             create: () => {
                 instagramText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Instagram',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Instagram'),
                 });
                 instagramText.obj.appendTo(instagramRef.value);
             },
@@ -466,7 +555,7 @@
             obj: null,
             create: () => {
                 twitterXText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Twitter/X',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Twitter/X'),
                 });
                 twitterXText.obj.appendTo(twitterXRef.value);
             },
@@ -481,7 +570,7 @@
             obj: null,
             create: () => {
                 tikTokText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter TikTok',
+                    placeholder: MacquiresUiI18n.phByEn('Enter TikTok'),
                 });
                 tikTokText.obj.appendTo(tikTokRef.value);
             },
@@ -490,6 +579,28 @@
                     tikTokText.obj.value = state.tikTok;
                 }
             }
+        };
+
+        const refreshAllCustomerFormWidgets = () => {
+            nameText.refresh();
+            numberText.refresh();
+            streetText.refresh();
+            cityText.refresh();
+            stateText.refresh();
+            zipCodeText.refresh();
+            countryText.refresh();
+            phoneNumberText.refresh();
+            faxNumberText.refresh();
+            emailAddressText.refresh();
+            websiteText.refresh();
+            whatsAppText.refresh();
+            linkedInText.refresh();
+            facebookText.refresh();
+            instagramText.refresh();
+            twitterXText.refresh();
+            tikTokText.refresh();
+            customerGroupListLookup.refresh();
+            customerCategoryListLookup.refresh();
         };
 
         Vue.watch(
@@ -579,7 +690,29 @@
             }
         );
 
+        Vue.watch(
+            () => state.nationalId,
+            (newVal, oldVal) => {
+                state.errors.nationalId = '';
+            }
+        );
+
+        Vue.watch(
+            () => state.commercialRegistration,
+            (newVal, oldVal) => {
+                state.errors.commercialRegistration = '';
+            }
+        );
+
         const handler = {
+            handleSubmitSaveOnly: async function () {
+                state.activateAfterSave = false;
+                await handler.handleSubmit();
+            },
+            handleSubmitSaveAndActivate: async function () {
+                state.activateAfterSave = true;
+                await handler.handleSubmit();
+            },
             handleSubmit: async function () {
                 try {
                     state.isSubmitting = true;
@@ -628,20 +761,151 @@
                         isValid = false;
                     }
 
+                    const nationalIdForSave = () => {
+                        if (state.subscriberType !== 0) return (state.nationalId || '').trim();
+                        if (state.id && !state.nationalIdRevealed) return (state.nationalIdPersisted || '').trim();
+                        return (state.nationalId || '').trim();
+                    };
+
+                    if (!state.deleteMode) {
+                        if (state.subscriberType === 0) {
+                            const nidVal = nationalIdForSave();
+                            if (!nidVal || nidVal.length !== 10) {
+                                state.errors.nationalId = 'الرقم الوطني مطلوب للأفراد ويجب أن يتكون من 10 خانات.';
+                                isValid = false;
+                            }
+                        } else if (state.subscriberType === 1) {
+                            if (!state.commercialRegistration || state.commercialRegistration.trim().length < 4) {
+                                state.errors.commercialRegistration = 'رقم السجل التجاري مطلوب للشركات (صيغة صالحة).';
+                                isValid = false;
+                            }
+                        }
+                    }
+
                     if (!isValid) return;
 
+                    const commitWasUpdate = state.id !== '' && !state.deleteMode;
+
+                    const nidCommit = nationalIdForSave();
                     const response = state.id === ''
-                        ? await services.createMainData(state.name, state.customerGroupId, state.customerCategoryId, state.description, state.street, state.city, state.state, state.zipCode, state.country, state.phoneNumber, state.faxNumber, state.emailAddress, state.website, state.whatsApp, state.linkedIn, state.facebook, state.instagram, state.twitterX, state.tikTok, StorageManager.getUserId())
+                        ? await services.createMainData(state.name, state.customerGroupId, state.customerCategoryId, state.description, state.street, state.city, state.state, state.zipCode, state.country, state.phoneNumber, state.faxNumber, state.emailAddress, state.website, state.whatsApp, state.linkedIn, state.facebook, state.instagram, state.twitterX, state.tikTok, StorageManager.getUserId(), state.subscriberType, nidCommit, state.dateOfBirth ? new Date(state.dateOfBirth).toISOString() : null, state.commercialRegistration, state.taxNumber, state.authorizedSignatory)
                         : state.deleteMode
                             ? await services.deleteMainData(state.id, StorageManager.getUserId())
-                            : await services.updateMainData(state.id, state.name, state.customerGroupId, state.customerCategoryId, state.description, state.street, state.city, state.state, state.zipCode, state.country, state.phoneNumber, state.faxNumber, state.emailAddress, state.website, state.whatsApp, state.linkedIn, state.facebook, state.instagram, state.twitterX, state.tikTok, StorageManager.getUserId());
+                            : await services.updateMainData(state.id, state.name, state.customerGroupId, state.customerCategoryId, state.description, state.street, state.city, state.state, state.zipCode, state.country, state.phoneNumber, state.faxNumber, state.emailAddress, state.website, state.whatsApp, state.linkedIn, state.facebook, state.instagram, state.twitterX, state.tikTok, StorageManager.getUserId(), state.subscriberType, nidCommit, state.dateOfBirth ? new Date(state.dateOfBirth).toISOString() : null, state.commercialRegistration, state.taxNumber, state.authorizedSignatory);
 
                     if (response.data.code === 200) {
+                        const savedCustomerId =
+                            response?.data?.content?.data?.id ?? state.id ?? '';
+
+                        if (
+                            commitWasUpdate &&
+                            gridAccess.showFullColumns &&
+                            gridAccess.canMutate &&
+                            !state.addFlowBootstrapTelecom
+                        ) {
+                            const subChanged =
+                                state.telecomSubscriptionId !== state.telecomSubscriptionIdInitial;
+                            const typeChanged =
+                                state.telecomSubscriptionTypeId !== state.telecomSubscriptionTypeIdInitial;
+                            if (subChanged || typeChanged) {
+                                const body = {
+                                    customerId: state.id,
+                                    updatedById: StorageManager.getUserId(),
+                                };
+                                if (state.telecomSubscriptionId) {
+                                    body.subscriptionId = state.telecomSubscriptionId;
+                                }
+                                if (typeChanged) {
+                                    body.primarySubscriptionTypeId = state.telecomSubscriptionTypeId;
+                                }
+                                try {
+                                    const telecomRes = await AxiosManager.post(
+                                        '/Telecom/UpdateCustomerPrimaryTelecomLine',
+                                        body
+                                    );
+                                    if (telecomRes?.data?.code !== 200) {
+                                        await Swal.fire({
+                                            icon: 'warning',
+                                            title: 'تم حفظ بيانات المشترك',
+                                            text:
+                                                telecomRes?.data?.message ||
+                                                'تعذّر تحديث الخط الأساسي (MSISDN / نوع الخط).',
+                                            confirmButtonText: 'حسناً',
+                                        });
+                                    } else {
+                                        state.telecomSubscriptionIdInitial = state.telecomSubscriptionId;
+                                        state.telecomSubscriptionTypeIdInitial = state.telecomSubscriptionTypeId;
+                                    }
+                                } catch (telecomErr) {
+                                    await Swal.fire({
+                                        icon: 'warning',
+                                        title: 'تم حفظ بيانات المشترك',
+                                        text:
+                                            telecomErr.response?.data?.message ||
+                                            telecomErr.message ||
+                                            'تعذّر تحديث الخط الأساسي.',
+                                        confirmButtonText: 'حسناً',
+                                    });
+                                }
+                            }
+                        }
+
+                        const msisdnTrim = (state.telecomMsisdn || '').trim();
+                        const shouldRegisterBootstrap =
+                            gridAccess.showFullColumns &&
+                            gridAccess.canMutate &&
+                            state.addFlowBootstrapTelecom &&
+                            msisdnTrim &&
+                            savedCustomerId;
+
+                        if (shouldRegisterBootstrap) {
+                            try {
+                                const nat = (state.customerSearchNationalId || '').trim();
+                                const regBody = {
+                                    customerId: savedCustomerId,
+                                    primaryMsisdn: msisdnTrim,
+                                    primarySubscriptionTypeId: state.telecomSubscriptionTypeId,
+                                    createdById: StorageManager.getUserId(),
+                                };
+                                if (nat) {
+                                    regBody.nationalId = nat;
+                                }
+                                const regRes = await AxiosManager.post(
+                                    '/Telecom/RegisterSubscriberProfileForCustomer',
+                                    regBody
+                                );
+                                if (regRes?.data?.code !== 200) {
+                                    await Swal.fire({
+                                        icon: 'warning',
+                                        title: 'تم حفظ بيانات المشترك',
+                                        text:
+                                            regRes?.data?.message ||
+                                            'تعذّر تسجيل ملف المشترك أو الخط الجديد.',
+                                        confirmButtonText: 'حسناً',
+                                    });
+                                } else {
+                                    state.telecomMsisdnInitial = state.telecomMsisdn || '';
+                                    state.telecomSubscriptionTypeIdInitial = state.telecomSubscriptionTypeId;
+                                }
+                            } catch (regErr) {
+                                await Swal.fire({
+                                    icon: 'warning',
+                                    title: 'تم حفظ بيانات المشترك',
+                                    text:
+                                        regErr.response?.data?.message ||
+                                        regErr.message ||
+                                        'تعذّر تسجيل ملف المشترك أو الخط الجديد.',
+                                    confirmButtonText: 'حسناً',
+                                });
+                            }
+                        }
+                        state.addFlowBootstrapTelecom = false;
+
                         await methods.populateMainData();
                         mainGrid.refresh();
 
                         if (!state.deleteMode) {
-                            state.mainTitle = 'Edit Customer';
+                            state.mainTitle = MacquiresUiI18n.mb('customer','edit');
                             state.id = response?.data?.content?.data.id ?? '';
                             state.number = response?.data?.content?.data.number ?? '';
                             state.name = response?.data?.content?.data.name ?? '';
@@ -671,9 +935,18 @@
                                 timer: 2000,
                                 showConfirmButton: false
                             });
-                            setTimeout(() => {
-                                mainModal.obj.hide();
-                            }, 2000);
+                            if (state.isEmbedded) {
+                                setTimeout(() => {
+                                    window.parent.postMessage({
+                                        action: state.activateAfterSave ? 'syriatel-customer-saved-activate' : 'syriatel-customer-saved',
+                                        customerId: savedCustomerId
+                                    }, '*');
+                                }, 1500);
+                            } else {
+                                setTimeout(() => {
+                                    mainModal.obj.hide();
+                                }, 2000);
+                            }
 
                         } else {
                             Swal.fire({
@@ -717,6 +990,12 @@
             state.name = '';
             state.customerGroupId = null;
             state.customerCategoryId = null;
+            state.subscriberType = 0;
+            state.nationalId = '';
+            state.dateOfBirth = '';
+            state.commercialRegistration = '';
+            state.taxNumber = '';
+            state.authorizedSignatory = '';
             state.description = '';
             state.street = '';
             state.city = '';
@@ -733,6 +1012,15 @@
             state.instagram = '';
             state.twitterX = '';
             state.tikTok = '';
+            state.telecomMsisdn = '';
+            state.telecomMsisdnInitial = '';
+            state.telecomSubscriptionId = '';
+            state.telecomSubscriptionIdInitial = '';
+            const defLineTypeId =
+                (state.telecomLineTypes || []).find((x) => x.isDefault)?.id || TEL_SUB_DEFAULT_PREPAID_ID;
+            state.telecomSubscriptionTypeId = defLineTypeId;
+            state.telecomSubscriptionTypeIdInitial = defLineTypeId;
+            state.telecomSubscriptionRows = [];
             state.errors = {
                 name: '',
                 customerGroupId: '',
@@ -745,6 +1033,181 @@
                 phoneNumber: '',
                 emailAddress: '',
             };
+            state.customerOnboardingActive = false;
+            state.customerOnboardingStep = 0;
+            state.addFlowBootstrapTelecom = false;
+            state.customerSearchNationalId = '';
+            state.customerSearchPhone = '';
+            state.customerSearchResults = [];
+            state.customerSearchBusy = false;
+            state.customerSearchAttempted = false;
+        };
+
+        const syncTelecomLineTypeFromSelectedSubscription = () => {
+            const row = (state.telecomSubscriptionRows || []).find(
+                (s) => s.telecomSubscriptionId === state.telecomSubscriptionId
+            );
+            if (row && (row.subscriptionTypeCode || row.subscriptionTypeName)) {
+                const lt = (state.telecomLineTypes || []).find(
+                    (x) => x.code === row.subscriptionTypeCode || x.nameAr === row.subscriptionTypeName
+                );
+                if (lt && lt.id) {
+                    state.telecomSubscriptionTypeId = lt.id;
+                }
+            }
+        };
+
+        const applyCustomerRowToState = async (customerId) => {
+            if (!customerId) return;
+            try {
+                const r = await AxiosManager.get(
+                    '/Customer/GetCustomerList?isDeleted=false&customerId=' + encodeURIComponent(customerId)
+                );
+                const row = r?.data?.content?.data?.[0];
+                if (!row) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'تعذّر التحميل',
+                        text: 'لم يُعثر على بيانات العميل.',
+                        confirmButtonText: 'حسناً',
+                    });
+                    return;
+                }
+                state.id = row.id ?? '';
+                state.number = row.number ?? '';
+                state.name = row.name ?? '';
+                state.customerGroupId = row.customerGroupId ?? null;
+                state.customerCategoryId = row.customerCategoryId ?? null;
+                state.subscriberType = row.subscriberType === 'Corporate' ? 1 : 0;
+                state.nationalId = '';
+                state.nationalIdPersisted = row.nationalId ?? '';
+                state.nationalIdRevealed = false;
+                state.nationalIdMasked = '';
+                state.dateOfBirth = row.dateOfBirth ? row.dateOfBirth.substring(0, 10) : '';
+                state.commercialRegistration = row.commercialRegistration ?? '';
+                state.taxNumber = row.taxNumber ?? '';
+                state.authorizedSignatory = row.authorizedSignatory ?? '';
+                state.description = row.description ?? '';
+                state.street = row.street ?? '';
+                state.city = row.city ?? '';
+                state.state = row.state ?? '';
+                state.zipCode = row.zipCode ?? '';
+                state.country = row.country ?? '';
+                state.phoneNumber = row.phoneNumber ?? '';
+                state.faxNumber = row.faxNumber ?? '';
+                state.emailAddress = row.emailAddress ?? '';
+                state.website = row.website ?? '';
+                state.whatsApp = row.whatsApp ?? '';
+                state.linkedIn = row.linkedIn ?? '';
+                state.facebook = row.facebook ?? '';
+                state.instagram = row.instagram ?? '';
+                state.twitterX = row.twitterX ?? '';
+                state.tikTok = row.tikTok ?? '';
+                const defId =
+                    (state.telecomLineTypes || []).find((x) => x.isDefault)?.id || TEL_SUB_DEFAULT_PREPAID_ID;
+                state.telecomSubscriptionTypeId = row.subscriptionTypeId || defId;
+                state.telecomSubscriptionRows = Array.isArray(row.telecomLines) ? row.telecomLines : [];
+                const profileIds = [...new Set(state.telecomSubscriptionRows.map((s) => (s.subscriberProfileId || '').trim()).filter(Boolean))];
+                state.hlrSubscriberProfileId = profileIds[0] || '';
+                state.hlrLiveData = null;
+                state.telecomMsisdn = '';
+                state.telecomMsisdnInitial = '';
+                if (state.telecomSubscriptionRows.length > 0) {
+                    const prim = state.telecomSubscriptionRows.find(s => s.isPrimaryLine) || state.telecomSubscriptionRows[0];
+                    state.telecomSubscriptionId = prim.telecomSubscriptionId;
+                    state.telecomSubscriptionIdInitial = prim.telecomSubscriptionId;
+                    syncTelecomLineTypeFromSelectedSubscription();
+                } else {
+                    state.telecomSubscriptionId = '';
+                    state.telecomSubscriptionIdInitial = '';
+                }
+                state.telecomSubscriptionTypeIdInitial = state.telecomSubscriptionTypeId;
+                await loadCustomer360(state.id);
+                await Vue.nextTick();
+                refreshAllCustomerFormWidgets();
+            } catch (e) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ',
+                    text: e.response?.data?.message ?? e.message ?? 'فشل تحميل العميل.',
+                    confirmButtonText: 'حسناً',
+                });
+            }
+        };
+
+        const customerOnboarding = {
+            runPreCheckSearch: async () => {
+                const nat = (state.customerSearchNationalId || '').trim();
+                const ph = (state.customerSearchPhone || '').trim();
+                if (nat.length < 2 && ph.length < 2) {
+                    await Swal.fire({
+                        icon: 'info',
+                        title: 'بحث',
+                        text: 'أدخل رقم هوية (حرفين على الأقل) أو رقم جوال (حرفين على الأقل).',
+                        confirmButtonText: 'حسناً',
+                    });
+                    return;
+                }
+                state.customerSearchBusy = true;
+                state.customerSearchAttempted = true;
+                try {
+                    const qs = new URLSearchParams();
+                    if (nat) qs.set('nationalId', nat);
+                    if (ph) qs.set('phone', ph);
+                    const res = await AxiosManager.get('/Customer/FindCustomerCandidates?' + qs.toString(), {});
+                    if (res?.data?.code !== 200) {
+                        state.customerSearchResults = [];
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: 'بحث',
+                            text: res?.data?.message || 'تعذّر تنفيذ البحث.',
+                            confirmButtonText: 'حسناً',
+                        });
+                        return;
+                    }
+                    const list = res?.data?.content?.data;
+                    state.customerSearchResults = Array.isArray(list) ? list : [];
+                } catch (e) {
+                    state.customerSearchResults = [];
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: e.response?.data?.message ?? e.message ?? 'تعذّر تنفيذ البحث.',
+                        confirmButtonText: 'حسناً',
+                    });
+                } finally {
+                    state.customerSearchBusy = false;
+                }
+            },
+            selectCandidate: async (c) => {
+                if (!c?.id) return;
+                state.customerOnboardingStep = 1;
+                state.addFlowBootstrapTelecom = true;
+                await applyCustomerRowToState(c.id);
+                const defLine =
+                    (state.telecomLineTypes || []).find((x) => x.isDefault)?.id || TEL_SUB_DEFAULT_PREPAID_ID;
+                state.telecomSubscriptionTypeId = defLine;
+                state.telecomSubscriptionTypeIdInitial = defLine;
+            },
+            proceedNewCustomer: () => {
+                state.customerOnboardingStep = 1;
+                state.addFlowBootstrapTelecom = true;
+            },
+            goBackToSearch: () => {
+                if (!state.customerOnboardingActive) return;
+                const nat = state.customerSearchNationalId;
+                const ph = state.customerSearchPhone;
+                resetFormState();
+                state.customerOnboardingActive = true;
+                state.customerOnboardingStep = 0;
+                state.customerSearchNationalId = nat;
+                state.customerSearchPhone = ph;
+                state.customerSearchResults = [];
+                state.customerSearchAttempted = false;
+                state.customerSearchBusy = false;
+                state.addFlowBootstrapTelecom = false;
+                Vue.nextTick(() => refreshAllCustomerFormWidgets());
+            },
         };
 
         const resolveTelecomCustomerGridAccess = () => {
@@ -756,10 +1219,234 @@
                 roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
             const showFullColumns =
                 !isStrictTelecom || roles.some((r) => ['TelecomAdmin', 'TelecomBackOffice'].includes(r));
-            return { isStrictTelecom, canMutate, showFullColumns };
+            const canViewDecryptedPii = roles.some((r) =>
+                ['TelecomAdmin', 'TelecomBackOffice', 'TelecomManagement'].includes(r));
+            const canQueryHlr = roles.some((r) =>
+                ['TelecomAdmin', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement'].includes(r));
+            const canCreateTicket = roles.some((r) => ['TelecomAdmin', 'TelecomCallCenter'].includes(r));
+            const perms = StorageManager.getUserPermissions?.() || [];
+            const canToggleVas =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.vas.toggle']) ||
+                roles.some((r) =>
+                    ['TelecomAdmin', 'TelecomBackOffice', 'TelecomShowroom', 'TelecomCallCenter'].includes(r));
+            const canActivateLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.activate']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canMigrateLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.migrate']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomBackOffice'].includes(r));
+            const canSimSwapLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.simswap']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canTakeOverLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.activate']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canRechargeLine = roles.some((r) =>
+                ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            return {
+                isStrictTelecom,
+                canMutate,
+                showFullColumns,
+                canViewDecryptedPii,
+                canQueryHlr,
+                canCreateTicket,
+                canToggleVas,
+                canActivateLine,
+                canMigrateLine,
+                canSimSwapLine,
+                canTakeOverLine,
+                canRechargeLine,
+            };
         };
 
         const gridAccess = resolveTelecomCustomerGridAccess();
+
+        const telSubDisplayColorFromLookup = (nameAr) => {
+            if (nameAr == null || nameAr === '') return null;
+            const lt = (state.telecomLineTypes || []).find((x) => (x.nameAr || x.NameAr) === nameAr);
+            if (!lt) return null;
+            return lt.displayColor || lt.DisplayColor || null;
+        };
+
+        const buildSubscriptionTypeCheckboxFilterDataSource = () => {
+            const seen = new Map();
+            for (const row of state.mainData || []) {
+                const name = row.subscriptionTypeName;
+                const mapKey = name === undefined || name === null ? '__null__' : String(name);
+                if (seen.has(mapKey)) continue;
+                const color =
+                    row.subscriptionTypeDisplayColor ||
+                    row.SubscriptionTypeDisplayColor ||
+                    telSubDisplayColorFromLookup(name);
+                seen.set(mapKey, {
+                    subscriptionTypeName: name === undefined ? null : name,
+                    subscriptionTypeDisplayColor: color || null,
+                });
+            }
+            return Array.from(seen.values()).sort((a, b) =>
+                String(a.subscriptionTypeName ?? '').localeCompare(String(b.subscriptionTypeName ?? ''), 'ar', {
+                    sensitivity: 'base',
+                    numeric: true,
+                })
+            );
+        };
+
+        /** Map display name (Arabic) → color; Syncfusion checkbox filter often omits extra fields on items, so we paint `.e-list-text` after open. */
+        const buildSubscriptionTypeNameToColorMap = () => {
+            const map = new Map();
+            for (const row of state.mainData || []) {
+                const name = row.subscriptionTypeName;
+                const key = name == null || name === '' ? '' : String(name).trim();
+                const color =
+                    row.subscriptionTypeDisplayColor ||
+                    row.SubscriptionTypeDisplayColor ||
+                    telSubDisplayColorFromLookup(name);
+                if (color && !map.has(key)) map.set(key, color);
+            }
+            for (const lt of state.telecomLineTypes || []) {
+                const ar = (lt.nameAr ?? lt.NameAr) == null ? '' : String(lt.nameAr ?? lt.NameAr).trim();
+                const col = lt.displayColor || lt.DisplayColor;
+                if (ar && col && !map.has(ar)) map.set(ar, col);
+            }
+            return map;
+        };
+
+        const paintSubscriptionTypeFilterChecklistColors = () => {
+            const dlg = document.querySelector('.e-checkboxfilter.e-filter-popup');
+            if (!dlg) return;
+            const nameToColor = buildSubscriptionTypeNameToColorMap();
+            dlg.querySelectorAll('.e-list-text').forEach((el) => {
+                const txt = (el.textContent || '').trim();
+                if (!txt) return;
+                if (/^select all$/i.test(txt)) return;
+                const color = nameToColor.get(txt);
+                if (color) el.style.color = color;
+            });
+        };
+
+        const scheduleSubscriptionTypeFilterPaint = () => {
+            paintSubscriptionTypeFilterChecklistColors();
+            window.requestAnimationFrame(() => paintSubscriptionTypeFilterChecklistColors());
+            window.setTimeout(() => paintSubscriptionTypeFilterChecklistColors(), 0);
+            window.setTimeout(() => paintSubscriptionTypeFilterChecklistColors(), 80);
+        };
+
+        /** Color group caption text when grouped by `subscriptionTypeName` (avoids fragile `captionTemplate` / globals). */
+        const paintSubscriptionTypeGroupCaptionCells = () => {
+            try {
+                const grid = mainGrid.obj;
+                if (!grid || !mainGridRef.value) return;
+                let subHeader = 'نوع الخط';
+                if (typeof grid.getColumnByField === 'function') {
+                    const col = grid.getColumnByField('subscriptionTypeName');
+                    if (col && col.headerText) subHeader = String(col.headerText).trim();
+                }
+                const map = buildSubscriptionTypeNameToColorMap();
+                const esc = (s) =>
+                    String(s ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+
+                mainGridRef.value.querySelectorAll('.e-groupcaption, td.e-groupcaption').forEach((cell) => {
+                    if (cell.closest('.e-detailrow')) return;
+                    if (cell.querySelector('span[data-mcq-sub-group-caption="1"]')) return;
+                    const full = (cell.textContent || '').replace(/\s+/g, ' ').trim();
+                    const idxColon = full.indexOf(':');
+                    if (idxColon < 0) return;
+                    const header = full.slice(0, idxColon).trim();
+                    if (header !== subHeader) return;
+                    const after = full.slice(idxColon + 1).trim();
+                    const m = after.match(/^(.+?)\s*[—\-]\s*(.+)$/);
+                    if (!m) return;
+                    const keyStr = m[1].trim();
+                    const tail = m[2].trim();
+                    if (!keyStr) return;
+                    const color = map.get(keyStr) || telSubDisplayColorFromLookup(keyStr);
+                    if (!color) return;
+                    cell.innerHTML =
+                        esc(header) +
+                        ': <span data-mcq-sub-group-caption="1" style="color:' +
+                        esc(color) +
+                        '">' +
+                        esc(keyStr) +
+                        '</span> — ' +
+                        esc(tail);
+                });
+            } catch (e) {
+                console.warn('paintSubscriptionTypeGroupCaptionCells', e);
+            }
+        };
+
+        const selectCustomerRowById = (customerId) => {
+            if (!mainGrid.obj || !customerId) return;
+            const grid = mainGrid.obj;
+
+            const sortedIndex = () => {
+                const sorted = [...state.mainData].sort((a, b) => {
+                    const da = new Date(a.createdAtUtc || 0).getTime();
+                    const db = new Date(b.createdAtUtc || 0).getTime();
+                    return db - da;
+                });
+                return sorted.findIndex((row) => row.id === customerId);
+            };
+
+            let idx =
+                typeof grid.getRowIndexByPrimaryKey === 'function'
+                    ? grid.getRowIndexByPrimaryKey(customerId)
+                    : -1;
+            if (typeof idx !== 'number' || idx < 0) {
+                idx = sortedIndex();
+            }
+            if (idx < 0) return;
+
+            const pageSize = grid.pageSettings?.pageSize || 50;
+            const targetPage = Math.floor(idx / pageSize) + 1;
+            grid.pageSettings.currentPage = targetPage;
+            grid.refresh();
+
+            window.setTimeout(() => {
+                try {
+                    const view = typeof grid.getCurrentViewRecords === 'function' ? grid.getCurrentViewRecords() : [];
+                    const pageIdx = Array.isArray(view) ? view.findIndex((r) => r.id === customerId) : -1;
+                    if (pageIdx >= 0) {
+                        grid.selectRow(pageIdx);
+                    } else {
+                        const rowInPage = idx - (targetPage - 1) * pageSize;
+                        grid.selectRow(rowInPage);
+                    }
+                    if (mainGridRef.value) {
+                        mainGridRef.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                } catch (e) {
+                    console.warn('selectCustomerRowById', e);
+                }
+            }, 450);
+        };
+
+        const gridLocaleIsEnglish = () => {
+            const lang = (document.documentElement.lang || '').toLowerCase();
+            return lang.startsWith('en');
+        };
+
+        /** Pre-compute badge fields for Syncfusion string template (avoids fragile function templates across ej2 builds). */
+        const subscriberTypeBadgeFields = (item) => {
+            const raw = item?.subscriberType;
+            const s = String(raw ?? '').trim().toLowerCase();
+            const isCorporate = s === 'corporate' || raw === 1 || raw === '1';
+            const en = gridLocaleIsEnglish();
+            if (isCorporate) {
+                return {
+                    subscriberTypeBadgeClass: 'badge bg-warning text-dark px-2 py-1 fs-6',
+                    subscriberTypeLabel: en ? '🏢 Corporate' : '🏢 شركة',
+                };
+            }
+            return {
+                subscriberTypeBadgeClass: 'badge bg-primary text-white px-2 py-1 fs-6',
+                subscriberTypeLabel: en ? '👤 Individual' : '👤 فرد',
+            };
+        };
 
         const mainGrid = {
             obj: null,
@@ -771,12 +1458,43 @@
                     allowSorting: true,
                     allowSelection: true,
                     allowGrouping: gridAccess.showFullColumns,
-                    groupSettings: { columns: gridAccess.showFullColumns ? ['customerCategoryName'] : [] },
+                    groupSettings: {
+                        columns: gridAccess.showFullColumns ? ['customerCategoryName'] : [],
+                    },
                     allowTextWrap: true,
                     allowResizing: true,
                     allowPaging: true,
                     allowExcelExport: true,
                     filterSettings: { type: 'CheckBox' },
+                    actionBegin: (args) => {
+                        if (args.requestType !== 'filterbeforeopen') return;
+                        const colField =
+                            args.columnName || args.currentFilteringColumn || args.column?.field || args.filterModel?.field;
+                        if (colField !== 'subscriptionTypeName') return;
+                        const opts = args.filterModel?.options;
+                        if (!opts) return;
+                        opts.dataSource = buildSubscriptionTypeCheckboxFilterDataSource();
+                        if (Array.isArray(opts.filteredColumns)) {
+                            opts.filteredColumns = opts.filteredColumns.filter(
+                                (col) => col && col.field === 'subscriptionTypeName'
+                            );
+                        }
+                    },
+                    actionComplete: (args) => {
+                        const rt = args.requestType;
+                        if (rt === 'filterafteropen') {
+                            scheduleSubscriptionTypeFilterPaint();
+                            window.setTimeout(scheduleSubscriptionTypeFilterPaint, 150);
+                            window.setTimeout(scheduleSubscriptionTypeFilterPaint, 400);
+                        }
+                        if (rt === 'filterchoicerequest') {
+                            paintSubscriptionTypeFilterChecklistColors();
+                        }
+                        if (rt === 'grouping' || rt === 'ungrouping' || rt === 'reorderGrouping') {
+                            window.setTimeout(() => paintSubscriptionTypeGroupCaptionCells(), 0);
+                            window.setTimeout(() => paintSubscriptionTypeGroupCaptionCells(), 120);
+                        }
+                    },
                     sortSettings: { columns: [{ field: 'createdAtUtc', direction: 'Descending' }] },
                     pageSettings: { currentPage: 1, pageSize: 50, pageSizes: ["10", "20", "50", "100", "200", "All"] },
                     selectionSettings: { persistSelection: true, type: 'Single' },
@@ -790,8 +1508,31 @@
                         },
                         { field: 'number', headerText: 'Number', width: 150, minWidth: 150 },
                         { field: 'name', headerText: 'Name', width: 200, minWidth: 200 },
-                        { field: 'primaryMsisdn', headerText: 'MSISDN', width: 140, minWidth: 120 },
-                        { field: 'subscriptionTypeName', headerText: 'نوع الخط', width: 110, minWidth: 100 },
+                        {
+                            field: 'subscriberType',
+                            headerText: gridLocaleIsEnglish() ? 'Type' : 'النوع',
+                            width: 140,
+                            minWidth: 100,
+                            template: '#subscriberTypeBadgeTemplate',
+                        },
+                        ...(gridAccess.showFullColumns
+                            ? [{ field: 'telecomSubscriptionLineCount', headerText: '#خطوط', width: 72, minWidth: 64 }]
+                            : []),
+                        {
+                            field: 'primaryMsisdn',
+                            headerText: gridAccess.showFullColumns ? 'أرقام الخطوط' : 'MSISDN',
+                            width: gridAccess.showFullColumns ? 260 : 140,
+                            minWidth: gridAccess.showFullColumns ? 160 : 120,
+                            template: '#msisdnsSummaryTemplate',
+                        },
+                        {
+                            field: 'subscriptionTypeName',
+                            headerText: 'نوع الخط',
+                            width: 130,
+                            minWidth: 100,
+                            filter: { type: 'CheckBox', itemTemplate: '#mcqCustomerSubTypeFilterItem' },
+                            template: '#subscriptionTypeNameTemplate',
+                        },
                         { field: 'phoneNumber', headerText: 'Phone', width: 200, minWidth: 200 },
                         ...(gridAccess.showFullColumns
                             ? [
@@ -817,29 +1558,34 @@
                     beforeDataBound: () => { },
                     dataBound: function () {
                         if (gridAccess.canMutate && mainGrid.obj.toolbarModule) {
-                            mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], false);
+                            const ids = ['EditCustom', 'DeleteCustom', 'ManageContactCustom'];
+                            mainGrid.obj.toolbarModule.enableItems(ids, false);
                         }
                         const fit = ['name', 'primaryMsisdn', 'subscriptionTypeName', 'phoneNumber', 'createdAtUtc'];
                         if (gridAccess.showFullColumns) {
+                            fit.splice(1, 0, 'telecomSubscriptionLineCount');
                             fit.push('customerGroupName', 'customerCategoryName', 'street', 'emailAddress');
                         }
                         mainGrid.obj.autoFitColumns(fit);
+                        paintSubscriptionTypeGroupCaptionCells();
                     },
                     excelExportComplete: () => { },
                     rowSelected: () => {
                         if (!gridAccess.canMutate || !mainGrid.obj.toolbarModule) return;
+                        const ids = ['EditCustom', 'DeleteCustom', 'ManageContactCustom'];
                         if (mainGrid.obj.getSelectedRecords().length == 1) {
-                            mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], true);
+                            mainGrid.obj.toolbarModule.enableItems(ids, true);
                         } else {
-                            mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], false);
+                            mainGrid.obj.toolbarModule.enableItems(ids, false);
                         }
                     },
                     rowDeselected: () => {
                         if (!gridAccess.canMutate || !mainGrid.obj.toolbarModule) return;
+                        const ids = ['EditCustom', 'DeleteCustom', 'ManageContactCustom'];
                         if (mainGrid.obj.getSelectedRecords().length == 1) {
-                            mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], true);
+                            mainGrid.obj.toolbarModule.enableItems(ids, true);
                         } else {
-                            mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom', 'ManageContactCustom'], false);
+                            mainGrid.obj.toolbarModule.enableItems(ids, false);
                         }
                     },
                     rowSelecting: () => {
@@ -854,21 +1600,36 @@
 
                         if (args.item.id === 'AddCustom') {
                             state.deleteMode = false;
-                            state.mainTitle = 'Add Customer';
+                            state.mainTitle = MacquiresUiI18n.mb('customer','add');
                             resetFormState();
+                            state.customerOnboardingActive = true;
+                            state.customerOnboardingStep = 0;
+                            state.addFlowBootstrapTelecom = false;
                             mainModal.obj.show();
                         }
 
                         if (args.item.id === 'EditCustom') {
                             state.deleteMode = false;
+                            state.customerOnboardingActive = false;
+                            state.customerOnboardingStep = 0;
+                            state.addFlowBootstrapTelecom = false;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Edit Customer';
+                                state.mainTitle = MacquiresUiI18n.mb('customer','edit');
                                 state.id = selectedRecord.id ?? '';
                                 state.number = selectedRecord.number ?? '';
                                 state.name = selectedRecord.name ?? '';
                                 state.customerGroupId = selectedRecord.customerGroupId ?? null;
                                 state.customerCategoryId = selectedRecord.customerCategoryId ?? null;
+                                state.subscriberType = selectedRecord.subscriberType === 'Corporate' ? 1 : 0;
+                                state.nationalId = '';
+                                state.nationalIdPersisted = selectedRecord.nationalId ?? '';
+                                state.nationalIdRevealed = false;
+                                state.nationalIdMasked = '';
+                                state.dateOfBirth = selectedRecord.dateOfBirth ? selectedRecord.dateOfBirth.substring(0, 10) : '';
+                                state.commercialRegistration = selectedRecord.commercialRegistration ?? '';
+                                state.taxNumber = selectedRecord.taxNumber ?? '';
+                                state.authorizedSignatory = selectedRecord.authorizedSignatory ?? '';
                                 state.description = selectedRecord.description ?? '';
                                 state.street = selectedRecord.street ?? '';
                                 state.city = selectedRecord.city ?? '';
@@ -885,15 +1646,61 @@
                                 state.instagram = selectedRecord.instagram ?? '';
                                 state.twitterX = selectedRecord.twitterX ?? '';
                                 state.tikTok = selectedRecord.tikTok ?? '';
+                                state.telecomMsisdn = selectedRecord.primaryMsisdn ?? '';
+                                state.telecomMsisdnInitial = state.telecomMsisdn;
+                                const defId =
+                                    (state.telecomLineTypes || []).find((x) => x.isDefault)?.id ||
+                                    TEL_SUB_DEFAULT_PREPAID_ID;
+                                state.telecomSubscriptionTypeId =
+                                    selectedRecord.subscriptionTypeId || defId;
+                                state.telecomSubscriptionTypeIdInitial = state.telecomSubscriptionTypeId;
+                                state.telecomSubscriptionRows = Array.isArray(selectedRecord.telecomLines)
+                                    ? selectedRecord.telecomLines
+                                    : [];
+                                if (
+                                    gridAccess.showFullColumns &&
+                                    state.id &&
+                                    (!state.telecomSubscriptionRows || state.telecomSubscriptionRows.length === 0)
+                                ) {
+                                    try {
+                                        const r = await AxiosManager.get(
+                                            '/Customer/GetCustomerList?isDeleted=false&customerId=' +
+                                                encodeURIComponent(state.id)
+                                        );
+                                        const row0 = r?.data?.content?.data?.[0];
+                                        state.telecomSubscriptionRows = Array.isArray(row0?.telecomLines)
+                                            ? row0.telecomLines
+                                            : [];
+                                    } catch {
+                                        state.telecomSubscriptionRows = [];
+                                    }
+                                }
+                                const hlrIds = [...new Set(state.telecomSubscriptionRows.map((s) => (s.subscriberProfileId || '').trim()).filter(Boolean))];
+                                state.hlrSubscriberProfileId = hlrIds[0] || '';
+                                state.hlrLiveData = null;
+                                if (state.telecomSubscriptionRows.length > 0) {
+                                    const prim = state.telecomSubscriptionRows.find(s => s.isPrimaryLine) || state.telecomSubscriptionRows[0];
+                                    state.telecomSubscriptionId = prim.telecomSubscriptionId;
+                                    state.telecomSubscriptionIdInitial = prim.telecomSubscriptionId;
+                                    syncTelecomLineTypeFromSelectedSubscription();
+                                } else {
+                                    state.telecomSubscriptionId = '';
+                                    state.telecomSubscriptionIdInitial = '';
+                                }
+                                state.telecomSubscriptionTypeIdInitial = state.telecomSubscriptionTypeId;
+                                await loadCustomer360(state.id);
                                 mainModal.obj.show();
                             }
                         }
 
                         if (args.item.id === 'DeleteCustom') {
                             state.deleteMode = true;
+                            state.customerOnboardingActive = false;
+                            state.customerOnboardingStep = 0;
+                            state.addFlowBootstrapTelecom = false;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Delete Customer?';
+                                state.mainTitle = MacquiresUiI18n.mb('customer','delete');
                                 state.id = selectedRecord.id ?? '';
                                 mainModal.obj.show();
                             }
@@ -903,7 +1710,9 @@
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
                                 state.id = selectedRecord.id ?? '';
-                                state.manageContactTitle = 'Manage Contact';
+                                state.manageContactTitle = (typeof MacquiresUiI18n !== 'undefined' && MacquiresUiI18n.mb)
+                                    ? MacquiresUiI18n.mb('manageContactModal', 'title')
+                                    : 'Manage Contact';
                                 await methods.populateSecondaryData(state.id);
                                 secondaryGrid.refresh();
                                 manageContactModal.obj.show();
@@ -1061,16 +1870,28 @@
             }
         };
 
+        const refreshManageContactModalTitle = () => {
+            if (typeof MacquiresUiI18n !== 'undefined' && MacquiresUiI18n.mb) {
+                state.manageContactTitle = MacquiresUiI18n.mb('manageContactModal', 'title');
+            }
+        };
+
         Vue.onMounted(async () => {
+            document.documentElement.addEventListener('syriatel-locale-changed', refreshManageContactModalTitle);
+            document.documentElement.addEventListener('syriatel-ui-modals-loaded', refreshManageContactModalTitle);
+            refreshManageContactModalTitle();
             try {
-                await SecurityManager.authorizePage(['Customers']);
+                await SecurityManager.authorizePage(['Customers', 'TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement']);
                 await SecurityManager.validateToken();
 
-                await methods.populateMainData();
+                await Promise.all([
+                    methods.populateTelecomLineTypes(),
+                    methods.populateMainData(),
+                    methods.populateCustomerGroupListLookupData(),
+                    methods.populateCustomerCategoryListLookupData(),
+                ]);
                 await mainGrid.create(state.mainData);
-                await methods.populateCustomerGroupListLookupData();
                 customerGroupListLookup.create();
-                await methods.populateCustomerCategoryListLookupData();
                 customerCategoryListLookup.create();
                 nameText.create();
                 numberText.create();
@@ -1092,12 +1913,710 @@
                 mainModal.create();
                 manageContactModal.create();
                 secondaryGrid.create([]);
+                const pageQs = new URLSearchParams(window.location.search);
+                const deepCustomerId = pageQs.get('customerId');
+                if (pageQs.get('embed') === '1') {
+                    state.isEmbedded = true;
+                }
+                if (deepCustomerId) {
+                    window.setTimeout(() => selectCustomerRowById(deepCustomerId), 350);
+                }
+                if (pageQs.get('action') === 'new') {
+                    window.setTimeout(() => {
+                        state.deleteMode = false;
+                        state.mainTitle = typeof MacquiresUiI18n !== 'undefined' ? MacquiresUiI18n.mb('customer','add') : 'إضافة مشترك';
+                        resetFormState();
+                        state.customerOnboardingActive = true;
+                        state.customerOnboardingStep = 0;
+                        state.addFlowBootstrapTelecom = false;
+                        if (mainModal.obj) {
+                            mainModal.obj.show();
+                        }
+                    }, 400);
+                }
             } catch (e) {
                 console.error('page init error:', e);
             } finally {
                 hideSpinnerAndShowContent();
             }
         });
+
+        const onCustomerTelecomSubscriptionChange = () => {
+            const row = (state.telecomSubscriptionRows || []).find(
+                (s) => s.telecomSubscriptionId === state.telecomSubscriptionId
+            );
+            if (row && (row.subscriptionTypeCode || row.subscriptionTypeName)) {
+                const lt = (state.telecomLineTypes || []).find(
+                    (x) => x.code === row.subscriptionTypeCode || x.nameAr === row.subscriptionTypeName
+                );
+                if (lt && lt.id) {
+                    state.telecomSubscriptionTypeId = lt.id;
+                }
+            }
+        };
+
+        const vasPanels = Vue.reactive({});
+        const vasPanelLoading = Vue.reactive({});
+        const vasPanelError = Vue.reactive({});
+        const vasToggling = Vue.reactive({});
+
+        const vasToggleKey = (msisdn, serviceCode) => `${(msisdn || '').trim()}:${(serviceCode || '').trim()}`;
+
+        const isVasToggling = (msisdn, serviceCode) => !!vasToggling[vasToggleKey(msisdn, serviceCode)];
+
+        const loadVasPanelForMsisdn = async (msisdn) => {
+            const m = (msisdn || '').trim();
+            if (!m || !gridAccess.canToggleVas) return;
+            vasPanelLoading[m] = true;
+            vasPanelError[m] = '';
+            try {
+                const res = await AxiosManager.get(
+                    '/Vas/GetSubscriberVasPanel?msisdn=' + encodeURIComponent(m),
+                    {}
+                );
+                vasPanels[m] = res?.data?.content ?? { services: [] };
+            } catch (e) {
+                vasPanels[m] = { services: [] };
+                vasPanelError[m] = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? 'تعذّر تحميل VAS';
+            } finally {
+                vasPanelLoading[m] = false;
+            }
+        };
+
+        const toggleVasService = async (sub, svc, event) => {
+            const msisdn = (sub?.msisdn || '').trim();
+            const code = (svc?.serviceCode || '').trim();
+            if (!msisdn || !code) return;
+            const wantActive = !!event?.target?.checked;
+            const key = vasToggleKey(msisdn, code);
+            if (vasToggling[key]) {
+                if (event?.target) event.target.checked = !wantActive;
+                return;
+            }
+            vasToggling[key] = true;
+            try {
+                const res = await AxiosManager.post('/Vas/ToggleSubscriberVasService', {
+                    msisdn,
+                    serviceCode: code,
+                    action: wantActive ? 0 : 1,
+                    actorUserId: StorageManager.getUserId(),
+                });
+                if (res?.data?.code === 200) {
+                    await loadVasPanelForMsisdn(msisdn);
+                    if (wantActive) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم التفعيل',
+                            text: res?.data?.content?.operationNumber
+                                ? 'عملية: ' + res.data.content.operationNumber
+                                : '',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    if (event?.target) event.target.checked = !wantActive;
+                    Swal.fire({ icon: 'error', title: 'فشل', text: res?.data?.message || '' });
+                }
+            } catch (e) {
+                if (event?.target) event.target.checked = !wantActive;
+                const errName = e?.response?.data?.error?.name;
+                const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? '';
+                Swal.fire({
+                    icon: errName === 'BusinessRuleViolationException' ? 'warning' : 'error',
+                    title: errName === 'BusinessRuleViolationException' ? 'تعذّر التفعيل' : 'خطأ',
+                    text: msg,
+                });
+            } finally {
+                vasToggling[key] = false;
+            }
+        };
+
+        const lineProcessing = Vue.reactive({});
+        const lineActionModal = Vue.reactive({
+            sub: null,
+            busy: false,
+            msisdnAssetId: '',
+            productOfferingId: '',
+            simIccid: '',
+            offerings: [],
+            poolNumbers: [],
+            migrationProducts: [],
+            currentProductName: '',
+            takeoverSearchNationalId: '',
+            takeoverSearchPhone: '',
+            takeoverResults: [],
+            takeoverTargetCustomerId: '',
+            takeoverTargetProfileId: '',
+            takeoverIdentityFile: null,
+        });
+
+        const isLineProcessing = (key) => !!lineProcessing[key || ''];
+
+        const hasAnyLineAction = () =>
+            gridAccess.canMigrateLine || gridAccess.canSimSwapLine || gridAccess.canTakeOverLine;
+
+        const showBsModal = (id) => {
+            const el = document.getElementById(id);
+            if (el && window.bootstrap?.Modal) {
+                window.bootstrap.Modal.getOrCreateInstance(el).show();
+            }
+        };
+
+        const hideBsModal = (id) => {
+            const el = document.getElementById(id);
+            const inst = el && window.bootstrap?.Modal?.getInstance(el);
+            if (inst) inst.hide();
+        };
+
+        const showLineActionError = (e) => {
+            const errName = e?.response?.data?.error?.name;
+            const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? '';
+            if (window.Swal) {
+                Swal.fire({
+                    icon: errName === 'BusinessRuleViolationException' ? 'warning' : 'error',
+                    title: errName === 'BusinessRuleViolationException' ? 'تعذّر التنفيذ' : 'خطأ',
+                    text: String(msg),
+                });
+            }
+        };
+
+        const resetLineActionModal = () => {
+            lineActionModal.sub = null;
+            lineActionModal.busy = false;
+            lineActionModal.msisdnAssetId = '';
+            lineActionModal.productOfferingId = '';
+            lineActionModal.simIccid = '';
+            lineActionModal.migrationProducts = [];
+            lineActionModal.currentProductName = '';
+            lineActionModal.takeoverSearchNationalId = '';
+            lineActionModal.takeoverSearchPhone = '';
+            lineActionModal.takeoverResults = [];
+            lineActionModal.takeoverTargetCustomerId = '';
+            lineActionModal.takeoverTargetProfileId = '';
+            lineActionModal.takeoverIdentityFile = null;
+        };
+
+        const onTakeoverIdentityFileChange = (ev) => {
+            lineActionModal.takeoverIdentityFile = ev?.target?.files?.[0] || null;
+        };
+
+        const primarySubscriberProfileId = () => {
+            const subs = state.customer360?.activeSubscriptions || [];
+            const p = subs.find((s) => s.isPrimaryLine) || subs[0];
+            return (p?.subscriberProfileId || '').trim();
+        };
+
+        const runTelecomPipeline = async ({ processingKey, kindLabel, msisdn, buildBody }) => {
+            const key = processingKey || '__line__';
+            if (lineProcessing[key]) return false;
+            lineProcessing[key] = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const notes = `Customer360|${kindLabel}|${msisdn || '—'}`;
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', {
+                    ...buildBody(),
+                    notes,
+                    createdById: uid,
+                });
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء العملية'), {
+                        response: createRes,
+                    });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                    id: opId,
+                    updatedById: uid,
+                });
+                if (confirmRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        response: confirmRes,
+                    });
+                }
+                if (window.Swal) {
+                    Swal.fire({ icon: 'success', title: 'تم التنفيذ', timer: 1800, showConfirmButton: false });
+                }
+                await loadCustomer360(state.id);
+                return true;
+            } catch (e) {
+                showLineActionError(e);
+                return false;
+            } finally {
+                lineProcessing[key] = false;
+            }
+        };
+
+        const parseMsisdnPoolRows = (res) => {
+            if (typeof StorageManager?.apiList === 'function') {
+                const list = StorageManager.apiList(res);
+                if (Array.isArray(list) && list.length > 0) return list;
+            }
+            const content = res?.data?.content ?? res?.data?.Content;
+            const rows = content?.data ?? content?.Data;
+            return Array.isArray(rows) ? rows : [];
+        };
+
+        const isAvailableMsisdnPoolRow = (row) => {
+            if (!row) return false;
+            const name = String(row.poolStatusName ?? row.PoolStatusName ?? '').toLowerCase();
+            if (name === 'available') return true;
+            const st = row.poolStatus ?? row.PoolStatus;
+            return st === 0 || st === '0' || st === 'Available';
+        };
+
+        const loadNewLineModalData = async () => {
+            try {
+                const [poolRes, offRes] = await Promise.all([
+                    AxiosManager.get('/Telecom/GetMsisdnAssetPoolList?status=Available', {}),
+                    AxiosManager.get('/ProductOffering/GetProductOfferingList', {}),
+                ]);
+                lineActionModal.poolNumbers = parseMsisdnPoolRows(poolRes).filter(isAvailableMsisdnPoolRow);
+                const offContent = offRes?.data?.content ?? offRes?.data?.Content;
+                const allOfferings = offContent?.data ?? offContent?.Data ?? [];
+                lineActionModal.offerings = (Array.isArray(allOfferings) ? allOfferings : []).filter(
+                    (o) => o.isActive !== false
+                );
+            } catch (e) {
+                lineActionModal.poolNumbers = [];
+                lineActionModal.offerings = [];
+                console.warn('loadNewLineModalData failed', e);
+            }
+        };
+
+        const openNewLineModal = async () => {
+            if (!gridAccess.canActivateLine || !state.id) return;
+            resetLineActionModal();
+            await loadNewLineModalData();
+            showBsModal('C360NewLineModal');
+        };
+
+        const openMigrateModal = async (sub) => {
+            if (!gridAccess.canMigrateLine || !sub) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            try {
+                let url =
+                    '/Product/GetMigrationEligibleProducts?subscriberProfileId=' +
+                    encodeURIComponent(sub.subscriberProfileId || '');
+                if (sub.msisdnAssetId) {
+                    url += '&msisdnAssetId=' + encodeURIComponent(sub.msisdnAssetId);
+                }
+                const res = await AxiosManager.get(url, {});
+                const c = res?.data?.content;
+                lineActionModal.migrationProducts = Array.isArray(c?.data) ? c.data : [];
+                lineActionModal.currentProductName = c?.currentProductName || c?.CurrentProductName || sub.productName || '';
+            } catch {
+                lineActionModal.migrationProducts = [];
+            }
+            showBsModal('C360MigrateModal');
+        };
+
+        const openSimSwapModal = (sub) => {
+            if (!gridAccess.canSimSwapLine || !sub) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            showBsModal('C360SimSwapModal');
+        };
+
+        const openTakeOverModal = (sub) => {
+            if (!gridAccess.canTakeOverLine || !sub) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            showBsModal('C360TakeOverModal');
+        };
+
+        const searchTakeoverTarget = async () => {
+            const nat = (lineActionModal.takeoverSearchNationalId || '').trim();
+            const ph = (lineActionModal.takeoverSearchPhone || '').trim();
+            if (nat.length < 2 && ph.length < 2) {
+                if (window.Swal) Swal.fire({ icon: 'info', title: 'أدخل رقم وطني أو جوال (حرفين على الأقل)' });
+                return;
+            }
+            lineActionModal.busy = true;
+            try {
+                const qs = new URLSearchParams();
+                if (nat) qs.set('nationalId', nat);
+                if (ph) qs.set('phone', ph);
+                const res = await AxiosManager.get('/Customer/FindCustomerCandidates?' + qs.toString(), {});
+                lineActionModal.takeoverResults = res?.data?.content?.data ?? [];
+                lineActionModal.takeoverTargetCustomerId = '';
+                lineActionModal.takeoverTargetProfileId = '';
+            } catch (e) {
+                lineActionModal.takeoverResults = [];
+                showLineActionError(e);
+            } finally {
+                lineActionModal.busy = false;
+            }
+        };
+
+        const selectTakeoverTarget = async (c) => {
+            if (!c?.id) return;
+            lineActionModal.takeoverTargetCustomerId = c.id;
+            lineActionModal.takeoverTargetProfileId = '';
+            lineActionModal.busy = true;
+            try {
+                const res = await AxiosManager.get('/Customer/GetCustomer360?customerId=' + encodeURIComponent(c.id), {});
+                const subs = res?.data?.content?.activeSubscriptions || [];
+                const pick = subs.find((s) => s.isPrimaryLine) || subs[0];
+                lineActionModal.takeoverTargetProfileId = (pick?.subscriberProfileId || '').trim();
+                if (!lineActionModal.takeoverTargetProfileId && window.Swal) {
+                    Swal.fire({ icon: 'warning', title: 'لا يوجد ملف مشترك للعميل المختار' });
+                }
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineActionModal.busy = false;
+            }
+        };
+
+        const submitNewLineActivation = async () => {
+            const profileId = primarySubscriberProfileId();
+            const assetId = (lineActionModal.msisdnAssetId || '').trim();
+            const offeringId = (lineActionModal.productOfferingId || '').trim();
+            const iccid = (lineActionModal.simIccid || '').trim();
+            if (!profileId || !assetId || !offeringId || iccid.length < 19) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أكمل الرقم والباقة وICCID (19 رقم)' });
+                return;
+            }
+            lineActionModal.busy = true;
+            try {
+                await AxiosManager.post('/Telecom/ReserveMsisdnForCustomer', {
+                    msisdnAssetId: assetId,
+                    customerId: state.id,
+                    reservedByUserId: StorageManager.getUserId(),
+                });
+            } catch (e) {
+                lineActionModal.busy = false;
+                showLineActionError(e);
+                return;
+            }
+            const ok = await runTelecomPipeline({
+                processingKey: '__new__',
+                kindLabel: 'NewActivation',
+                msisdn: lineActionModal.poolNumbers.find((a) => a.id === assetId)?.msisdn || assetId,
+                buildBody: () => ({
+                    kind: 0,
+                    subscriberProfileId: profileId,
+                    msisdnAssetId: assetId,
+                    productOfferingId: offeringId,
+                    simIccid: iccid,
+                }),
+            });
+            lineActionModal.busy = false;
+            if (ok) hideBsModal('C360NewLineModal');
+        };
+
+        const submitMigrate = async () => {
+            const sub = lineActionModal.sub;
+            const offeringId = (lineActionModal.productOfferingId || '').trim();
+            if (!sub || !offeringId) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر الباقة الجديدة' });
+                return;
+            }
+            lineActionModal.busy = true;
+            const ok = await runTelecomPipeline({
+                processingKey: sub.id,
+                kindLabel: 'Migration',
+                msisdn: sub.msisdn,
+                buildBody: () => ({
+                    kind: 1,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    productOfferingId: offeringId,
+                }),
+            });
+            lineActionModal.busy = false;
+            if (ok) hideBsModal('C360MigrateModal');
+        };
+
+        const submitSimSwap = async () => {
+            const sub = lineActionModal.sub;
+            const iccid = (lineActionModal.simIccid || '').trim();
+            if (!sub || iccid.length < 19) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أدخل ICCID الجديد (19 رقم)' });
+                return;
+            }
+            lineActionModal.busy = true;
+            const ok = await runTelecomPipeline({
+                processingKey: sub.id,
+                kindLabel: 'SimSwap',
+                msisdn: sub.msisdn,
+                buildBody: () => ({
+                    kind: 3,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    simIccid: iccid,
+                }),
+            });
+            lineActionModal.busy = false;
+            if (ok) hideBsModal('C360SimSwapModal');
+        };
+
+        const submitTakeOver = async () => {
+            const sub = lineActionModal.sub;
+            const secondary = (lineActionModal.takeoverTargetProfileId || '').trim();
+            if (!sub || !secondary) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر المالك الجديد' });
+                return;
+            }
+            if (!lineActionModal.takeoverIdentityFile) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع هوية المالك الجديد' });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', {
+                    kind: 2,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    secondarySubscriberProfileId: secondary,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    notes: `Customer360|TakeOver|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                });
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), { response: createRes });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                const form = new FormData();
+                form.append('id', opId);
+                form.append('updatedById', uid || '');
+                form.append('file', lineActionModal.takeoverIdentityFile);
+                await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم الإرسال للباك أوفيس',
+                        text: 'الطلب قيد التدقيق القانوني. بعد الاعتماد يُنفَّذ النقل على CBS وHLR تلقائياً.',
+                        timer: 2800,
+                        showConfirmButton: false,
+                    });
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360TakeOverModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
+        };
+
+        const pipelineStepsForOp = (status) => {
+            const s = Number(status);
+            const failed = s === 4;
+            return [
+                { label: 'مسودة', done: s !== 4, active: s === 0, failed },
+                { label: 'وثائق', done: s >= 5 || s === 6 || s === 3 || s === 1, active: s === 5, failed },
+                { label: 'تجهيز', done: s === 3 || s === 1, active: s === 6, failed },
+                { label: 'منجز', done: s === 3, active: false, failed },
+            ];
+        };
+
+        const loadCustomer360 = async (customerId) => {
+            const cid = (customerId || '').trim();
+            if (!cid) {
+                state.customer360 = null;
+                return;
+            }
+            state.customer360Busy = true;
+            state.customer360Error = null;
+            state.lineWallets = {};
+            try {
+                const res = await AxiosManager.get('/Customer/GetCustomer360?customerId=' + encodeURIComponent(cid), {});
+                state.customer360 = res?.data?.content ?? null;
+                if (state.customer360?.nationalIdMasked) {
+                    state.nationalIdMasked = state.customer360.nationalIdMasked;
+                }
+                const subs = state.customer360?.activeSubscriptions || [];
+                await loadCustomer360LineWallets(cid, subs);
+                for (const sub of subs) {
+                    if (sub.msisdn && gridAccess.canToggleVas) loadVasPanelForMsisdn(sub.msisdn);
+                }
+            } catch (e) {
+                state.customer360 = null;
+                state.customer360Error = e?.response?.data?.message || e?.message || 'تعذّر تحميل Customer 360';
+            } finally {
+                state.customer360Busy = false;
+            }
+        };
+
+        const formatWalletAmount = (val) => {
+            if (val == null || val === '') return '—';
+            const n = Number(val);
+            if (Number.isNaN(n)) return String(val);
+            return n.toLocaleString('ar-SY', { maximumFractionDigits: 2 });
+        };
+
+        const walletBucketLabel = (b) => {
+            const label = b?.label ?? b?.Label;
+            if (label) return label;
+            const t = b?.componentType ?? b?.ComponentType;
+            const map = { 0: 'دقائق', 1: 'إنترنت', 2: 'رسائل', Voice: 'دقائق', Data: 'إنترنت', Sms: 'رسائل' };
+            return map[t] ?? String(t ?? '—');
+        };
+
+        const lineWalletForSub = (subscriptionId) => state.lineWallets[subscriptionId] ?? null;
+
+        const loadCustomer360LineWallets = async (customerId, subs) => {
+            const list = subs || [];
+            list.forEach((s) => {
+                state.lineWalletsBusy[s.id] = true;
+            });
+            try {
+                const res = await AxiosManager.get(
+                    '/Customer/GetCustomer360LineWallets?customerId=' + encodeURIComponent(customerId),
+                    {}
+                );
+                const map =
+                    res?.data?.content?.walletsBySubscriptionId ??
+                    res?.data?.content?.WalletsBySubscriptionId ??
+                    {};
+                state.lineWallets = { ...map };
+            } catch {
+                state.lineWallets = {};
+            } finally {
+                list.forEach((s) => {
+                    state.lineWalletsBusy[s.id] = false;
+                });
+            }
+        };
+
+        const openRechargeLineModal = async (sub) => {
+            if (!state.id || !sub?.id) return;
+            const wallet = lineWalletForSub(sub.id);
+            const msisdn = sub.msisdn || wallet?.msisdn || '';
+            if (!msisdn) {
+                Swal.fire({ icon: 'warning', title: 'لا يوجد رقم خط للشحن' });
+                return;
+            }
+            const { value: amountStr } = await Swal.fire({
+                title: 'شحن رصيد الخط',
+                html: `<p class="small" dir="ltr">${msisdn}</p><p class="small">الرصيد: <strong>${formatWalletAmount(wallet?.balance)}</strong> ل.س</p>`,
+                input: 'number',
+                inputPlaceholder: 'المبلغ بالليرة السورية',
+                showCancelButton: true,
+                confirmButtonText: 'شحن',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#c8102e',
+                inputValidator: (v) => {
+                    const n = parseFloat(v);
+                    if (!v || Number.isNaN(n) || n <= 0) return 'أدخل مبلغاً صحيحاً';
+                },
+            });
+            if (!amountStr) return;
+            state.rechargeBusy = sub.id;
+            try {
+                const res = await AxiosManager.post('/Customer/RechargeCustomer360Line', {
+                    customerId: state.id,
+                    subscriptionId: sub.id,
+                    amount: parseFloat(amountStr),
+                });
+                const body = res?.data?.content ?? res?.data?.Content;
+                await loadCustomer360(state.id);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم الشحن',
+                    text: body?.message || body?.Message || 'تم تحديث الرصيد',
+                    timer: 2800,
+                    showConfirmButton: false,
+                });
+            } catch (e) {
+                const msg = e?.response?.data?.message || e?.message || 'تعذّر الشحن';
+                Swal.fire({ icon: 'error', title: msg });
+            } finally {
+                state.rechargeBusy = '';
+            }
+        };
+
+        const revealNationalId = async () => {
+            if (!gridAccess.canViewDecryptedPii || !state.id) return;
+            try {
+                const res = await AxiosManager.get('/Customer/RevealNationalId?customerId=' + encodeURIComponent(state.id), {});
+                const c = res?.data?.content;
+                if (c?.allowed && c?.nationalId) {
+                    state.nationalId = c.nationalId;
+                    state.nationalIdRevealed = true;
+                } else if (window.Swal) {
+                    Swal.fire({ icon: 'info', title: 'غير متاح', text: 'لا يوجد رقم وطني لهذا السجل.' });
+                }
+            } catch (e) {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'صلاحية', text: e?.response?.data?.message || 'ليس لديك صلاحية ViewDecryptedPII' });
+                }
+            }
+        };
+
+        const checkHlrForSubscription = async (sub) => {
+            const pid = (sub?.subscriberProfileId || '').trim();
+            if (!pid) return;
+            state.hlrSubscriberProfileId = pid;
+            await queryCustomerHlrLiveStatus();
+        };
+
+        const resyncHlrForSubscription = async (sub) => {
+            const pid = (sub?.subscriberProfileId || '').trim();
+            if (!pid) return;
+            state.hlrSubscriberProfileId = pid;
+            await resyncCustomerFromHlr();
+            await loadCustomer360(state.id);
+        };
+
+        const uniqueSubscriberProfileIds = () => {
+            const rows = state.telecomSubscriptionRows || [];
+            const ids = [...new Set(rows.map((r) => (r.subscriberProfileId || '').trim()).filter(Boolean))];
+            return ids;
+        };
+
+        const queryCustomerHlrLiveStatus = async () => {
+            const pid = (state.hlrSubscriberProfileId || '').trim();
+            if (!pid) return;
+            state.hlrLiveBusy = true;
+            state.hlrLiveData = null;
+            try {
+                const res = await AxiosManager.get(
+                    '/Telecom/QueryHlrLiveStatus?subscriberProfileId=' + encodeURIComponent(pid),
+                    {}
+                );
+                state.hlrLiveData = res?.data?.content ?? null;
+            } catch (e) {
+                state.hlrLiveData = { success: false, message: e?.response?.data?.message || e?.message || 'HLR' };
+            } finally {
+                state.hlrLiveBusy = false;
+            }
+        };
+
+        const resyncCustomerFromHlr = async () => {
+            const pid = (state.hlrSubscriberProfileId || '').trim();
+            if (!pid) return;
+            state.hlrResyncBusy = true;
+            try {
+                const res = await AxiosManager.post('/Telecom/ResyncSubscriberFromHlr', {
+                    subscriberProfileId: pid,
+                    actorUserId: StorageManager.getUserId(),
+                });
+                const body = res?.data?.content;
+                if (res?.data?.code === 200 && body?.success) {
+                    await queryCustomerHlrLiveStatus();
+                    alert(body.message || 'تمت المزامنة');
+                } else {
+                    alert(body?.message || res?.data?.message || 'فشل المزامنة');
+                }
+            } catch (e) {
+                alert(e?.response?.data?.message || e?.message || 'HLR');
+            } finally {
+                state.hlrResyncBusy = false;
+            }
+        };
 
         return {
             mainGridRef,
@@ -1123,8 +2642,79 @@
             tikTokRef,
             customerGroupIdRef,
             customerCategoryIdRef,
+            gridAccess,
             state,
             handler,
+            customerOnboarding,
+            onCustomerTelecomSubscriptionChange,
+            uniqueSubscriberProfileIds,
+            queryCustomerHlrLiveStatus,
+            resyncCustomerFromHlr,
+            loadCustomer360,
+            revealNationalId,
+            pipelineStepsForOp,
+            lineWalletForSub,
+            formatWalletAmount,
+            walletBucketLabel,
+            openRechargeLineModal,
+            checkHlrForSubscription,
+            resyncHlrForSubscription,
+            vasPanels,
+            vasPanelLoading,
+            vasPanelError,
+            isVasToggling,
+            toggleVasService,
+            lineActionModal,
+            isLineProcessing,
+            hasAnyLineAction,
+            openNewLineModal,
+            openMigrateModal,
+            openSimSwapModal,
+            openTakeOverModal,
+            submitNewLineActivation,
+            submitMigrate,
+            submitSimSwap,
+            submitTakeOver,
+            onTakeoverIdentityFileChange,
+            searchTakeoverTarget,
+            selectTakeoverTarget,
+            openSupportTicketModal: async () => {
+                const subs = state.customer360?.activeSubscriptions || [];
+                const primary = subs.find((s) => s.isPrimaryLine) || subs[0];
+                const msisdn = primary?.msisdn || '';
+                if (!msisdn) {
+                    Swal.fire({ icon: 'warning', title: 'لا يوجد رقم MSISDN للمشترك' });
+                    return;
+                }
+                const { value: form } = await Swal.fire({
+                    title: 'فتح تذكرة دعم فني',
+                    html:
+                        `<p class="small text-muted" dir="ltr">${msisdn}</p>` +
+                        '<select id="swal-issue" class="form-select mb-2"><option value="0">شبكة</option><option value="1">فوترة</option><option value="2">حظر شريحة</option><option value="3">تفعيل</option></select>' +
+                        '<textarea id="swal-notes" class="form-control" rows="3" placeholder="وصف المشكلة"></textarea>',
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'إنشاء',
+                    preConfirm: () => ({
+                        issueType: Number(document.getElementById('swal-issue')?.value ?? 0),
+                        notes: document.getElementById('swal-notes')?.value?.trim() || '',
+                    }),
+                });
+                if (!form) return;
+                try {
+                    await AxiosManager.post('/TelecomBackOffice/CreateTechnicalTicket', {
+                        msisdn,
+                        issueType: form.issueType,
+                        priority: 1,
+                        notes: form.notes,
+                        customerId: state.id,
+                        subscriberProfileId: primary?.subscriberProfileId,
+                    });
+                    Swal.fire({ icon: 'success', title: 'تم إنشاء التذكرة', timer: 2000, showConfirmButton: false });
+                } catch (e) {
+                    Swal.fire({ icon: 'error', title: e?.response?.data?.message || 'فشل إنشاء التذكرة' });
+                }
+            },
         };
     }
 };

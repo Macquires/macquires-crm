@@ -1,0 +1,132 @@
+@page
+@{
+    ViewData["Title"] = "إعداد لوحة القيادة — Bento";
+}
+
+<div id="app" v-cloak>
+    <div class="row">
+        <div class="col-12">
+            <p class="text-muted small mb-2">
+                إدارة كروت لوحة القيادة الديناميكية — الأدوار (Personas)، مزوّدي البيانات، والترتيب.
+                <a href="/Dashboards/DefaultDashboard">معاينة اللوحة</a>
+            </p>
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.mainTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" />
+                    <form id="MainForm">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label" for="WidgetKey">Widget key</label>
+                                <input id="WidgetKey" class="form-control" v-model="state.widgetKey" maxlength="128" :disabled="!!state.id" autocomplete="off" />
+                                <div class="form-text">مثال: cc_search — لا يُغيّر بعد الإنشاء.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="SortOrder">Sort order</label>
+                                <input id="SortOrder" type="number" class="form-control" v-model.number="state.sortOrder" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end pb-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="IsActive" v-model="state.isActive" />
+                                    <label class="form-check-label" for="IsActive">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="TitleAr">Title (Arabic)</label>
+                                <input id="TitleAr" class="form-control" v-model="state.titleAr" maxlength="255" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="TitleEn">Title (English)</label>
+                                <input id="TitleEn" class="form-control" v-model="state.titleEn" maxlength="255" />
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label" for="Icon">Bootstrap icon</label>
+                                <input id="Icon" class="form-control" v-model="state.icon" maxlength="64" placeholder="bi-people" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="GridSize">Grid span (12-col)</label>
+                                <select id="GridSize" class="form-select" v-model.number="state.gridSize">
+                                    <option :value="4">4 — Small</option>
+                                    <option :value="6">6 — Medium</option>
+                                    <option :value="8">8 — Large</option>
+                                    <option :value="12">12 — Full</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="WidgetKind">Widget kind</label>
+                                <select id="WidgetKind" class="form-select" v-model.number="state.widgetKind">
+                                    <option :value="0">Stat (KPI)</option>
+                                    <option :value="1">CTA (رابط)</option>
+                                    <option :value="2">Omni search</option>
+                                    <option :value="3">Status list</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="ProviderKey">Data provider</label>
+                                <select id="ProviderKey" class="form-select" v-model="state.providerKey">
+                                    <option value="">— لا مزوّد —</option>
+                                    <option v-for="p in state.providers" :key="p" :value="p">{{ p }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="RefreshIntervalSeconds">Refresh (seconds)</label>
+                                <input id="RefreshIntervalSeconds" type="number" min="0" class="form-control" v-model.number="state.refreshIntervalSeconds" placeholder="30" />
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2" v-show="state.widgetKind === 1">
+                            <div class="col-md-6">
+                                <label class="form-label" for="CtaUrl">CTA URL</label>
+                                <input id="CtaUrl" class="form-control" v-model="state.ctaUrl" maxlength="512" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="CtaLabelAr">CTA label AR</label>
+                                <input id="CtaLabelAr" class="form-control" v-model="state.ctaLabelAr" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="CtaLabelEn">CTA label EN</label>
+                                <input id="CtaLabelEn" class="form-control" v-model="state.ctaLabelEn" />
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label d-block">Personas (أدوار)</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check" v-for="p in state.personaOptions" :key="p">
+                                    <input class="form-check-input" type="checkbox" :id="'persona_' + p" :value="p" v-model="state.personasSelected" />
+                                    <label class="form-check-label" :for="'persona_' + p">{{ p }}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-primary" v-on:click="handler.handleSubmit" v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting"></span>
+                        حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Dashboards/DashboardWidgetList.cshtml.js"></script>
+}

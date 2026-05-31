@@ -12,4 +12,7 @@ public sealed class TelecomBillingOptions
     public int RetryBaseDelayMs { get; set; } = 120;
 
     public string IntegrationTarget { get; set; } = "HuaweiCBS-Mock";
+
+    /// <summary>When true, the CBS mock may randomly throw timeouts, packet loss, or HTTP 429 on the first attempt (Polly retries).</summary>
+    public bool EnableChaosEngineering { get; set; } = true;
 }

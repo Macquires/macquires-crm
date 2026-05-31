@@ -1,0 +1,126 @@
+@page "/Telecom/MsisdnInventory"
+@{
+    ViewData["Title"] = "مستودع الأرقام والشرائح";
+}
+<link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+
+<div id="app" v-cloak class="telecom-premium-page">
+    <div id="msisdn-inventory-page" class="container-fluid py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-1">
+                    <i class="fas fa-boxes me-2 text-syriatel-red"></i>
+                    <span data-telecom-i18n="msisdnInventory.title">مستودع الأرقام والشرائح</span>
+                </h1>
+                <p class="text-muted small mb-0" data-telecom-i18n="msisdnInventory.subtitle">
+                    عرض وإدارة تجمع MSISDN والشرائح — استيراد ضخم من شاشة المراقبة المخصصة.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/Telecom/BulkImportMonitor" class="btn btn-outline-telecom btn-sm">
+                    <i class="bi bi-cloud-upload me-1"></i>
+                    <span data-telecom-i18n="msisdnInventory.bulkImportLink">مراقبة الاستيراد الضخم</span>
+                </a>
+                <a href="/Telecom/TelecomHub" class="btn btn-outline-telecom btn-sm">
+                    <i class="bi bi-broadcast me-1"></i>
+                    <span data-telecom-i18n="msisdnInventory.hubLink">مركز العمليات</span>
+                </a>
+                <button type="button" class="btn btn-telecom-primary btn-sm" v-on:click="handler.refresh" :disabled="state.loading">
+                    <i class="fas fa-sync-alt" :class="{ 'fa-spin': state.loading }"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="telecom-bento-grid mb-3">
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="msisdnInventory.kpi.total">إجمالي الأرقام</div>
+                        <div class="telecom-bento-kpi-value" v-text="state.kpis.total"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="msisdnInventory.kpi.available">متاح</div>
+                        <div class="telecom-bento-kpi-value d-flex align-items-center" v-html="kpiBadge('Available', state.kpis.available)"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="msisdnInventory.kpi.reserved">محجوز</div>
+                        <div class="telecom-bento-kpi-value" v-html="kpiBadge('Reserved', state.kpis.reserved)"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="msisdnInventory.kpi.active">نشط</div>
+                        <div class="telecom-bento-kpi-value" v-html="kpiBadge('Active', state.kpis.active)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telecom-bento-card telecom-grid-panel inv-grid-panel">
+            <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap align-items-center gap-3 settings-section-header">
+                <span class="fw-semibold"><i class="fas fa-list-ul me-2"></i><span data-telecom-i18n="msisdnInventory.gridTitle">قائمة الأصول</span></span>
+                <div class="input-group input-group-sm" style="max-width: 140px;">
+                    <label class="input-group-text" for="invPageSize"><i class="fas fa-th-list"></i></label>
+                    <select id="invPageSize" class="form-select" v-model.number="state.pageSize" v-on:change="handler.changePageSize">
+                        <option :value="25">25</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                        <option :value="200">200</option>
+                    </select>
+                </div>
+                <div class="input-group input-group-sm" style="max-width: 280px;">
+                    <label class="input-group-text" for="invStatusFilter"><i class="fas fa-filter"></i></label>
+                    <select id="invStatusFilter" class="form-select" v-model="state.statusFilter" v-on:change="handler.applyFilter">
+                        <option value="" data-telecom-i18n="msisdnInventory.filter.all">الكل</option>
+                        <option value="Available" data-telecom-i18n="msisdnInventory.filter.available">متاح</option>
+                        <option value="Reserved" data-telecom-i18n="msisdnInventory.filter.reserved">محجوز</option>
+                        <option value="Active" data-telecom-i18n="msisdnInventory.filter.active">نشط</option>
+                        <option value="Quarantined" data-telecom-i18n="msisdnInventory.filter.quarantined">حجر</option>
+                    </select>
+                </div>
+                <input type="search" class="form-control form-control-sm" style="max-width: 220px;" v-model="state.quickSearch" v-on:input="handler.applyFilter" :placeholder="state.searchPlaceholder" dir="ltr" />
+            </div>
+            <div class="card-body p-0 position-relative">
+                <div v-if="state.loading" class="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center bg-white bg-opacity-75" style="z-index:3;">
+                    <span class="spinner-border spinner-border-sm text-danger me-2"></span>
+                    <span data-telecom-i18n="msisdnInventory.loading">جاري تحميل المستودع…</span>
+                </div>
+                <div class="grid-container">
+                    <div ref="mainGridRef"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .telecom-premium-page .inv-grid-panel.telecom-grid-panel .grid-container {
+        height: calc(100vh - 20rem);
+        min-height: 320px;
+        max-height: calc(100vh - 17rem);
+    }
+    .telecom-premium-page .inv-grid-panel .e-gridpager {
+        position: relative;
+        z-index: 4;
+        pointer-events: auto !important;
+    }
+    .telecom-premium-page .inv-grid-panel .e-gridpager .e-pagerdropdown,
+    .telecom-premium-page .inv-grid-panel .e-gridpager .e-numericcontainer a,
+    .telecom-premium-page .inv-grid-panel .e-gridpager .e-pagercontainer {
+        pointer-events: auto !important;
+    }
+</style>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Telecom/MsisdnInventory.cshtml.js" asp-append-version="true"></script>
+}

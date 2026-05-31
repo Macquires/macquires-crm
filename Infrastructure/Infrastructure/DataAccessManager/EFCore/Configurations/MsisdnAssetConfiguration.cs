@@ -13,14 +13,24 @@ public class MsisdnAssetConfiguration : BaseEntityConfiguration<MsisdnAsset>
         base.Configure(builder);
 
         builder.Property(x => x.Msisdn).HasMaxLength(32).IsRequired();
-        builder.Property(x => x.Iccid).HasMaxLength(32).IsRequired(false);
-        builder.Property(x => x.Imsi).HasMaxLength(32).IsRequired(false);
-        builder.Property(x => x.Puk1).HasMaxLength(32).IsRequired(false);
-        builder.Property(x => x.Puk2).HasMaxLength(32).IsRequired(false);
-        builder.Property(x => x.SubscriberProfileId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
-        builder.Property(x => x.ProductId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
+        builder.Property(x => x.PairedIccid).HasMaxLength(32);
+        builder.Property(x => x.PairedImsi).HasMaxLength(32);
+        builder.Property(x => x.CountryCode).HasMaxLength(8);
+        builder.Property(x => x.Prefix).HasMaxLength(8);
+        builder.Property(x => x.ReservedForCustomerId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.Category).HasConversion<int>();
+        builder.Property(x => x.PoolStatus).HasConversion<int>();
+        builder.Property(x => x.SubscriberProfileId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.ProductId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.RowVersion).IsRowVersion();
 
-        builder.HasIndex(x => x.Msisdn).IsUnique();
+        builder.HasIndex(x => x.Msisdn)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
+
+        builder.HasIndex(x => new { x.PoolStatus, x.CreatedAtUtc });
+        builder.HasIndex(x => new { x.PoolStatus, x.Msisdn })
+            .HasFilter("[IsDeleted] = 0 AND [PoolStatus] IN (0, 2)");
 
         builder.HasOne(x => x.SubscriberProfile)
             .WithMany(x => x.MsisdnAssets)

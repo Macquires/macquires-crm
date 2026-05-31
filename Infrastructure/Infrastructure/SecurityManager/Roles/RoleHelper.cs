@@ -1,39 +1,11 @@
-﻿using Infrastructure.SecurityManager.NavigationMenu;
-
-namespace Infrastructure.SecurityManager.Roles;
+﻿namespace Infrastructure.SecurityManager.Roles;
 
 public class RoleHelper
 {
-    /// <summary>
-    /// Explicit telecom workflow roles (Syriatel demo). Seeded alongside navigation-derived roles.
-    /// Map Showroom → draft-only APIs; BackOffice → confirm / billing integration.
-    /// </summary>
-    public static IReadOnlyList<string> TelecomOperationalRoles { get; } =
-    [
-        TelecomRoles.Admin,
-        TelecomRoles.Showroom,
-        TelecomRoles.BackOffice,
-        TelecomRoles.CallCenter,
-        TelecomRoles.Management,
-    ];
+    /// <summary>Only the five standard Syriatel telecom roles (no legacy CRM navigation roles).</summary>
+    public static IReadOnlyList<string> TelecomOperationalRoles { get; } = TelecomRoles.All;
 
-    public static List<string> GetAdminRoles()
-    {
-        var roles = NavigationTreeStructure.GetCompleteFirstMenuNavigationSegment();
-        foreach (var role in TelecomOperationalRoles)
-        {
-            if (!roles.Contains(role))
-            {
-                roles.Add(role);
-            }
-        }
+    public static List<string> GetAdminRoles() => TelecomRoles.All.ToList();
 
-        return roles;
-    }
-
-    //make sure or cross check with NavigationTreeStructure
-    public static string GetProfileRole()
-    {
-        return "Profiles";
-    }
+    public static string GetProfileRole() => "Profiles";
 }

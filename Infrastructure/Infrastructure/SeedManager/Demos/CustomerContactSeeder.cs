@@ -1,4 +1,4 @@
-﻿// Demo-only — customer contacts for Syria Telecom demo subscribers.
+﻿// Demo-only — customer contacts for Syriatel demo subscribers.
 using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
@@ -65,7 +65,7 @@ public class CustomerContactSeeder
                     Number = _numberSequenceService.GenerateNumber(nameof(CustomerContact), "", "CC"),
                     CustomerId = customerId,
                     JobTitle = GetRandomString(JobTitles, random),
-                    EmailAddress = $"contact{random.Next(1000, 9999)}@syriatelecom-demo.local",
+                    EmailAddress = $"contact{random.Next(1000, 9999)}@syriatel-demo.local",
                     PhoneNumber = $"{prefix}{random.Next(1000000, 9999999)}"
                 });
             }

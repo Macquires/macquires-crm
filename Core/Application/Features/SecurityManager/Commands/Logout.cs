@@ -18,7 +18,7 @@ public class LogoutValidator : AbstractValidator<LogoutRequest>
 {
     public LogoutValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
+        // UserId is optional: API may resolve it from JWT; handler no-ops when absent.
     }
 }
 

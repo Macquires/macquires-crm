@@ -1,7 +1,8 @@
-﻿@page
+@page
 @{
-    ViewData["Title"] = "المشتركون — Syriatel Macquires CRM";
+    ViewData["Title"] = "سجل المشتركين (Subscriber Registry)";
 }
+<link rel="stylesheet" href="~/css/customer-360-premium.css" asp-append-version="true" />
 
 <div id="app" v-cloak>
     <div class="row">
@@ -13,7 +14,7 @@
     </div>
 
     <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" v-text="state.mainTitle"></h5>
@@ -21,38 +22,124 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" v-model="state.id" id="Id" name="Id" />
-                    <form id="MainForm">
+                    <div v-if="!state.deleteMode && state.customerOnboardingActive && state.customerOnboardingStep === 0" class="card mb-3 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">التحقق قبل الإضافة</h5>
+                            <p class="small text-muted mb-0 mt-1">ابحث بالرقم الوطني (على ملف مشترك) أو رقم الجوال لتفادي تكرار العميل؛ ثم اربط خطاً جديداً أو أنشئ عميلاً جديداً.</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label small">الرقم الوطني</label>
+                                    <input type="text" class="form-control" v-model="state.customerSearchNationalId" maxlength="32" autocomplete="off" placeholder="مثال: 01…" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">رقم الجوال / MSISDN</label>
+                                    <input type="text" class="form-control" v-model="state.customerSearchPhone" maxlength="16" autocomplete="off" placeholder="09…" />
+                                </div>
+                                <div class="col-md-4 d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-primary" :disabled="state.customerSearchBusy" v-on:click="customerOnboarding.runPreCheckSearch">بحث</button>
+                                    <button type="button" class="btn btn-outline-secondary" :disabled="state.customerSearchBusy" v-on:click="customerOnboarding.proceedNewCustomer">عميل جديد (بدون بحث)</button>
+                                </div>
+                            </div>
+                            <p v-if="state.customerSearchAttempted && !state.customerSearchBusy && (!state.customerSearchResults || state.customerSearchResults.length === 0)" class="small text-muted mt-3 mb-0">لا توجد نتائج مطابقة.</p>
+                            <ul v-if="state.customerSearchResults && state.customerSearchResults.length" class="list-group list-group-flush mt-3 border rounded">
+                                <li v-for="c in state.customerSearchResults" :key="c.id" class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ c.name || '—' }}</div>
+                                        <div class="small text-muted">{{ c.phoneNumber || '—' }} · {{ c.city || '' }} · خطوط: {{ c.telecomSubscriptionLineCount ?? 0 }}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-success" v-on:click="customerOnboarding.selectCandidate(c)">ربط اشتراك جديد بهذا العميل</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <form id="MainForm" v-show="state.deleteMode || !state.customerOnboardingActive || state.customerOnboardingStep >= 1">
+                        <div v-if="!state.deleteMode && state.customerOnboardingActive && state.customerOnboardingStep >= 1" class="mb-2">
+                            <button type="button" class="btn btn-link btn-sm p-0" v-on:click="customerOnboarding.goBackToSearch">← رجوع للبحث</button>
+                        </div>
                         <div class="card mb-3">
                             <div class="card-header">
-                                <h5>Main Info</h5>
+                                <h5><span data-mcq-i18n="mainInfo"></span></h5>
                             </div>
                             <div class="card-body">
+                                <div class="row mb-3 pb-3 border-bottom">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold fs-6 mb-2">نوع المشترك (Subscriber Type)</label>
+                                        <div class="d-flex gap-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscriberTypeRadio" id="subIndividual" :value="0" v-model="state.subscriberType" :disabled="state.id !== '' && !state.deleteMode">
+                                                <label class="form-check-label fw-semibold text-primary" for="subIndividual">
+                                                    👤 فرد (Individual)
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscriberTypeRadio" id="subCorporate" :value="1" v-model="state.subscriberType" :disabled="state.id !== '' && !state.deleteMode">
+                                                <label class="form-check-label fw-semibold text-warning" for="subCorporate">
+                                                    🏢 شركة / بنك (Corporate/Bank)
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label for="Name">Name</label>
+                                        <label for="Name" class="fw-bold">{{ state.subscriberType === 1 ? 'اسم الشركة / البنك' : 'اسم المشترك' }}</label>
                                         <input ref="nameRef" v-model="state.name" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.name"></label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="Number">Number</label>
+                                        <label for="Number"><span data-mcq-i18n="field_number">Number</span></label>
                                         <input ref="numberRef" v-model="state.number" class="form-control" placeholder="" readonly />
                                     </div>
                                 </div>
-                                <div class="row mb-2">
+                                <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label for="CustomerGroupId">Customer Group</label>
+                                        <label for="CustomerGroupId"><span data-mcq-i18n="fld_customer_group_id">Customer Group</span></label>
                                         <div ref="customerGroupIdRef"></div>
                                         <label class="text-danger" v-text="state.errors.customerGroupId"></label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="CustomerCategoryId">Customer Category</label>
+                                        <label for="CustomerCategoryId"><span data-mcq-i18n="fld_customer_category_id">Customer Category</span></label>
                                         <div ref="customerCategoryIdRef"></div>
                                         <label class="text-danger" v-text="state.errors.customerCategoryId"></label>
                                     </div>
                                 </div>
+
+                                <div v-if="state.subscriberType === 0" class="row mb-3 bg-light p-3 rounded border">
+                                    <div class="col-md-6">
+                                        <label for="NationalId" class="fw-bold mb-1">الرقم الوطني <span class="text-danger">*</span></label>
+                                        <div v-if="state.id && !state.deleteMode" class="input-group">
+                                            <input id="NationalId" class="form-control c360-pii" :value="state.nationalIdRevealed ? state.nationalId : (state.nationalIdMasked || '**********')" :readonly="!state.nationalIdRevealed" maxlength="10" v-on:input="state.nationalId = $event.target.value; state.nationalIdRevealed = true" />
+                                            <button v-if="gridAccess.canViewDecryptedPii && !state.nationalIdRevealed" type="button" class="btn btn-outline-secondary" v-on:click="revealNationalId"><i class="fas fa-eye"></i></button>
+                                        </div>
+                                        <input v-else id="NationalId" v-model="state.nationalId" class="form-control" placeholder="10 خانات" maxlength="10" />
+                                        <label class="text-danger" v-text="state.errors.nationalId"></label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="DateOfBirth" class="fw-bold mb-1">تاريخ الميلاد</label>
+                                        <input id="DateOfBirth" type="date" v-model="state.dateOfBirth" class="form-control" />
+                                    </div>
+                                </div>
+
+                                <div v-if="state.subscriberType === 1" class="row mb-3 bg-light p-3 rounded border">
+                                    <div class="col-md-4">
+                                        <label for="CommercialRegistration" class="fw-bold mb-1">رقم السجل التجاري <span class="text-danger">*</span></label>
+                                        <input id="CommercialRegistration" v-model="state.commercialRegistration" class="form-control" placeholder="أرقام السجل التجاري" />
+                                        <label class="text-danger" v-text="state.errors.commercialRegistration"></label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="TaxNumber" class="fw-bold mb-1">الرقم الضريبي</label>
+                                        <input id="TaxNumber" v-model="state.taxNumber" class="form-control" placeholder="" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="AuthorizedSignatory" class="fw-bold mb-1">المفوض بالتوقيع</label>
+                                        <input id="AuthorizedSignatory" v-model="state.authorizedSignatory" class="form-control" placeholder="اسم الشخص المفوض" />
+                                    </div>
+                                </div>
                                 <div class="row mb-2">
                                     <div class="col-12">
-                                        <label for="Description">Description</label>
+                                        <label for="Description"><span data-mcq-i18n="field_description">Description</span></label>
                                         <textarea v-model="state.description" class="form-control" rows="3" placeholder=""></textarea>
                                     </div>
                                 </div>
@@ -60,36 +147,36 @@
                         </div>
                         <div class="card mb-3">
                             <div class="card-header">
-                                <h5>Address</h5>
+                                <h5><span data-mcq-i18n="address"></span></h5>
                             </div>
                             <div class="card-body">
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label for="Street">Street</label>
+                                        <label for="Street"><span data-mcq-i18n="fld_street">Street</span></label>
                                         <input ref="streetRef" v-model="state.street" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.street"></label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="City">City</label>
+                                        <label for="City"><span data-mcq-i18n="fld_city">City</span></label>
                                         <input ref="cityRef" v-model="state.city" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.city"></label>
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label for="State">State</label>
+                                        <label for="State"><span data-mcq-i18n="fld_state">State</span></label>
                                         <input ref="stateRef" v-model="state.state" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.state"></label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="ZipCode">Zip Code</label>
+                                        <label for="ZipCode"><span data-mcq-i18n="fld_zip_code">Zip Code</span></label>
                                         <input ref="zipCodeRef" v-model="state.zipCode" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.zipCode"></label>
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label for="Country">Country</label>
+                                        <label for="Country"><span data-mcq-i18n="fld_country">Country</span></label>
                                         <input ref="countryRef" v-model="state.country" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.country"></label>
                                     </div>
@@ -98,70 +185,261 @@
                         </div>
                         <div class="card mb-3">
                             <div class="card-header">
-                                <h5>Communication</h5>
+                                <h5><span data-mcq-i18n="section_communication">Communication</span></h5>
                             </div>
                             <div class="card-body">
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label for="PhoneNumber">Phone Number</label>
+                                        <label for="PhoneNumber"><span data-mcq-i18n="field_phoneNumber">Phone Number</span></label>
                                         <input ref="phoneNumberRef" v-model="state.phoneNumber" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.phoneNumber"></label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="FaxNumber">Fax Number</label>
+                                        <label for="FaxNumber"><span data-mcq-i18n="fld_fax_number">Fax Number</span></label>
                                         <input ref="faxNumberRef" v-model="state.faxNumber" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.faxNumber"></label>
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label for="EmailAddress">Email</label>
+                                        <label for="EmailAddress"><span data-mcq-i18n="field_email">Email</span></label>
                                         <input ref="emailAddressRef" v-model="state.emailAddress" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.emailAddress"></label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="Website">Website</label>
+                                        <label for="Website"><span data-mcq-i18n="fld_website">Website</span></label>
                                         <input ref="websiteRef" v-model="state.website" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.website"></label>
                                     </div>
                                 </div>
+                                <div class="row mb-0" v-if="gridAccess.showFullColumns && gridAccess.canMutate && !state.deleteMode && (state.id || state.addFlowBootstrapTelecom)">
+                                    <div class="col-12">
+                                        <div class="rounded p-3 bg-white border" style="border-top: 3px solid var(--sys-brand-red) !important;">
+                                            <div class="small text-danger fw-semibold mb-2">الخط الأساسي (MSISDN / نوع الخط) — تعديل حساس</div>
+                                            <p class="small text-muted mb-3" v-if="state.addFlowBootstrapTelecom">أدخل MSISDN الجديد ونوع الخط؛ يُسجَّل ملف مشترك وخط بعد حفظ بيانات المشترك بنجاح.</p>
+                                            <p class="small text-muted mb-3" v-else>يُحفظ مع بيانات المشترك: يُستدعى تحديث الطرف أولاً ثم تحديث الخط عند تغيّر أحد الحقلين.</p>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-2 mb-md-0" v-if="state.addFlowBootstrapTelecom">
+                                                    <label class="form-label">MSISDN</label>
+                                                    <input type="text" class="form-control" v-model="state.telecomMsisdn" maxlength="16" autocomplete="off" placeholder="09…" />
+                                                </div>
+                                                <div class="col-md-6 mb-2 mb-md-0" v-else>
+                                                    <label class="form-label">MSISDN</label>
+                                                    <select class="form-select" v-model="state.telecomSubscriptionId" v-on:change="onCustomerTelecomSubscriptionChange">
+                                                        <option v-for="s in state.telecomSubscriptionRows" :key="s.telecomSubscriptionId" :value="s.telecomSubscriptionId">
+                                                            {{ s.msisdn }}
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">نوع الخط</label>
+                                                    <select class="form-select" v-model="state.telecomSubscriptionTypeId">
+                                                        <option v-for="lt in state.telecomLineTypes" :key="lt.id" :value="lt.id">
+                                                            {{ lt.nameAr }} ({{ lt.code }})
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="state.id && !state.deleteMode && gridAccess.showFullColumns" class="card mb-3 customer-360-premium border-0 shadow-sm">
+                            <div class="card-body p-4">
+                                <div class="c360-hero mb-3">
+                                    <div>
+                                        <p class="small text-uppercase text-muted mb-1">Customer 360</p>
+                                        <h5 class="fw-bold mb-0">{{ state.customer360?.displayName || state.name }}</h5>
+                                        <span class="badge bg-light text-dark border mt-1">{{ state.customer360?.status ?? '—' }}</span>
+                                    </div>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <button v-if="gridAccess.canActivateLine" type="button" class="btn btn-danger btn-sm" :disabled="isLineProcessing('__new__')" v-on:click="openNewLineModal">تفعيل خط جديد</button>
+                                        <button v-if="gridAccess.canCreateTicket" type="button" class="btn btn-danger btn-sm" v-on:click="openSupportTicketModal">فتح تذكرة دعم</button>
+                                        <a href="/Telecom/TelecomHub" class="btn btn-outline-danger btn-sm">مركز العمليات</a>
+                                    </div>
+                                </div>
+                                <div v-if="state.customer360Busy" class="c360-skeleton mb-3"></div>
+                                <p v-else-if="state.customer360Error" class="c360-alert-domain small px-3 py-2">{{ state.customer360Error }}</p>
+                                <div v-else-if="state.customer360" class="row g-3">
+                                    <div class="col-12">
+                                        <h6 class="fw-semibold text-danger mb-2">الأصول الحية</h6>
+                                        <div class="row g-2">
+                                            <div v-for="sub in (state.customer360.activeSubscriptions || [])" :key="sub.id" class="col-md-6">
+                                                <div class="customer-360-asset-card p-3 bg-white h-100 position-relative" :class="{ 'is-primary': sub.isPrimaryLine, 'is-processing': isLineProcessing(sub.id) }">
+                                                    <div v-if="isLineProcessing(sub.id)" class="c360-line-processing-overlay">
+                                                        <div class="spinner-border text-danger" role="status"><span class="visually-hidden">…</span></div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                                        <strong class="font-monospace" dir="ltr">{{ sub.msisdn || '—' }}</strong>
+                                                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                                            <div class="dropdown" v-if="hasAnyLineAction(sub)">
+                                                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" :disabled="isLineProcessing(sub.id)">إجراءات الخط</button>
+                                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                                    <li v-if="gridAccess.canMigrateLine"><a class="dropdown-item" href="#" v-on:click.prevent="openMigrateModal(sub)">ترحيل الباقة</a></li>
+                                                                    <li v-if="gridAccess.canSimSwapLine"><a class="dropdown-item" href="#" v-on:click.prevent="openSimSwapModal(sub)">تبديل الشريحة</a></li>
+                                                                    <li v-if="gridAccess.canTakeOverLine"><a class="dropdown-item" href="#" v-on:click.prevent="openTakeOverModal(sub)">نقل الملكية</a></li>
+                                                                </ul>
+                                                            </div>
+                                                            <span v-if="sub.isPrimaryLine" class="badge bg-danger">أساسي</span>
+                                                        </div>
+                                                    </div>
+                                                    <p class="small text-muted mb-1" v-if="sub.productOfferingName || sub.productName">{{ sub.productOfferingName || sub.productName }}</p>
+                                                    <p class="small text-muted mb-1">{{ sub.subscriptionTypeName }} · {{ sub.simType || 'SIM' }}</p>
+                                                    <p class="small font-monospace mb-2" dir="ltr">ICCID: {{ sub.iccid || '—' }}</p>
+                                                    <div v-if="state.lineWalletsBusy[sub.id]" class="c360-skeleton mb-2" style="height:3.5rem;"></div>
+                                                    <div v-else-if="lineWalletForSub(sub.id)" class="border rounded p-2 mb-2 small bg-light">
+                                                        <div v-if="lineWalletForSub(sub.id).success" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                                            <span class="fw-bold text-success">رصيد: {{ formatWalletAmount(lineWalletForSub(sub.id).balance) }} {{ lineWalletForSub(sub.id).currency || 'ل.س' }}</span>
+                                                            <button v-if="gridAccess.canRechargeLine" type="button" class="btn btn-danger btn-sm py-0" :disabled="state.rechargeBusy === sub.id" v-on:click="openRechargeLineModal(sub)">شحن</button>
+                                                        </div>
+                                                        <p v-else class="text-muted mb-2">{{ lineWalletForSub(sub.id).errorMessage || '—' }}</p>
+                                                        <div v-for="b in (lineWalletForSub(sub.id).buckets || [])" :key="sub.id + '-' + (b.componentType ?? b.ComponentType)" class="d-flex justify-content-between py-1 border-bottom border-white">
+                                                            <span>{{ walletBucketLabel(b) }}</span>
+                                                            <span dir="ltr" class="fw-semibold">
+                                                                <template v-if="b.isUnlimited || b.IsUnlimited">∞</template>
+                                                                <template v-else>{{ formatWalletAmount(b.remaining ?? b.Remaining) }} / {{ formatWalletAmount(b.included ?? b.Included) }} {{ b.unit ?? b.Unit }}</template>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div v-if="gridAccess.canQueryHlr" class="d-flex gap-1 flex-wrap">
+                                                        <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.hlrLiveBusy || isLineProcessing(sub.id)" v-on:click="checkHlrForSubscription(sub)">فحص HLR</button>
+                                                        <button type="button" class="btn btn-danger btn-sm" :disabled="state.hlrResyncBusy || isLineProcessing(sub.id)" v-on:click="resyncHlrForSubscription(sub)">مزامنة</button>
+                                                    </div>
+                                                    <div v-if="gridAccess.canToggleVas" class="border-top mt-3 pt-3">
+                                                        <h6 class="small fw-semibold text-danger mb-2">الخدمات المضافة والـ VAS</h6>
+                                                        <div v-if="vasPanelLoading[sub.msisdn]" class="c360-skeleton" style="height:2rem;"></div>
+                                                        <p v-else-if="vasPanelError[sub.msisdn]" class="small text-warning mb-0">{{ vasPanelError[sub.msisdn] }}</p>
+                                                        <div v-else-if="(vasPanels[sub.msisdn]?.services || []).length" class="vas-toggle-list">
+                                                            <div v-for="svc in vasPanels[sub.msisdn].services" :key="svc.serviceCode" class="d-flex align-items-center justify-content-between py-1 border-bottom border-light">
+                                                                <div class="small">
+                                                                    <span class="fw-semibold">{{ svc.nameAr }}</span>
+                                                                    <span class="text-muted ms-1" v-if="svc.monthlyFee > 0">({{ svc.monthlyFee?.toLocaleString() }} ل.س/شهر)</span>
+                                                                </div>
+                                                                <div class="form-check form-switch mb-0">
+                                                                    <input class="form-check-input vas-switch" type="checkbox" role="switch"
+                                                                           :id="'vas-' + sub.msisdn + '-' + svc.serviceCode"
+                                                                           :checked="svc.isActiveOnLine"
+                                                                           :disabled="isVasToggling(sub.msisdn, svc.serviceCode) || isLineProcessing(sub.id)"
+                                                                           v-on:change="toggleVasService(sub, svc, $event)" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <p v-else class="small text-muted mb-0">لا توجد خدمات مضافة في الكتالوج.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12" v-if="state.customer360.recentOperations?.length">
+                                        <h6 class="fw-semibold mb-2">Pipeline العمليات</h6>
+                                        <div v-for="op in state.customer360.recentOperations" :key="op.id" class="border rounded p-2 mb-2 small">
+                                            <div class="d-flex justify-content-between"><span>{{ op.number }}</span><span class="text-muted">{{ op.correlationId?.slice(0,8) }}…</span></div>
+                                            <div class="c360-pipeline mt-2">
+                                                <div v-for="(st, idx) in pipelineStepsForOp(op.status)" :key="idx" class="c360-pipeline-step" :class="{ done: st.done, active: st.active, failed: st.failed }">
+                                                    <div class="dot"></div>{{ st.label }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-if="state.hlrLiveData" class="col-12 border-top pt-2 small">
+                                        <strong>HLR:</strong> {{ state.hlrLiveData.hlrSubscriberState }} · Online: {{ state.hlrLiveData.isOnline }}
+                                        <span v-if="state.hlrLiveData.differsFromCrm" class="text-warning ms-2">اختلاف CRM</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3" v-if="gridAccess.showFullColumns && state.id && !state.deleteMode">
+                            <div class="card-header">
+                                <h5>خطوط الاشتراك</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="px-3">MSISDN</th>
+                                                <th>نوع الخط</th>
+                                                <th>ملف مشترك</th>
+                                                <th>أساسي</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="!state.telecomSubscriptionRows || state.telecomSubscriptionRows.length === 0">
+                                                <td colspan="4" class="text-muted small px-3 py-2">لا توجد اشتراكات مسجّلة لهذا المشترك.</td>
+                                            </tr>
+                                            <tr v-for="line in state.telecomSubscriptionRows" :key="(line.telecomSubscriptionId || '') + (line.subscriberProfileId || '') + (line.msisdn || '')">
+                                                <td class="px-3">{{ line.msisdn || '—' }}</td>
+                                                <td>{{ line.subscriptionTypeName || line.subscriptionTypeCode || '—' }}</td>
+                                                <td class="small" :title="'معرف الملف (GUID): ' + line.subscriberProfileId">
+                                                    <span v-if="line.subscriberProfileNationalId" class="fw-semibold text-primary d-block">{{ line.subscriberProfileNationalId }}</span>
+                                                    <span v-if="line.postpaidCreditLimit != null" class="text-success fw-bold small"><i class="bi bi-wallet2 me-1"></i>سقف الائتمان: {{ line.postpaidCreditLimit.toLocaleString() }} ل.س</span>
+                                                    <span v-else-if="line.prepaidBalance != null" class="text-info fw-bold small"><i class="bi bi-cash-stack me-1"></i>الرصيد: {{ line.prepaidBalance.toLocaleString() }} ل.س</span>
+                                                    <span v-else-if="line.subscriptionTypeCode === 'PRE'" class="text-info fw-bold small"><i class="bi bi-cash-stack me-1"></i>الرصيد: 12,500 ل.س</span>
+                                                    <span v-else class="text-success fw-bold small"><i class="bi bi-wallet2 me-1"></i>سقف الائتمان: 50,000 ل.س</span>
+                                                    <span v-if="line.subscriberProfileLoyaltyTier" class="badge bg-warning text-dark ms-1 small">{{ line.subscriberProfileLoyaltyTier }}</span>
+                                                </td>
+                                                <td>
+                                                    <span v-if="line.isPrimaryLine" class="badge bg-success small"><i class="bi bi-check-circle me-1"></i>نعم</span>
+                                                    <span v-else class="text-muted">—</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3" v-if="state.id && uniqueSubscriberProfileIds().length">
+                            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <h5 class="mb-0">HLR (شبكة)</h5>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <select class="form-select form-select-sm" style="max-width:14rem" v-model="state.hlrSubscriberProfileId">
+                                        <option v-for="pid in uniqueSubscriberProfileIds()" :key="pid" :value="pid">{{ pid.slice(0,8) }}…</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.hlrLiveBusy" v-on:click="queryCustomerHlrLiveStatus">فحص HLR</button>
+                                    <button type="button" class="btn btn-danger btn-sm" :disabled="state.hlrResyncBusy" v-on:click="resyncCustomerFromHlr">مزامنة</button>
+                                </div>
+                            </div>
+                            <div class="card-body small" v-if="state.hlrLiveData">
+                                <p class="mb-1">HLR: {{ state.hlrLiveData.hlrSubscriberState || '—' }} | Online: {{ state.hlrLiveData.isOnline }}</p>
+                                <p class="text-muted mb-0">{{ state.hlrLiveData.message }}</p>
                             </div>
                         </div>
                         <div class="card mb-3">
                             <div class="card-header">
-                                <h5>Social Media</h5>
+                                <h5><span data-mcq-i18n="section_socialMedia">Social Media</span></h5>
                             </div>
                             <div class="card-body">
                                 <div class="row mb-2">
                                     <div class="col-md-4">
-                                        <label for="WhatsApp">WhatsApp</label>
+                                        <label for="WhatsApp"><span data-mcq-i18n="fld_whats_app">WhatsApp</span></label>
                                         <input ref="whatsAppRef" v-model="state.whatsApp" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.whatsApp"></label>
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="LinkedIn">LinkedIn</label>
+                                        <label for="LinkedIn"><span data-mcq-i18n="fld_linked_in">LinkedIn</span></label>
                                         <input ref="linkedInRef" v-model="state.linkedIn" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.linkedIn"></label>
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="Facebook">Facebook</label>
+                                        <label for="Facebook"><span data-mcq-i18n="fld_facebook">Facebook</span></label>
                                         <input ref="facebookRef" v-model="state.facebook" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.facebook"></label>
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-4">
-                                        <label for="Instagram">Instagram</label>
+                                        <label for="Instagram"><span data-mcq-i18n="fld_instagram">Instagram</span></label>
                                         <input ref="instagramRef" v-model="state.instagram" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.instagram"></label>
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="TwitterX">Twitter/X</label>
+                                        <label for="TwitterX"><span data-mcq-i18n="fld_twitter_x">Twitter/X</span></label>
                                         <input ref="twitterXRef" v-model="state.twitterX" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.twitterX"></label>
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="TikTok">TikTok</label>
+                                        <label for="TikTok"><span data-mcq-i18n="fld_tik_tok">TikTok</span></label>
                                         <input ref="tikTokRef" v-model="state.tikTok" class="form-control" placeholder="" />
                                         <label class="text-danger" v-text="state.errors.tikTok"></label>
                                     </div>
@@ -171,16 +449,26 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button"
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span v-text="$mcqFooter.close"></span></button>
+                    <div v-if="!state.deleteMode" class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary px-4 fw-bold" v-on:click="handler.handleSubmitSaveOnly" v-bind:disabled="state.isSubmitting || (state.customerOnboardingActive && state.customerOnboardingStep === 0)">
+                            <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting && !state.activateAfterSave" role="status" aria-hidden="true"></span>
+                            حفظ فقط (بدون تفعيل)
+                        </button>
+                        <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2" v-on:click="handler.handleSubmitSaveAndActivate" v-bind:disabled="state.isSubmitting || (state.customerOnboardingActive && state.customerOnboardingStep === 0)">
+                            <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting && state.activateAfterSave" role="status" aria-hidden="true"></span>
+                            <i class="fas fa-bolt text-warning" v-if="!state.isSubmitting"></i>
+                            حفظ وتفعيل خط جديد (Save & Activate)
+                        </button>
+                    </div>
+                    <button v-else type="button"
                             id="MainSaveButton"
-                            class="btn"
-                            v-bind:class="state.deleteMode ? 'btn-danger' : 'btn-primary'"
+                            class="btn btn-danger"
                             v-on:click="handler.handleSubmit"
                             v-bind:disabled="state.isSubmitting">
                         <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
-                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
-                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                        <span v-show="!state.isSubmitting" v-text="$mcqFooter.del"></span>
+                        <span v-show="state.isSubmitting" v-text="$mcqFooter.deleting"></span>
                     </button>
                 </div>
             </div>
@@ -200,7 +488,7 @@
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5>Customer Contact</h5>
+                                    <h5><span data-mcq-i18n="section_customerContact">Customer Contact</span></h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
@@ -216,7 +504,138 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span v-text="$mcqFooter.close"></span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360NewLineModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تفعيل خط جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">خط إضافي لنفس المشترك — اختر رقماً <strong>متاحاً</strong> من مستودع الأرقام (كشف <a href="/Telecom/MsisdnInventory" target="_blank" rel="noopener">MSISDN</a>) ثم الباقة وICCID الشريحة.</p>
+                    <div class="mb-2">
+                        <label class="form-label small">رقم MSISDN (متاح في المستودع)</label>
+                        <select class="form-select" v-model="lineActionModal.msisdnAssetId" :disabled="lineActionModal.busy">
+                            <option value="">— اختر —</option>
+                            <option v-for="a in lineActionModal.poolNumbers" :key="a.id" :value="a.id">{{ a.msisdn || a.id }}</option>
+                        </select>
+                        <div v-if="!lineActionModal.busy && lineActionModal.poolNumbers.length === 0" class="form-text text-warning">
+                            لا توجد أرقام بحالة «متاح» في المستودع. أضف أو حرّر أرقاماً من مستودع الأرقام والشرائح.
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">الباقة / العرض التجاري</label>
+                        <select class="form-select" v-model="lineActionModal.productOfferingId" :disabled="lineActionModal.busy">
+                            <option value="">— اختر —</option>
+                            <option v-for="o in lineActionModal.offerings" :key="o.id" :value="o.id">{{ o.name || o.nameEn }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small">ICCID الشريحة (19 رقم)</label>
+                        <input type="text" class="form-control font-monospace" dir="ltr" maxlength="19" v-model="lineActionModal.simIccid" :disabled="lineActionModal.busy" placeholder="89…" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitNewLineActivation">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>تأكيد التفعيل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360MigrateModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ترحيل الباقة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">{{ lineActionModal.sub?.msisdn }}</p>
+                    <p class="small" v-if="lineActionModal.currentProductName">الحالي: <strong>{{ lineActionModal.currentProductName }}</strong></p>
+                    <label class="form-label small">الباقة الجديدة</label>
+                    <select class="form-select" v-model="lineActionModal.productOfferingId" :disabled="lineActionModal.busy">
+                        <option value="">— اختر —</option>
+                        <option v-for="p in lineActionModal.migrationProducts" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitMigrate">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>تأكيد الترحيل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360SimSwapModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تبديل الشريحة (SIM Swap)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">{{ lineActionModal.sub?.msisdn }} · ICCID حالي: {{ lineActionModal.sub?.iccid || '—' }}</p>
+                    <label class="form-label small">ICCID الجديد (19 رقم)</label>
+                    <input type="text" class="form-control font-monospace" dir="ltr" maxlength="19" v-model="lineActionModal.simIccid" :disabled="lineActionModal.busy" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitSimSwap">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>تأكيد التبديل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360TakeOverModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">نقل الملكية</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">الخط: {{ lineActionModal.sub?.msisdn }}</p>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control form-control-sm" v-model="lineActionModal.takeoverSearchNationalId" placeholder="رقم وطني" />
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control form-control-sm" v-model="lineActionModal.takeoverSearchPhone" placeholder="جوال" />
+                        </div>
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-danger btn-sm" :disabled="lineActionModal.busy" v-on:click="searchTakeoverTarget">بحث المالك الجديد</button>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush border rounded mb-2" v-if="lineActionModal.takeoverResults.length">
+                        <li v-for="c in lineActionModal.takeoverResults" :key="c.id" class="list-group-item list-group-item-action small" :class="{ active: lineActionModal.takeoverTargetCustomerId === c.id }" v-on:click="selectTakeoverTarget(c)" style="cursor:pointer">
+                            {{ c.name }} · {{ c.phoneNumber || '—' }}
+                        </li>
+                    </ul>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">هوية المالك الجديد <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                               v-on:change="onTakeoverIdentityFileChange" />
+                    </div>
+                    <p v-if="lineActionModal.takeoverTargetProfileId" class="small text-success mb-0">بعد الإرسال ينتقل الطلب للباك أوفيس للتدقيق ثم التزويد التلقائي CBS/HLR.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy || !lineActionModal.takeoverTargetProfileId || !lineActionModal.takeoverIdentityFile" v-on:click="submitTakeOver">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>رفع الهوية وإرسال للتدقيق
+                    </button>
                 </div>
             </div>
         </div>
@@ -224,5 +643,17 @@
 </div>
 
 @section scripts {
+    <script id="subscriberTypeBadgeTemplate" type="text/x-template">
+        <span class="${subscriberTypeBadgeClass}">${subscriberTypeLabel}</span>
+    </script>
+    <script id="mcqCustomerSubTypeFilterItem" type="text/x-template">
+        <span class="e-list-text">${subscriptionTypeName}</span>
+    </script>
+    <script id="msisdnsSummaryTemplate" type="text/x-template">
+        <span title="${telecomMsisdnsSummary}">${telecomMsisdnsSummary}</span>
+    </script>
+    <script id="subscriptionTypeNameTemplate" type="text/x-template">
+        <span style="color:${subscriptionTypeDisplayColor}">${subscriptionTypeName}</span>
+    </script>
     <script src="~/FrontEnd/Pages/Customers/CustomerList.cshtml.js"></script>
 }

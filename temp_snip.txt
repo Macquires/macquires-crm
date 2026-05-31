@@ -1,0 +1,23 @@
+﻿'Msisdn' && !r.subscriberProfileId">
+                                                        <i class="fas fa-sim-card fs-4"></i>
+                                                    </div>
+                                                    <div class="bg-info-subtle text-info-emphasis rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 48px; height: 48px;" v-else-if="r.resultType === 'Msisdn' && r.subscriberProfileId">
+                                                        <i class="fas fa-phone fs-4"></i>
+                                                    </div>
+                                                    <div class="bg-secondary-subtle text-secondary rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 48px; height: 48px;" v-else>
+                                                        <i class="fas fa-user fs-4"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <button type="button"
+                                                            class="btn btn-link p-0 fw-bold fs-5 text-dark text-decoration-none text-start text-break d-block mb-1"
+                                                            @@click="openSubscriberDetailFromRow(r)">
+                                                        {{ r.title || 'â€”' }}
+                                                    </button>
+                                                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                        <span v-if="r.resultType === 'Msisdn' && !r.subscriberProfileId" class="badge bg-primary text-white px-3 py-1 fs-7 rounded-pill shadow-sm">
+                                                            <i class="fas fa-microchip me-1"></i> Ø£ØµÙ„ Ø±Ù‚Ù…ÙŠ Ù…ØªØ§Ø­ (Available Asset)
+                                                        </span>
+                                                        <span v-else-if="r.resultType === 'Msisdn' && r.subscriberProfileId" class="badge bg-info text-dark px-3 py-1 fs-7 rounded-pill shadow-sm border border-info-subtle">
+                                                            <i class="fas fa-phone-alt me-1"></i> Ø®Ø· Ù…Ø´ØºÙÙˆÙ„ / Ù†Ø´Ø· (Active Line)
+           

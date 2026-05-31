@@ -1,4 +1,5 @@
-﻿using Application.Common.Services.SecurityManager;
+﻿using Application.Common.Audit;
+using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
 
@@ -16,6 +17,7 @@ public class UpdateUserRoleRequest : IRequest<UpdateUserRoleResult>
     public string? UserId { get; init; }
     public string? RoleName { get; init; }
     public bool? AccessGranted { get; init; }
+    public string? UpdatedById { get; init; }
 }
 
 public class UpdateUserRoleValidator : AbstractValidator<UpdateUserRoleRequest>
@@ -30,10 +32,12 @@ public class UpdateUserRoleValidator : AbstractValidator<UpdateUserRoleRequest>
 public class UpdateUserRoleHandler : IRequestHandler<UpdateUserRoleRequest, UpdateUserRoleResult>
 {
     private readonly ISecurityService _securityService;
+    private readonly IUserAuditService _audit;
 
-    public UpdateUserRoleHandler(ISecurityService securityService)
+    public UpdateUserRoleHandler(ISecurityService securityService, IUserAuditService audit)
     {
         _securityService = securityService;
+        _audit = audit;
     }
 
     public async Task<UpdateUserRoleResult> Handle(UpdateUserRoleRequest request, CancellationToken cancellationToken)
@@ -45,10 +49,20 @@ public class UpdateUserRoleHandler : IRequestHandler<UpdateUserRoleRequest, Upda
             cancellationToken
             );
 
-        return new UpdateUserRoleResult
-        {
-            Data = result
-        };
+        await _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = request.UpdatedById ?? request.UserId ?? "system",
+                UserId = request.UserId,
+                ActionType = UserAuditActionTypes.UserRolesUpdated,
+                EntityType = "ApplicationUser",
+                EntityId = request.UserId,
+                SummaryAr = $"تحديث دور: {request.RoleName} → {(request.AccessGranted == true ? "منح" : "سحب")}",
+                Payload = new { request.RoleName, request.AccessGranted, roles = result },
+            },
+            cancellationToken);
+
+        return new UpdateUserRoleResult { Data = result };
     }
 }
 

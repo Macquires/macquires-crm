@@ -5,6 +5,7 @@
             deleteMode: false,
             productGroupListLookupData: [],
             unitMeasureListLookupData: [],
+            subscriptionTypeListLookupData: [],
             mainTitle: null,
             id: '',
             name: '',
@@ -13,6 +14,7 @@
             description: '',
             productGroupId: null,
             unitMeasureId: null,
+            compatibleSubscriptionTypeId: null,
             physical: false,
             errors: {
                 name: '',
@@ -27,6 +29,7 @@
         const mainModalRef = Vue.ref(null);
         const productGroupIdRef = Vue.ref(null);
         const unitMeasureIdRef = Vue.ref(null);
+        const compatibleSubscriptionTypeIdRef = Vue.ref(null);
         const nameRef = Vue.ref(null);
         const numberRef = Vue.ref(null);
         const unitPriceRef = Vue.ref(null);
@@ -70,6 +73,7 @@
             state.description = '';
             state.productGroupId = null;
             state.unitMeasureId = null;
+            state.compatibleSubscriptionTypeId = null;
             state.physical = false;
             state.errors = {
                 name: '',
@@ -88,20 +92,20 @@
                     throw error;
                 }
             },
-            createMainData: async (name, unitPrice, physical, description, productGroupId, unitMeasureId, createdById) => {
+            createMainData: async (name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, createdById) => {
                 try {
                     const response = await AxiosManager.post('/Product/CreateProduct', {
-                        name, unitPrice, physical, description, productGroupId, unitMeasureId, createdById
+                        name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, createdById
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            updateMainData: async (id, name, unitPrice, physical, description, productGroupId, unitMeasureId, updatedById) => {
+            updateMainData: async (id, name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, updatedById) => {
                 try {
                     const response = await AxiosManager.post('/Product/UpdateProduct', {
-                        id, name, unitPrice, physical, description, productGroupId, unitMeasureId, updatedById
+                        id, name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, updatedById
                     });
                     return response;
                 } catch (error) {
@@ -134,6 +138,17 @@
                     throw error;
                 }
             },
+            getTelecomSubscriptionTypeListLookupData: async () => {
+                try {
+                    const response = await AxiosManager.get(
+                        '/TelecomSubscriptionType/GetTelecomSubscriptionTypeList?isDeleted=false&activeOnly=true',
+                        {}
+                    );
+                    return response;
+                } catch (error) {
+                    throw error;
+                }
+            },
         };
 
         const methods = {
@@ -145,11 +160,28 @@
                 const response = await services.getUnitMeasureListLookupData();
                 state.unitMeasureListLookupData = response?.data?.content?.data;
             },
+            populateSubscriptionTypeListLookupData: async () => {
+                const response = await services.getTelecomSubscriptionTypeListLookupData();
+                const rows = response?.data?.content?.data || [];
+                state.subscriptionTypeListLookupData = [
+                    { id: '', name: MacquiresUiI18n.phByEn('Any line type (optional)') },
+                    ...rows.map((x) => ({
+                        id: x.id,
+                        name: [x.nameAr, x.nameEn].filter(Boolean).join(' — ') || x.code || x.id,
+                    })),
+                ];
+            },
             populateMainData: async () => {
                 const response = await services.getMainData();
                 state.mainData = response?.data?.content?.data.map(item => ({
                     ...item,
-                    createdAtUtc: new Date(item.createdAtUtc)
+                    createdAtUtc: new Date(item.createdAtUtc),
+                    compatibleLineTypeDisplay:
+                        item.compatibleSubscriptionTypeNameAr || item.compatibleSubscriptionTypeNameEn
+                            ? [item.compatibleSubscriptionTypeNameAr, item.compatibleSubscriptionTypeNameEn]
+                                  .filter(Boolean)
+                                  .join(' / ')
+                            : '—',
                 }));
             },
         };
@@ -161,7 +193,7 @@
                     productGroupListLookup.obj = new ej.dropdowns.DropDownList({
                         dataSource: state.productGroupListLookupData,
                         fields: { value: 'id', text: 'name' },
-                        placeholder: 'Select a Product Group',
+                        placeholder: MacquiresUiI18n.phByEn('Select a Product Group'),
                         popupHeight: '200px',
                         change: (e) => {
                             state.productGroupId = e.value;
@@ -186,7 +218,7 @@
                     unitMeasureListLookup.obj = new ej.dropdowns.DropDownList({
                         dataSource: state.unitMeasureListLookupData,
                         fields: { value: 'id', text: 'name' },
-                        placeholder: 'Select a Unit Measure',
+                        placeholder: MacquiresUiI18n.phByEn('Select a Unit Measure'),
                         popupHeight: '200px',
                         change: (e) => {
                             state.unitMeasureId = e.value;
@@ -204,11 +236,37 @@
             },
         };
 
+        const compatibleSubscriptionTypeListLookup = {
+            obj: null,
+            create: () => {
+                if (state.subscriptionTypeListLookupData && Array.isArray(state.subscriptionTypeListLookupData)) {
+                    compatibleSubscriptionTypeListLookup.obj = new ej.dropdowns.DropDownList({
+                        dataSource: state.subscriptionTypeListLookupData,
+                        fields: { value: 'id', text: 'name' },
+                        placeholder: MacquiresUiI18n.phByEn('Compatible line type (optional)'),
+                        popupHeight: '240px',
+                        change: (e) => {
+                            state.compatibleSubscriptionTypeId = e.value;
+                        },
+                    });
+                    compatibleSubscriptionTypeListLookup.obj.appendTo(compatibleSubscriptionTypeIdRef.value);
+                } else {
+                    console.error('Subscription type list lookup data is not available or invalid.');
+                }
+            },
+            refresh: () => {
+                if (compatibleSubscriptionTypeListLookup.obj) {
+                    const v = state.compatibleSubscriptionTypeId;
+                    compatibleSubscriptionTypeListLookup.obj.value = v == null || v === '' ? '' : v;
+                }
+            },
+        };
+
         const nameText = {
             obj: null,
             create: () => {
                 nameText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Name',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Name'),
                 });
                 nameText.obj.appendTo(nameRef.value);
             },
@@ -223,7 +281,7 @@
             obj: null,
             create: () => {
                 numberText.obj = new ej.inputs.TextBox({
-                    placeholder: '[auto]',
+                    placeholder: MacquiresUiI18n.phByEn('[auto]'),
                     readonly: true
                 });
                 numberText.obj.appendTo(numberRef.value);
@@ -240,7 +298,7 @@
             create: () => {
                 unitPriceNumber.obj = new ej.inputs.NumericTextBox({
                     format: 'n2',
-                    placeholder: 'Enter Unit Price',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Unit Price'),
                     min: 0,
                     step: 0.01,
                     validateDecimalOnType: true
@@ -293,6 +351,13 @@
             }
         );
 
+        Vue.watch(
+            () => state.compatibleSubscriptionTypeId,
+            () => {
+                compatibleSubscriptionTypeListLookup.refresh();
+            }
+        );
+
         const handler = {
             handleSubmit: async function () {
                 try {
@@ -303,18 +368,38 @@
                         return;
                     }
 
+                    const compat = (state.compatibleSubscriptionTypeId || '').trim() || null;
                     const response = state.id === ''
-                        ? await services.createMainData(state.name, state.unitPrice, state.physical, state.description, state.productGroupId, state.unitMeasureId, StorageManager.getUserId())
+                        ? await services.createMainData(
+                              state.name,
+                              state.unitPrice,
+                              state.physical,
+                              state.description,
+                              state.productGroupId,
+                              state.unitMeasureId,
+                              compat,
+                              StorageManager.getUserId()
+                          )
                         : state.deleteMode
-                            ? await services.deleteMainData(state.id, StorageManager.getUserId())
-                            : await services.updateMainData(state.id, state.name, state.unitPrice, state.physical, state.description, state.productGroupId, state.unitMeasureId, StorageManager.getUserId());
+                          ? await services.deleteMainData(state.id, StorageManager.getUserId())
+                          : await services.updateMainData(
+                                state.id,
+                                state.name,
+                                state.unitPrice,
+                                state.physical,
+                                state.description,
+                                state.productGroupId,
+                                state.unitMeasureId,
+                                compat,
+                                StorageManager.getUserId()
+                            );
 
                     if (response.data.code === 200) {
                         await methods.populateMainData();
                         mainGrid.refresh();
 
                         if (!state.deleteMode) {
-                            state.mainTitle = 'Edit Product';
+                            state.mainTitle = MacquiresUiI18n.mb('product','edit');
                             state.id = response?.data?.content?.data.id ?? '';
                             state.number = response?.data?.content?.data.number ?? '';
                             state.name = response?.data?.content?.data.name ?? '';
@@ -322,7 +407,13 @@
                             state.description = response?.data?.content?.data.description ?? '';
                             state.productGroupId = response?.data?.content?.data.productGroupId ?? '';
                             state.unitMeasureId = response?.data?.content?.data.unitMeasureId ?? '';
+                            state.compatibleSubscriptionTypeId =
+                                response?.data?.content?.data.compatibleSubscriptionTypeId ?? '';
                             state.physical = response?.data?.content?.data.physical ?? false;
+
+                            productGroupListLookup.refresh();
+                            unitMeasureListLookup.refresh();
+                            compatibleSubscriptionTypeListLookup.refresh();
 
                             Swal.fire({
                                 icon: 'success',
@@ -373,7 +464,12 @@
 
         Vue.onMounted(async () => {
             try {
-                await SecurityManager.authorizePage(['Products']);
+                await SecurityManager.authorizePage([
+                    'Products',
+                    'TelecomAdmin',
+                    'TelecomBackOffice',
+                    'TelecomManagement',
+                ]);
                 await SecurityManager.validateToken();
 
                 await methods.populateMainData();
@@ -382,6 +478,8 @@
                 productGroupListLookup.create();
                 await methods.populateUnitMeasureListLookupData();
                 unitMeasureListLookup.create();
+                await methods.populateSubscriptionTypeListLookupData();
+                compatibleSubscriptionTypeListLookup.create();
 
                 nameText.create();
                 numberText.create();
@@ -438,6 +536,7 @@
                         { field: 'productGroupName', headerText: 'المجموعة', width: 150, minWidth: 150 },
                         { field: 'unitPrice', headerText: 'السعر', width: 150, minWidth: 150, format: 'N2' },
                         { field: 'unitMeasureName', headerText: 'الوحدة', width: 150, minWidth: 150 },
+                        { field: 'compatibleLineTypeDisplay', headerText: 'نوع الخط المتوافق', width: 200, minWidth: 180 },
                         { field: 'physical', headerText: 'مخزون مادي', width: 160, minWidth: 160, textAlign: 'Center', type: 'boolean', displayAsCheckBox: true },
                         { field: 'createdAtUtc', headerText: 'Created At UTC', width: 150, format: 'yyyy-MM-dd HH:mm' }
                     ],
@@ -452,7 +551,7 @@
                     beforeDataBound: () => { },
                     dataBound: function () {
                         mainGrid.obj.toolbarModule.enableItems(['EditCustom', 'DeleteCustom'], false);
-                        mainGrid.obj.autoFitColumns(['number', 'name', 'serviceCode', 'productGroupName', 'unitPrice', 'unitMeasureName', 'physical', 'createdAtUtc']);
+                        mainGrid.obj.autoFitColumns(['number', 'name', 'serviceCode', 'productGroupName', 'unitPrice', 'unitMeasureName', 'compatibleLineTypeDisplay', 'physical', 'createdAtUtc']);
                     },
                     excelExportComplete: () => { },
                     rowSelected: () => {
@@ -481,16 +580,21 @@
 
                         if (args.item.id === 'AddCustom') {
                             state.deleteMode = false;
-                            state.mainTitle = 'Add Product';
+                            state.mainTitle = MacquiresUiI18n.mb('product','add');
                             resetFormState();
                             mainModal.obj.show();
+                            Vue.nextTick(() => {
+                                productGroupListLookup.refresh();
+                                unitMeasureListLookup.refresh();
+                                compatibleSubscriptionTypeListLookup.refresh();
+                            });
                         }
 
                         if (args.item.id === 'EditCustom') {
                             state.deleteMode = false;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Edit Product';
+                                state.mainTitle = MacquiresUiI18n.mb('product','edit');
                                 state.id = selectedRecord.id ?? '';
                                 state.number = selectedRecord.number ?? '';
                                 state.name = selectedRecord.name ?? '';
@@ -498,7 +602,13 @@
                                 state.description = selectedRecord.description ?? '';
                                 state.productGroupId = selectedRecord.productGroupId ?? '';
                                 state.unitMeasureId = selectedRecord.unitMeasureId ?? '';
+                                state.compatibleSubscriptionTypeId = selectedRecord.compatibleSubscriptionTypeId ?? '';
                                 state.physical = selectedRecord.physical ?? false;
+                                Vue.nextTick(() => {
+                                    productGroupListLookup.refresh();
+                                    unitMeasureListLookup.refresh();
+                                    compatibleSubscriptionTypeListLookup.refresh();
+                                });
                                 mainModal.obj.show();
                             }
                         }
@@ -507,7 +617,7 @@
                             state.deleteMode = true;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Delete Product?';
+                                state.mainTitle = MacquiresUiI18n.mb('product','delete');
                                 state.id = selectedRecord.id ?? '';
                                 state.number = selectedRecord.number ?? '';
                                 state.name = selectedRecord.name ?? '';
@@ -515,7 +625,13 @@
                                 state.description = selectedRecord.description ?? '';
                                 state.productGroupId = selectedRecord.productGroupId ?? '';
                                 state.unitMeasureId = selectedRecord.unitMeasureId ?? '';
+                                state.compatibleSubscriptionTypeId = selectedRecord.compatibleSubscriptionTypeId ?? '';
                                 state.physical = selectedRecord.physical ?? false;
+                                Vue.nextTick(() => {
+                                    productGroupListLookup.refresh();
+                                    unitMeasureListLookup.refresh();
+                                    compatibleSubscriptionTypeListLookup.refresh();
+                                });
                                 mainModal.obj.show();
                             }
                         }
@@ -544,6 +660,7 @@
             mainModalRef,
             productGroupIdRef,
             unitMeasureIdRef,
+            compatibleSubscriptionTypeIdRef,
             nameRef,
             numberRef,
             unitPriceRef,

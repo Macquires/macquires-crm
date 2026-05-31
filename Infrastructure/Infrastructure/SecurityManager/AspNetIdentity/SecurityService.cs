@@ -1,5 +1,9 @@
-﻿using Application.Common.Services.EmailManager;
+﻿using Application.Common.Audit;
+using Application.Common.Security;
+using Application.Common.Services.EmailManager;
 using Application.Common.Services.SecurityManager;
+using Application.Common.Settings;
+using Application.Common.Telecom;
 using Domain.Entities;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Infrastructure.SecurityManager.NavigationMenu;
@@ -30,6 +34,11 @@ public class SecurityService : ISecurityService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
+    private readonly INavigationMenuService _navigationMenu;
+    private readonly IUserScopeService _userScope;
+    private readonly IUserAuditService _audit;
+    private readonly IGlobalSettingsProvider _globalSettings;
+    private readonly IPermissionEvaluator _permissionEvaluator;
 
     public SecurityService(
         UserManager<ApplicationUser> userManager,
@@ -40,7 +49,12 @@ public class SecurityService : ISecurityService
         IEmailService emailService,
         IHttpContextAccessor httpContextAccessor,
         RoleManager<IdentityRole> roleManager,
-        IConfiguration configuration
+        IConfiguration configuration,
+        INavigationMenuService navigationMenu,
+        IUserScopeService userScope,
+        IUserAuditService audit,
+        IGlobalSettingsProvider globalSettings,
+        IPermissionEvaluator permissionEvaluator
         )
     {
         _userManager = userManager;
@@ -52,6 +66,11 @@ public class SecurityService : ISecurityService
         _httpContextAccessor = httpContextAccessor;
         _roleManager = roleManager;
         _configuration = configuration;
+        _navigationMenu = navigationMenu;
+        _userScope = userScope;
+        _audit = audit;
+        _globalSettings = globalSettings;
+        _permissionEvaluator = permissionEvaluator;
     }
 
     public async Task<LoginResultDto> LoginAsync(
@@ -64,16 +83,19 @@ public class SecurityService : ISecurityService
 
         if (user == null)
         {
+            await LogLoginFailedAsync(email, "بيانات دخول غير صحيحة", cancellationToken);
             throw new Exception("Invalid login credentials.");
         }
 
         if (user.IsBlocked == true)
         {
+            await LogLoginFailedAsync(email, "المستخدم محظور", cancellationToken, user.Id);
             throw new Exception($"User is blocked. {email}");
         }
 
         if (user.IsDeleted == true)
         {
+            await LogLoginFailedAsync(email, "المستخدم محذوف", cancellationToken, user.Id);
             throw new Exception($"User already deleted. {email}");
         }
 
@@ -81,18 +103,31 @@ public class SecurityService : ISecurityService
 
         if (result.IsLockedOut)
         {
+            await LogLoginFailedAsync(email, "الحساب مقفل", cancellationToken, user.Id);
             throw new Exception("Invalid login credentials. IsLockedOut.");
         }
 
         if (!result.Succeeded)
         {
+            await LogLoginFailedAsync(email, "كلمة مرور غير صحيحة", cancellationToken, user.Id);
             throw new Exception("Invalid login credentials. NotSucceeded.");
         }
 
         var roles = await _userManager.GetRolesAsync(user);
         var rolesList = roles.ToList();
         var roleClaims = rolesList.ConvertAll(r => new Claim(ClaimTypes.Role, r));
-        var accessToken = _tokenService.GenerateToken(user, roleClaims);
+
+        var (menuNodes, primaryPersona, landingPath, permissionList) =
+            await BuildSessionNavigationAsync(user, rolesList, cancellationToken);
+
+        var jwtClaims = new List<Claim>(roleClaims);
+        if (primaryPersona.HasValue)
+        {
+            jwtClaims.Add(new Claim(TelecomAuthClaims.PrimaryMenuPersona, primaryPersona.Value.ToString()));
+        }
+
+        var jwtMinutes = await GetJwtExpiryMinutesAsync(cancellationToken);
+        var accessToken = _tokenService.GenerateToken(user, jwtClaims, jwtMinutes);
         var refreshToken = _tokenService.GenerateRefreshToken();
 
         var tokens = await _context.Token.Where(x => x.UserId == user.Id).ToListAsync(cancellationToken);
@@ -108,12 +143,25 @@ public class SecurityService : ISecurityService
         token.IsDeleted = false;
         token.CreatedAtUtc = DateTime.UtcNow;
         token.CreatedById = user.Id;
-        await _context.AddAsync(token, cancellationToken);
+        user.LastLoginAtUtc = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
 
+        await _context.AddAsync(token, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var menuNodes = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode();
-        menuNodes = NavigationTreeStructure.ApplyStrictTelecomMenuFilter(rolesList, menuNodes);
+        SetAccessTokenCookie(accessToken);
+
+        await _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = user.Id,
+                UserId = user.Id,
+                ActionType = UserAuditActionTypes.UserLoggedIn,
+                EntityType = nameof(ApplicationUser),
+                EntityId = user.Id,
+                SummaryAr = "تسجيل دخول ناجح",
+            },
+            cancellationToken);
 
         return new LoginResultDto
         {
@@ -126,7 +174,10 @@ public class SecurityService : ISecurityService
             RefreshToken = refreshToken,
             MenuNavigation = menuNodes,
             Roles = rolesList,
-            Avatar = user.ProfilePictureName
+            Avatar = user.ProfilePictureName,
+            PrimaryMenuPersona = primaryPersona?.ToString(),
+            LandingPath = landingPath,
+            Permissions = permissionList,
         };
     }
 
@@ -144,6 +195,18 @@ public class SecurityService : ISecurityService
                 _context.Remove(item);
             }
             await _context.SaveChangesAsync(cancellationToken);
+
+            await _audit.LogAsync(
+                new UserAuditLogRequest
+                {
+                    ActorUserId = user.Id,
+                    UserId = user.Id,
+                    ActionType = UserAuditActionTypes.UserLoggedOut,
+                    EntityType = nameof(ApplicationUser),
+                    EntityId = user.Id,
+                    SummaryAr = "تسجيل خروج",
+                },
+                cancellationToken);
         }
 
         return new LogoutResultDto
@@ -319,7 +382,18 @@ public class SecurityService : ISecurityService
         var roles = await _userManager.GetRolesAsync(user);
         var rolesList = roles.ToList();
         var roleClaims = rolesList.ConvertAll(r => new Claim(ClaimTypes.Role, r));
-        var newAccessToken = _tokenService.GenerateToken(user, roleClaims);
+
+        var (menuNodes, primaryPersona, landingPath, permissionList) =
+            await BuildSessionNavigationAsync(user, rolesList, cancellationToken);
+
+        var jwtClaims = new List<Claim>(roleClaims);
+        if (primaryPersona.HasValue)
+        {
+            jwtClaims.Add(new Claim(TelecomAuthClaims.PrimaryMenuPersona, primaryPersona.Value.ToString()));
+        }
+
+        var jwtMinutes = await GetJwtExpiryMinutesAsync(cancellationToken);
+        var newAccessToken = _tokenService.GenerateToken(user, jwtClaims, jwtMinutes);
         var newRefreshToken = _tokenService.GenerateRefreshToken();
 
         var token = new Token();
@@ -333,8 +407,7 @@ public class SecurityService : ISecurityService
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var menuNodes = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode();
-        menuNodes = NavigationTreeStructure.ApplyStrictTelecomMenuFilter(rolesList, menuNodes);
+        SetAccessTokenCookie(newAccessToken);
 
         return new RefreshTokenResultDto
         {
@@ -347,8 +420,31 @@ public class SecurityService : ISecurityService
             RefreshToken = newRefreshToken,
             MenuNavigation = menuNodes,
             Roles = rolesList,
-            Avatar = user.ProfilePictureName
+            Avatar = user.ProfilePictureName,
+            PrimaryMenuPersona = primaryPersona?.ToString(),
+            LandingPath = landingPath,
+            Permissions = permissionList,
         };
+    }
+
+    private async Task<(
+        List<MenuNavigationTreeNodeDto> Menu,
+        TelecomMenuPersona? Persona,
+        string LandingPath,
+        List<string> Permissions)> BuildSessionNavigationAsync(
+        ApplicationUser user,
+        List<string> rolesList,
+        CancellationToken cancellationToken)
+    {
+        var permissionKeys = await _permissionEvaluator.GetUserPermissionKeysAsync(user.Id, cancellationToken);
+        var permissionSet = permissionKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var menuNodes = _navigationMenu.GetMenuForRoles(rolesList, permissionKeys: permissionSet);
+        var primaryPersona = TelecomPersonaResolver.ResolvePrimary(rolesList, user.PrimaryMenuPersona);
+        var landingPath = TelecomWorkspaceRules.ResolveSessionLandingPath(
+            rolesList,
+            primaryPersona,
+            permissionSet);
+        return (menuNodes, primaryPersona, landingPath, permissionKeys.ToList());
     }
 
     public async Task<List<GetMyProfileListResultDto>> GetMyProfileListAsync(
@@ -425,40 +521,248 @@ public class SecurityService : ISecurityService
         }
     }
 
-    public async Task<List<GetRoleListResultDto>> GetRoleListAsync(
-        CancellationToken cancellationToken
-    )
+    public async Task<CloneRolePermissionsResultDto> CloneRolePermissionsAsync(
+        string sourceRoleName,
+        string newRoleName,
+        string? createdById = null,
+        CancellationToken cancellationToken = default)
     {
-        var roles = await _roleManager.Roles
+        var source = sourceRoleName.Trim();
+        var target = newRoleName.Trim();
+
+        if (await _roleManager.RoleExistsAsync(target))
+        {
+            throw new InvalidOperationException($"الدور '{target}' موجود مسبقاً.");
+        }
+
+        if (!await _roleManager.RoleExistsAsync(source))
+        {
+            throw new InvalidOperationException($"الدور المصدر '{source}' غير موجود.");
+        }
+
+        await _roleManager.CreateAsync(new IdentityRole(target));
+
+        var keys = await _context.RolePermission
+            .AsNoTracking()
+            .Where(rp => rp.RoleName == source)
+            .Select(rp => rp.PermissionKey)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        foreach (var key in keys.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            await _context.RolePermission.AddAsync(new RolePermission
+            {
+                RoleName = target,
+                PermissionKey = key,
+                GrantedAtUtc = now,
+                GrantedById = createdById,
+            }, cancellationToken);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new CloneRolePermissionsResultDto
+        {
+            NewRoleName = target,
+            PermissionKeys = keys,
+        };
+    }
+
+    public async Task<List<GetRoleListResultDto>> GetRoleListAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _roleManager.Roles
             .Select(x => new GetRoleListResultDto
             {
                 Id = x.Id,
-                Name = x.Name ?? string.Empty
+                Name = x.Name ?? string.Empty,
             })
             .ToListAsync(cancellationToken);
-
-        return roles;
     }
 
     public async Task<List<GetUserListResultDto>> GetUserListAsync(
-        CancellationToken cancellationToken
+        string? actorUserId,
+        CancellationToken cancellationToken = default
         )
     {
-        var users = await _userManager.Users
-            .Select(x => new GetUserListResultDto
-            {
-                Id = x.Id,
-                FirstName = x.FirstName,
-                LastName = x.LastName,
-                Email = x.Email,
-                IsBlocked = x.IsBlocked,
-                IsDeleted = x.IsDeleted,
-                EmailConfirmed = x.EmailConfirmed,
-                CreatedAt = x.CreatedAt
-            })
+        HashSet<string>? visibleIds = null;
+        if (!string.IsNullOrEmpty(actorUserId))
+        {
+            visibleIds = await _userScope.GetVisibleUserIdsAsync(actorUserId, cancellationToken);
+        }
+
+        var query = _userManager.Users.Where(x => x.IsDeleted != true);
+        if (visibleIds != null)
+        {
+            query = query.Where(x => visibleIds.Contains(x.Id));
+        }
+
+        var users = await query
+            .OrderBy(x => x.FirstName)
+            .ThenBy(x => x.LastName)
             .ToListAsync(cancellationToken);
 
-        return users;
+        if (users.Count == 0)
+        {
+            return [];
+        }
+
+        var userIds = users.Select(u => u.Id).ToList();
+        var managerIds = users
+            .Where(u => !string.IsNullOrEmpty(u.ManagerUserId))
+            .Select(u => u.ManagerUserId!)
+            .Distinct()
+            .ToList();
+
+        var managers = await _context.Users
+            .AsNoTracking()
+            .Where(u => managerIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.FirstName, u.LastName })
+            .ToDictionaryAsync(u => u.Id, cancellationToken);
+
+        var orgUnitIds = users
+            .Where(u => !string.IsNullOrEmpty(u.OrgUnitId))
+            .Select(u => u.OrgUnitId!)
+            .Distinct()
+            .ToList();
+
+        var orgUnits = await _context.OrgUnit
+            .AsNoTracking()
+            .Where(o => orgUnitIds.Contains(o.Id))
+            .Select(o => new { o.Id, o.NameAr })
+            .ToDictionaryAsync(o => o.Id, cancellationToken);
+
+        var roleRows = await (
+            from ur in _context.UserRoles
+            join r in _context.Roles on ur.RoleId equals r.Id
+            where userIds.Contains(ur.UserId)
+            select new { ur.UserId, RoleName = r.Name }
+        ).ToListAsync(cancellationToken);
+
+        var rolesByUser = roleRows
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName ?? "").Where(n => n.Length > 0).ToList());
+
+        var onlineThreshold = DateTime.UtcNow.AddMinutes(-30);
+
+        return users.Select(u =>
+        {
+            var roles = rolesByUser.TryGetValue(u.Id, out var r) ? r : [];
+            var lastSeen = u.LastActivityAtUtc ?? u.LastLoginAtUtc;
+            managers.TryGetValue(u.ManagerUserId ?? "", out var mgr);
+            orgUnits.TryGetValue(u.OrgUnitId ?? "", out var ou);
+
+            return new GetUserListResultDto
+            {
+                Id = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                IsBlocked = u.IsBlocked,
+                IsDeleted = u.IsDeleted,
+                EmailConfirmed = u.EmailConfirmed,
+                CreatedAt = u.CreatedAt,
+                PrimaryMenuPersona = u.PrimaryMenuPersona?.ToString()
+                    ?? TelecomPersonaResolver.ResolveFromRoles(roles)?.ToString(),
+                ManagerUserId = u.ManagerUserId,
+                ManagerDisplayName = mgr == null
+                    ? null
+                    : $"{mgr.FirstName} {mgr.LastName}".Trim(),
+                OrgUnitId = u.OrgUnitId,
+                OrgUnitNameAr = ou?.NameAr,
+                LastLoginAtUtc = u.LastLoginAtUtc,
+                LastActivityAtUtc = u.LastActivityAtUtc,
+                Roles = roles,
+                RolesDisplay = string.Join(", ", roles.OrderBy(x => x)),
+                IsOnline = u.IsBlocked != true && lastSeen.HasValue && lastSeen.Value >= onlineThreshold,
+            };
+        }).ToList();
+    }
+
+    private async Task SyncTelecomRoleFromPersonaAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        if (!user.PrimaryMenuPersona.HasValue)
+        {
+            return;
+        }
+
+        var targetRole = TelecomPersonaRoleMapper.GetRoleForPersona(user.PrimaryMenuPersona.Value);
+        if (string.IsNullOrEmpty(targetRole))
+        {
+            return;
+        }
+
+        var current = await _userManager.GetRolesAsync(user);
+        foreach (var role in TelecomPersonaRoleMapper.TelecomRolesToReplace)
+        {
+            if (current.Contains(role) && !string.Equals(role, targetRole, StringComparison.OrdinalIgnoreCase))
+            {
+                await _userManager.RemoveFromRoleAsync(user, role);
+            }
+        }
+
+        if (!await _userManager.IsInRoleAsync(user, targetRole))
+        {
+            await _userManager.AddToRoleAsync(user, targetRole);
+        }
+    }
+
+    private async Task<int> GetJwtExpiryMinutesAsync(CancellationToken cancellationToken)
+    {
+        var fallback = _configuration.GetValue("Jwt:ExpireInMinute", 60);
+        return await _globalSettings.GetIntAsync(
+            GlobalSettingKeys.JwtAccessTokenMinutes,
+            fallback,
+            min: 5,
+            max: 1440,
+            cancellationToken);
+    }
+
+    private Task LogLoginFailedAsync(
+        string email,
+        string reasonAr,
+        CancellationToken cancellationToken,
+        string? userId = null) =>
+        _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = userId ?? "anonymous",
+                UserId = userId,
+                ActionType = UserAuditActionTypes.UserLoginFailed,
+                EntityType = nameof(ApplicationUser),
+                EntityId = userId,
+                SummaryAr = $"فشل تسجيل الدخول: {reasonAr}",
+                Payload = new { email, reasonAr },
+            },
+            cancellationToken);
+
+    private void SetAccessTokenCookie(string accessToken)
+    {
+        var response = _httpContextAccessor.HttpContext?.Response;
+        if (response == null || string.IsNullOrEmpty(accessToken))
+        {
+            return;
+        }
+
+        var minutes = _configuration.GetSection("Jwt").GetValue<int>("ExpireInMinute");
+        if (minutes <= 0)
+        {
+            minutes = 480;
+        }
+
+        response.Cookies.Append(
+            "accessToken",
+            accessToken,
+            new CookieOptions
+            {
+                Path = "/",
+                HttpOnly = true,
+                Secure = _httpContextAccessor.HttpContext?.Request.IsHttps == true,
+                SameSite = SameSiteMode.Lax,
+                MaxAge = TimeSpan.FromMinutes(minutes),
+                IsEssential = true,
+            });
     }
 
     public async Task<CreateUserResultDto> CreateUserAsync(
@@ -471,6 +775,10 @@ public class SecurityService : ISecurityService
         bool isBlocked = false,
         bool isDeleted = false,
         string createdById = "",
+        TelecomMenuPersona? primaryMenuPersona = null,
+        string? managerUserId = null,
+        string? orgUnitId = null,
+        bool syncTelecomRoleFromPersona = true,
         CancellationToken cancellationToken = default
         )
     {
@@ -489,6 +797,9 @@ public class SecurityService : ISecurityService
         user.IsBlocked = isBlocked;
         user.IsDeleted = isDeleted;
         user.CreatedById = createdById;
+        user.PrimaryMenuPersona = primaryMenuPersona;
+        user.ManagerUserId = string.IsNullOrWhiteSpace(managerUserId) ? null : managerUserId.Trim();
+        user.OrgUnitId = string.IsNullOrWhiteSpace(orgUnitId) ? null : orgUnitId.Trim();
 
         var result = await _userManager.CreateAsync(user, password);
 
@@ -500,6 +811,11 @@ public class SecurityService : ISecurityService
         if (!await _userManager.IsInRoleAsync(user, RoleHelper.GetProfileRole()))
         {
             await _userManager.AddToRoleAsync(user, RoleHelper.GetProfileRole());
+        }
+
+        if (syncTelecomRoleFromPersona && primaryMenuPersona.HasValue)
+        {
+            await SyncTelecomRoleFromPersonaAsync(user, cancellationToken);
         }
 
         return new CreateUserResultDto
@@ -522,6 +838,10 @@ public class SecurityService : ISecurityService
         bool isBlocked = false,
         bool isDeleted = false,
         string updatedById = "",
+        TelecomMenuPersona? primaryMenuPersona = null,
+        string? managerUserId = null,
+        string? orgUnitId = null,
+        bool syncTelecomRoleFromPersona = true,
         CancellationToken cancellationToken = default
         )
     {
@@ -543,12 +863,24 @@ public class SecurityService : ISecurityService
         user.IsBlocked = isBlocked;
         user.IsDeleted = isDeleted;
         user.UpdatedById = updatedById;
+        if (primaryMenuPersona.HasValue)
+        {
+            user.PrimaryMenuPersona = primaryMenuPersona;
+        }
+
+        user.ManagerUserId = string.IsNullOrWhiteSpace(managerUserId) ? null : managerUserId.Trim();
+        user.OrgUnitId = string.IsNullOrWhiteSpace(orgUnitId) ? null : orgUnitId.Trim();
 
         var result = await _userManager.UpdateAsync(user);
 
         if (!result.Succeeded)
         {
             throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+
+        if (syncTelecomRoleFromPersona && user.PrimaryMenuPersona.HasValue)
+        {
+            await SyncTelecomRoleFromPersonaAsync(user, cancellationToken);
         }
 
         return new UpdateUserResultDto
@@ -691,8 +1023,15 @@ public class SecurityService : ISecurityService
             }
         }
 
-        var updatedRoles = await _userManager.GetRolesAsync(user);
-        return updatedRoles.ToList();
+        var updatedRoles = (await _userManager.GetRolesAsync(user)).ToList();
+        var persona = TelecomPersonaResolver.ResolvePrimary(updatedRoles, null);
+        if (persona.HasValue && user.PrimaryMenuPersona != persona)
+        {
+            user.PrimaryMenuPersona = persona;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return updatedRoles;
     }
 
 

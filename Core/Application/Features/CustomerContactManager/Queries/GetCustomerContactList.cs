@@ -28,7 +28,7 @@ public class GetCustomerContactListProfile : Profile
         CreateMap<CustomerContact, GetCustomerContactListDto>()
             .ForMember(
                 dest => dest.CustomerName,
-                opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Name : string.Empty)
+                opt => opt.MapFrom(src => src.Customer != null ? src.Customer.DisplayName : string.Empty)
             );
 
     }

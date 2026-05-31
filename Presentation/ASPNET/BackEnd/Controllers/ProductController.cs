@@ -75,7 +75,27 @@ public class ProductController : BaseApiController
         });
     }
 
+    [Authorize]
+    [HttpGet("GetMigrationEligibleProducts")]
+    public async Task<ActionResult<ApiSuccessResult<GetMigrationEligibleProductsResult>>> GetMigrationEligibleProductsAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string subscriberProfileId = "",
+        [FromQuery] string? msisdnAssetId = null)
+    {
+        var request = new GetMigrationEligibleProductsRequest
+        {
+            SubscriberProfileId = subscriberProfileId,
+            MsisdnAssetId = msisdnAssetId,
+        };
+        var response = await _sender.Send(request, cancellationToken);
 
+        return Ok(new ApiSuccessResult<GetMigrationEligibleProductsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = $"Success executing {nameof(GetMigrationEligibleProductsAsync)}",
+            Content = response
+        });
+    }
 }
 
 

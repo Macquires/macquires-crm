@@ -1,10 +1,15 @@
+using Application.Common.Audit;
+using Application.Common.CQS.Queries;
+using Application.Common.Exceptions;
+using Application.Common.Extensions;
 using Application.Common.Integrations;
-using Application.Common.Repositories;
+using Application.Common.Security;
+using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.TelecomManager.Commands;
 
@@ -12,6 +17,13 @@ public class ConfirmTelecomOperationRequestResult
 {
     public TelecomOperationRequest? Data { get; set; }
     public BillingProvisionResult? BillingResult { get; set; }
+    public NetworkProvisionResult? NetworkResult { get; set; }
+    public bool IdempotentReplay { get; set; }
+
+    /// <summary>Arabic hint for UI (CBS done; HLR may complete asynchronously).</summary>
+    public string? StatusHintAr { get; set; }
+
+    public bool HlrCompletesAsynchronously { get; set; }
 }
 
 public class ConfirmTelecomOperationRequest : IRequest<ConfirmTelecomOperationRequestResult>
@@ -30,75 +42,92 @@ public class ConfirmTelecomOperationRequestValidator : AbstractValidator<Confirm
 
 public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTelecomOperationRequest, ConfirmTelecomOperationRequestResult>
 {
-    private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
-    private readonly ICommandRepository<MsisdnAsset> _msisdnRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IBillingSystemIntegration _billing;
-    private readonly ILogger<ConfirmTelecomOperationRequestHandler> _logger;
+    private readonly ITelecomActivationWorkflow _workflow;
+    private readonly IUserAuditService _audit;
+    private readonly IQueryContext _query;
+    private readonly IOperatorContext _operator;
+    private readonly IPermissionEvaluator _permissions;
 
     public ConfirmTelecomOperationRequestHandler(
-        ICommandRepository<TelecomOperationRequest> operationRepository,
-        ICommandRepository<MsisdnAsset> msisdnRepository,
-        IUnitOfWork unitOfWork,
-        IBillingSystemIntegration billing,
-        ILogger<ConfirmTelecomOperationRequestHandler> logger)
+        ITelecomActivationWorkflow workflow,
+        IUserAuditService audit,
+        IQueryContext query,
+        IOperatorContext operatorContext,
+        IPermissionEvaluator permissions)
     {
-        _operationRepository = operationRepository;
-        _msisdnRepository = msisdnRepository;
-        _unitOfWork = unitOfWork;
-        _billing = billing;
-        _logger = logger;
+        _workflow = workflow;
+        _audit = audit;
+        _query = query;
+        _operator = operatorContext;
+        _permissions = permissions;
     }
 
-    public async Task<ConfirmTelecomOperationRequestResult> Handle(ConfirmTelecomOperationRequest request, CancellationToken cancellationToken)
+    public async Task<ConfirmTelecomOperationRequestResult> Handle(
+        ConfirmTelecomOperationRequest request,
+        CancellationToken cancellationToken)
     {
-        var entity = await _operationRepository.GetAsync(request.Id, cancellationToken)
+        var operation = await _query.TelecomOperationRequest.AsNoTracking()
+            .Include(o => o.MsisdnAsset)
+            .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == request.Id, cancellationToken)
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
-        if (entity.Status != TelecomOperationStatus.Draft)
-            throw new InvalidOperationException("Only draft operations can be confirmed.");
+        await EnsurePermissionForKindAsync(operation.Kind, cancellationToken);
 
-        if (entity.DocumentStatus < TelecomDocumentStatus.Uploaded)
-            throw new InvalidOperationException("Identity document must be uploaded before confirmation.");
+        var result = await _workflow.ConfirmActivationAsync(request.Id, request.UpdatedById, cancellationToken);
 
-        entity.Status = TelecomOperationStatus.Confirmed;
-        entity.ConfirmedAtUtc = DateTime.UtcNow;
-        entity.UpdatedById = request.UpdatedById;
-        _operationRepository.Update(entity);
-        await _unitOfWork.SaveAsync(cancellationToken);
+        var msisdn = operation.MsisdnAsset?.Msisdn ?? "—";
+        await _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = request.UpdatedById ?? "system",
+                ActionType = UserAuditActionTypes.TelecomOperationConfirmed,
+                EntityType = nameof(TelecomOperationRequest),
+                EntityId = request.Id,
+                SummaryAr = operation.Kind == TelecomOperationKind.TakeOver
+                    ? $"اعتماد نقل ملكية {msisdn} — CBS/HLR"
+                    : $"تأكيد {operation.Kind} للخط {msisdn}",
+                Payload = new { request.Id, operation.Kind, msisdn, result.IdempotentReplay, source = "Customer360" },
+            },
+            cancellationToken);
 
-        entity.Status = TelecomOperationStatus.PendingExternal;
-        _operationRepository.Update(entity);
-        await _unitOfWork.SaveAsync(cancellationToken);
-
-        string? msisdn = null;
-        if (!string.IsNullOrEmpty(entity.MsisdnAssetId))
+        var op = result.Operation;
+        var status = op?.Status ?? TelecomOperationStatus.Failed;
+        var hint = status switch
         {
-            var asset = await _msisdnRepository.GetAsync(entity.MsisdnAssetId, cancellationToken);
-            msisdn = asset?.Msisdn;
-        }
-
-        var provisionRequest = new BillingProvisionRequest(entity.Id, entity.Number, msisdn, entity.Kind);
-        var billingResult = await _billing.ProvisionAsync(provisionRequest, cancellationToken);
-
-        if (billingResult.Success)
-        {
-            entity.Status = TelecomOperationStatus.Completed;
-        }
-        else
-        {
-            entity.Status = TelecomOperationStatus.PendingExternal;
-        }
-
-        _operationRepository.Update(entity);
-        await _unitOfWork.SaveAsync(cancellationToken);
-
-        _logger.LogInformation("Telecom operation {Number} billing outcome: {Message}", entity.Number, billingResult.Message);
+            TelecomOperationStatus.Completed =>
+                "تم تسجيل العملية واكتمل التزامن مع CBS وHLR.",
+            TelecomOperationStatus.PendingExternal =>
+                "تم تسجيل العملية؛ المزامنة مع CBS/HLR قيد الانتظار (شبكة أو إعدادات تكامل).",
+            TelecomOperationStatus.Provisioning =>
+                "تم تأكيد CBS؛ جاري تزويد الشبكة (HLR) في الخلفية.",
+            TelecomOperationStatus.Failed =>
+                "فشلت العملية — راجع سجل التكامل أو أعد المحاولة من الباك أوفيس.",
+            _ => "تم استلام الطلب."
+        };
 
         return new ConfirmTelecomOperationRequestResult
         {
-            Data = entity,
-            BillingResult = billingResult
+            Data = op,
+            BillingResult = result.BillingResult,
+            NetworkResult = result.NetworkResult,
+            IdempotentReplay = result.IdempotentReplay,
+            StatusHintAr = hint,
+            HlrCompletesAsynchronously = status is TelecomOperationStatus.Provisioning
+                or TelecomOperationStatus.PendingExternal
         };
+    }
+
+    private async Task EnsurePermissionForKindAsync(TelecomOperationKind kind, CancellationToken cancellationToken)
+    {
+        if (!_operator.IsAuthenticated || string.IsNullOrEmpty(_operator.UserId))
+        {
+            throw new BusinessRuleViolationException("يجب تسجيل الدخول لتنفيذ هذه العملية.");
+        }
+
+        var key = TelecomOperationPermissionResolver.PermissionKeyForKind(kind);
+        if (!await _permissions.HasPermissionAsync(_operator.UserId, key, cancellationToken))
+        {
+            throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
+        }
     }
 }

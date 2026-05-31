@@ -1,105 +1,111 @@
 @page
+@inject IHtmlLocalizer<SharedResources> L
 @{
-    ViewData["Title"] = "مركز العمليات — سوريا تيليكوم";
+    ViewData["Title"] = L["Page_TelecomHubTitle"].Value;
 }
 
 <div id="app" v-cloak>
-    <div class="form-card" id="formcard" dir="rtl" lang="ar">
-        <div class="container-fluid py-3 px-3 px-lg-4 telecom-hub-root">
+    <div class="form-card" id="formcard" :dir="contentDir" :lang="contentLang">
+        <div class="container-fluid py-3 px-3 px-lg-4 telecom-hub-root telecom-premium-page">
 
             <div v-if="loadError" class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
                 <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                 <span>{{ loadError }}</span>
-                <button type="button" class="btn btn-sm btn-outline-dark ms-auto" @@click="refreshAll">إعادة المحاولة</button>
+                <button type="button" class="btn btn-sm btn-outline-dark ms-auto" @@click="refreshAll">{{ t('telecom.loadError.retry') }}</button>
             </div>
 
-            <header class="telecom-hero card border-0 shadow-sm mb-4">
+            <header class="telecom-hero telecom-premium-hero card border-0 shadow-sm mb-4">
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-start">
                         <div class="col-12 col-xl-7">
-                            <h1 class="h4 mb-2 fw-semibold">مركز التليكوم OSS/BSS</h1>
-                            <p class="text-muted mb-0 small lh-lg">
-                                أربع مسارات مربوطة بـ API الإنتاج: إنشاء <code>CreateTelecomOperation</code> ثم تسجيل الوثيقة <code>UploadTelecomOperationDocument</code> ثم تأكيد CBS من الجدول.
-                            </p>
+                            <p class="small text-muted mb-1">{{ t('telecom.hero.badge') }}</p>
+                            <h1 class="h4 mb-2 fw-semibold">
+                                {{ t('telecom.hero.title') }}
+                                <span class="text-muted fw-normal fs-6">OSS/BSS</span>
+                            </h1>
+                            <p class="text-muted mb-0 small lh-lg">{{ t('telecom.hero.subtitle') }}</p>
                         </div>
                         <div class="col-12 col-xl-5">
-                            <label class="form-label small text-muted mb-1" for="telecomSearchInput">بحث موحّد</label>
+                            <label class="form-label small text-muted mb-1" for="telecomSearchInput">{{ t('telecom.search.label') }}</label>
                             <div class="input-group input-group-lg telecom-search-group">
                                 <span class="input-group-text bg-white"><i class="fas fa-search text-muted" aria-hidden="true"></i></span>
                                 <input id="telecomSearchInput" type="search" class="form-control" v-model="searchTerm"
-                                       placeholder="MSISDN، اسم، أو رقم هوية…" autocomplete="off"
+                                       :placeholder="t('telecom.search.placeholder')" autocomplete="off"
                                        @@keyup.enter="runSearch" aria-describedby="telecomSearchHint" />
-                                <button class="btn btn-primary px-3" type="button" @@click="runSearch" :disabled="searchBusy">
+                                <button class="btn btn-telecom-primary px-3" type="button" @@click="runSearch" :disabled="searchBusy">
                                     <span v-if="searchBusy" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    <span v-else>بحث</span>
+                                    <span v-else>{{ t('telecom.search.search') }}</span>
                                 </button>
                             </div>
-                            <p id="telecomSearchHint" class="form-text small text-muted mb-0 mt-1">أدخل حرفين على الأقل ثم اضغط بحث.</p>
+                            <p id="telecomSearchHint" class="form-text small text-muted mb-0 mt-1">
+                                {{ t('telecom.search.hint') }}
+                                <a :href="searchTerm.trim().length >= 2 ? '/Telecom/UnifiedSearch?q=' + encodeURIComponent(searchTerm.trim()) : '/Telecom/UnifiedSearch'" class="link-danger">{{ t('telecom.search.unifiedSearchLink') }}</a>
+                            </p>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <section class="mb-4" aria-label="مسارات التشغيل السريعة">
+            <section class="mb-4" :aria-label="t('telecom.quickPathsAria')">
                 <div class="row g-3">
                     <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-activate shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('activate')" aria-label="فتح معالج تفعيل خط جديد">
+                                @@click="openWizard('activate')" :aria-label="t('telecom.tiles.activate.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-sim-card"></i></span>
-                            <span class="fs-6 fw-semibold d-block">تفعيل</span>
-                            <small class="opacity-75">Activate</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.activate.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.activate.sub') }}</small>
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-migrate shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('migrate')" aria-label="فتح معالج التحويل MGR">
+                                @@click="openWizard('migrate')" :aria-label="t('telecom.tiles.migrate.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-exchange-alt"></i></span>
-                            <span class="fs-6 fw-semibold d-block">تحويل</span>
-                            <small class="opacity-75">MGR</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.migrate.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.migrate.sub') }}</small>
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-takeover shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('takeover')" aria-label="فتح معالج نقل الملكية">
+                                @@click="openWizard('takeover')" :aria-label="t('telecom.tiles.takeover.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-user-friends"></i></span>
-                            <span class="fs-6 fw-semibold d-block">نقل ملكية</span>
-                            <small class="opacity-75">Take Over</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.takeover.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.takeover.sub') }}</small>
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-simswap shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('simswap')" aria-label="فتح معالج تبديل الشريحة">
+                                @@click="openWizard('simswap')" :aria-label="t('telecom.tiles.simswap.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-random"></i></span>
-                            <span class="fs-6 fw-semibold d-block">تبديل شريحة</span>
-                            <small class="opacity-75">SIM Swap</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.simswap.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.simswap.sub') }}</small>
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-package shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('addpackage')" aria-label="فتح معالج إضافة باقة">
+                                @@click="openWizard('addpackage')" :aria-label="t('telecom.tiles.addpackage.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-box-open"></i></span>
-                            <span class="fs-6 fw-semibold d-block">إضافة باقة</span>
-                            <small class="opacity-75">Add package</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.addpackage.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.addpackage.sub') }}</small>
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-support shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('support')" aria-label="فتح معالج الدعم الفني">
+                                @@click="openWizard('support')" :aria-label="t('telecom.tiles.support.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-headset"></i></span>
-                            <span class="fs-6 fw-semibold d-block">دعم</span>
-                            <small class="opacity-75">Support</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.support.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.support.sub') }}</small>
                         </button>
                     </div>
                 </div>
@@ -108,26 +114,26 @@
             <section v-if="wizard.visible" class="mb-4" aria-labelledby="wizardHeading">
                 <div class="card border-primary shadow-sm">
                     <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
-                        <h2 id="wizardHeading" class="h6 mb-0 fw-semibold">المعالج — {{ wizardTitle }}</h2>
-                        <button type="button" class="btn-close" aria-label="إغلاق المعالج" @@click="closeWizard"></button>
+                        <h2 id="wizardHeading" class="h6 mb-0 fw-semibold">{{ t('telecom.wizard.heading', { title: wizardTitle }) }}</h2>
+                        <button type="button" class="btn-close" :aria-label="t('telecom.wizard.closeAria')" @@click="closeWizard"></button>
                     </div>
                     <div class="card-body">
                         <div class="telecom-stepper d-flex gap-2 mb-4 flex-wrap" role="list">
                             <span v-for="s in 3" :key="s" class="telecom-step flex-grow-1 text-center small py-2 rounded"
                                   :class="wizard.step >= s ? 'telecom-step-active' : 'telecom-step-muted'"
                                   role="listitem">
-                                {{ s === 1 ? 'بيانات' : s === 2 ? 'تسجيل' : 'تم' }}
+                                {{ s === 1 ? t('telecom.wizard.steps.data') : s === 2 ? t('telecom.wizard.steps.reg') : t('telecom.wizard.steps.done') }}
                             </span>
                         </div>
 
                         <div v-show="wizard.step === 1" class="telecom-wizard-step">
-                            <p class="small text-muted mb-3">ابحث عن المشترك (اسم، هوية، أو رقم هاتف مرتبط بالملف) أو عن MSISDN. إذا اخترت رقماً غير مربوط بملف مشترك، لن يُقبل الطلب حتى تربطه أو تختار ملفاً.</p>
+                            <p class="small text-muted mb-3">{{ t('telecom.wizard.step1Help') }}</p>
                             <div class="row g-3">
                                 <div class="col-12 col-lg-6">
-                                    <label class="form-label fw-semibold small">المشترك الأساسي</label>
+                                    <label class="form-label fw-semibold small">{{ t('telecom.wizard.primaryLabel') }}</label>
                                     <div class="input-group input-group-sm mb-2">
-                                        <input type="search" class="form-control" v-model="wizard.primarySearchTerm" placeholder="بحث…" @@keyup.enter="runWizardPrimarySearch" />
-                                        <button class="btn btn-outline-primary" type="button" :disabled="wizard.primaryBusy" @@click="runWizardPrimarySearch">بحث</button>
+                                        <input type="search" class="form-control" v-model="wizard.primarySearchTerm" :placeholder="t('telecom.wizard.searchPh')" @@keyup.enter="runWizardPrimarySearch" />
+                                        <button class="btn btn-outline-primary" type="button" :disabled="wizard.primaryBusy" @@click="runWizardPrimarySearch">{{ t('telecom.wizard.searchBtn') }}</button>
                                     </div>
                                     <ul class="list-group list-group-flush border rounded small" style="max-height: 200px; overflow-y: auto;">
                                         <li v-for="r in wizard.primaryResults" :key="'p'+r.id+r.resultType"
@@ -138,22 +144,22 @@
                                             <strong>{{ r.title }}</strong>
                                             <span class="text-muted d-block small">{{ r.subtitle }}</span>
                                         </li>
-                                        <li v-if="!wizard.primaryBusy && wizard.primaryResults.length === 0" class="list-group-item text-muted small">لا نتائج — نفّذ بحثاً.</li>
+                                        <li v-if="!wizard.primaryBusy && wizard.primaryResults.length === 0" class="list-group-item text-muted small">{{ t('telecom.wizard.noResults') }}</li>
                                     </ul>
                                     <div v-if="wizard.primaryLabel" class="alert alert-light border small py-2 mt-2 mb-0">
-                                        مختار: <strong>{{ wizard.primaryLabel }}</strong>
-                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardPrimary">إلغاء</button>
+                                        {{ t('telecom.wizard.selected') }} <strong>{{ wizard.primaryLabel }}</strong>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardPrimary">{{ t('telecom.wizard.cancel') }}</button>
                                     </div>
                                 </div>
                                 <div v-if="needsSecondaryParty" class="col-12 col-lg-6">
                                     <label class="form-label fw-semibold small">
-                                        طرف ثانٍ
-                                        <span v-if="secondaryRequired" class="text-danger">*</span>
-                                        <span v-else class="text-muted fw-normal">(اختياري)</span>
+                                        {{ t('telecom.wizard.secondaryLabel') }}
+                                        <span v-if="secondaryRequired" class="text-danger">{{ t('telecom.wizard.requiredStar') }}</span>
+                                        <span v-else class="text-muted fw-normal">{{ t('telecom.wizard.optional') }}</span>
                                     </label>
                                     <div class="input-group input-group-sm mb-2">
-                                        <input type="search" class="form-control" v-model="wizard.secondarySearchTerm" placeholder="بحث عن مشترك ثانٍ…" @@keyup.enter="runWizardSecondarySearch" />
-                                        <button class="btn btn-outline-primary" type="button" :disabled="wizard.secondaryBusy" @@click="runWizardSecondarySearch">بحث</button>
+                                        <input type="search" class="form-control" v-model="wizard.secondarySearchTerm" :placeholder="t('telecom.wizard.searchPh')" @@keyup.enter="runWizardSecondarySearch" />
+                                        <button class="btn btn-outline-primary" type="button" :disabled="wizard.secondaryBusy" @@click="runWizardSecondarySearch">{{ t('telecom.wizard.searchBtn') }}</button>
                                     </div>
                                     <ul class="list-group list-group-flush border rounded small" style="max-height: 200px; overflow-y: auto;">
                                         <li v-for="r in wizard.secondaryResults" :key="'s'+r.id+r.resultType"
@@ -163,66 +169,69 @@
                                             <strong>{{ r.title }}</strong>
                                             <span class="text-muted d-block small">{{ r.subtitle }}</span>
                                         </li>
-                                        <li v-if="!wizard.secondaryBusy && wizard.secondaryResults.length === 0" class="list-group-item text-muted small">لا نتائج.</li>
+                                        <li v-if="!wizard.secondaryBusy && wizard.secondaryResults.length === 0" class="list-group-item text-muted small">{{ t('telecom.wizard.noResults2') }}</li>
                                     </ul>
                                     <div v-if="wizard.secondaryLabel" class="alert alert-light border small py-2 mt-2 mb-0">
-                                        مختار: <strong>{{ wizard.secondaryLabel }}</strong>
-                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardSecondary">إلغاء</button>
+                                        {{ t('telecom.wizard.selected') }} <strong>{{ wizard.secondaryLabel }}</strong>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardSecondary">{{ t('telecom.wizard.cancel') }}</button>
                                     </div>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'migrate'">
-                                    <label class="form-label small" for="wizTargetOffer">الباقة / العرض الجديد (Migration)</label>
+                                    <label class="form-label small" for="wizTargetOffer">{{ t('telecom.wizard.targetOffer') }}</label>
                                     <input id="wizTargetOffer" type="text" class="form-control form-control-sm" v-model="wizard.targetOfferName"
-                                           placeholder="مثال: سيريتل ميكس، باقة الشباب…" maxlength="200" />
+                                           :placeholder="t('telecom.wizard.targetOfferPh')" maxlength="200" />
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label small" for="wizNotes">ملاحظات التشغيل</label>
-                                    <textarea id="wizNotes" class="form-control form-control-sm" rows="2" v-model="wizard.notes" placeholder="رقم طلب، مرجع فرع، تفاصيل للفوترة…"></textarea>
+                                    <label class="form-label small" for="wizNotes">{{ t('telecom.wizard.notes') }}</label>
+                                    <textarea id="wizNotes" class="form-control form-control-sm" rows="2" v-model="wizard.notes" :placeholder="t('telecom.wizard.notesPh')"></textarea>
                                 </div>
                             </div>
                         </div>
 
                         <div v-show="wizard.step === 2" class="telecom-wizard-step">
-                            <p class="small text-muted mb-3">يتم إنشاء مسودة في قاعدة البيانات ثم تسجيل وثيقة الهوية (الواجهة الحالية تُعلِم النظام بأن الوثيقة مرفوعة — التخزين الثنائي يُضاف لاحقاً).</p>
+                            <p class="small text-muted mb-3" v-html="t('telecom.wizard.step2Help')"></p>
                             <div v-if="!wizard.createdOperationId" class="d-grid gap-2">
                                 <button type="button" class="btn btn-primary" :disabled="wizardSubmitBusy" @@click="submitCreateOperation">
                                     <span v-if="wizardSubmitBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                                    إنشاء مسودة الطلب (CreateTelecomOperation)
+                                    {{ wizard.kind === 'migrate' ? t('telecom.wizard.draftMigrate') : t('telecom.wizard.draftDefault') }}
                                 </button>
                             </div>
                             <div v-else class="border rounded p-3 bg-light">
-                                <p class="mb-2 small"><strong>رقم الطلب:</strong> {{ wizard.createdOperationNumber }}</p>
-                                <p class="mb-3 small text-muted">المعرف: {{ wizard.createdOperationId }}</p>
+                                <p class="mb-2 small"><strong>{{ t('telecom.wizard.opNumber') }}</strong> {{ wizard.createdOperationNumber }}</p>
+                                <p class="mb-3 small text-muted">{{ t('telecom.wizard.opId') }} {{ wizard.createdOperationId }}</p>
                                 <button v-if="!wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="wizardUploadBusy" @@click="submitMarkDocumentUploaded">
                                     <span v-if="wizardUploadBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                                    تسجيل رفع الوثيقة (UploadTelecomOperationDocument)
+                                    {{ t('telecom.wizard.uploadBtn') }}
                                 </button>
-                                <p v-else class="mb-0 small text-success"><i class="fas fa-check-circle me-1"></i>تم تسجيل الوثيقة — يمكنك التأكيد عبر CBS من الجدول.</p>
+                                <p v-else class="mb-0 small text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    {{ t('telecom.wizard.uploaded') }}
+                                </p>
                             </div>
                         </div>
 
                         <div v-show="wizard.step === 3" class="telecom-wizard-step">
-                            <p class="mb-2">تم تسجيل العملية <strong>{{ wizard.createdOperationNumber }}</strong> في النظام.</p>
-                            <p class="small text-muted mb-3">استخدم زر «تأكيد CBS (أول مسودة جاهزة)» في جدول الطلبات بعد أن تصبح المسودة جاهزة للفوترة.</p>
-                            <button type="button" class="btn btn-primary" @@click="finishWizard">إغلاق وتحديث القائمة</button>
+                            <p class="mb-2">{{ t('telecom.wizard.step3a') }} <strong>{{ wizard.createdOperationNumber }}</strong> {{ t('telecom.wizard.step3b') }}</p>
+                            <p class="small text-muted mb-3">{{ t('telecom.wizard.step3c') }}</p>
+                            <button type="button" class="btn btn-primary" @@click="finishWizard">{{ t('telecom.wizard.closeRefresh') }}</button>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mt-4 pt-2 border-top">
                             <button class="btn btn-outline-secondary" type="button"
                                     :disabled="wizard.step === 1 || (wizard.step === 2 && wizard.createdOperationId)"
-                                    @@click="wizardStepPrev">السابق</button>
-                            <button v-if="wizard.step === 1" class="btn btn-primary" type="button" @@click="wizardStepNext">التالي: التسجيل</button>
-                            <button v-if="wizard.step === 2" class="btn btn-primary" type="button" :disabled="!canWizardGoToStep3" @@click="wizardStepNext">التالي: الخلاصة</button>
+                                    @@click="wizardStepPrev">{{ t('telecom.wizard.prev') }}</button>
+                            <button v-if="wizard.step === 1" class="btn btn-primary" type="button" @@click="wizardStepNext">{{ t('telecom.wizard.nextReg') }}</button>
+                            <button v-if="wizard.step === 2" class="btn btn-primary" type="button" :disabled="!canWizardGoToStep3" @@click="wizardStepNext">{{ t('telecom.wizard.nextDone') }}</button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section class="row g-3 mb-4" aria-label="مؤشرات الأداء">
+            <section class="row g-3 mb-4" aria-label="KPIs">
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
-                            <h3 class="h6 text-muted mb-2">ARPU <span class="fw-normal small">(ديمو)</span></h3>
+                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.arpuTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.arpuHint') }}</span></h3>
                             <p class="telecom-kpi-value mb-0 fw-semibold text-primary">{{ formatMoney(kpis.arpuDemo) }}</p>
                         </div>
                     </div>
@@ -230,7 +239,7 @@
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
-                            <h3 class="h6 text-muted mb-2">نسبة الانسحاب <span class="fw-normal small">(ديمو)</span></h3>
+                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.churnTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.churnHint') }}</span></h3>
                             <p class="telecom-kpi-value mb-0 fw-semibold text-warning">{{ kpis.churnPercentDemo }}%</p>
                         </div>
                     </div>
@@ -238,8 +247,8 @@
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
-                            <h3 class="h6 text-muted mb-2">المرونة</h3>
-                            <p class="mb-0 small text-muted lh-lg">عند تعطل CBS المؤقت تُسجَّل المحاولات ثم يكتمل الإرسال بعد Polly — دون فقدان قرار التشغيل الداخلي.</p>
+                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.agilityTitle') }}</h3>
+                            <p class="mb-0 small text-muted lh-lg">{{ t('telecom.kpis.agilityBody') }}</p>
                         </div>
                     </div>
                 </div>
@@ -248,21 +257,21 @@
             <div class="row g-3 mb-4">
                 <div class="col-lg-6">
                     <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom fw-semibold py-3">خريطة شبكة (Mock)</div>
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">{{ t('telecom.map.title') }}</div>
                         <div class="card-body">
-                            <div class="map-mock position-relative rounded border bg-light" style="height: 220px;" role="img" aria-label="توزيع وهمي للمدن">
-                                <span class="position-absolute badge bg-danger" style="top: 38%; inset-inline-start: 42%;">دمشق</span>
-                                <span class="position-absolute badge bg-warning text-dark" style="top: 22%; inset-inline-start: 18%;">حلب</span>
-                                <span class="position-absolute badge bg-info text-dark" style="top: 48%; inset-inline-start: 28%;">حمص</span>
-                                <span class="position-absolute badge bg-success" style="top: 30%; inset-inline-start: 8%;">اللاذقية</span>
+                            <div class="map-mock position-relative rounded border bg-light" style="height: 220px;" role="img" :aria-label="t('telecom.map.imgAria')">
+                                <span class="position-absolute badge bg-danger" style="top: 38%; inset-inline-start: 42%;">{{ t('telecom.map.siteDamascus') }}</span>
+                                <span class="position-absolute badge bg-warning text-dark" style="top: 22%; inset-inline-start: 18%;">{{ t('telecom.map.siteAleppo') }}</span>
+                                <span class="position-absolute badge bg-info text-dark" style="top: 48%; inset-inline-start: 28%;">{{ t('telecom.map.siteHoms') }}</span>
+                                <span class="position-absolute badge bg-success" style="top: 30%; inset-inline-start: 8%;">{{ t('telecom.map.siteLatakia') }}</span>
                             </div>
-                            <p class="small text-muted mt-2 mb-0">نقاط عرض لشكاوى التغطية — ربط تذاكر Kanban من القائمة الجانبية.</p>
+                            <p class="small text-muted mt-2 mb-0">{{ t('telecom.map.legend') }}</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom fw-semibold py-3">حرارة الفروع (إيراد ديمو)</div>
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">{{ t('telecom.branch.title') }}</div>
                         <div class="card-body p-0">
                             <ul v-if="kpis.branchHeat && kpis.branchHeat.length" class="list-group list-group-flush">
                                 <li v-for="b in kpis.branchHeat" :key="b.branchName" class="list-group-item d-flex justify-content-between align-items-center py-3">
@@ -270,7 +279,7 @@
                                     <span class="fw-semibold text-nowrap">{{ formatMoney(b.revenueDemo) }}</span>
                                 </li>
                             </ul>
-                            <p v-else class="text-muted small mb-0 p-4 text-center">لا بيانات فرع بعد التحميل.</p>
+                            <p v-else class="text-muted small mb-0 p-4 text-center">{{ t('telecom.branch.empty') }}</p>
                         </div>
                     </div>
                 </div>
@@ -280,45 +289,59 @@
                 <div class="col-lg-7">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
-                            <span class="fw-semibold">طلبات التليكوم</span>
+                            <span class="fw-semibold">
+                                {{ t('telecom.ops.title') }}
+                                <span v-if="pendingTakeOverCount > 0" class="badge bg-danger ms-1">{{ t('telecom.ops.pendingBadge', { count: pendingTakeOverCount }) }}</span>
+                            </span>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary" type="button" @@click="refreshAll" :disabled="loading" title="تحديث القوائم">
+                                <button class="btn btn-outline-secondary" type="button" @@click="refreshAll" :disabled="loading" :title="t('telecom.ops.refreshTitle')">
                                     <span v-if="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    <span v-else>تحديث</span>
+                                    <span v-else>{{ t('telecom.ops.refresh') }}</span>
                                 </button>
                                 <button class="btn btn-outline-primary" type="button" v-if="hubPermissions.canConfirmCbs"
-                                        @@click="confirmFirstReadyDraft" :disabled="loading">تأكيد CBS (أول مسودة جاهزة)</button>
+                                        @@click="confirmFirstReadyDraft" :disabled="loading">{{ t('telecom.ops.cbs') }}</button>
                             </div>
                         </div>
                         <div class="card-body p-0 table-responsive">
                             <table class="table table-sm table-hover align-middle mb-0 telecom-table">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col">الرقم</th>
-                                        <th scope="col">النوع</th>
-                                        <th scope="col">المشترك</th>
-                                        <th scope="col">الحالة</th>
-                                        <th scope="col">الوثائق</th>
-                                        <th scope="col">الباقة المستهدفة</th>
+                                        <th scope="col">{{ t('telecom.ops.thNumber') }}</th>
+                                        <th scope="col">{{ t('telecom.ops.thKind') }}</th>
+                                        <th scope="col">{{ t('telecom.ops.thSub') }}</th>
+                                        <th scope="col">{{ t('telecom.ops.thStatus') }}</th>
+                                        <th scope="col">{{ t('telecom.ops.thDocs') }}</th>
+                                        <th scope="col" v-if="hubPermissions.canConfirmCbs">{{ t('telecom.ops.thOffer') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-if="loading && (!operations || operations.length === 0)">
-                                        <td colspan="6" class="text-center text-muted py-5">
+                                        <td :colspan="hubPermissions.canConfirmCbs ? 6 : 5" class="text-center text-muted py-5">
                                             <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                                            <span class="ms-2">جاري التحميل…</span>
+                                            <span class="ms-2">{{ t('telecom.ops.loading') }}</span>
                                         </td>
                                     </tr>
-                                    <tr v-for="o in operations" :key="o.id">
+                                    <tr v-for="o in operations" :key="o.id" :class="{ 'table-warning': isTakeOverPendingReview(o) }">
                                         <td class="text-nowrap">{{ o.number }}</td>
-                                        <td>{{ o.kindName }}</td>
-                                        <td>{{ o.subscriberName }}</td>
-                                        <td><span class="badge rounded-pill" :class="statusBadge(o.status)">{{ o.statusName }}</span></td>
+                                        <td>{{ kindLabelAr(o.kind) }}</td>
+                                        <td class="small">
+                                            <span>{{ o.subscriberName || t('telecom.ops.dash') }}</span>
+                                            <span v-if="Number(o.kind) === 2 && o.secondarySubscriberName" class="text-muted d-block">
+                                                {{ t('telecom.wizard.secondaryLabel') }}: {{ o.secondarySubscriberName }}
+                                            </span>
+                                        </td>
+                                        <td><span class="badge rounded-pill" :class="statusBadge(o.status)">{{ statusLabelAr(o.status) }}</span></td>
                                         <td>{{ o.documentStatusName }}</td>
-                                        <td class="small text-muted">{{ o.targetOfferName || '—' }}</td>
+                                        <td v-if="hubPermissions.canConfirmCbs">
+                                            <button v-if="isTakeOverPendingReview(o)" type="button" class="btn btn-success btn-sm"
+                                                    @@click="openTakeOverApproval(o)">
+                                                {{ t('telecom.ops.approveTakeOver') }}
+                                            </button>
+                                            <span v-else class="text-muted small">{{ t('telecom.ops.dash') }}</span>
+                                        </td>
                                     </tr>
                                     <tr v-if="!loading && (!operations || operations.length === 0)">
-                                        <td colspan="6" class="text-center text-muted py-5">لا توجد طلبات بعد.</td>
+                                        <td :colspan="hubPermissions.canConfirmCbs ? 6 : 5" class="text-center text-muted py-5">{{ t('telecom.ops.empty') }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -327,15 +350,15 @@
                 </div>
                 <div class="col-lg-5">
                     <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white border-bottom fw-semibold py-3">نتائج البحث الموحّد</div>
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">{{ t('telecom.searchPanel.title') }}</div>
                         <div class="card-body p-0">
                             <ul class="list-group list-group-flush">
                                 <li v-for="r in searchResults" :key="r.id + r.resultType" class="list-group-item py-3">
                                     <div class="fw-semibold">{{ r.title }}</div>
-                                    <div class="small text-muted">{{ r.resultType }} — {{ r.subtitle }}</div>
+                                    <div class="small text-muted">{{ r.resultType }} ? {{ r.subtitle }}</div>
                                 </li>
                                 <li v-if="!searchBusy && searchResults.length === 0" class="list-group-item text-muted small py-4 text-center">
-                                    {{ hasSearched ? 'لا نتائج لهذا المصطلح.' : 'أدخل مصطلحاً (حرفان على الأقل) ثم اضغط بحث.' }}
+                                    {{ hasSearched ? t('telecom.searchPanel.emptyAfter') : t('telecom.searchPanel.emptyBefore') }}
                                 </li>
                             </ul>
                         </div>
@@ -343,44 +366,64 @@
                 </div>
             </div>
 
-            <section v-if="hubPermissions.canSeeBillingLog" class="card border-0 shadow-sm mb-4" aria-label="سجل تكامل الفوترة">
-                <div class="card-header bg-white border-bottom fw-semibold py-3">سجل تكامل الفوترة (Huawei CBS mock)</div>
-                <div class="card-body p-0 table-responsive">
-                    <table class="table table-sm table-hover align-middle mb-0 telecom-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">طلب التشغيل</th>
-                                <th scope="col">المحاولة</th>
-                                <th scope="col">النتيجة</th>
-                                <th scope="col">الرسالة</th>
-                                <th scope="col">الوقت</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="loading && (!billingLogs || billingLogs.length === 0)">
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                                </td>
-                            </tr>
-                            <tr v-for="l in billingLogs" :key="l.id">
-                                <td class="text-nowrap">{{ l.operationNumber }}</td>
-                                <td>{{ l.attemptNumber }}</td>
-                                <td><span class="badge rounded-pill" :class="l.success ? 'bg-success' : 'bg-warning text-dark'">{{ l.success ? 'OK' : 'Pending/Retry' }}</span></td>
-                                <td class="small text-break">{{ l.message }}</td>
-                                <td class="small text-muted text-nowrap">{{ formatDate(l.createdAtUtc) }}</td>
-                            </tr>
-                            <tr v-if="!loading && (!billingLogs || billingLogs.length === 0)">
-                                <td colspan="5" class="text-center text-muted py-4">لا سجلات تكامل بعد.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="modal fade" id="takeOverApprovalModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title fw-bold text-success">
+                                <i class="fas fa-user-shield me-2"></i>{{ t('telecom.takeOverModal.title') }} ? {{ takeOverApproval.number }}
+                            </h5>
+                            <button type="button" class="btn-close" :aria-label="t('telecom.takeOverModal.close')" @@click="closeTakeOverApproval"></button>
+                        </div>
+                        <div class="modal-body pt-0">
+                            <div v-if="takeOverApproval.busy" class="text-center py-4 text-muted">
+                                <span class="spinner-border text-success"></span>
+                            </div>
+                            <template v-else-if="takeOverApproval.detail">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.line') }}</p>
+                                        <p class="fw-semibold font-monospace mb-0" dir="ltr">{{ takeOverApproval.detail.msisdn || t('telecom.ops.dash') }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.status') }}</p>
+                                        <p class="mb-0">{{ takeOverApproval.detail.statusLabelAr }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.currentOwner') }}</p>
+                                        <p class="mb-0">{{ takeOverApproval.detail.currentOwnerName || t('telecom.ops.dash') }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.newOwner') }}</p>
+                                        <p class="mb-0 fw-semibold text-success">{{ takeOverApproval.detail.newOwnerName || t('telecom.ops.dash') }}</p>
+                                    </div>
+                                </div>
+                                <div class="border rounded p-2 mb-3 bg-light" style="min-height: 220px;">
+                                    <p class="small fw-semibold mb-2">{{ t('telecom.takeOverModal.document') }}</p>
+                                    <iframe v-if="takeOverApproval.documentUrl" :src="takeOverApproval.documentUrl"
+                                            class="w-100 rounded border-0" style="min-height: 200px;" :title="t('telecom.takeOverModal.document')"></iframe>
+                                    <p v-else class="small text-muted mb-0 py-4 text-center">{{ t('telecom.takeOverModal.noDocument') }}</p>
+                                </div>
+                                <p v-if="takeOverApproval.detail.notes" class="small text-muted">{{ takeOverApproval.detail.notes }}</p>
+                            </template>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-outline-secondary" @@click="closeTakeOverApproval" :disabled="takeOverApproval.approveBusy">{{ t('telecom.takeOverModal.cancel') }}</button>
+                            <button type="button" class="btn btn-success" @@click="approveTakeOverOnNetwork"
+                                    :disabled="takeOverApproval.approveBusy || !takeOverApproval.operationId">
+                                <span v-if="takeOverApproval.approveBusy" class="spinner-border spinner-border-sm me-1"></span>
+                                {{ t('telecom.takeOverModal.approve') }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </div>
 
-            <nav class="d-flex flex-wrap gap-2 pb-4" aria-label="اختصارات ذات صلة">
-                <a v-if="hubPermissions.showRetailShortcuts" class="btn btn-outline-secondary" href="/SalesOrders/SalesOrderList">طلبات المبيعات</a>
-                <a class="btn btn-outline-secondary" href="/ProgramManagers/ProgramManagerList">تذاكر الشبكة (Kanban)</a>
-                <a class="btn btn-outline-secondary" href="/Customers/CustomerList">المشتركون</a>
+            <nav class="d-flex flex-wrap gap-2 pb-4" aria-label="Shortcuts">
+                <a v-if="hubPermissions.canSeeBillingLog" class="btn btn-outline-secondary" href="/Telecom/BillingIntegration">{{ t('telecom.shortcuts.billing') }}</a>
+                <a v-if="hubPermissions.showRetailShortcuts" class="btn btn-outline-secondary" href="/SalesOrders/SalesOrderList">{{ t('telecom.shortcuts.sales') }}</a>
+                <a class="btn btn-outline-secondary" href="/ProgramManagers/ProgramManagerList">{{ t('telecom.shortcuts.kanban') }}</a>
+                <a class="btn btn-outline-secondary" href="/Customers/CustomerList">{{ t('telecom.shortcuts.customers') }}</a>
             </nav>
         </div>
     </div>
@@ -389,28 +432,29 @@
 @section styles {
     <style>
         .telecom-hub-root { max-width: 1400px; margin-inline: auto; }
-        .telecom-hero { background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); }
-        .telecom-search-group .form-control:focus { box-shadow: none; border-color: #ced4da; }
-        .telecom-search-group:focus-within { box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15); border-radius: 0.5rem; }
-        .big-tile { border: none; border-radius: 12px; min-height: 118px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .big-tile:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.12) !important; }
-        .big-tile:focus-visible { outline: 3px solid rgba(255,255,255,0.85); outline-offset: 3px; }
+        .telecom-hero { background: linear-gradient(180deg, var(--sys-card-bg) 0%, var(--sys-bg) 100%); }
+        .telecom-search-group .form-control:focus { box-shadow: none; border-color: var(--sys-border); }
+        .telecom-search-group:focus-within { box-shadow: 0 0 0 0.2rem var(--sys-brand-red-ring); border-radius: var(--sys-radius); }
+        .big-tile { border: none; border-radius: var(--sys-radius); min-height: 118px; transition: transform 0.15s ease, box-shadow 0.15s ease; color: var(--sys-card-bg); }
+        .big-tile:hover { transform: translateY(-2px); box-shadow: var(--sys-shadow-card-hover) !important; }
+        .big-tile:focus-visible { outline: 3px solid color-mix(in srgb, var(--sys-card-bg) 85%, transparent); outline-offset: 3px; }
         .tile-icon { font-size: 1.35rem; opacity: 0.95; }
-        .tile-activate { background: linear-gradient(135deg, #0d6efd, #3d8bfd); }
-        .tile-migrate { background: linear-gradient(135deg, #fd7e14, #ffb347); }
-        .tile-takeover { background: linear-gradient(135deg, #6f42c1, #a98eda); }
-        .tile-simswap { background: linear-gradient(135deg, #0dcaf0, #31d2f2); }
-        .tile-package { background: linear-gradient(135deg, #d63384, #ec8bb8); }
-        .tile-support { background: linear-gradient(135deg, #198754, #51c685); }
         .map-mock { overflow: hidden; }
         .telecom-kpi-value { font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.2; }
-        .telecom-step { border: 1px solid #dee2e6; }
-        .telecom-step-active { background: var(--bs-primary); color: #fff; border-color: var(--bs-primary); font-weight: 600; }
-        .telecom-step-muted { background: #f8f9fa; color: #6c757d; }
+        .telecom-step { border: 1px solid var(--sys-border); }
+        .telecom-step-active { background: var(--sys-brand-red); color: var(--sys-card-bg); border-color: var(--sys-brand-red); font-weight: 600; }
+        .telecom-step-muted { background: var(--sys-bg); color: var(--sys-text-muted); }
         .telecom-table thead th { white-space: nowrap; font-weight: 600; font-size: 0.8125rem; }
     </style>
 }
 
 @section scripts {
-    <script src="~/FrontEnd/Pages/Telecom/TelecomHub.cshtml.js"></script>
+    <script>
+        window.__TELECOM_I18N_URLS = {
+            ar: '@Url.Content("~/locales/telecom.ar.json")',
+            en: '@Url.Content("~/locales/telecom.en.json")'
+        };
+    </script>
+    <script src="~/lib/vue-i18n/vue-i18n.global.prod.js"></script>
+    <script src="~/FrontEnd/Pages/Telecom/TelecomHub.cshtml.js" asp-append-version="true"></script>
 }

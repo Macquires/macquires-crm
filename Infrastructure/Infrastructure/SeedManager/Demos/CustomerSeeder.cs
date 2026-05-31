@@ -1,7 +1,9 @@
-﻿// Demo-only — Syria Telecom retail & B2B subscribers (fictional MSISDNs).
-using Application.Common.Repositories;
+﻿using Application.Common.Repositories;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
+using Domain.Enums;
+using Domain.ValueObjects;
+using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.SeedManager.Demos;
@@ -13,92 +15,70 @@ public class CustomerSeeder
     private readonly ICommandRepository<CustomerCategory> _categoryRepository;
     private readonly NumberSequenceService _numberSequenceService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly DataContext _context;
 
     public CustomerSeeder(
         ICommandRepository<Customer> customerRepository,
         ICommandRepository<CustomerGroup> groupRepository,
         ICommandRepository<CustomerCategory> categoryRepository,
         NumberSequenceService numberSequenceService,
-        IUnitOfWork unitOfWork
-    )
+        IUnitOfWork unitOfWork,
+        DataContext context)
     {
         _customerRepository = customerRepository;
         _groupRepository = groupRepository;
         _categoryRepository = categoryRepository;
         _numberSequenceService = numberSequenceService;
         _unitOfWork = unitOfWork;
+        _context = context;
     }
 
     public async Task GenerateDataAsync()
     {
         var groups = (await _groupRepository.GetQuery().ToListAsync()).Select(x => x.Id).ToArray();
         var categories = (await _categoryRepository.GetQuery().ToListAsync()).Select(x => x.Id).ToArray();
-
-        var cityRows = new (string City, string Street, string State)[]
-        {
-            ("دمشق", "شارع الحجاز", "دمشق"),
-            ("دمشق", "ضاحية قدسيا", "ريف دمشق"),
-            ("حلب", "حي العزيزية", "حلب"),
-            ("حمص", "شارع المحطة", "حمص"),
-            ("اللاذقية", "المشروع السابع", "اللاذقية"),
-            ("حماة", "طريق حمص", "حماة")
-        };
-
         var random = new Random();
 
-        var customers = new List<Customer>
+        var branches = await _context.OrgUnit
+            .Where(x => !x.IsDeleted && x.Kind == OrgUnitKind.Branch)
+            .ToListAsync();
+
+        var defaultBranchId = branches.FirstOrDefault(b => b.NameAr.Contains("المزة", StringComparison.Ordinal))?.Id
+            ?? branches.FirstOrDefault()?.Id;
+
+        var names = new[]
         {
-            new Customer { Name = "محمد علي" },
-            new Customer { Name = "ريما الخطيب" },
-            new Customer { Name = "شركة المتحدون للاستيراد" },
-            new Customer { Name = "ليان حسن" },
-            new Customer { Name = "عمر الدرويش" },
-            new Customer { Name = "نورا صالح" },
-            new Customer { Name = "مؤسسة النور للاتصالات" },
-            new Customer { Name = "خالد منصور" },
-            new Customer { Name = "سارة يوسف" },
-            new Customer { Name = "فادي الأسعد" },
-            new Customer { Name = "مجموعة الفردوس التجارية" },
-            new Customer { Name = "هند المالكي" },
-            new Customer { Name = "ياسر عوض" },
-            new Customer { Name = "ميساء الحموي" },
-            new Customer { Name = "تقنيات الشام للخدمات" },
-            new Customer { Name = "باسل مراد" },
-            new Customer { Name = "دانيا إبراهيم" },
-            new Customer { Name = "زياد القاسم" },
-            new Customer { Name = "شركة اليرموك للتوزيع" },
-            new Customer { Name = "غادة نعمة" }
+            ("محمد علي", false, "0101234567", "دمشق"),
+            ("ريما الخطيب", false, "0102345678", "حلب"),
+            ("شركة المتحدون للاستيراد", true, "CR-100200", "دمشق"),
+            ("ليان حسن", false, "0103456789", "طرطوس"),
+            ("مؤسسة النور للاتصالات", true, "CR-200300", "اللاذقية"),
         };
 
-        foreach (var customer in customers)
+        foreach (var (name, corporate, idKey, city) in names)
         {
-            customer.Number = _numberSequenceService.GenerateNumber(nameof(Customer), "", "CST");
-            customer.CustomerGroupId = GetRandomValue(groups, random);
-            customer.CustomerCategoryId = GetRandomValue(categories, random);
+            var address = new PostalAddress("شارع الحجاز", city, city, "10001", "سوريا");
+            var account = _numberSequenceService.GenerateNumber(nameof(Customer), "", "CST");
+            var phone = $"093{random.Next(1000000, 9999999)}";
+            var email = $"subscriber{random.Next(10000, 999999)}@syriatel-demo.local";
+            var groupId = groups[random.Next(groups.Length)];
+            var catId = categories[random.Next(categories.Length)];
 
-            var row = cityRows[random.Next(cityRows.Length)];
-            customer.City = row.City;
-            customer.Street = row.Street;
-            customer.State = row.State;
-            customer.ZipCode = $"{1000 + random.Next(9000)}";
+            Customer entity = corporate
+                ? CorporateCustomer.Create(name, account, idKey, address, email, phone, groupId, catId,
+                    taxNumber: "TAX-99001", authorizedSignatoryName: "مفوض معتمد")
+                : IndividualCustomer.Create(name, account, idKey, address, email, phone, groupId, catId);
 
-            var prefix = random.Next(2) == 0 ? "093" : "099";
-            customer.PhoneNumber = $"{prefix}{random.Next(1000000, 9999999)}";
+            var branchId = branches.FirstOrDefault(b => b.NameAr.Contains(city, StringComparison.Ordinal))?.Id
+                ?? defaultBranchId;
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                entity.SetOrgUnitId(branchId);
+            }
 
-            customer.Country = "سوريا";
-            customer.Description = "مشترك ضمن بيئة العرض التجريبية لسوريا تيليكوم.";
-            customer.Website = "https://syriatelecom-demo.local";
-
-            customer.EmailAddress = $"subscriber{random.Next(10000, 999999)}@syriatelecom-demo.local";
-
-            await _customerRepository.CreateAsync(customer);
+            await _customerRepository.CreateAsync(entity);
         }
 
         await _unitOfWork.SaveAsync();
-    }
-
-    private static T GetRandomValue<T>(T[] array, Random random)
-    {
-        return array[random.Next(array.Length)];
     }
 }

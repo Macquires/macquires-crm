@@ -1,0 +1,164 @@
+@page "/Telecom/StrategicAnalytics"
+@{
+    ViewData["Title"] = "التحليلات الاستراتيجية — Executive MIS";
+}
+
+<link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+
+<div class="form-card strategic-analytics-page" id="formcard">
+    <div id="strategicAnalyticsGate" class="text-center py-5 d-none">
+        <p class="text-light opacity-75 mb-3">لا تملك صلاحية عرض التحليلات الاستراتيجية.</p>
+        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-light">العودة للوحة القيادة</a>
+    </div>
+
+    <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root strategic-exec-dark">
+        @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
+    </div>
+</div>
+
+@section styles {
+    <style>
+        .strategic-analytics-page {
+            min-height: 85vh;
+            background: linear-gradient(165deg, #0f1114 0%, #1a1d22 42%, #1a1d22 100%);
+            border-radius: var(--sys-radius, 12px);
+            overflow: hidden;
+        }
+
+        .strategic-exec-dark {
+            --sys-bg: #14171c;
+            --sys-card-bg: #1e232b;
+            --sys-border: rgba(255, 255, 255, 0.08);
+            --sys-text-main: #f1f5f9;
+            --sys-text-muted: #94a3b8;
+            --sys-brand-red: #c8102e;
+            --sys-brand-red-hover: #a30d25;
+            --sys-brand-red-ring: rgba(200, 16, 46, 0.35);
+            --sys-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
+            --sys-shadow-card-hover: 0 8px 32px rgba(200, 16, 46, 0.12);
+
+            max-width: 100%;
+            margin-inline: auto;
+            padding: 1.5rem 1.25rem 2.5rem;
+            color: var(--sys-text-main);
+            min-height: 80vh;
+        }
+
+        .strategic-exec-dark .strategic-exec-hero {
+            border-bottom: 1px solid var(--sys-border);
+            padding-bottom: 1.25rem;
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.12) 0%, transparent 55%);
+            border-radius: 12px 12px 0 0;
+            padding: 1rem 1.25rem 1.25rem;
+        }
+
+        .strategic-exec-dark .strategic-exec-kicker {
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #f87171;
+            font-weight: 700;
+        }
+
+        .strategic-exec-dark .strategic-exec-sub { color: var(--sys-text-muted); font-size: 0.9rem; }
+
+        .strategic-exec-dark .strategic-filter-bar {
+            background: rgba(30, 35, 43, 0.95);
+            border: 1px solid var(--sys-border);
+            box-shadow: var(--sys-shadow-card);
+        }
+
+        .strategic-exec-dark .strategic-label { color: #cbd5e1; font-size: 0.85rem; font-weight: 500; }
+
+        .strategic-exec-dark .strategic-select {
+            background: #14171c;
+            border-color: var(--sys-border);
+            color: var(--sys-text-main);
+        }
+
+        .strategic-exec-dark .strategic-select:focus {
+            border-color: var(--sys-brand-red);
+            box-shadow: 0 0 0 0.2rem var(--sys-brand-red-ring);
+        }
+
+        .strategic-exec-dark .strategic-bento-card {
+            background: var(--sys-card-bg);
+            border: 1px solid var(--sys-border);
+            border-radius: 14px;
+            padding: 1.35rem 1.5rem;
+            box-shadow: var(--sys-shadow-card);
+            transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+        }
+
+        .strategic-exec-dark .strategic-bento-card:hover {
+            box-shadow: var(--sys-shadow-card-hover);
+            border-color: rgba(200, 16, 46, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .strategic-exec-dark .strategic-card-title {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--sys-text-muted);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .strategic-exec-dark .strategic-metric-xl { font-size: 2.1rem; font-weight: 700; color: #fff; }
+        .strategic-exec-dark .strategic-metric-lg { font-size: 1.55rem; font-weight: 600; color: #fff; }
+        .strategic-exec-dark .strategic-metric-unit { font-size: 0.9rem; color: var(--sys-text-muted); font-weight: 400; }
+        .strategic-exec-dark .strategic-metric-sub { font-size: 0.85rem; color: var(--sys-text-muted); }
+        .strategic-exec-dark .strategic-delta { font-size: 0.85rem; font-weight: 600; }
+        .strategic-exec-dark .strategic-delta-up { color: #4ade80; }
+        .strategic-exec-dark .strategic-delta-down { color: #f87171; }
+
+        .strategic-exec-dark .strategic-panel {
+            background: var(--sys-card-bg);
+            border: 1px solid var(--sys-border);
+            border-radius: 14px;
+            box-shadow: var(--sys-shadow-card);
+        }
+
+        .strategic-exec-dark .strategic-panel-title { font-size: 0.95rem; font-weight: 600; color: #e2e8f0; }
+
+        .strategic-exec-dark .strategic-badge-level {
+            background: rgba(200, 16, 46, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(200, 16, 46, 0.4);
+            font-weight: 600;
+            padding: 0.45rem 0.85rem;
+        }
+
+        .strategic-exec-dark .btn-strategic-gold {
+            background: linear-gradient(135deg, #c8102e, #8b1428);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .strategic-exec-dark .btn-strategic-gold:hover {
+            background: linear-gradient(135deg, #e11d48, #c8102e);
+            color: #fff;
+        }
+
+        .strategic-exec-dark .text-syriatel-red { color: #f87171 !important; }
+
+        .strategic-exec-dark #ExecutiveLeaderboardGrid .e-grid { background: transparent; border-color: var(--sys-border); }
+        .strategic-exec-dark #ExecutiveLeaderboardGrid .e-headercell {
+            background: #14171c !important;
+            color: #f87171 !important;
+            font-weight: 600;
+        }
+        .strategic-exec-dark #ExecutiveLeaderboardGrid .e-rowcell {
+            color: var(--sys-text-main);
+            background: var(--sys-card-bg);
+        }
+        .strategic-exec-dark #ExecutiveLeaderboardGrid .e-altrow .e-rowcell { background: #181c24; }
+    </style>
+}
+
+@section scripts {
+    <script src="~/lib/indotalent/strategic-analytics-panel.js" asp-append-version="true"></script>
+    <script src="~/FrontEnd/Pages/Telecom/StrategicAnalytics.cshtml.js" asp-append-version="true"></script>
+}

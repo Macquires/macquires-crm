@@ -1,4 +1,5 @@
-﻿using Infrastructure.SecurityManager.AspNetIdentity;
+﻿using Application.Common.Services.SecurityManager;
+using Infrastructure.SecurityManager.AspNetIdentity;
 using Infrastructure.SecurityManager.Roles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -9,14 +10,13 @@ public class UserAdminSeeder
 {
     private readonly IdentitySettings _identitySettings;
     private readonly UserManager<ApplicationUser> _userManager;
+
     public UserAdminSeeder(
         IOptions<IdentitySettings> identitySettings,
-        UserManager<ApplicationUser> userManager
-        )
+        UserManager<ApplicationUser> userManager)
     {
         _identitySettings = identitySettings.Value;
         _userManager = userManager;
-
     }
 
     public async Task GenerateDataAsync()
@@ -24,34 +24,22 @@ public class UserAdminSeeder
         var adminEmail = _identitySettings.DefaultAdmin.Email;
         var adminPassword = _identitySettings.DefaultAdmin.Password;
 
-        if (await _userManager.FindByEmailAsync(adminEmail) == null)
+        if (await _userManager.FindByEmailAsync(adminEmail) != null)
         {
-            var applicationUser = new ApplicationUser(
-                adminEmail,
-                "Root",
-                "Admin"
-                );
-
-            applicationUser.EmailConfirmed = true;
-
-            //create user Root Admin
-            await _userManager.CreateAsync(applicationUser, adminPassword);
-
-            //add Admin role to Root Admin
-            var roles = RoleHelper.GetAdminRoles();
-            foreach (var role in roles)
-            {
-                if (!await _userManager.IsInRoleAsync(applicationUser, role))
-                {
-                    await _userManager.AddToRoleAsync(applicationUser, role);
-                }
-            }
+            return;
         }
+
+        var applicationUser = new ApplicationUser(adminEmail, "Root", "Admin")
+        {
+            EmailConfirmed = true,
+            PrimaryMenuPersona = TelecomMenuPersona.SysAdmin,
+        };
+
+        await _userManager.CreateAsync(applicationUser, adminPassword);
+        await _userManager.AddToRoleAsync(applicationUser, TelecomRoles.Admin);
     }
 
-    /// <summary>
-    /// Ensures the default admin user receives every role returned by <see cref="RoleHelper.GetAdminRoles"/> (idempotent).
-    /// </summary>
+    /// <summary>Ensures default admin has TelecomAdmin + SysAdmin persona (idempotent).</summary>
     public async Task AssignAllCatalogRolesToDefaultAdminAsync()
     {
         var adminEmail = _identitySettings.DefaultAdmin.Email;
@@ -61,13 +49,12 @@ public class UserAdminSeeder
             return;
         }
 
-        var roles = RoleHelper.GetAdminRoles();
-        foreach (var role in roles)
+        if (!await _userManager.IsInRoleAsync(applicationUser, TelecomRoles.Admin))
         {
-            if (!await _userManager.IsInRoleAsync(applicationUser, role))
-            {
-                await _userManager.AddToRoleAsync(applicationUser, role);
-            }
+            await _userManager.AddToRoleAsync(applicationUser, TelecomRoles.Admin);
         }
+
+        applicationUser.PrimaryMenuPersona = TelecomMenuPersona.SysAdmin;
+        await _userManager.UpdateAsync(applicationUser);
     }
 }

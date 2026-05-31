@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nav_PortalTitle" xml:space="preserve">
+    <value>بوابة سيريتل الموحدة</value>
+  </data>
+  <data name="Nav_LangArabic" xml:space="preserve">
+    <value>عربي</value>
+  </data>
+  <data name="Nav_LangEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Nav_MenuToggle" xml:space="preserve">
+    <value>القائمة</value>
+  </data>
+  <data name="Nav_Profile" xml:space="preserve">
+    <value>ملفي الشخصي</value>
+  </data>
+  <data name="Nav_Logout" xml:space="preserve">
+    <value>تسجيل الخروج</value>
+  </data>
+  <data name="Nav_LangToggleAria" xml:space="preserve">
+    <value>تبديل اللغة</value>
+  </data>
+  <data name="Page_TelecomHubTitle" xml:space="preserve">
+    <value>بوابة سيريتل الموحدة — مركز العمليات</value>
+  </data>
+  <data name="Login_PageTitle" xml:space="preserve">
+    <value>تسجيل الدخول — سيريتل</value>
+  </data>
+  <data name="Login_AuthHeroTitle" xml:space="preserve">
+    <value>منصة سيريتل</value>
+  </data>
+  <data name="Login_AuthHeroLead" xml:space="preserve">
+    <value>مساحة عمل للعمليات — سجّل الدخول ببريدك الوظيفي.</value>
+  </data>
+  <data name="Auth_EyebrowSyriatelCrm" xml:space="preserve">
+    <value>سيريتل</value>
+  </data>
+  <data name="Auth_HeroTitleDefault" xml:space="preserve">
+    <value>بوابة سيريتل للذكاء العملياتي</value>
+  </data>
+  <data name="Auth_HeroLeadDefault" xml:space="preserve">
+    <value>الوصول الموحد لعمليات OSS/BSS والتشغيل الذكي. تتجاوز المنصّة الإدارة التقليدية لتقدّم محرك تحليلات تنبؤي يعتمد على الذكاء الاصطناعي التوليدي لاستشراف اتجاهات السوق، إدارة المخاطر اللحظية، ورسم خارطة طريق للقرار الاستراتيجي مبني على البيانات.</value>
+  </data>
+  <data name="Auth_Feature1" xml:space="preserve">
+    <value>أتمتة دورة حياة الخدمة: تكامل عميق مع عمليات الشبكة لضمان استمرارية التشغيل وتدفق البيانات بلا انقطاع.</value>
+  </data>
+  <data name="Auth_Feature2" xml:space="preserve">
+    <value>نظام الواجهات المتكامل (Unified Front-to-Back): تجربة مستخدم ذكية توحّد المعارض والمكاتب الخلفية ومراكز الاتصال في بيئة عمل آمنة على البنية الداخلية (On-Prem).</value>
+  </data>
+  <data name="Auth_Feature3Lead" xml:space="preserve">
+    <value>محرك التنبؤ السلوكي</value>
+  </data>
+  <data name="Auth_Feature3Rest" xml:space="preserve">
+    <value>: اكتشاف الأنماط المعقدة وتلميحات الشذوذ (Anomaly Detection) قبل وقوعها، مع توصيات ذكية لرفع كفاءة الأداء وتقليل نسبة الانسحاب (Churn).</value>
+  </data>
+  <data name="Auth_HeroTagline" xml:space="preserve">
+    <value>منصّة سيريتل: حيث يلتقي التشغيل البشري مع قدرات الذكاء الاصطناعي لخدمة مستقبل الاتصالات.</value>
+  </data>
+  <data name="Auth_LogoAlt" xml:space="preserve">
+    <value>سيريتل</value>
+  </data>
+  <data name="Auth_FooterLine1" xml:space="preserve">
+    <value>المنصّة والعلامة ومحتواها ملك لشركة سيريتل.</value>
+  </data>
+  <data name="Auth_FooterLine2" xml:space="preserve">
+    <value>جميع الحقوق محفوظة © سيريتل.</value>
+  </data>
+  <data name="Auth_FooterLine3" xml:space="preserve">
+    <value>للاستخدام المصرّح به من قبل سيريتل فقط.</value>
+  </data>
+  <data name="Auth_FooterCompactLine" xml:space="preserve">
+    <value>© سيريتل — جميع الحقوق محفوظة</value>
+  </data>
+</root>

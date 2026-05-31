@@ -1,7 +1,92 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\_asp\\products\\CRM-Katenjo-FS-VueJS-src-customer\\Indotalent\\",
-  "Documents": [],
+  "WorkspaceRootPath": "C:\\Users\\HP\\source\\repos\\macquires-crm\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{FD5D5CD6-FE42-473F-B15D-A7623968BF94}|Presentation\\ASPNET\\ASPNET.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\presentation\\aspnet\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{FD5D5CD6-FE42-473F-B15D-A7623968BF94}|Presentation\\ASPNET\\ASPNET.csproj|solutionrelative:presentation\\aspnet\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\numbersequencemanager\\numbersequenceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\numbersequencemanager\\numbersequenceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\warehousemanager\\warehouseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\warehousemanager\\warehouseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\customergroupmanager\\commands\\deletecustomergroup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\customergroupmanager\\commands\\deletecustomergroup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\customergroupmanager\\commands\\createcustomergroup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\customergroupmanager\\commands\\createcustomergroup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\billmanager\\commands\\createbill.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\billmanager\\commands\\createbill.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\customermanager\\queries\\getcustomerlist.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\customermanager\\queries\\getcustomerlist.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\customermanager\\commands\\updatecustomer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\customermanager\\commands\\updatecustomer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\customermanager\\commands\\deletecustomer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\customermanager\\commands\\deletecustomer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\features\\todomanager\\commands\\createtodo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\features\\todomanager\\commands\\createtodo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FD5D5CD6-FE42-473F-B15D-A7623968BF94}|Presentation\\ASPNET\\ASPNET.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\presentation\\aspnet\\backend\\controllers\\customercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FD5D5CD6-FE42-473F-B15D-A7623968BF94}|Presentation\\ASPNET\\ASPNET.csproj|solutionrelative:presentation\\aspnet\\backend\\controllers\\customercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\infrastructure\\infrastructure\\dataaccessmanager\\efcore\\repositories\\commadrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\infrastructure\\dataaccessmanager\\efcore\\repositories\\commadrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D98A77C6-5AB0-4420-BD5C-9C9FEF01DDBC}|Core\\Domain\\Domain.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\domain\\entities\\company.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D98A77C6-5AB0-4420-BD5C-9C9FEF01DDBC}|Core\\Domain\\Domain.csproj|solutionrelative:core\\domain\\entities\\company.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\common\\repositories\\icommandrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\common\\repositories\\icommandrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\infrastructure\\infrastructure\\dataaccessmanager\\efcore\\di.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\infrastructure\\dataaccessmanager\\efcore\\di.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\infrastructure\\infrastructure\\dataaccessmanager\\efcore\\contexts\\querycontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\infrastructure\\dataaccessmanager\\efcore\\contexts\\querycontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\infrastructure\\infrastructure\\dataaccessmanager\\efcore\\contexts\\commandcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\infrastructure\\dataaccessmanager\\efcore\\contexts\\commandcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\infrastructure\\infrastructure\\dataaccessmanager\\efcore\\repositories\\unitofwork.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\infrastructure\\dataaccessmanager\\efcore\\repositories\\unitofwork.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\infrastructure\\infrastructure\\dataaccessmanager\\efcore\\contexts\\datacontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6883968C-42FC-4ADB-9B72-7B9E446F8544}|Infrastructure\\Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\infrastructure\\dataaccessmanager\\efcore\\contexts\\datacontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\common\\repositories\\iunitofwork.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\common\\repositories\\iunitofwork.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|c:\\users\\hp\\source\\repos\\macquires-crm\\core\\application\\common\\repositories\\ientitydbset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3412BDBE-7691-42A2-8EF3-F3EFC3F28350}|Core\\Application\\Application.csproj|solutionrelative:core\\application\\common\\repositories\\ientitydbset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,8 +94,16 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 5,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
@@ -21,11 +114,280 @@
             },
             {
               "$type": "Bookmark",
-              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+              "Name": "ST:129:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:129:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\appsettings.json",
+              "RelativeDocumentMoniker": "Presentation\\ASPNET\\appsettings.json",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\appsettings.json",
+              "RelativeToolTip": "Presentation\\ASPNET\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-10-19T13:41:03.657Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "NumberSequenceService.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\NumberSequenceManager\\NumberSequenceService.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\NumberSequenceManager\\NumberSequenceService.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\NumberSequenceManager\\NumberSequenceService.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\NumberSequenceManager\\NumberSequenceService.cs",
+              "ViewState": "AgIAADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:38:21.74Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "WarehouseService.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\WarehouseManager\\WarehouseService.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\WarehouseManager\\WarehouseService.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\WarehouseManager\\WarehouseService.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\WarehouseManager\\WarehouseService.cs",
+              "ViewState": "AgIAACYAAAAAAAAAAAAswAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:36:34.045Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "CreateBill.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\BillManager\\Commands\\CreateBill.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\BillManager\\Commands\\CreateBill.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\BillManager\\Commands\\CreateBill.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\BillManager\\Commands\\CreateBill.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAcwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:33:33.637Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "CreateCustomerGroup.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerGroupManager\\Commands\\CreateCustomerGroup.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\CustomerGroupManager\\Commands\\CreateCustomerGroup.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerGroupManager\\Commands\\CreateCustomerGroup.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\CustomerGroupManager\\Commands\\CreateCustomerGroup.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:33:15.103Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DeleteCustomerGroup.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerGroupManager\\Commands\\DeleteCustomerGroup.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\CustomerGroupManager\\Commands\\DeleteCustomerGroup.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerGroupManager\\Commands\\DeleteCustomerGroup.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\CustomerGroupManager\\Commands\\DeleteCustomerGroup.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:33:14.12Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "GetCustomerList.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerManager\\Queries\\GetCustomerList.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\CustomerManager\\Queries\\GetCustomerList.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerManager\\Queries\\GetCustomerList.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\CustomerManager\\Queries\\GetCustomerList.cs",
+              "ViewState": "AgIAAC0AAAAAAAAAAAAAAE8AAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:05:31.254Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "UpdateCustomer.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerManager\\Commands\\UpdateCustomer.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\CustomerManager\\Commands\\UpdateCustomer.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerManager\\Commands\\UpdateCustomer.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\CustomerManager\\Commands\\UpdateCustomer.cs",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAmwG8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:03:06.153Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "DeleteCustomer.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerManager\\Commands\\DeleteCustomer.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\CustomerManager\\Commands\\DeleteCustomer.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\CustomerManager\\Commands\\DeleteCustomer.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\CustomerManager\\Commands\\DeleteCustomer.cs",
+              "ViewState": "AgIAACMAAAAAAAAAAAAgwD4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:02:41.343Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "CreateTodo.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\TodoManager\\Commands\\CreateTodo.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Features\\TodoManager\\Commands\\CreateTodo.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Features\\TodoManager\\Commands\\CreateTodo.cs",
+              "RelativeToolTip": "Core\\Application\\Features\\TodoManager\\Commands\\CreateTodo.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T13:04:56.122Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "CustomerController.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\BackEnd\\Controllers\\CustomerController.cs",
+              "RelativeDocumentMoniker": "Presentation\\ASPNET\\BackEnd\\Controllers\\CustomerController.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\BackEnd\\Controllers\\CustomerController.cs",
+              "RelativeToolTip": "Presentation\\ASPNET\\BackEnd\\Controllers\\CustomerController.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAmwDwAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T12:53:43.941Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "Company.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Entities\\Company.cs",
+              "RelativeDocumentMoniker": "Core\\Domain\\Entities\\Company.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Entities\\Company.cs",
+              "RelativeToolTip": "Core\\Domain\\Entities\\Company.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAwwAQAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T12:42:56.008Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "DI.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\DI.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\DI.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\DI.cs",
+              "RelativeToolTip": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\DI.cs",
+              "ViewState": "AgIAACkAAAAAAAAAAAAUwDgAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T12:13:12.793Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "UnitOfWork.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\UnitOfWork.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\UnitOfWork.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\UnitOfWork.cs",
+              "RelativeToolTip": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\UnitOfWork.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:11:19.387Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "CommadRepository.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\CommadRepository.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\CommadRepository.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\CommadRepository.cs",
+              "RelativeToolTip": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Repositories\\CommadRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:11:04.985Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "QueryContext.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\QueryContext.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\QueryContext.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\QueryContext.cs",
+              "RelativeToolTip": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\QueryContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:11:00.133Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "DataContext.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\DataContext.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\DataContext.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\DataContext.cs",
+              "RelativeToolTip": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\DataContext.cs",
+              "ViewState": "AgIAAH0AAAAAAAAAAAAkwJoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:10:51.829Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "CommandContext.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\CommandContext.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\CommandContext.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\CommandContext.cs",
+              "RelativeToolTip": "Infrastructure\\Infrastructure\\DataAccessManager\\EFCore\\Contexts\\CommandContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwAYAAAALAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:10:48.429Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "ICommandRepository.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Common\\Repositories\\ICommandRepository.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Common\\Repositories\\ICommandRepository.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Common\\Repositories\\ICommandRepository.cs",
+              "RelativeToolTip": "Core\\Application\\Common\\Repositories\\ICommandRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwAkAAAALAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:09:44.18Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "IUnitOfWork.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Common\\Repositories\\IUnitOfWork.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Common\\Repositories\\IUnitOfWork.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Common\\Repositories\\IUnitOfWork.cs",
+              "RelativeToolTip": "Core\\Application\\Common\\Repositories\\IUnitOfWork.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:10:11.55Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "IEntityDbSet.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Common\\Repositories\\IEntityDbSet.cs",
+              "RelativeDocumentMoniker": "Core\\Application\\Common\\Repositories\\IEntityDbSet.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Common\\Repositories\\IEntityDbSet.cs",
+              "RelativeToolTip": "Core\\Application\\Common\\Repositories\\IEntityDbSet.cs",
+              "ViewState": "AgIAADcAAAAAAAAAAAA/wEgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T11:09:37.004Z",
+              "EditorCaption": ""
             }
           ]
         }

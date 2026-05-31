@@ -1,0 +1,299 @@
+@page "/Telecom/BackOfficeDashboard"
+@{
+    ViewData["Title"] = "قمرة العمليات الخلفية";
+}
+<style>
+    #bo-dashboard-page { min-height: 70vh; background: var(--sys-bg); }
+    .bo-loading-overlay {
+        position: absolute; inset: 0; z-index: 20;
+        background: rgba(248, 250, 252, 0.72);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .bo-loading-overlay.d-none {
+        display: none !important;
+        pointer-events: none !important;
+    }
+    .bo-ticket-critical { animation: bo-pulse 1.2s ease-in-out infinite; }
+    @@keyframes bo-pulse { 50% { opacity: .7; } }
+    a.bo-kpi-link { text-decoration: none; color: inherit; display: block; height: 100%; }
+    a.bo-kpi-link:hover .telecom-bento-card { border-color: rgba(220, 38, 38, 0.35); }
+    .bo-workflow-tip { border-right: 4px solid var(--sys-brand-red); }
+    #boCriticalBanner.d-none { display: none !important; }
+    .bo-drawer-section { background: var(--sys-bg); border-radius: var(--sys-radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+    .bo-complaint-box { background: var(--sys-card-bg); border: 1px dashed var(--sys-border); border-radius: var(--sys-radius); padding: 0.65rem 0.85rem; font-size: 0.9rem; max-height: 140px; overflow-y: auto; }
+    .bo-tech-toolbar { border: 1px solid var(--sys-border); border-radius: var(--sys-radius); padding: 0.75rem; background: var(--sys-card-bg); }
+    .bo-tech-toolbar .btn { font-size: 0.85rem; text-align: start; }
+    .bo-live-status-panel { font-size: 0.85rem; }
+    .bo-action-busy .spinner-border-sm { width: 0.85rem; height: 0.85rem; }
+    .bo-swal-over-offcanvas { z-index: 2000 !important; }
+    .bo-swal-over-offcanvas .swal2-textarea { pointer-events: auto !important; }
+</style>
+
+<div id="bo-dashboard-page" class="telecom-premium-page container-fluid py-4 position-relative">
+    <div id="boLoadingOverlay" class="bo-loading-overlay d-none" aria-live="polite">
+        <div class="text-center">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="small text-muted mt-2 mb-0" data-telecom-i18n="backOffice.dashboard.loading">جاري تحميل لوحة العمليات…</p>
+        </div>
+    </div>
+
+    <div id="bo-boot-error" class="alert alert-danger d-none" role="alert"></div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+            <h1 class="h4 mb-1 fw-bold text-danger">
+                <i class="bi bi-speedometer2 me-2"></i>
+                <span data-telecom-i18n="backOffice.title">قمرة العمليات الخلفية</span>
+            </h1>
+            <p class="text-muted small mb-1" data-telecom-i18n="backOffice.subtitle">تذاكر الدعم، الكتالوج، والشبكة</p>
+            <p class="text-muted small mb-0">
+                <i class="bi bi-clock me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.lastRefresh">آخر تحديث</span>:
+                <span id="boLastRefresh" dir="ltr">—</span>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-telecom btn-sm">
+                <i class="bi bi-archive me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.allTicketsArchive">الأرشيف والسجل</span>
+            </a>
+            <a href="/Telecom/BulkImportMonitor" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-cloud-upload me-1"></i>
+                <span data-telecom-i18n="backOffice.bulkImport">الاستيراد الضخم</span>
+            </a>
+            <a href="/Telecom/BackOfficeAuditList" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-journal-text me-1"></i>
+                <span data-telecom-i18n="backOffice.audit">سجل عملياتي</span>
+            </a>
+            <button type="button" class="btn btn-danger btn-sm" id="boReloadBtn" title="تحديث">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.refresh">تحديث</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="alert alert-light bo-workflow-tip small mb-3 mb-md-4" role="note">
+        <i class="bi bi-info-circle text-danger me-2"></i>
+        <span data-telecom-i18n="backOffice.dashboard.workflowTip">هذه لوحة العمل الحي: تظهر التذاكر المفتوحة وقيد المعالجة فقط. عند اختيار «تم الحل» تختفي التذكرة من هنا وتبقى محفوظة في الأرشيف.</span>
+    </div>
+
+    <div id="boCriticalBanner" class="alert alert-danger d-none mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="boCriticalBannerText"></span>
+    </div>
+
+    <div class="telecom-bento-grid mb-4">
+        <div class="telecom-bento-span-3">
+            <a href="/Telecom/TechnicalTicketList" class="bo-kpi-link" id="boTicketsKpiCard">
+                <div class="telecom-bento-card h-100 border-danger border-opacity-25">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="rounded-3 bg-danger bg-opacity-10 p-3"><i class="bi bi-ticket-detailed text-danger fs-3"></i></div>
+                        <div>
+                            <div class="telecom-bento-kpi-label" data-telecom-i18n="backOffice.openTickets">طابور العمل الحي</div>
+                            <div id="boTicketCount" class="telecom-bento-kpi-value text-danger">0</div>
+                            <div class="small text-muted" data-telecom-i18n="backOffice.dashboard.openCountHint">مفتوحة + قيد المعالجة</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="telecom-bento-span-3">
+            <div class="telecom-bento-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-warning bg-opacity-15 p-3"><i class="bi bi-hourglass-split text-warning fs-3"></i></div>
+                    <div>
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="backOffice.dashboard.inProgress">قيد المعالجة</div>
+                        <div id="boInProgressCount" class="telecom-bento-kpi-value">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="telecom-bento-span-3">
+            <div class="telecom-bento-card h-100" id="boCriticalKpiCard">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-danger bg-opacity-10 p-3"><i class="bi bi-lightning-charge text-danger fs-3"></i></div>
+                    <div>
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="backOffice.dashboard.critical">أولوية حرجة</div>
+                        <div id="boCriticalCount" class="telecom-bento-kpi-value text-danger">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="telecom-bento-span-3">
+            <a href="/Telecom/BulkImportMonitor" class="bo-kpi-link">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="rounded-3 bg-light p-3"><i class="bi bi-cloud-upload text-danger fs-3"></i></div>
+                        <div>
+                            <div class="telecom-bento-kpi-label" data-telecom-i18n="backOffice.bentoBulk">مراقبة الاستيراد</div>
+                            <div class="small text-muted mt-1">MSISDN · عملاء · باقات</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4">
+        <div class="card-header bg-white border-0 py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <h2 class="h6 mb-0 fw-bold">
+                    <i class="bi bi-list-task me-2 text-danger"></i>
+                    <span data-telecom-i18n="backOffice.dashboard.activeQueueTitle">طابور العمل الحي</span>
+                </h2>
+                <p class="small text-muted mb-0 mt-1" data-telecom-i18n="backOffice.dashboard.activeQueueHint">انقر «معالجة» أو انقر مرتين على الصف لتحديث الحالة وملاحظات الحل.</p>
+            </div>
+            <a href="/Telecom/TechnicalTicketList" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-box-arrow-up-left me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.allTicketsArchive">الأرشيف والسجل</span>
+            </a>
+        </div>
+        <div class="card-body pt-0">
+            <div class="telecom-grid-panel bo-tickets-panel">
+                <div class="grid-container" id="boTicketsGrid"></div>
+            </div>
+            <div id="boEmptyQueue" class="text-center py-5 d-none">
+                <i class="bi bi-check-circle text-success display-4"></i>
+                <p class="mt-3 mb-2 fw-semibold" data-telecom-i18n="backOffice.dashboard.emptyQueue">لا توجد تذاكر في طابورك — عمل رائع!</p>
+                <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-telecom btn-sm" data-telecom-i18n="backOffice.dashboard.emptyQueueCta">عرض الأرشيف الكامل</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card">
+        <div class="card-header bg-white border-0 py-0">
+            <button class="btn btn-link text-decoration-none w-100 text-start py-3 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#boCatalogCollapse" aria-expanded="false">
+                <i class="bi bi-chevron-down me-2 text-danger"></i>
+                <span class="fw-bold" data-telecom-i18n="backOffice.dashboard.catalogAdvanced">كتالوج العروض</span>
+                <span class="text-muted small ms-2">(<span id="boOfferingCount">0</span> <span data-telecom-i18n="backOffice.offers">عرض</span>)</span>
+                <span class="d-block small text-muted fw-normal mt-1" data-telecom-i18n="backOffice.dashboard.catalogHint">تفعيل/إيقاف العروض في الكتالوج</span>
+            </button>
+        </div>
+        <div id="boCatalogCollapse" class="collapse">
+            <div class="card-body pt-0 border-top">
+                <div id="boCatalogGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="ticketDrawer" style="width: min(440px, 100vw);">
+    <div class="offcanvas-header border-bottom bg-light">
+        <div>
+            <h5 class="offcanvas-title fw-bold mb-1" id="boDrawerTitle">—</h5>
+            <span id="boDrawerStatusBadge"></span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body" id="boDrawerBody">
+        <div class="bo-drawer-section">
+            <div class="row g-2 small">
+                <div class="col-6">
+                    <span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.subscriber">المشترك</span>
+                    <strong id="boDrawerCustomer">—</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.lineNumber">رقم الخط</span>
+                    <strong id="boDrawerMsisdn" class="font-monospace" dir="ltr">—</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block">نوع العملية</span>
+                    <span id="boDrawerCategory">—</span>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" data-telecom-i18n="backOffice.issue">المشكلة</span>
+                    <strong id="boDrawerIssue">—</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block" data-telecom-i18n="backOffice.priority">الأولوية</span>
+                    <span id="boDrawerPriority">—</span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted mb-1" data-telecom-i18n="backOffice.dashboard.complaint">نص الشكوى</label>
+            <div class="bo-complaint-box" id="boDrawerComplaint">—</div>
+        </div>
+        <label class="form-label small fw-semibold" for="boTicketStatus" data-telecom-i18n="backOffice.dashboard.statusField">حالة التذكرة</label>
+        <select id="boTicketStatus" class="form-select mb-2">
+            <option value="0">مفتوحة</option>
+            <option value="1">قيد المعالجة</option>
+            <option value="2">تم الحل</option>
+            <option value="3">مصعّدة</option>
+        </select>
+        <label class="form-label small fw-semibold" for="boTicketPriority" data-telecom-i18n="backOffice.priority">الأولوية</label>
+        <select id="boTicketPriority" class="form-select mb-3">
+            <option value="0">منخفض</option>
+            <option value="1">متوسط</option>
+            <option value="2">عالي</option>
+            <option value="3">حرج</option>
+        </select>
+        <label class="form-label small fw-semibold" for="boOperatorNotes">
+            <span data-telecom-i18n="backOffice.dashboard.resolutionNotes">ملاحظات الحل الفنية</span>
+            <span class="text-muted fw-normal" data-telecom-i18n="backOffice.dashboard.resolutionHint"> — مطلوبة عند الإغلاق</span>
+        </label>
+        <textarea id="boOperatorNotes" class="form-control mb-2" rows="4" placeholder="مثال: تمت إعادة مزامنة HLR وإعادة تفعيل البيانات على CBS…"></textarea>
+        <button class="btn btn-link btn-sm px-0 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#boPayloadCollapse">
+            <i class="bi bi-code-slash me-1"></i>
+            <span data-telecom-i18n="backOffice.dashboard.technicalDetails">تفاصيل تقنية (JSON)</span>
+        </button>
+        <div class="collapse mb-3" id="boPayloadCollapse">
+            <pre class="small bg-light p-2 rounded border" id="boDrawerPayload" style="max-height:160px;overflow:auto;direction:ltr;text-align:left"></pre>
+        </div>
+        <div class="small fw-semibold text-muted mb-2" data-telecom-i18n="backOffice.dashboard.techToolbar">شريط الأدوات الفني</div>
+        <div class="d-grid gap-2 mb-3 bo-tech-toolbar">
+            <button type="button" class="btn btn-outline-info bo-telecom-action" id="btnNetworkPing">
+                <i class="bi bi-search me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.networkPing">استعلام واستكشاف حالة الشبكة الحية</span>
+            </button>
+            <button type="button" class="btn btn-outline-warning bo-telecom-action d-none" id="btnCbsForceSync">
+                <i class="bi bi-cash-coin me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.cbsForceSync">🪙 إعادة ضغط الشحنة وتسوية الـ CBS</span>
+            </button>
+            <button type="button" class="btn btn-outline-warning bo-telecom-action d-none" id="boHlrBtn">
+                <i class="bi bi-lightning-charge me-1"></i>
+                <span data-telecom-i18n="backOffice.hlrResync">⚡ مزامنة HLR وإعادة بناء البروفايل</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary bo-telecom-action" id="btnCoreEscalate">
+                <i class="bi bi-arrow-up-circle me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.tier3Escalate">تصعيد التذكرة للقسم الهندسي (Tier-3)</span>
+            </button>
+        </div>
+        <div id="boTier3Panel" class="collapse mb-3">
+            <div class="bo-drawer-section border border-secondary border-opacity-25">
+                <label class="form-label small fw-semibold mb-1" for="boTier3Notes" data-telecom-i18n="backOffice.dashboard.tier3NotesLabel">سبب التصعيد والملاحظات الفنية (Tier-3)</label>
+                <textarea id="boTier3Notes" class="form-control" rows="3" dir="auto" placeholder="اشرح سبب التصعيد للقسم الهندسي (10 أحرف على الأقل)…"></textarea>
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-secondary btn-sm" id="boTier3Submit">
+                        <i class="bi bi-send me-1"></i>
+                        <span data-telecom-i18n="backOffice.dashboard.tier3Confirm">تأكيد التصعيد</span>
+                    </button>
+                    <button type="button" class="btn btn-link btn-sm text-muted" id="boTier3Cancel">إلغاء</button>
+                </div>
+            </div>
+        </div>
+        <div id="boLiveStatusPanel" class="collapse mb-3 bo-live-status-panel">
+            <div class="bo-drawer-section border border-info border-opacity-25">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-semibold text-info" data-telecom-i18n="backOffice.dashboard.liveTelemetry">قياسات الشبكة الحية</span>
+                    <button type="button" class="btn-close btn-sm" id="boLiveStatusClose" aria-label="إغلاق"></button>
+                </div>
+                <div id="boLiveStatusBody" class="small font-monospace" dir="ltr" style="text-align:left">—</div>
+            </div>
+        </div>
+        <div class="d-grid gap-2">
+            <button type="button" class="btn btn-primary btn-lg bo-telecom-action" id="boSaveStatusBtn">
+                <i class="bi bi-save me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.saveStatus">حفظ الحالة</span>
+            </button>
+            <button type="button" class="btn btn-success bo-telecom-action" id="boResolveOpenBtn">
+                <i class="bi bi-check-circle me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.quickResolve">إغلاق سريع (تم الحل)</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Telecom/BackOfficeDashboard.cshtml.js" asp-append-version="true"></script>
+}

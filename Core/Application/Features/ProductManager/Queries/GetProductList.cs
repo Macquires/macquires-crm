@@ -15,11 +15,10 @@ public record GetProductListDto
     public string? Description { get; init; }
     public double? UnitPrice { get; init; }
     public bool? Physical { get; init; }
-    public string? UnitMeasureId { get; init; }
-    public string? UnitMeasureName { get; init; }
-    public string? ProductGroupId { get; init; }
-    public string? ProductGroupName { get; init; }
     public string? ServiceCode { get; init; }
+    public string? CompatibleSubscriptionTypeId { get; init; }
+    public string? CompatibleSubscriptionTypeNameAr { get; init; }
+    public string? CompatibleSubscriptionTypeNameEn { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
 }
 
@@ -28,18 +27,10 @@ public class GetProductListProfile : Profile
     public GetProductListProfile()
     {
         CreateMap<Product, GetProductListDto>()
-            .ForMember(
-                dest => dest.UnitMeasureName,
-                opt => opt.MapFrom(src => src.UnitMeasure != null ? src.UnitMeasure.Name : string.Empty)
-            )
-            .ForMember(
-                dest => dest.ProductGroupName,
-                opt => opt.MapFrom(src => src.ProductGroup != null ? src.ProductGroup.Name : string.Empty)
-            )
-            .ForMember(
-                dest => dest.ServiceCode,
-                opt => opt.MapFrom(src => src.ServiceCode ?? string.Empty)
-            );
+            .ForMember(d => d.CompatibleSubscriptionTypeNameAr,
+                o => o.MapFrom(s => s.CompatibleSubscriptionTypeLookup != null ? s.CompatibleSubscriptionTypeLookup.NameAr : string.Empty))
+            .ForMember(d => d.CompatibleSubscriptionTypeNameEn,
+                o => o.MapFrom(s => s.CompatibleSubscriptionTypeLookup != null ? s.CompatibleSubscriptionTypeLookup.NameEn : string.Empty));
     }
 }
 
@@ -50,9 +41,8 @@ public class GetProductListResult
 
 public class GetProductListRequest : IRequest<GetProductListResult>
 {
-    public bool IsDeleted { get; init; } = false;
+    public bool IsDeleted { get; init; }
 }
-
 
 public class GetProductListHandler : IRequestHandler<GetProductListRequest, GetProductListResult>
 {
@@ -67,26 +57,12 @@ public class GetProductListHandler : IRequestHandler<GetProductListRequest, GetP
 
     public async Task<GetProductListResult> Handle(GetProductListRequest request, CancellationToken cancellationToken)
     {
-        var query = _context
-            .Product
+        var entities = await _context.Product
             .AsNoTracking()
             .IsDeletedEqualTo(request.IsDeleted)
-            .Include(x => x.UnitMeasure)
-            .Include(x => x.ProductGroup)
-            .AsQueryable();
+            .Include(x => x.CompatibleSubscriptionTypeLookup)
+            .ToListAsync(cancellationToken);
 
-        var entities = await query.ToListAsync(cancellationToken);
-
-        var dtos = _mapper.Map<List<GetProductListDto>>(entities);
-
-        return new GetProductListResult
-        {
-            Data = dtos
-        };
+        return new GetProductListResult { Data = _mapper.Map<List<GetProductListDto>>(entities) };
     }
-
-
 }
-
-
-

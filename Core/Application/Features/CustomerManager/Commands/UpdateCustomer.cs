@@ -1,7 +1,14 @@
-﻿using Application.Common.Repositories;
+using Application.Common.Audit;
+using Application.Common.CQS.Queries;
+using Application.Common.Exceptions;
+using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
+using Domain.Enums;
+using Domain.ValueObjects;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.CustomerManager.Commands;
 
@@ -32,8 +39,15 @@ public class UpdateCustomerRequest : IRequest<UpdateCustomerResult>
     public string? TikTok { get; set; }
     public string? CustomerGroupId { get; set; }
     public string? CustomerCategoryId { get; set; }
-    public string? CreatedById { get; init; }
     public string? UpdatedById { get; init; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("subscriberType")]
+    public CustomerKind? CustomerKind { get; set; }
+    public string? NationalId { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? CommercialRegistration { get; set; }
+    public string? TaxNumber { get; set; }
+    public string? AuthorizedSignatory { get; set; }
 }
 
 public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerRequest>
@@ -57,55 +71,87 @@ public class UpdateCustomerHandler : IRequestHandler<UpdateCustomerRequest, Upda
 {
     private readonly ICommandRepository<Customer> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IQueryContext _query;
+    private readonly IFieldEncryptionService _encryption;
+    private readonly IUserAuditService _audit;
 
     public UpdateCustomerHandler(
         ICommandRepository<Customer> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IQueryContext query,
+        IFieldEncryptionService encryption,
+        IUserAuditService audit)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _query = query;
+        _encryption = encryption;
+        _audit = audit;
     }
 
     public async Task<UpdateCustomerResult> Handle(UpdateCustomerRequest request, CancellationToken cancellationToken)
     {
-
         var entity = await _repository.GetAsync(request.Id ?? string.Empty, cancellationToken);
-
         if (entity == null)
         {
             throw new Exception($"Entity not found: {request.Id}");
         }
 
         entity.UpdatedById = request.UpdatedById;
+        entity.SetDisplayName(request.Name!);
+        entity.SetDescription(request.Description);
+        entity.UpdateAddress(new PostalAddress(request.Street, request.City, request.State, request.ZipCode, request.Country));
+        entity.UpdateContact(request.EmailAddress, request.PhoneNumber, request.FaxNumber, request.Website);
+        entity.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
+        entity.SetCustomerGroup(request.CustomerGroupId, request.CustomerCategoryId);
 
-        entity.Name = request.Name;
-        entity.Description = request.Description;
-        entity.Street = request.Street;
-        entity.City = request.City;
-        entity.State = request.State;
-        entity.ZipCode = request.ZipCode;
-        entity.Country = request.Country;
-        entity.PhoneNumber = request.PhoneNumber;
-        entity.FaxNumber = request.FaxNumber;
-        entity.EmailAddress = request.EmailAddress;
-        entity.Website = request.Website;
-        entity.WhatsApp = request.WhatsApp;
-        entity.LinkedIn = request.LinkedIn;
-        entity.Facebook = request.Facebook;
-        entity.Instagram = request.Instagram;
-        entity.TwitterX = request.TwitterX;
-        entity.TikTok = request.TikTok;
-        entity.CustomerGroupId = request.CustomerGroupId;
-        entity.CustomerCategoryId = request.CustomerCategoryId;
+        if (entity is IndividualCustomer individual)
+        {
+            if (!string.IsNullOrWhiteSpace(request.NationalId))
+            {
+                var nid = request.NationalId.Trim();
+                var nidHash = _encryption.ComputeSearchHash(nid);
+                var dup = await _query.Customer.OfType<IndividualCustomer>()
+                    .AnyAsync(c => c.NationalIdSearchHash == nidHash && c.Id != entity.Id, cancellationToken);
+                if (dup)
+                {
+                    throw new BusinessRuleViolationException("الرقم الوطني مسجّل مسبقاً.");
+                }
+                individual.UpdateIdentity(
+                    nid,
+                    request.DateOfBirth.HasValue ? DateOnly.FromDateTime(request.DateOfBirth.Value) : individual.DateOfBirth,
+                    individual.Nationality,
+                    individual.Gender,
+                    individual.Occupation);
+                individual.SetNationalIdSearchHash(nidHash);
+            }
+        }
+        else if (entity is CorporateCustomer corporate && !string.IsNullOrWhiteSpace(request.CommercialRegistration))
+        {
+            var reg = request.CommercialRegistration.Trim();
+            var dup = await _query.Customer.OfType<CorporateCustomer>()
+                .AnyAsync(c => c.CommercialRegistryNumber == reg && c.Id != entity.Id, cancellationToken);
+            if (dup)
+            {
+                throw new BusinessRuleViolationException("رقم السجل التجاري مسجّل مسبقاً.");
+            }
+            corporate.UpdateCorporateIdentity(reg, request.TaxNumber, request.AuthorizedSignatory, corporate.LegalStatus);
+        }
 
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);
 
-        return new UpdateCustomerResult
-        {
-            Data = entity
-        };
+        await _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = request.UpdatedById ?? "system",
+                ActionType = UserAuditActionTypes.CustomerUpdated,
+                EntityType = nameof(Customer),
+                EntityId = entity.Id,
+                SummaryAr = $"تحديث مشترك: {entity.DisplayName}",
+            },
+            cancellationToken);
+
+        return new UpdateCustomerResult { Data = entity };
     }
 }
-

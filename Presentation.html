@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>سيريتل CRM — مرجع عرض (الديمو)</title>
+  <style>
+    :root {
+      --sy-red: #c41230;
+      --sy-red-dark: #8e0e24;
+      --sy-grey: #2d2d2d;
+      --sy-grey-light: #4a4a4a;
+      --sy-white: #ffffff;
+      --sy-bg: #f5f5f5;
+      --success: #1a7f37;
+      --card-shadow: 0 4px 14px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: var(--sy-bg);
+      color: var(--sy-grey);
+      line-height: 1.65;
+    }
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    aside {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--sy-grey);
+      color: var(--sy-white);
+      padding: 1.25rem 1rem;
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+    aside h2 {
+      font-size: 1rem;
+      margin: 0 0 1rem;
+      color: #f0f0f0;
+      border-bottom: 2px solid var(--sy-red);
+      padding-bottom: 0.5rem;
+    }
+    aside nav a {
+      display: block;
+      color: #e8e8e8;
+      text-decoration: none;
+      padding: 0.45rem 0.6rem;
+      border-radius: 6px;
+      margin-bottom: 0.25rem;
+      font-size: 0.92rem;
+    }
+    aside nav a:hover {
+      background: var(--sy-grey-light);
+      color: var(--sy-white);
+    }
+    main {
+      flex: 1;
+      padding: 1.5rem 2rem 3rem;
+      max-width: 1040px;
+    }
+    .lead {
+      font-size: 1.05rem;
+      margin-bottom: 0.85rem;
+    }
+    .subcard {
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px dashed #e0e0e0;
+    }
+    .talking-point {
+      font-weight: 600;
+      color: var(--sy-red-dark);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    header.hero {
+      background: linear-gradient(135deg, var(--sy-red) 0%, var(--sy-red-dark) 100%);
+      color: var(--sy-white);
+      padding: 1.75rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--card-shadow);
+    }
+    header.hero h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.55rem;
+    }
+    header.hero p {
+      margin: 0;
+      opacity: 0.95;
+      font-size: 1.02rem;
+    }
+    section {
+      margin-bottom: 2rem;
+      scroll-margin-top: 1rem;
+    }
+    section h2 {
+      color: var(--sy-red-dark);
+      font-size: 1.25rem;
+      border-right: 4px solid var(--sy-red);
+      padding-right: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: var(--sy-white);
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--card-shadow);
+      border: 1px solid #e5e5e5;
+    }
+    .card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+      color: var(--sy-grey);
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      margin-inline-start: 0.35rem;
+      vertical-align: middle;
+    }
+    .badge-ok {
+      background: #d4edda;
+      color: var(--success);
+    }
+    .badge-info {
+      background: #e7f1ff;
+      color: #0b5cab;
+    }
+    ul.points {
+      margin: 0.5rem 0 0;
+      padding-inline-start: 1.25rem;
+    }
+    ul.points li,
+    ol.points li { margin-bottom: 0.4rem; }
+    ol.points {
+      margin: 0.5rem 0 0;
+      padding-inline-start: 1.25rem;
+    }
+    .note {
+      font-size: 0.88rem;
+      color: #555;
+      background: #fff8e6;
+      border: 1px solid #f0e0b2;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      margin-top: 0.75rem;
+    }
+    table.compare {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      background: var(--sy-white);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    table.compare th {
+      background: var(--sy-grey);
+      color: var(--sy-white);
+      padding: 0.65rem 0.75rem;
+      text-align: right;
+    }
+    table.compare td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    table.compare tr:last-child td { border-bottom: none; }
+    table.compare tr:nth-child(even) td { background: #fafafa; }
+    footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ddd;
+    }
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; }
+      aside {
+        position: relative;
+        max-height: none;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>روابط سريعة</h2>
+      <nav>
+        <a href="#intro">نظرة عامة</a>
+        <a href="#ui-flow">مسار الديمو والقوائم</a>
+        <a href="#actions">العمليات الإجبارية</a>
+        <a href="#inventory">المخزون التليكوم</a>
+        <a href="#tickets">الدعم والشكاوي</a>
+        <a href="#mis">تقارير MIS</a>
+        <a href="#summary">جدول المطابقة</a>
+      </nav>
+      <p style="font-size:0.8rem;opacity:.85;margin-top:1.5rem;line-height:1.5;">
+        ملف مرجعي للعرض — افتحيه بالمتصفح قبل الديمو. البيانات والأسماء للتوضيح فقط.
+      </p>
+    </aside>
+    <main>
+      <header class="hero">
+        <h1>سيريتل CRM — ديمو</h1>
+        <p>هاد الملف مرجعك وقت البرزنتيشن: <strong>قصة البيع والتليكوم</strong> + <strong>نفس ترتيب الشاشات بالواجهة</strong>. بلهجة واثقة — ومع الجدول والمسار تحت، ما بتضيعي بين «حكي السلايد» و«وين بالمنيو».</p>
+      </header>
+
+      <section id="intro">
+        <h2>ليش إحنا هون؟ <span class="badge badge-ok">On-Prem</span> <span class="badge badge-ok">Clean Architecture</span></h2>
+        <div class="card">
+          <h3>افتحي المحادثة من هون — وانتي مرتاحة</h3>
+          <p class="lead">
+            أول سطر بدك ياه يوصل للطرف المقابل: <strong>البيانات الحساسة ما بتطلع برّا داركم.</strong> الحل <strong>On-premises</strong> — يعني السيستم بيشتغل جوّا بيئة <strong>سيريتل</strong> (أو شبكة المشغّل)، بنفس سياسات الأمان والحوكمة المعتادة، وبنفس الـ compliance لما يكون الموضوع مشتركين وفواتير وعقود.
+          </p>
+          <p>
+            طيب شو يعني <strong>Clean Architecture</strong> بلغة المبيعات مو بلغة المبرمج؟ يعني: كل طبقة بتحكي مع الطبقة اللي تحتها بطريقة منظمة — فلما يجي يوم وتبدّوا جزء من التكامل (مثلاً تعديل على هواوي أو إضافة قناة جديدة)، <strong>التكلفة والوقت بينزل</strong> لأن ما في «سباغيتي كود» لازم تفكّوا عقدها من أول وجديد.
+          </p>
+          <div class="subcard">
+            <span class="talking-point">جملة بيع جاهزة — احفظيها:</span>
+            <p><em>«إحنا مش جايبينكم أداة CRM عامة؛ إحنا جايبينكم منصة تليكوم CRM مفصّلة على بزنس الاتصالات، ماشية على معايير التدقيق والصلاحيات، وجاهزة تتوسع معاكم بدون ما تخربوا شغل السنين اللي فاتت.»</em></p>
+          </div>
+          <div class="subcard">
+            <span class="talking-point">ليش هاد بيهم المشتري التقني بنفس الوقت؟</span>
+            <ul class="points">
+              <li><strong>تدقيق (Audit):</strong> كل عملية بتمر عبر مستخدم معروف — من الإنشاء للتعديل للتأكيد.</li>
+              <li><strong>صلاحيات (RBAC):</strong> مو كل موظف بقدر يأكد التحويل؛ في فرق واضح بين المعرض والمكتب الخلفي — وهاد اللي انتوا طالبينه بالـ workflow.</li>
+              <li><strong>جاهزية تكامل:</strong> طبقة التكامل مع الفوترة منفصلة عن الواجهة — يعني تغيير الـ API أو الـ mock للديمو ما بيلخبط شاشات المبيعات.</li>
+            </ul>
+          </div>
+          <p class="note">
+            <strong>للديمو:</strong> وضحي إن اللي قدامهم نسخة استعراضية — الأسماء والأرقام وهمية — بس المنطق والمسارات هم نفس اللي بينزلوا على الإنتاج.
+          </p>
+        </div>
+      </section>
+
+      <section id="ui-flow">
+        <h2>مسار الديمو بالواجهة — من وين تبلّشي؟ <span class="badge badge-info">UI</span></h2>
+        <p class="lead" style="margin-top:0;">
+          أقسام الملف فوق (<em>نظرة عامة، عمليات، مخزون…</em>) هي <strong>عناوين حكي</strong>. القائمة الجانبية بالسيستم إنجليزي — الجدول تحت يربط <strong>اسم المنيو</strong> ب<strong>المعنى</strong> وب<strong>أي قسم من هالملف</strong> تحكي عنه وأنتي على الشاشة.
+        </p>
+
+        <div class="card">
+          <h3>تسجيل الدخول للعرض</h3>
+          <ul class="points">
+            <li><strong>عرض كامل (كل المنيو):</strong> البريد <code>admin@root.com</code> وكلمة المرور <code>123456</code> (من إعدادات التطبيق الافتراضية).</li>
+            <li><strong>مستخدمين تجريبيين بالديمو:</strong> <code>st-user01@syriatel-demo.local</code> … لحد <code>st-user20</code> — نفس كلمة المرور <code>123456</code>. صلاحياتهم أضيق؛ للعرض الشامل استخدمي الأدمن.</li>
+          </ul>
+          <p class="note">
+            <strong>أول شاشة منطقية بعد الدخول:</strong> من القائمة <strong>Dashboards → Default</strong> — جملة افتتاحية قصيرة، بعدين انتقلي للمسار التالي.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>ترتيب مقترح للشاشات (قصة مترابطة ~١٢–١٥ دقيقة)</h3>
+          <ol class="points">
+            <li><strong>Settings → My Company</strong> — شركة سيريتل، العملة، إعدادات التعامل المالي. (يربط <a href="#intro">#intro</a>)</li>
+            <li><strong>Inventory → Product</strong> ثم <strong>Warehouse</strong> (واختياري <strong>Product Group</strong>) — كتالوج خطوط وباقات وأجهزة. (<a href="#inventory">#inventory</a>)</li>
+            <li><strong>Third Party → Customer</strong> — «Third Party» هون يعني <strong>عملاء وموردون</strong> أطراف خارجية، مو معنى آخر.</li>
+            <li><strong>Pipeline → Campaign</strong> ثم <strong>Lead</strong> (وإن لزم <strong>Lead Activity</strong>) — مسار ما قبل أمر البيع.</li>
+            <li><strong>Sales → Sales Order</strong> — <strong>قلب العرض:</strong> تفتحي أمر بيع جاهز بالديمو وتشرحي الوصف (تحويل MGR، نقل ملكية TKO، راوتر، إلخ). (<a href="#actions">#actions</a>)</li>
+            <li><strong>Sales → Invoice</strong> أو <strong>Payment Receive</strong> — إن بدك تكمّلي دورة مالية قصيرة أمامهم.</li>
+            <li><strong>Telecom → Telecom Hub</strong> ثم <strong>Subscriber requests (Kanban)</strong> — نفس القائمة مكررة تحت <strong>Utilities → Program Manager / Program Kanban</strong>؛ للعرض التليكومي استخدمي مسار <strong>Telecom</strong>. (<a href="#tickets">#tickets</a>)</li>
+            <li><strong>تقارير:</strong> من <strong>Sales</strong> (تقارير مبيعات/فواتير) أو <strong>Inventory</strong> (مخزون) — تفسير مفاهيمي لـ MIS من دون تعقيد رياضي. (<a href="#mis">#mis</a> — والتفاصيل بـ <code>docs/TELECOM_MIS_DEFINITIONS.md</code>)</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h3>جدول: المنيو بالواجهة — المعنى — قسم الملف</h3>
+          <table class="compare" style="margin-top:0.5rem;">
+            <thead>
+              <tr>
+                <th>القائمة (UI)</th>
+                <th>بجملة</th>
+                <th>قسم مرجعي هون</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Dashboards</td>
+                <td>لوحة ملخصات سريعة</td>
+                <td>بداية أي جولة</td>
+              </tr>
+              <tr>
+                <td>Pipeline</td>
+                <td>حملات، ميزانيات، مصاريف، ليدز، جهات وأنشطة، فرق ومندوبين</td>
+                <td>ما قبل العميل / التسويق</td>
+              </tr>
+              <tr>
+                <td>Third Party</td>
+                <td>عملاء، موردون، تصنيفاتهم وجهات الاتصال</td>
+                <td>من نبيع له ومن نشتري منه</td>
+              </tr>
+              <tr>
+                <td>Sales</td>
+                <td>عروض أسعار، أوامر بيع، تسليم، مرتجعات، فواتير، قبض، تقارير</td>
+                <td><a href="#actions">العمليات الإجبارية</a> + دورة الإيراد</td>
+              </tr>
+              <tr>
+                <td>Telecom</td>
+                <td>Telecom Hub وطلبات المشتركين (Kanban)</td>
+                <td><a href="#tickets">الدعم والشكاوي</a></td>
+              </tr>
+              <tr>
+                <td>Purchase</td>
+                <td>مشتريات المشغّل من الموردين حتى الدفع للمورد</td>
+                <td>يكمّل قصة المخزون والأجهزة</td>
+              </tr>
+              <tr>
+                <td>Inventory</td>
+                <td>منتجات، مستودعات، تحويلات، تسويات، جرد، تقارير مخزون</td>
+                <td><a href="#inventory">المخزون التليكوم</a></td>
+              </tr>
+              <tr>
+                <td>Utilities</td>
+                <td>حجوزات، Program Manager، Kanban، مهام</td>
+                <td>نفس فكرة المشاريع/التذاكر — للتقني أحياناً</td>
+              </tr>
+              <tr>
+                <td>Membership / Profiles / Settings</td>
+                <td>مستخدمون، أدوار، ملفي، شركة، ضرائب، طرق دفع، تسلسل أرقام</td>
+                <td>حوكمة وإعدادات (<a href="#intro">#intro</a>)</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note" style="margin-top:0.75rem;">
+            <strong>جملة تحفظيها:</strong> «من <strong>الشركة والكتالوج</strong>، لـ <strong>العميل والليد</strong>، لـ <strong>أمر البيع</strong> كقصة تشغيل، وختمة بـ <strong>الكانبان</strong> كدعم بعد البيع، والأرقام للإدارة من <strong>التقارير وMIS</strong>».
+          </p>
+        </div>
+      </section>
+
+      <section id="actions">
+        <h2>موديول العمليات الإجبارية <span class="badge badge-info">Core</span></h2>
+        <p class="lead" style="margin-top:0;">
+          هون القلب تبع الديمو. لما تحكي هالمقطع، <strong>بطّئي شوي وبصي بالعين</strong> — هاد اللي بيفصل «سيستم جاهز» عن «فكرة على ورق».
+        </p>
+
+        <div class="card">
+          <h3>التحويل (Migration) <span class="badge badge-ok">مرجع MGR-</span></h3>
+          <p class="lead">
+            التحويل مو «تعديل حقل» — هو <strong>قرار تشغيلي</strong> بيأثر على الفوترة والاشتراك. عشان هيك السيستم ماشي على <strong>مسار واضح من أول الطلب لآخر تأكيد</strong>.
+          </p>
+          <ul class="points">
+            <li><strong>البداية من الواجهة الأمامية:</strong> موظف المعرض أو الكول سنتر بفتح طلب بـ <strong>مسودة (Draft)</strong> — يعني لسه ما انحسب شي على العميل نهائياً، بس صار في سجل إنو في نية تغيير.</li>
+            <li><strong>المراجعة من المكتب الخلفي:</strong> موظف بصلاحية أعلى (Back Office / TelecomBackOffice حسب التسمية عندكم) بيراجع الطلب وبأكد — هون بتتحول الحالة لـ <strong>Confirmed</strong> وبصير في أثر رسمي على خط العمل.</li>
+            <li><strong>رقم المرجع MGR-:</strong> كل طلب بيطلعله رقم تسلسلي واضح — عشان لما يرجع العميل أو المراقب يسأل «مين أجاز؟ ومتى؟»، الإجابة جاهزة من غير ما تفتشوا بـ Outlook وواتساب.</li>
+          </ul>
+          <div class="subcard">
+            <span class="talking-point">جملة بيع:</span>
+            <p><em>«التحويل عندنا مش فوضى؛ مسودة، مراجعة، تأكيد، ورقم مرجعي — هيك بتضمنوا التحكم الداخلي قبل ما يوصل أي شي لمنظومة الفوترة.»</em></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>نقل الملكية (Take Over) <span class="badge badge-ok">مرجع TKO-</span></h3>
+          <p class="lead">
+            نقل الملكية أحسّ من التحويل — لأنو فيه <strong>طرفين</strong> وفي غالباً <strong>وثائق وتحقق</strong>. السيستم مصمم يخلي هالنوع من الطلبات <strong>مفصول ومُرقّم</strong> عن باقي العمليات.
+          </p>
+          <ul class="points">
+            <li><strong>طرف مرسل وطرف مستقبل:</strong> الطلب بيربط الملفين بحيث ما يصير تداخل بين «خط قديم» و«خط جديد» إلا بعد اكتمال الـ workflow.</li>
+            <li><strong>TKO- كرقم مرجع:</strong> بنفس فكرة الـ MGR — بس مخصص لسيناريو النقل — عشان التقارير والتدقيق يفصلوا بين «تحويل باقة» و«نقل ملكية».</li>
+            <li><strong>جاهزية للتدقيق الخارجي:</strong> لما يكون عندكم مراجع داخلي أو طرف ثالث، الرقم والحالة والتاريخ بيحكوا لحالهم.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>عمليات الشريحة (SIM) <span class="badge badge-info">بيع / تبديل</span></h3>
+          <p>
+            بيع الخط بالتليكوم مو نفس «بيع قطعة من الرف» — في <strong>تفعيل</strong>، في <strong>حجز MSISDN</strong>، وفي أحياناً <strong>تبديل شريحة (SIM Swap)</strong>. إحنا بنحكي نفس اللغة اللي بيعرفوها فريق التشغيل: خط، شريحة، باقة، جهاز.
+          </p>
+          <p>
+            بالديمو الحالي، بنقدر نورجي <strong>قصة كاملة</strong> على مستوى الطلبات والأوصاف (مثلاً طلب مربوط بمرجع وعمليات cross-sell مع راوتر) — ولما تكتمل وحدة الـ Migration الرسمية بالكود، نفس المنطق بينزل على الشاشات والتقارير بدون ما نغيّر حكي البرزنتيشن.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>الربط مع هواوي (Huawei Billing) <span class="badge badge-ok">بعد Confirm</span></h3>
+          <p class="lead">
+            هون بنفرّق حالنا عن أي CRM عام: <strong>التكامل مو زينة؛ هو جزء من مسار التأكيد.</strong>
+          </p>
+          <ul class="points">
+            <li><strong>متى بيصير النداء؟</strong> بعد ما المستخدم المخوّل يكبس <strong>Confirm</strong> وبعد ما <strong>الداتا تنحفظ بنجاح</strong> على قاعدة البيانات — مش قبلها بثانية.</li>
+            <li><strong>ليش هيك؟</strong> عشان ما يصير سيناريو مخزّن غلط على هواوي، ولا يصير «اتصلنا بالفوترة» ولسه الطلب ملغي أو ناقص عندكم.</li>
+            <li><strong>الديمو:</strong> بنقدر نورجي <strong>Mock</strong> يطبع أو يسجّل النداء — فريق التشغيل أو التقني عندكم بيشوف إنو في handshake حقيقي، مش فيديو مونتاج.</li>
+          </ul>
+          <div class="subcard">
+            <span class="talking-point">جملة بيع:</span>
+            <p><em>«احنا ما بنبعتش للفوترة لحد ما يكون قراركم الداخلي متخذ ومخزّن — هاد اللي بيخلي التشغيل هادئ والمراجعة سهلة.»</em></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="inventory">
+        <h2>المنتجات والمخزون — منطق التليكوم</h2>
+        <p class="lead" style="margin-top:0;">
+          هالمقطع بيخلّي الطرف المقابل يفهم إنكم <strong>طلعتوا من عقلية المخزن</strong> ودخلتوا على عقلية <strong>الخدمة والخط</strong> — وبنفس الوقت ما خربتوا شغل الأجهزة والراوترات.
+        </p>
+
+        <div class="card">
+          <h3>Physical vs Digital — ليش التفريق ذكي؟</h3>
+          <p>
+            أي CRM قديم بيعامل كل شي كـ «كمية على الرف». بالتليكوم هاد بيكسر الشغل: <strong>الباقة ما إلها وزن ولا رف</strong>، بس لها سعر ودورة حياة. عشان هيك عندنا <strong>Physical = false</strong> للخطوط وللباقات الرقمية — السيستم ما بيحاول «يعدّ كرتون» على المستودع لما تبيعوا باقة بيانات أو باقة يوميات من كتالوج الديمو.
+          </p>
+          <ul class="points">
+            <li><strong>راوتر سيريتل 4G/5G و Wingle:</strong> هدول <strong>Physical = true</strong> — لأنو في تسليم، في سيريال، في حركة مخزون إذا سياساتكم بتطلب هيك.</li>
+            <li><strong>Cross-sell طبيعي:</strong> نفس أمر البيع ممكن يشيل باقة + راوتر — والسيستم بيحسبها صح لأنو كل سطر بيعرف طبيعة المنتج.</li>
+            <li><strong>للإدارة:</strong> التقارير بتفرّق بين «إيراد خدمات» و«إيراد أجهزة» — وهاد بيغذي الـ MIS بدون تلاعب يدوي.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>MSISDN كأصل — مو كـ «ملاحظة جانبية»</h3>
+          <p>
+            رقم الخط <strong>093 / 099</strong> عند المشترك مو بس رقم تليفون — هو <strong>هوية تشغيلية</strong> بتربط الفوترة، الشكاوي، والعروض. بالعرض، احكي إنو المنصة بتتعامل معاه كـ <strong>أصل (Asset)</strong> ضمن القصة التشغيلية: نفس الرقم بيطلع على الطلب، على الشكوى، وعلى التقرير — فما في «رقم ضايع بين الشاشات».
+          </p>
+          <div class="subcard">
+            <span class="talking-point">جملة بيع:</span>
+            <p><em>«إحنا ما بنخزن بس اسم العميل؛ بنخزن قصة الخط والباقة والجهاز كسلسلة قرارات — هيك بيصير عندكم Single view للمشترك.»</em></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>المجموعات والكتالوج (للتفاصيل لما يسألوا)</h3>
+          <p>
+            بالديمو عندنا مجموعات زي <strong>Mobile Lines</strong> و <strong>Data Packages</strong> و <strong>Hardware</strong> — مش عشان نزين الواجهة؛ عشان <strong>تصنيف البيانات</strong> يبقى منطقي لما تكبروا الكتالوج لاحقاً (FTTH، B2B، إلخ). أنتِ هون بتورجي إنو التصميم <strong>موسّع مش مسكّر</strong>.
+          </p>
+        </div>
+      </section>
+
+      <section id="tickets">
+        <h2>الدعم الفني والشكاوي — Kanban</h2>
+        <p class="lead" style="margin-top:0;">
+          هون بنحوّل جملة «عندنا تذاكر» من كلام فاضي لـ <strong>شاشة لمسها المدير بعينه</strong>.
+        </p>
+
+        <div class="card">
+          <h3>ليش Program Manager وليش مش تذكرة من الصفر؟</h3>
+          <p>
+            لأنو <strong>الوقت تبع الديمو غالي</strong>، وإحنا بنختار أذكى مسار: نستخدم <strong>Program Manager (Kanban)</strong> اللي موجود أصلاً — بنعطيه «لب» تليكوم: عنوان عربي، أولوية، حالة، ومين المسؤول (Resource). هيك ما بنضيع شهر نبني تذكرة جديدة من الصفر، وبنفس الوقت <strong>التجربة حقيقية</strong> على النظام.
+          </p>
+          <ul class="points">
+            <li><strong>مثال حي:</strong> «ضعف تغطية في ريف دمشق — ضاحية قدسيا» كـ <strong>Critical</strong> — بيورجي إنو عندكم آلية تصعيد واضحة.</li>
+            <li><strong>مثال تشغيلي:</strong> «تفعيل باقة سيريتل ميكس لموظفي شركة XYZ» — بيورجي شغل B2B والتنسيق بين الأقسام.</li>
+            <li><strong>مثال فوترة:</strong> «اعتراض على فاتورة جوال — رقم 0933…» — بيورجي إنو نفس المنصة بتخدم الشكوى بعد البيع، مش بس قبله.</li>
+          </ul>
+          <div class="subcard">
+            <span class="talking-point">كيف تقدميه بالعرض؟</span>
+            <p>حرّكي البطاقة بين الحالات قدامهم — <strong>ما في أقوى من هيك</strong>؛ لأنو بيصيروا يشوفوا «سير العمل» مو سلايد.</p>
+          </div>
+          <p class="note">
+            إذا سألوا عن SLA أو أتمتة التنبيهات: جوابكم جاهز — «المرحلة الجاية نربط thresholds على الأولويات والحالة» — لأنو البنية أصلاً بتسهّل هالإضافة.
+          </p>
+        </div>
+      </section>
+
+      <section id="mis">
+        <h2>تقارير MIS — لغة الأرقام</h2>
+        <p class="lead" style="margin-top:0;">
+          هون بتتحولي من «بائعة نظام» لـ <strong>شخص بيحكي لغة الإدارة</strong>. ما بدك تعمّقي بالمعادلات قدام الجميع — بدك <strong>تفسير واثق</strong>، وإذا طلبوا تفاصيل، عندك الملف الجاهز.
+        </p>
+
+        <div class="card">
+          <h3>ARPU — «قديش المشترك بيجيبنا بالمتوسط؟»</h3>
+          <p>
+            <strong>ARPU</strong> (Average Revenue Per User) ببساطة: <strong>إجمالي الإيراد المعتمد</strong> على فترة معينة <strong>مقسوم</strong> على <strong>عدد المشتركين الفعّالين</strong> بنفس الفترة. ليش مهم؟ لأنو بيورجيكم إذا انتوا <strong>بتبيعوا كتير بس بسعر منخفض</strong>، أو <strong>بيع أقل بس أعمق</strong> — وهاد قرار استراتيجي مو تقرير زينة.
+          </p>
+          <ul class="points">
+            <li><strong>ربط بالباقات:</strong> لما الكتالوج يكون مطابق لبزنس المشغّل (أسماء الباقات عندكم في الإنتاج)، الرقم بيصير <strong>قابل للمقارنة شهر لشهر</strong> — والديمو يعرض هالمنطق بباقات وبيانات جاهزة.</li>
+            <li><strong>Upsell / Cross-sell:</strong> لما ARPU يطلع مع أمر فيه <strong>باقة + راوتر</strong>، بتوضحوا قدامهم إنو المنصة بتسهّل <strong>رفع سلة المشترك</strong> مش بس تسجيل مكالمة.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Churn — «مين عم يطلع من البيت؟»</h3>
+          <p>
+            <strong>Churn</strong> مؤشر «التسرّب»: قديش من مشتركين كانوا فعّالين <strong>بطلّعوا فعّالين</strong> خلال فترة. ليش بيهم الإدارة؟ لأنو <strong>أغلى شي على المشغّل</strong> مو جيب مشترك جديد — إنك <strong>تخسر مشترك قديم</strong> كان ماشي تمام.
+          </p>
+          <p>
+            احكي بثقة: «إحنا ما بنعطيكم رقم من الهوا؛ بنشتغل على <strong>تعريف واضح للكوهورت</strong> — مين «بالخطر» ومين «طالع فعلاً» — عشان قرارات الاحتفاظ والعروض تبني على داتا».
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Migration success rate — لما يكتمل مسار التحويل</h3>
+          <p>
+            هالمؤشر بيصير نجم لما يكون عندكم <strong>طلبات Migration مؤكدة</strong> ومربوطة بنتيجة التكامل مع الفوترة. بالكلام البسيط: <strong>قديش من التحويلات اللي اتأكدت داخلياً انحلّت بنجاح على منظومة الفوترة؟</strong> — هاد اللي بيرضي الـ MIS والتشغيل مع بعض.
+          </p>
+          <p class="note">
+            التعريفات الرياضية والنوافذ الزمنية مكتوبة عندكم بملف <code>docs/TELECOM_MIS_DEFINITIONS.md</code> — إذا سألوا «كيف حسبتوها؟»، افتحي الملف أو لخّصي منه جملة أو جملتين: <strong>انتي مش حافظة؛ انتي جايبة مرجع</strong>.
+          </p>
+        </div>
+      </section>
+
+      <section id="summary">
+        <h2>جدول المطابقة — اهتمام المشغّل (سيريتل) vs حلنا</h2>
+        <p class="lead" style="margin-top:0;">
+          آخر شي بالعرض: <strong>امسحي الطاولة</strong> — سطّري قدامهم إنو كل نقطة حكيتوها <strong>إلها جواب بالسيستم</strong>. هاد الجدول خليه «صورة» يصوروها بالموبايل إذا بدكم.
+        </p>
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>طلب / اهتمام المشغّل التليكومي</th>
+              <th>شو عاملين إحنا — وبثقة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>On-premises وأمان بيانات وخصوصية</td>
+              <td>تشغيل داخل الشبكة؛ طبقات Clean Architecture؛ تدقيق (Audit) وصلاحيات (RBAC)؛ ما في ضرورة تطلعوا بيانات المشترك على سحابة برّا عشان «تشغّلوا CRM».</td>
+            </tr>
+            <tr>
+              <td>Workflow واضح للعمليات الحساسة</td>
+              <td>Migration و Take Over و SIM بمسار Draft → Confirm؛ فصل صلاحيات المعرض عن المكتب الخلفي؛ أرقام مرجعية MGR- / TKO- للتتبع والمراجعة.</td>
+            </tr>
+            <tr>
+              <td>تكامل مع هواوي / الفوترة</td>
+              <td>نداء التكامل <strong>بعد Confirm وبعد حفظ قاعدة البيانات</strong>؛ ديمو بـ Mock يبيّن الـ handshake؛ جاهزين نستبدل الـ Mock بـ API حقيقي بنفس الواجهة.</td>
+            </tr>
+            <tr>
+              <td>تمييز خدمات عن أجهزة ومخزون سليم</td>
+              <td>Physical=false للخطوط والباقات الرقمية؛ Physical=true للراوتر والـ Wingle؛ دعم Cross-sell بنفس أمر البيع بدون كسر منطق المخزون.</td>
+            </tr>
+            <tr>
+              <td>MSISDN وخطوط 093 / 099</td>
+              <td>بيانات ديمو سورية واقعية؛ الرقم كجزء من قصة المشترك؛ جاهزية لربط أعمق لما تضيفوا كيان اشتراك/خط رسمي.</td>
+            </tr>
+            <tr>
+              <td>شكاوي شبكة وتغطية وتذاكر</td>
+              <td>Program Manager / Kanban بعناوين عربية وأولويات (مثال: قدسيا Critical)؛ نفس الشاشة بتخدم قصة «التذاكر» بدون مشروع جانبي كبير.</td>
+            </tr>
+            <tr>
+              <td>MIS: ARPU, Churn, نجاح التحويلات</td>
+              <td>تعريفات واضحة بملف MIS داخلي؛ تقارير قابلة للتوسعة؛ أرقام بتطلع منطقية لما الكتالوج يعكس بزنسكم.</td>
+            </tr>
+            <tr>
+              <td>سرعة إقناع الإدارة والتقني معاً</td>
+              <td>نفس المنصة بتحكي لغة الموظف (شاشات وطلبات) ولغة المدير (أرقام ومسارات) — يعني «جول» واحد بسكر الطرفين.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer>
+        سيريتل CRM — مرجع عرض للديمو · راجعي الملف قبل الاجتماع بعشر دقايق وحددي 3 جمل بيع بدك تكرريهم · بالتوفيق، وإن شاء الله فالكم البيع
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

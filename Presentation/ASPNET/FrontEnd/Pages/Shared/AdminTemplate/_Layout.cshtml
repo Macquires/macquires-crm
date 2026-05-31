@@ -1,5 +1,10 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using System.Globalization
+<!DOCTYPE html>
+@{
+    var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
+}
+<html lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")">
 
 <head>
     <meta charset="utf-8">
@@ -20,19 +25,17 @@
 
     @* vue *@
     <script src="~/lib/vue/vue.global.prod.js"></script>
-
+    @* Modal titles (MacquiresUiI18n.mb) must resolve before page scripts run — async fetch alone caused keys like "campaign.add". *@
+    @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__uiModalsBootstrap.cshtml")
 
     @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml")
     @await RenderSectionAsync("styles", required: false)
 </head>
 
-<body>
+<body class="syr-tel-portal" lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")" data-persona="">
     <div class="container-fluid position-relative bg-white d-flex p-0">
-        <!-- Sidebar Start -->
         @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__sidebar.cshtml")
-        <!-- Sidebar End -->
-        <!-- Content Start -->
-        <div class="content">
+        <div class="content" dir="@(uiRtl ? "rtl" : "ltr")" lang="@uiLang">
             <!-- Navbar Start -->
             @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__navbar.cshtml")
             <!-- Navbar End -->
@@ -41,9 +44,23 @@
                 @Html.AntiForgeryToken()
                 <div id="Toast"></div>
                 <!-- Spinner Start -->
-                <div id="spinner" class="show position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+                <div id="spinner" class="position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
                     <div class="spinner-grow text-primary" style="width: 15rem; height: 15rem;" role="status"></div>
                 </div>
+                <script>
+                    (function () {
+                        function hideSpinner() {
+                            var s = document.getElementById('spinner');
+                            if (s) s.classList.remove('show');
+                        }
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', hideSpinner);
+                        } else {
+                            hideSpinner();
+                        }
+                        window.addEventListener('load', hideSpinner);
+                    })();
+                </script>
                 <!-- Spinner End -->
                 @RenderBody()
             </div>
@@ -52,7 +69,6 @@
             @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__footer.cshtml")
             <!-- Footer End -->
         </div>
-        <!-- Content End -->
     </div>
 
     @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml")
@@ -101,9 +117,14 @@
                         const currency = data[0]?.currency ?? '---';
 
                         document.getElementById('footerContent').innerHTML =
-                            `© ${year} <a href="${companyWeb}">${companyName}</a>, All Right Reserved.`;
-                        document.getElementById('topbarContent').innerHTML =
-                            `Currency: ${currency}`;
+                            `© ${year} <a href="${companyWeb}">${companyName}</a>, All Rights Reserved.`;
+                        const cur = currency || 'SYP';
+                        const top = document.getElementById('topbarContent');
+                        if (top) {
+                            const safe = String(cur).replace(/</g, '');
+                            top.innerHTML =
+                                `<span class="topbar-currency-pill" title="Currency"><span class="sy-currency-code">${safe}</span></span>`;
+                        }
                     }
                 } catch (error) {
                     console.error('Error:', error);

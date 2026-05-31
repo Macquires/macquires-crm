@@ -1,4 +1,4 @@
-﻿@page
+@page
 @{
     ViewData["Title"] = "Customer Category List";
 }
@@ -26,19 +26,19 @@
                             <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h5>Main Info</h5>
+                                        <h5><span data-mcq-i18n="mainInfo"></span></h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="row mb-2">
                                             <div class="col-md-6">
-                                                <label for="Name">Name</label>
+                                                <label for="Name"><span data-mcq-i18n="fld_name">Name</span></label>
                                                 <input ref="nameRef" v-model="state.name" />
                                                 <label class="text-danger" v-text="state.errors.name"></label>
                                             </div>
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-12">
-                                                <label for="Description">Description</label>
+                                                <label for="Description"><span data-mcq-i18n="field_description">Description</span></label>
                                                 <textarea class="form-control" rows="3" v-model="state.description"></textarea>
                                             </div>
                                         </div>
@@ -49,7 +49,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span v-text="$mcqFooter.close"></span></button>
                     <button type="button"
                             id="MainSaveButton"
                             class="btn"
@@ -57,8 +57,10 @@
                             v-on:click="handler.handleSubmit"
                             v-bind:disabled="state.isSubmitting">
                         <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
-                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
-                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                        <span v-show="!state.isSubmitting && !state.deleteMode" v-text="$mcqFooter.save"></span>
+                        <span v-show="!state.isSubmitting && state.deleteMode" v-text="$mcqFooter.del"></span>
+                        <span v-show="state.isSubmitting && !state.deleteMode" v-text="$mcqFooter.saving"></span>
+                        <span v-show="state.isSubmitting && state.deleteMode" v-text="$mcqFooter.deleting"></span>
                     </button>
                 </div>
             </div>

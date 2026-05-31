@@ -1,4 +1,4 @@
-﻿// Demo-only — aligned with Syria Telecom retail & B2B segments.
+﻿// Demo-only — aligned with Syriatel retail & B2B segments.
 using Application.Common.Repositories;
 using Domain.Entities;
 

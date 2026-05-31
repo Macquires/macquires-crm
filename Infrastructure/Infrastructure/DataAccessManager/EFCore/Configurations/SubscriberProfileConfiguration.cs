@@ -13,14 +13,16 @@ public class SubscriberProfileConfiguration : BaseEntityConfiguration<Subscriber
         base.Configure(builder);
 
         builder.Property(x => x.CustomerId).HasMaxLength(IdConsts.MaxLength).IsRequired();
-        builder.Property(x => x.NationalId).HasMaxLength(CodeConsts.MaxLength).IsRequired(false);
-        builder.Property(x => x.LoyaltyTier).HasMaxLength(NameConsts.MaxLength).IsRequired(false);
-        builder.Property(x => x.PostpaidCreditLimit).HasPrecision(18, 2).IsRequired(false);
-        builder.Property(x => x.PrepaidBalance).HasPrecision(18, 2).IsRequired(false);
-        builder.Property(x => x.MasterSubscriberProfileId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
+        builder.Property(x => x.ServiceLineType).HasConversion<int>();
+        builder.Property(x => x.LanguagePreference).HasConversion<int>();
+        builder.Property(x => x.OperationalStatus).HasConversion<int>();
+        builder.Property(x => x.LoyaltyTier).HasMaxLength(NameConsts.MaxLength);
+        builder.Property(x => x.PostpaidCreditLimit).HasPrecision(18, 2);
+        builder.Property(x => x.PrepaidBalance).HasPrecision(18, 2);
+        builder.Property(x => x.MasterSubscriberProfileId).HasMaxLength(IdConsts.MaxLength);
 
-        builder.HasIndex(x => x.CustomerId).IsUnique();
-        builder.HasIndex(x => x.NationalId);
+        builder.HasIndex(x => x.CustomerId);
+        builder.HasIndex(x => new { x.CustomerId, x.OperationalStatus });
 
         builder.HasOne(x => x.Customer)
             .WithMany(c => c.SubscriberProfiles)

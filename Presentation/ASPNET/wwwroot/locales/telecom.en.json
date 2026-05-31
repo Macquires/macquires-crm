@@ -1,0 +1,504 @@
+{
+  "telecom": {
+    "loadError": {
+      "retry": "Retry"
+    },
+    "hero": {
+      "badge": "Syriatel Operator Console",
+      "title": "Syriatel Unified Portal",
+      "titleSep": "|",
+      "titleEn": "Syriatel Unified Portal",
+      "subtitle": "Use this hub to run telecom requests: enter subscriber details, save the request and record ID documents, then track status until completion — without jumping to unrelated screens."
+    },
+    "search": {
+      "label": "Unified search",
+      "placeholder": "Subscription MSISDN, national ID, or commercial registry",
+      "search": "Search",
+      "hint": "Search by national ID, commercial registry, or subscription number (MSISDN) only.",
+      "unifiedSearchLink": "Unified search page"
+    },
+    "quickPathsAria": "Quick operational paths",
+    "tiles": {
+      "activate": {
+        "aria": "Open new line activation wizard",
+        "title": "Activate",
+        "sub": "Activate"
+      },
+      "migrate": {
+        "aria": "Open MGR migration wizard",
+        "title": "Migrate",
+        "sub": "MGR"
+      },
+      "takeover": {
+        "aria": "Open ownership transfer wizard",
+        "title": "Take over",
+        "sub": "Take Over"
+      },
+      "simswap": {
+        "aria": "Open SIM swap wizard",
+        "title": "SIM swap",
+        "sub": "SIM Swap"
+      },
+      "addpackage": {
+        "aria": "Open add package wizard",
+        "title": "Add package",
+        "sub": "Add package"
+      },
+      "support": {
+        "aria": "Open technical support wizard",
+        "title": "Support",
+        "sub": "Support"
+      }
+    },
+    "wizard": {
+      "heading": "Wizard — {title}",
+      "closeAria": "Close wizard",
+      "steps": {
+        "data": "Request details",
+        "reg": "Save & documents",
+        "done": "Summary"
+      },
+      "step1Help": "Search by name, national ID, or mobile number, then pick the subscriber from the list. If you only see a line number without a full subscriber profile, link it in the subscriber registry first or choose a profile-backed record before continuing.",
+      "multiProfileSameParty": "Several subscriber profiles are linked to the same CRM customer (multi-line / corporate). Pick the profile that should drive this operation; each row is one profile.",
+      "primaryLabel": "Primary subscriber",
+      "searchPh": "Search…",
+      "searchBtn": "Search",
+      "noResults": "No results — run a search.",
+      "selected": "Selected:",
+      "cancel": "Clear",
+      "secondaryLabel": "Second party",
+      "secondaryRequiredHint": "Take-over requires selecting the new subscriber (second party) from the search results before you continue.",
+      "optional": "(optional)",
+      "requiredStar": "*",
+      "noResults2": "No results.",
+      "targetOffer": "New plan or offer",
+      "targetOfferPh": "Example: Syriatel Mix, Youth plan…",
+      "targetOfferRequiredHint": "Pick the target plan or offer from the list — required for plan-change requests.",
+      "migrationOffers": {
+        "placeholder": "— Select a catalog offer (filtered by line type) —",
+        "lineTypeHint": "Subscriber line type used for filtering: {type}",
+        "selectSubscriberFirst": "Pick the subscriber from search results first to load compatible offers.",
+        "emptyCatalog": "No catalog offers match this line type — use “Other” with an approved description or review the product catalog.",
+        "otherLabel": "Plan name (when “Other” is selected)",
+        "otherPh": "Type the plan name as in your catalogue…",
+        "otherRequiredHint": "When you choose “Other”, enter a clear description of the target plan.",
+        "options": {
+          "OTHER": "Other — manual entry"
+        }
+      },
+      "notes": "Notes for colleagues (optional)",
+      "notesPh": "Example: ticket id, branch name, anything the next person should know…",
+      "step2Help": "Step 1: press “Save request” to get a reference number. Step 2: after you have filed the ID or required document following your local procedure, press “Confirm document on file” so the system knows the paperwork is complete. Step 3: watch the table below; back-office colleagues complete billing confirmation when the request is ready.",
+      "huaweiHint": "<strong>Plan-change</strong> requests do not collect top-ups or extra charges on this screen; after internal review the request is sent to billing to apply the new plan.",
+      "draftMigrate": "Save plan-change request",
+      "draftDefault": "Save request in the system",
+      "opNumber": "Request #:",
+      "opId": "Internal reference:",
+      "uploadBtn": "Confirm document on file",
+      "uploaded": "Document recorded. You can follow the request in the table until review and confirmation are finished.",
+      "step3a": "The request was saved as",
+      "step3b": "successfully.",
+      "step3c": "For day-to-day work use the “Telecom requests” table on this page; “Confirm execution” runs for authorised roles on the first request that is ready for review.",
+      "closeRefresh": "Close wizard and refresh list",
+      "prev": "Back",
+      "nextReg": "Next: save & documents",
+      "nextDone": "Next: summary",
+      "titles": {
+        "activate": "New line activation",
+        "migrate": "Plan or package change",
+        "takeover": "Transfer line ownership",
+        "support": "Support or service change",
+        "simswap": "SIM swap",
+        "addpackage": "Add package or service"
+      }
+    },
+    "kpis": {
+      "arpuTitle": "ARPU",
+      "arpuHint": "(operational estimate)",
+      "churnTitle": "Churn rate",
+      "churnHint": "(estimate)",
+      "agilityTitle": "Resilience",
+      "agilityBody": "If billing is slow or offline, attempts are stored and retried later without losing the operational decision."
+    },
+    "map": {
+      "title": "Network map — site status",
+      "imgAria": "Network site status",
+      "tooltipAlert": "Pressure / alert",
+      "tooltipWatch": "Monitoring",
+      "legend": "Pulsing red: pressure or alert · gray: monitoring — illustrative view tied to branch hubs.",
+      "siteDamascus": "Damascus",
+      "siteAleppo": "Aleppo",
+      "siteHoms": "Homs",
+      "siteLatakia": "Latakia"
+    },
+    "branch": {
+      "title": "Branch workload",
+      "empty": "No branch data after load."
+    },
+    "ops": {
+      "title": "Telecom requests",
+      "pendingBadge": "{count} pending approval",
+      "refreshTitle": "Refresh lists",
+      "refresh": "Refresh",
+      "cbs": "Confirm execution (first ready request)",
+      "approveTakeOver": "Review & approve",
+      "thNumber": "#",
+      "thKind": "Type",
+      "thSub": "Subscriber",
+      "thStatus": "Status",
+      "thDocs": "Documents",
+      "thOffer": "Target offer",
+      "loading": "Loading…",
+      "empty": "No requests yet.",
+      "dash": "—"
+    },
+    "searchPanel": {
+      "title": "Unified search results",
+      "emptyAfter": "No results for this term.",
+      "emptyBefore": "Enter a term (at least two characters) then press Search."
+    },
+    "searchModal": {
+      "title": "Unified search results",
+      "close": "Close",
+      "back": "Back to results",
+      "loading": "Searching…",
+      "emptyAfter": "No results for this term.",
+      "emptyBefore": "No results yet. Run a search from the bar above.",
+      "detailTitle": "Subscriber profile",
+      "detailLoading": "Loading details…",
+      "detailEmpty": "No data available for this profile.",
+      "detailMissingTitle": "Not found",
+      "detailMissingText": "The subscriber profile could not be found.",
+      "detailLoadFail": "Could not load subscriber details.",
+      "openRegistry": "Open registry & select subscriber",
+      "registryDeniedTitle": "Access",
+      "registryDeniedText": "You do not have permission to open the subscriber registry.",
+      "noCustomerTitle": "No link",
+      "noCustomerText": "There is no customer id linked to this record.",
+      "linesTitle": "Lines & subscriptions",
+      "thMsisdn": "Line #",
+      "thIccid": "SIM id",
+      "thType": "Type",
+      "thPrimary": "Primary",
+      "primaryYes": "Yes",
+      "noLines": "No lines on file.",
+      "lineEditTitle": "Edit primary line number",
+      "lineEditHint": "Check the number carefully before saving; the system blocks duplicates and keeps an audit trail.",
+      "lineEditMsisdn": "Mobile number",
+      "lineEditType": "Line type",
+      "lineEditSave": "Save",
+      "lineEditSaving": "Saving…",
+      "lineEditSaved": "Changes saved",
+      "lineEditMsisdnRequiredTitle": "Line number",
+      "lineEditMsisdnRequiredText": "Enter the mobile number in the approved format (e.g. 09xxxxxxxx) before saving.",
+      "fldCustomerNo": "Customer #",
+      "fldNationalId": "National ID",
+      "fldPhone": "Phone",
+      "fldEmail": "Email",
+      "fldCity": "City",
+      "fldAddress": "Address",
+      "fldLoyalty": "Loyalty",
+      "fldBalances": "Prepaid / postpaid limit",
+      "fldChurn": "Churn risk"
+    },
+    "registryModal": {
+      "title": "Subscriber registry",
+      "close": "Close",
+      "hint": "Shown here without leaving the operations hub. The row matching the customer id is selected automatically."
+    },
+    "billing": {
+      "title": "Billing & execution log",
+      "thOp": "Operation",
+      "thAttempt": "Attempt",
+      "thResult": "Result",
+      "thMsg": "Message",
+      "thTime": "Time",
+      "ok": "OK",
+      "pending": "Pending/Retry",
+      "empty": "No integration logs yet."
+    },
+    "shortcuts": {
+      "kanban": "Network tickets (Kanban)",
+      "customers": "Subscribers",
+      "mis": "MIS reports",
+      "sales": "Sales orders",
+      "billing": "Billing integration"
+    },
+    "takeOverModal": {
+      "title": "Ownership transfer approval",
+      "close": "Close",
+      "line": "Line",
+      "status": "Status",
+      "currentOwner": "Current owner",
+      "newOwner": "New owner",
+      "document": "Identity document",
+      "noDocument": "No preview — upload the document in the previous step.",
+      "cancel": "Cancel",
+      "approve": "Approve transfer on network"
+    },
+    "branchLoad": {
+      "high": "High",
+      "mid": "Medium",
+      "low": "Low"
+    },
+    "swal": {
+      "searchTitle": "Search",
+      "searchTooShort": "Enter at least two characters, then press Search or Enter.",
+      "searchNameNotAllowed": "Name search is not allowed. Use national ID, commercial registry, or subscription MSISDN (09…).",
+      "searchFail": "Search could not be completed.",
+      "searchNoResults": "No matches for this identifier.",
+      "noProfileTitle": "No subscriber profile",
+      "noProfileText": "This row is not linked to a full subscriber profile. Pick a row whose type is “Subscriber profile”, or link the number in the registry and try again.",
+      "noProfileShort": "Pick a “Subscriber profile” row.",
+      "samePartyTitle": "Same subscriber",
+      "samePartyText": "Pick a different second party.",
+      "secondaryPartyTitle": "Second party required",
+      "secondaryPartyText": "For a transfer you must pick the new subscriber (the party receiving the line) from the list before saving the request.",
+      "incompleteTitle": "Missing details",
+      "incompleteText": "Pick the primary subscriber from the search results.",
+      "targetOfferTitle": "Target offer",
+      "targetOfferText": "Select the target plan or offer from the list before continuing.",
+      "targetOfferOtherTitle": "Plan description",
+      "targetOfferOtherText": "When you pick “Other”, type the target plan name or description.",
+      "completeStepsTitle": "Complete steps",
+      "completeStepsText": "Save the request first, confirm the document, then open the summary.",
+      "draftOkTitle": "Request saved",
+      "serverErrTitle": "Server rejected",
+      "serverErrText": "Check required fields (subscriber, second party for transfers, and target offer from the list or description for plan changes).",
+      "createFailTitle": "Create failed",
+      "docOkTitle": "Document confirmed on file",
+      "failTitle": "Failed",
+      "errorTitle": "Error",
+      "notAllowedTitle": "Not allowed",
+      "notAllowedText": "Execution confirmation is limited to back-office or supervisor roles.",
+      "noDraftTitle": "No ready request",
+      "noDraftText": "The request must be in progress and the document must be marked received before confirmation.",
+      "confirmOkTitle": "Confirmed",
+      "sessionHint": "Check your session."
+    },
+    "refreshFail": "Some data could not load. Check connectivity or your session and try again.",
+    "bulkImport": {
+      "title": "Bulk Import Monitor",
+      "subtitle": "Track background imports up to 100,000 rows — live refresh while jobs are active.",
+      "upload": "Upload CSV file",
+      "jobType": "Import type",
+      "jobTypes": {
+        "msisdn": "MSISDN / SIM inventory",
+        "customers": "Customer profiles",
+        "packages": "Package migration"
+      },
+      "columns": {
+        "job": "File",
+        "status": "Status",
+        "progress": "Progress",
+        "success": "Success",
+        "errors": "Errors",
+        "created": "Created"
+      },
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed",
+        "partial": "Partially succeeded",
+        "failed": "Failed"
+      },
+      "errorsTitle": "Error breakdown",
+      "exportErrors": "Export CSV",
+      "noJobs": "No import jobs found.",
+      "uploadOk": "File uploaded; processing started in the background.",
+      "templatesHint": "Download the approved template, fill it in, then upload to avoid column rejection.",
+      "templateMsisdn": "Approved MSISDN import template",
+      "templateCustomers": "Customer profiles template",
+      "templatePackages": "Package migration template"
+    },
+    "navigation": {
+      "modules": {
+        "dashboards": "Dashboards",
+        "operations": "Operations",
+        "customerManagement": "Customer management",
+        "productCatalog": "Product catalog",
+        "governance": "Governance & system",
+        "myAccount": "My account"
+      },
+      "leafs": {
+        "executiveDashboard": "Executive dashboard",
+        "misReports": "Service assurance reports (MIS)",
+        "noc": "Network operations center (NOC)",
+        "backOfficeCockpit": "Back-office operations cockpit",
+        "technicalTickets": "Technical ticketing suite",
+        "bulkProvisioning": "Bulk provisioning monitor",
+        "subscriberRegistry": "Subscriber registry (BSS)",
+        "corporateGroups": "Accounts & corporate groups",
+        "subscriberSegments": "Subscriber segments",
+        "subscriberContacts": "Subscriber contacts",
+        "commercialOfferings": "Commercial offerings catalog",
+        "technicalProducts": "Technical product specs",
+        "lineTypes": "Subscription line types",
+        "userManagement": "User management",
+        "branchManagement": "Branch management",
+        "rolesMatrix": "Roles & permissions matrix",
+        "platformSettings": "Core platform settings",
+        "auditTrail": "System audit trail (black box)",
+        "integrationLogs": "Core network integration logs",
+        "subscriberAssets": "Subscriber lines & assets",
+        "resourcePool": "SIM & MSISDN resource pool",
+        "myProfile": "My operator profile"
+      },
+      "subscriberAssets": "Subscriber lines & assets",
+      "resourcePool": "SIM & MSISDN resource pool",
+      "integrationLogs": "Core network integration logs"
+    },
+    "integration": {
+      "title": "Core network integration logs",
+      "subtitle": "HLR / CBS / SMS request and response trail",
+      "columns": {
+        "time": "Time",
+        "system": "System",
+        "operation": "Operation",
+        "msisdn": "MSISDN",
+        "result": "Result",
+        "duration": "Duration (ms)"
+      }
+    },
+    "backOffice": {
+      "title": "Back-office command center",
+      "subtitle": "Tickets, catalog, and network",
+      "bulkImport": "Bulk import",
+      "audit": "My audit trail",
+      "bentoBulk": "Import monitor",
+      "openTickets": "Open tickets",
+      "catalogSection": "Product catalog",
+      "offers": "offers",
+      "tickets": "Technical support tickets",
+      "catalog": "Offer management",
+      "issue": "Issue",
+      "priority": "Priority",
+      "hlrResync": "HLR resync",
+      "resolve": "Mark resolved",
+      "resolveTitle": "Resolution notes",
+      "resolvePlaceholder": "Describe the fix applied…",
+      "cancel": "Cancel",
+      "confirmResolve": "Confirm close",
+      "hlrOk": "HLR sync completed",
+      "resolved": "Ticket closed",
+      "createTicket": "Open support ticket",
+      "ticketCreated": "Ticket created",
+      "dashboard": {
+        "workflowTip": "This is your live work queue: only open and in-progress tickets appear here. When you mark resolved, the row leaves this view but stays in the archive.",
+        "criticalAlert": "Alert: {count} critical-priority ticket(s) need immediate attention.",
+        "activeQueueTitle": "Active work queue",
+        "activeQueueHint": "Click Treat or double-click a row to update status and resolution notes.",
+        "emptyQueue": "Your queue is clear — great job!",
+        "emptyQueueCta": "View full archive",
+        "lastRefresh": "Last updated",
+        "loading": "Loading operations dashboard…",
+        "inProgress": "In progress",
+        "critical": "Critical priority",
+        "allTicketsArchive": "Archive & history",
+        "treatTicket": "Treat",
+        "saveStatus": "Save status",
+        "quickResolve": "Quick close (resolved)",
+        "technicalDetails": "Technical details (JSON)",
+        "subscriber": "Subscriber",
+        "lineNumber": "MSISDN",
+        "complaint": "Complaint text",
+        "statusField": "Ticket status",
+        "resolutionNotes": "Resolution notes",
+        "resolutionHint": "Required when closing (min. 5 characters)",
+        "catalogAdvanced": "Product catalog",
+        "catalogHint": "Enable or disable offers in catalog",
+        "refresh": "Refresh",
+        "openCountHint": "Open + in progress",
+        "techToolbar": "Technical actions toolbar",
+        "networkPing": "Query live network status",
+        "cbsForceSync": "Force CBS charge sync",
+        "cbsForceOk": "CBS charge applied successfully on Huawei CBS",
+        "actionOk": "Action completed successfully",
+        "networkPingOk": "Live network query completed — see telemetry below",
+        "statusUpdated": "Ticket status updated",
+        "resolvedQueue": "Ticket closed",
+        "escalatedQueue": "Ticket escalated",
+        "inProgressQueue": "Ticket is now in progress in the queue",
+        "tier3Escalate": "Escalate to Tier-3 engineering",
+        "tier3Ok": "Ticket escalated to core network team",
+        "tier3NotesLabel": "Escalation reason and technical notes (Tier-3)",
+        "tier3Confirm": "Confirm escalation",
+        "liveTelemetry": "Live network telemetry"
+      },
+      "auditList": {
+        "title": "My audit trail",
+        "subtitle": "Black box — your subscriber, network, and import actions",
+        "backToDashboard": "Operations dashboard",
+        "kpi": {
+          "logsToday": "Your operations today",
+          "hlrToday": "Network commands (HLR) today",
+          "security": "Security & governance",
+          "securityStatus": "Audit system: active and secure"
+        },
+        "filters": {
+          "search": "Search (MSISDN, text, IP…)",
+          "actionType": "Action type",
+          "allActions": "— All —",
+          "fromDate": "From",
+          "toDate": "To"
+        },
+        "totalMatching": "Matching records",
+        "drawer": {
+          "payloadLabel": "Technical operation payload"
+        }
+      }
+    },
+    "lineActions": {
+      "menu": "Line actions",
+      "newLine": "Activate new line",
+      "migrate": "Migrate package",
+      "simSwap": "SIM swap",
+      "takeOver": "Transfer ownership",
+      "processing": "Processing…",
+      "success": "Completed",
+      "businessError": "Could not complete"
+    },
+    "msisdnInventory": {
+      "title": "SIM & MSISDN resource pool",
+      "subtitle": "Browse and manage the MSISDN/SIM asset pool — bulk load via the dedicated import monitor.",
+      "bulkImportLink": "Bulk provisioning monitor",
+      "hubLink": "Network operations center",
+      "gridTitle": "Asset list",
+      "loading": "Loading inventory…",
+      "showroomStock": "Showroom stock",
+      "kpi": {
+        "total": "Total MSISDNs",
+        "available": "Available",
+        "reserved": "Reserved",
+        "active": "Active",
+        "quarantined": "Quarantined"
+      },
+      "filter": {
+        "all": "All",
+        "available": "Available",
+        "reserved": "Reserved",
+        "active": "Active",
+        "quarantined": "Quarantined"
+      },
+      "columns": {
+        "msisdn": "MSISDN",
+        "iccid": "ICCID",
+        "imsi": "IMSI",
+        "status": "Status",
+        "assignment": "Assignment",
+        "product": "Package / product",
+        "releaseDate": "Release / quarantine"
+      }
+    },
+    "vas": {
+      "panelTitle": "Value-added services (VAS)",
+      "catalogTitle": "VAS catalog",
+      "monthlyFee": "SYP/month",
+      "insufficientBalance": "Cannot activate: insufficient prepaid balance",
+      "toggleOn": "Activated",
+      "toggleOff": "Deactivated",
+      "loading": "Loading…",
+      "emptyCatalog": "No VAS services in catalog."
+    }
+  }
+}

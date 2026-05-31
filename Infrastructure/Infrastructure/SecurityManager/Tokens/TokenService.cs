@@ -10,7 +10,7 @@ namespace Infrastructure.SecurityManager.Tokens;
 
 public interface ITokenService
 {
-    string GenerateToken(ApplicationUser user, List<Claim>? userClaims);
+    string GenerateToken(ApplicationUser user, List<Claim>? userClaims, int? expireMinutes = null);
     string GenerateRefreshToken();
 }
 public class TokenService : ITokenService
@@ -30,8 +30,9 @@ public class TokenService : ITokenService
         return new SymmetricSecurityKey(keyBytes);
     }
 
-    public string GenerateToken(ApplicationUser user, List<Claim>? userClaims)
+    public string GenerateToken(ApplicationUser user, List<Claim>? userClaims, int? expireMinutes = null)
     {
+        var minutes = expireMinutes ?? _tokenSettings.ExpireInMinute;
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -57,7 +58,7 @@ public class TokenService : ITokenService
             issuer: _tokenSettings.Issuer,
             audience: _tokenSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_tokenSettings.ExpireInMinute),
+            expires: DateTime.UtcNow.AddMinutes(minutes),
             signingCredentials: creds
         );
 

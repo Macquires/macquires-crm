@@ -1,0 +1,782 @@
+/* Syr-Tel operator portal — uses system tokens from telecom-premium-theme.css only */
+
+body.syr-tel-portal {
+    font-family: var(--sys-font-stack);
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar {
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    width: 280px !important;
+    min-width: 280px;
+    inset-inline-start: 0 !important;
+    inset-inline-end: auto !important;
+    left: unset !important;
+    right: unset !important;
+    background: var(--sys-card-bg) !important;
+    border-inline-end: 1px solid var(--sys-border);
+    box-shadow: var(--sys-shadow-card);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: var(--sys-brand-red);
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .navbar {
+    background: transparent !important;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-brand-block {
+    border-bottom: 1px solid var(--sys-border);
+}
+
+/* Neutralize legacy admin_template pill nav inside Syr sidebar */
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .nav-link {
+    padding: 0;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: inherit !important;
+    font-weight: inherit;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .nav-link i {
+    width: auto;
+    height: auto;
+    background: transparent !important;
+    border-radius: 0;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .nav-link:hover,
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .nav-link.active {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: inherit !important;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-user {
+    border-color: var(--sys-border) !important;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-user-email {
+    color: var(--sys-text-main);
+    font-weight: 600;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
+    background-color: #198754 !important;
+    border-color: var(--sys-card-bg) !important;
+}
+
+.syr-sidebar-logo {
+    max-width: 120px;
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+}
+
+.syr-duotone-lite {
+    color: var(--sys-text-muted);
+}
+
+.syr-sidebar-divider {
+    height: 1px;
+    margin: 0.65rem auto 0.5rem;
+    max-width: 72%;
+    background: var(--sys-border);
+}
+
+.syr-sidebar-brand-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--sys-text-main);
+}
+
+.syr-persona-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    background: var(--sys-brand-red-ring);
+    color: var(--sys-brand-red);
+    border: 1px solid color-mix(in srgb, var(--sys-brand-red) 25%, var(--sys-border));
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.syr-omni-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: calc(100% - 1.5rem);
+    margin: 0 0.75rem 0.85rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: calc(var(--sys-radius) - 6px);
+    border: 1px solid var(--sys-border);
+    background: var(--sys-bg);
+    color: var(--sys-text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-align: start;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.syr-omni-trigger:hover {
+    background: var(--sys-card-bg);
+    border-color: color-mix(in srgb, var(--sys-brand-red) 35%, var(--sys-border));
+    color: var(--sys-text-main);
+}
+
+.syr-omni-kbd {
+    margin-inline-start: auto;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    border: 1px solid var(--sys-border);
+    color: var(--sys-text-muted);
+    background: var(--sys-card-bg);
+}
+
+.syr-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0 0.75rem 0.75rem;
+}
+
+.syr-quick-action {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-width: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.45rem 0.5rem;
+    border-radius: calc(var(--sys-radius) - 7px);
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    color: var(--sys-text-main);
+    text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.syr-quick-action:hover {
+    background: var(--sys-brand-red-ring);
+    border-color: var(--sys-brand-red);
+    color: var(--sys-brand-red);
+}
+
+.syr-nav-section {
+    padding: 0.15rem 0.65rem 0.35rem;
+}
+
+.syr-nav-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.55rem;
+    margin: 0.06rem 0;
+    border: none;
+    border-radius: calc(var(--sys-radius) - 6px);
+    background: transparent;
+    color: var(--sys-text-main);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: inherit;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.syr-nav-accordion-header:hover {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+}
+
+.syr-nav-accordion-header[aria-expanded="true"] {
+    color: var(--sys-text-main);
+    background: var(--sys-bg);
+}
+
+.syr-nav-module-icon {
+    font-size: 1rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--sys-bg);
+    color: var(--sys-text-muted);
+    border: 1px solid var(--sys-border);
+    flex-shrink: 0;
+}
+
+.syr-nav-accordion-header[aria-expanded="true"] .syr-nav-module-icon {
+    background: var(--sys-brand-red-ring);
+    color: var(--sys-brand-red);
+    border-color: color-mix(in srgb, var(--sys-brand-red) 30%, var(--sys-border));
+}
+
+.syr-nav-chevron {
+    font-size: 0.72rem;
+    color: var(--sys-text-muted);
+    transition: transform 0.2s ease;
+}
+
+.syr-nav-accordion-header[aria-expanded="true"] .syr-nav-chevron {
+    color: var(--sys-brand-red);
+}
+
+.syr-nav-section-title {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--sys-text-muted);
+    margin: 0.6rem 0 0.3rem;
+    padding-inline-start: 0.55rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.syr-nav-section-title::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--sys-brand-red);
+    flex-shrink: 0;
+}
+
+.syr-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 0.08rem;
+    border-radius: calc(var(--sys-radius) - 6px);
+    border-inline-start: 3px solid transparent;
+    color: var(--sys-text-muted);
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.syr-nav-icon {
+    font-size: 0.95rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--sys-text-muted);
+    flex-shrink: 0;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.syr-nav-link:hover {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+    border-inline-start-color: var(--sys-border);
+}
+
+.syr-nav-link:hover .syr-nav-icon {
+    color: var(--sys-brand-red);
+}
+
+.syr-nav-link.active {
+    background: var(--sys-brand-red-ring);
+    border-inline-start-color: var(--sys-brand-red);
+    color: var(--sys-text-main);
+    font-weight: 700;
+}
+
+.syr-nav-link.active .syr-nav-icon {
+    background: var(--sys-brand-red);
+    color: var(--sys-card-bg);
+}
+
+.syr-nav-accordion-inner .syr-nav-link {
+    padding-inline-start: 0.75rem;
+    font-size: 0.81rem;
+}
+
+.syr-nav-badge {
+    margin-inline-start: auto;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.3rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.1rem;
+    text-align: center;
+    border-radius: 999px;
+    background: var(--sys-brand-red);
+    color: var(--sys-card-bg);
+}
+
+.syr-admin-fab-btn {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(
+        145deg,
+        var(--sys-text-main),
+        color-mix(in srgb, var(--sys-text-main) 85%, black)
+    );
+    color: var(--sys-card-bg);
+    box-shadow: var(--sys-shadow-card-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.syr-admin-fab.is-open .syr-admin-fab-btn {
+    background: linear-gradient(145deg, var(--sys-brand-red), var(--sys-brand-red-hover));
+}
+
+.syr-admin-fab-panel {
+    position: absolute;
+    inset-inline-end: 0;
+    bottom: calc(100% + 0.65rem);
+    min-width: 220px;
+    padding: 0.85rem 1rem;
+    border-radius: calc(var(--sys-radius) - 5px);
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    box-shadow: var(--sys-shadow-card-hover);
+}
+
+.syr-admin-fab-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--sys-text-main);
+    margin: 0 0 0.4rem;
+}
+
+.syr-admin-fab-hint {
+    font-size: 0.65rem;
+    color: var(--sys-text-muted);
+    margin: 0.45rem 0 0;
+    line-height: 1.35;
+}
+
+/* —— Omni-Search (Ctrl+K) command palette —— */
+.syr-omni-modal .modal-backdrop.show {
+    opacity: 0.45;
+}
+
+.syr-omni-dialog {
+    max-width: min(560px, calc(100vw - 1.5rem));
+    margin: 1rem auto;
+}
+
+.syr-omni-modal .modal-content,
+.syr-omni-panel {
+    border: none;
+    border-radius: var(--sys-radius);
+    box-shadow: 0 20px 50px color-mix(in srgb, var(--sys-text-main) 18%, transparent);
+    overflow: hidden;
+    background: var(--sys-card-bg);
+}
+
+.syr-omni-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1rem 0.85rem;
+    border-bottom: 1px solid var(--sys-border);
+}
+
+.syr-omni-search-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: calc(var(--sys-radius) - 4px);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.syr-omni-search-wrap:focus-within {
+    border-color: color-mix(in srgb, var(--sys-brand-red) 42%, var(--sys-border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--sys-brand-red) 14%, transparent);
+}
+
+.syr-omni-search-icon {
+    flex-shrink: 0;
+    font-size: 1.05rem;
+    color: var(--sys-text-muted);
+    line-height: 1;
+}
+
+.syr-omni-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: var(--sys-text-main);
+    padding: 0;
+    margin: 0;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.syr-omni-input::placeholder {
+    color: var(--sys-text-muted);
+    opacity: 0.9;
+}
+
+.syr-omni-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.syr-omni-close {
+    flex-shrink: 0;
+    opacity: 0.55;
+    padding: 0.5rem;
+    margin: 0;
+}
+
+.syr-omni-close:hover {
+    opacity: 1;
+}
+
+.syr-omni-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.55rem 1rem;
+    border-top: 1px solid var(--sys-border);
+    font-size: 0.72rem;
+    color: var(--sys-text-muted);
+    background: color-mix(in srgb, var(--sys-bg) 65%, var(--sys-card-bg));
+}
+
+.syr-omni-foot kbd {
+    font-size: 0.68rem;
+    padding: 0.08rem 0.35rem;
+    border-radius: 4px;
+    border: 1px solid var(--sys-border);
+    background: var(--sys-card-bg);
+    color: var(--sys-text-muted);
+    font-family: inherit;
+}
+
+.syr-omni-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2.25rem 1.5rem;
+    min-height: 140px;
+    color: var(--sys-text-muted);
+}
+
+.syr-omni-empty i {
+    font-size: 1.85rem;
+    margin-bottom: 0.65rem;
+    opacity: 0.4;
+    line-height: 1;
+}
+
+.syr-omni-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+    max-width: 28rem;
+    line-height: 1.5;
+}
+
+.syr-omni-empty--loading i {
+    opacity: 0.65;
+}
+
+.syr-omni-empty--error i {
+    color: var(--sys-brand-red);
+    opacity: 0.85;
+}
+
+.syr-omni-empty--blocked i {
+    color: var(--sys-brand-red);
+    opacity: 0.7;
+}
+
+@keyframes syr-omni-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.syr-omni-spin {
+    display: inline-block;
+    animation: syr-omni-spin 0.85s linear infinite;
+}
+
+.syr-omni-result {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--sys-border);
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.12s ease;
+}
+
+.syr-omni-result:last-child {
+    border-bottom: none;
+}
+
+.syr-omni-result:hover,
+.syr-omni-result:focus-visible {
+    background: var(--sys-bg);
+    color: inherit;
+}
+
+.syr-omni-result-icon {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--sys-radius) - 6px);
+    background: color-mix(in srgb, var(--sys-brand-red) 8%, var(--sys-bg));
+    color: var(--sys-brand-red);
+    font-size: 1rem;
+}
+
+.syr-omni-result-body {
+    flex: 1;
+    min-width: 0;
+    text-align: start;
+}
+
+.syr-omni-result-body strong {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--sys-text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.syr-omni-result-body small {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--sys-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.syr-omni-result-chevron {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    color: var(--sys-text-muted);
+    opacity: 0.45;
+}
+
+.syr-omni-result:hover .syr-omni-result-chevron {
+    opacity: 0.85;
+    color: var(--sys-brand-red);
+}
+
+[dir="ltr"] .syr-omni-result-chevron {
+    transform: scaleX(-1);
+}
+
+.syr-bento-card {
+    background: color-mix(in srgb, var(--sys-card-bg) 72%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    box-shadow: var(--sys-shadow-card);
+    padding: 1.25rem;
+    min-height: 120px;
+}
+
+.syr-bento-card h2 {
+    font-size: 0.8rem;
+    color: var(--sys-text-muted);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.syr-bento-card .syr-bento-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--sys-text-main);
+}
+
+.syr-bento-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: calc(var(--sys-radius) - 6px);
+    background: var(--sys-text-main);
+    color: var(--sys-card-bg);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.syr-bento-cta:hover {
+    background: var(--sys-brand-red);
+    color: var(--sys-card-bg);
+}
+
+.syr-bento-search-lg {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: calc(var(--sys-radius) - 6px);
+    border: 1px solid var(--sys-border);
+    font-size: 1rem;
+    background: var(--sys-card-bg);
+    color: var(--sys-text-main);
+}
+
+.syr-bento-status-ok { color: var(--sys-text-main); }
+.syr-bento-status-warn { color: var(--sys-text-muted); }
+.syr-bento-status-error { color: var(--sys-brand-red); }
+
+.syr-nav-accordion-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease;
+}
+
+.syr-nav-accordion-body.is-open {
+    grid-template-rows: 1fr;
+}
+
+.syr-nav-accordion-inner {
+    overflow: hidden;
+    padding-inline-start: 0.35rem;
+}
+
+.syr-bento-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(12, 1fr);
+}
+
+.syr-bento-card.span-4 { grid-column: span 4; }
+.syr-bento-card.span-6 { grid-column: span 6; }
+.syr-bento-card.span-8 { grid-column: span 8; }
+.syr-bento-card.span-12 { grid-column: span 12; }
+
+@media (max-width: 992px) {
+    .syr-bento-card.span-4,
+    .syr-bento-card.span-6,
+    .syr-bento-card.span-8 {
+        grid-column: span 12;
+    }
+}
+
+.syr-admin-fab {
+    position: fixed;
+    z-index: 1050;
+    inset-inline-end: 1.25rem;
+    bottom: 1.25rem;
+}
+
+.syr-omni-results {
+    max-height: min(50vh, 360px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+/*
+ * Admin shell layout — logical properties (one rule for LTR + RTL).
+ * Clears style.css physical margin-left:300px that breaks Arabic layouts.
+ */
+@media (min-width: 992px) {
+    body.syr-tel-portal .content {
+        box-sizing: border-box !important;
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: 280px !important;
+        margin-inline-end: 0 !important;
+        width: calc(100% - 280px) !important;
+        max-width: 100% !important;
+    }
+
+    body.syr-tel-portal .sidebar.open {
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: -280px !important;
+    }
+
+    body.syr-tel-portal .content.open {
+        margin-inline-start: 0 !important;
+        margin-inline-end: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    body.syr-tel-portal .content {
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: 0 !important;
+        margin-inline-end: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    body.syr-tel-portal .sidebar.syr-sidebar {
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: -280px !important;
+    }
+
+    body.syr-tel-portal .sidebar.syr-sidebar.open {
+        margin-inline-start: 0 !important;
+    }
+}

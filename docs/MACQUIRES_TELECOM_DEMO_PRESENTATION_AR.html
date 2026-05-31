@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Macquires CRM — منصة تشغيل مشتركين للاتصالات</title>
+  <style>
+    :root {
+      --brand: #dc2626;
+      --brand-dark: #991b1b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #0ea5e9;
+    }
+    * { box-sizing: border-box; }
+    html {
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 1.02rem;
+      overflow-x: hidden;
+      max-width: 100%;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    img, svg, video { max-width: 100%; height: auto; }
+    .hero {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 55%, #450a0a 100%);
+      color: #fff;
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+    .hero h1 { margin: 0 0 0.5rem; font-size: clamp(1.6rem, 4vw, 2.4rem); }
+    .hero .tagline { opacity: 0.9; max-width: 52rem; margin: 0 auto 1.25rem; }
+    .hero .badge-row { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+    .hero .badge {
+      background: rgba(220, 38, 38, 0.25);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 1.25rem 4rem; }
+    nav.toc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin: -2rem auto 2rem;
+      position: relative;
+      box-shadow: 0 8px 30px rgba(15,23,42,0.08);
+    }
+    nav.toc h2 { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--brand); }
+    nav.toc ol { margin: 0; padding-right: 1.25rem; columns: 2; column-gap: 2rem; }
+    @media (max-width: 640px) {
+      nav.toc ol { columns: 1; }
+    }
+    nav.toc a {
+      color: var(--text);
+      text-decoration: none;
+      display: inline-block;
+      padding: 0.2rem 0;
+      min-height: 2.25rem;
+      line-height: 1.5;
+    }
+    nav.toc a:hover { color: var(--brand); }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 12px rgba(15,23,42,0.04);
+    }
+    section h2 {
+      margin: 0 0 1rem;
+      font-size: 1.35rem;
+      color: var(--brand-dark);
+      border-right: 4px solid var(--brand);
+      padding-right: 0.75rem;
+    }
+    section h3 { margin: 1.25rem 0 0.5rem; font-size: 1.05rem; color: #334155; }
+    p { margin: 0 0 0.85rem; }
+    ul { margin: 0 0 1rem; padding-right: 1.25rem; }
+    li { margin-bottom: 0.35rem; }
+    .highlight {
+      background: #fef2f2;
+      border-right: 4px solid var(--brand);
+      padding: 0.85rem 1rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0;
+    }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 1rem 0;
+      border-radius: 8px;
+      box-shadow: inset -8px 0 12px -12px rgba(15, 23, 42, 0.12);
+    }
+    .table-wrap table {
+      width: 100%;
+      min-width: 520px;
+      margin: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.65rem;
+      text-align: right;
+      vertical-align: top;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    th { background: #f1f5f9; font-weight: 600; }
+    .persona-sysadmin { border-right: 3px solid #7c3aed; }
+    .persona-exec { border-right: 3px solid #2563eb; }
+    .persona-bo { border-right: 3px solid var(--brand); }
+    .persona-retail { border-right: 3px solid #059669; }
+    .persona-cc { border-right: 3px solid #d97706; }
+    .flow {
+      background: #f8fafc;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-family: ui-monospace, monospace;
+      font-size: 0.88rem;
+      direction: ltr;
+      text-align: left;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.5;
+    }
+    .vas-steps {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0;
+      counter-reset: vasstep;
+    }
+    .vas-steps li {
+      position: relative;
+      padding: 0.75rem 1rem 0.75rem 0;
+      margin-bottom: 0.5rem;
+      border-right: 3px solid var(--brand);
+      background: #fef2f2;
+      border-radius: 0 8px 8px 0;
+      counter-increment: vasstep;
+    }
+    .vas-steps li::before {
+      content: counter(vasstep);
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      background: var(--brand);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vas-steps li strong { color: var(--brand-dark); }
+    .status-active { color: #059669; font-weight: 700; }
+    .ai-hero-box {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+      color: #e9d5ff;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+      border: 1px solid rgba(167, 139, 250, 0.35);
+    }
+    .ai-hero-box h3 { margin: 0 0 0.75rem; color: #f5f3ff; font-size: 1.1rem; }
+    .ai-hero-box ul { margin: 0; color: #ddd6fe; }
+    .custom-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .custom-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      font-size: 0.92rem;
+    }
+    .custom-card strong { display: block; color: var(--brand-dark); margin-bottom: 0.35rem; }
+    .demo-truth-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      color: #f1f5f9;
+      border: 2px solid #f59e0b;
+      border-radius: 14px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15);
+    }
+    .demo-truth-banner h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.25rem;
+      color: #fbbf24;
+      border: none;
+      padding: 0;
+    }
+    .demo-truth-banner p { margin: 0 0 0.65rem; color: #e2e8f0; }
+    .demo-truth-banner .lead {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.85;
+    }
+    .not-in-demo-list {
+      columns: 2;
+      column-gap: 1.5rem;
+      font-size: 0.9rem;
+      margin: 0.75rem 0 0;
+      padding-right: 1.1rem;
+      color: #cbd5e1;
+    }
+    @media (max-width: 640px) { .not-in-demo-list { columns: 1; } }
+    .not-in-demo-list li { margin-bottom: 0.3rem; break-inside: avoid; }
+    .layers {
+      display: grid;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .layer {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      text-align: center;
+      font-weight: 600;
+    }
+    .layer:nth-child(1) { background: #ede9fe; }
+    .layer:nth-child(2) { background: #dbeafe; }
+    .layer:nth-child(3) { background: #fef3c7; }
+    .layer:nth-child(4) { background: #dcfce7; }
+    .layer-arrow { text-align: center; color: var(--muted); font-size: 1.2rem; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 2rem 1rem;
+    }
+    .print-hint {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+    .back-top {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      body { font-size: 0.98rem; line-height: 1.7; }
+      .hero {
+        padding: 2rem 1rem 1.75rem;
+        padding-top: max(2rem, env(safe-area-inset-top));
+      }
+      .hero .tagline { font-size: 0.95rem; padding: 0 0.25rem; }
+      .hero .badge { font-size: 0.78rem; padding: 0.3rem 0.65rem; }
+      .hero .print-hint { font-size: 0.8rem; padding: 0 0.5rem; }
+      .wrap {
+        padding: 0 0.85rem 3rem;
+        padding-bottom: max(3rem, env(safe-area-inset-bottom));
+      }
+      nav.toc {
+        margin: -1.25rem auto 1.5rem;
+        padding: 1rem 1.1rem;
+      }
+      nav.toc h2 { font-size: 1rem; }
+      section {
+        padding: 1.15rem 1rem;
+        margin-bottom: 1.1rem;
+      }
+      section h2 {
+        font-size: 1.15rem;
+        padding-right: 0.55rem;
+        line-height: 1.45;
+      }
+      section h3 { font-size: 1rem; }
+      .demo-truth-banner {
+        padding: 1.1rem 1rem;
+        border-radius: 10px;
+      }
+      .demo-truth-banner h2 { font-size: 1.1rem; }
+      .demo-truth-banner .lead { font-size: 1rem; }
+      .custom-grid {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+      }
+      .custom-card { font-size: 0.88rem; }
+      .ai-hero-box { padding: 1rem; }
+      .flow {
+        font-size: 0.72rem;
+        padding: 0.75rem 0.65rem;
+        border-radius: 8px;
+        max-width: 100%;
+      }
+      .vas-steps li {
+        padding: 0.65rem 0.85rem 0.65rem 0;
+        font-size: 0.92rem;
+      }
+      .vas-steps li::before {
+        width: 22px;
+        height: 22px;
+        font-size: 0.72rem;
+        right: -11px;
+      }
+      .table-wrap table { min-width: 480px; font-size: 0.84rem; }
+      th, td { padding: 0.45rem 0.5rem; }
+      .highlight { padding: 0.75rem 0.85rem; font-size: 0.95rem; }
+      footer {
+        font-size: 0.82rem;
+        padding: 1.5rem 0.75rem;
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      }
+      .back-top {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        bottom: max(1rem, env(safe-area-inset-bottom));
+        right: max(1rem, env(safe-area-inset-right));
+        left: auto;
+        z-index: 100;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 50%;
+        background: var(--brand);
+        color: #fff;
+        text-decoration: none;
+        font-size: 1.25rem;
+        font-weight: 700;
+        box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);
+        line-height: 1;
+      }
+      .back-top:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+    }
+    @media (max-width: 400px) {
+      .hero h1 { font-size: 1.35rem; }
+      .table-wrap table { min-width: 420px; font-size: 0.8rem; }
+      section h2 { font-size: 1.05rem; }
+    }
+    @media print {
+      .back-top { display: none !important; }
+      .hero { background: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      nav.toc { break-after: avoid; }
+      section { break-inside: avoid; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <h1>Macquires CRM — منصة تشغيل مشتركين (BSS)</h1>
+  <p class="tagline">
+    منصة Macquires لتشغيل المشتركين — اليوم عم نمشي معكم في
+    <strong>المسار التشغيلي</strong> اللي بيبدأ فيه أي مشغّل اتصالات ناجح،
+    وبيتوسّع بعدها حسب أولوياتكم وأسلوب عملكم.
+  </p>
+  <div class="badge-row">
+    <span class="badge">Customer 360</span>
+    <span class="badge">تشغيل على الشبكة والفوترة</span>
+    <span class="badge">فروع وصلاحيات</span>
+    <span class="badge">هواوي CBS / HLR</span>
+    <span class="badge">استيراد ضخم</span>
+    <span class="badge">ذكاء اصطناعي وتحليلات</span>
+    <span class="badge">قابلية تخصيص كاملة</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <h2>محاور العرض</h2>
+  <ol>
+    <li><a href="#demo-scope">رؤية المنصة وجلسة اليوم</a></li>
+    <li><a href="#intro">شو هاد النظام؟</a></li>
+    <li><a href="#value">القيمة للمشغّل</a></li>
+    <li><a href="#customize">قابلية التخصيص</a></li>
+    <li><a href="#ai-intelligence">الذكاء الاصطناعي والإيرادات</a></li>
+    <li><a href="#sections">أقسام المنصة</a></li>
+    <li><a href="#branches">الفروع والهيكل</a></li>
+    <li><a href="#personas">الأدوار والصلاحيات</a></li>
+    <li><a href="#c360">شاشة 360</a></li>
+    <li><a href="#catalog">باقات وخدمات</a></li>
+    <li><a href="#warehouse">المخزن والاستيراد الضخم</a></li>
+    <li><a href="#integration">تكامل هواوي والشبكة</a></li>
+    <li><a href="#backoffice">قمرة العمليات الخلفية</a></li>
+    <li><a href="#ticket-flow">مسار الشكاوى والدعم</a></li>
+    <li><a href="#closing">الخلاصة</a></li>
+  </ol>
+</nav>
+
+<!-- 0 — Demo scope -->
+<section id="demo-scope" class="demo-truth-banner">
+  <h2>٠ — رؤية المنصة وجلسة اليوم</h2>
+  <p class="lead">
+    Macquires منصة تشغيل مشتركين (BSS/CRM) بنيناها لتخدم مشغّلي اتصالات على مدار السنوات —
+    مش كـ «عرض سريع»، كـ <strong>منظومة تشغيل</strong> بتكبر مع حجم الشبكة وتعقيد المنتجات.
+    جلسة اليوم مختارة بعناية: <strong>نمشي في المحور اللي بيلمس الموظف والمشترك كل يوم</strong>
+    — من ملف المشترك، للخط والباقة، للشبكة والفوترة، ولغرفة العمليات الخلفية.
+  </p>
+  <p>
+    المنصة أصلاً <strong>معيارية وقابلة للتوسّع</strong>: كل مشغّل بيحدّد شو بده يفتح أولاً،
+    وشو بيرحّل للمرحلة اللي بعدها. يعني اللي رح تشوفوه اليوم هو
+    <strong>نقطة انطلاق عملية</strong> — مو سقف القدرات، ومو نهاية الحوار.
+  </p>
+
+  <h3 style="color:#fbbf24; font-size:1rem; margin:1.25rem 0 0.5rem;">محور جلسة اليوم</h3>
+  <p style="margin-bottom:0.5rem;">
+    ركّزنا الوقت على ما يُثبت القيمة بسرعة: <strong>360 للمشترك</strong>، الخطوط والاشتراكات،
+    العروض و VAS، المخزون والاستيراد الضخم، التكامل مع CBS/HLR، الصلاحيات والفروع،
+    وقمرة الباك أوفيس — لأن هون بيتجسّد الفرق بين «سجل بيانات» و«تشغيل حقيقي على الشبكة».
+  </p>
+
+  <h3 style="color:#fbbf24; font-size:1rem; margin:1rem 0 0.5rem;">
+    طبقات إضافية يبنيها المشغّل الكبير مع Macquires (حسب خارطة الطريق)
+  </h3>
+  <p style="font-size:0.92rem; margin-bottom:0.35rem;">
+    ببيئة الاتصالات، المنصة الناضجة عادةً بتغطي مساراً أوسع من التشغيل اليومي —
+    وMacquires مصمّمة تستوعب هالرحلة <strong>مرحلةً مرحلةً</strong>، حسب أولوية كل شركة:
+  </p>
+  <ul class="not-in-demo-list">
+    <li>فوترة متقاربة كاملة (Convergent Billing) — صوت، داتا، VAS، رسوم لمرة واحدة</li>
+    <li>إدارة أوامر موحّدة OM — طلب واحد يقسّم لشبكة + مخزون + فوترة</li>
+    <li>تسوية وتحليل CDR — Mediation، Rating، Discounting</li>
+    <li>نقل رقم كامل MNP — Workflow مع مشغّل تاني + SLA</li>
+    <li>إدارة ديون وتحصيل (Dunning & Collections)</li>
+    <li>بوابة مشترك Self-Care / تطبيق موبايل للعميل النهائي</li>
+    <li>حملات تسويق وعروض جماعية (Campaign & Promotion Engine)</li>
+    <li>عمولات وكلاء وموزّعين (Dealer / Partner Channel)</li>
+    <li>تذاكر ITIL كاملة + SLA + قاعدة معرفة</li>
+    <li>كشف احتيال وتلاعب (Fraud Management)</li>
+    <li>ضمان إيرادات (Revenue Assurance)</li>
+    <li>تغطية FTTH و GIS + فرق ميدانية</li>
+    <li>دورة حياة eSIM كاملة (QR، تحميل، إلغاء عن بُعد)</li>
+    <li>فوترة Interconnect بين المشغّلين</li>
+    <li>لوحات تنفيذية متقدمة + BI و Data Warehouse</li>
+    <li>تكاملات إضافية: OCS، PCRF، SMSC، Payment Gateway، إلخ</li>
+  </ul>
+
+  <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid rgba(251,191,36,0.35);">
+    <p class="lead" style="margin:0;">
+      <strong>الفكرة اللي بدنا نوصلها:</strong> Macquires شريك تشغيل طويل المدى —
+      اليوم بنورّيكم <strong>كيف بتشتغل القلب</strong>، وبنكمّل سوا خريطة تفعيل باقي الطبقات
+      <strong>على مزاجكم</strong>، مش على قالب جاهز ما بيلائم سوقكم.
+    </p>
+  </div>
+</section>
+
+<!-- 1 -->
+<section id="intro">
+  <h2>١ — شو هاد النظام؟</h2>
+  <p>
+    <strong>Macquires CRM / BSS</strong> منصة تشغيل أعمال enterprise مبنية على أساس ERP قوي،
+    ومخصّصة لشركات الاتصالات — من أول تسجيل المشترك لحد التشغيل على الشبكة والفوترة،
+    ومن مركز الاتصال لحد التحليلات ورفع الإيرادات.
+  </p>
+  <p>
+    جلسة اليوم بتركّز على <strong>النواة التشغيلية</strong> اللي بتحسّ فيها فرق Macquires من أول أسبوع تشغيل —
+    وباقي طبقات المنصة بتفتحونها معنا حسب خارطة أولوياتكم.
+  </p>
+  <p>باختصار، المنصة بتغطي:</p>
+  <ul>
+    <li><strong>المشترك:</strong> ملف كامل، جهات اتصال، مجموعات، تصنيفات، وبيانات حساسة محمية.</li>
+    <li><strong>الخط والاشتراك:</strong> أكثر من خط لكل عميل — رقم، شريحة، نوع اشتراك، وباقة.</li>
+    <li><strong>العمليات:</strong> تفعيل خط، تبديل شريحة، ترحيل باقة، وخدمات مضافة — كلها بمراحل واضحة وقابلة للمراجعة.</li>
+    <li><strong>الكتالوج:</strong> منتجات، عروض، أسعار، وخدمات مضافة — تفعيل وإيقاف من النظام مباشرة.</li>
+    <li><strong>المخزون:</strong> مستودع أرقام وشرائح SIM + استيراد ضخم بالآلاف من الصفوف.</li>
+    <li><strong>الدعم الفني:</strong> تذاكر من مركز الاتصال أو المساعد الصوتي، وحلها من العمليات الخلفية مع مزامنة الشبكة والفوترة.</li>
+    <li><strong>الحوكمة:</strong> مستخدمون، أدوار، صلاحيات، فروع، وسجل رقابة لكل عملية حساسة.</li>
+    <li><strong>تخصيص:</strong> كتالوج، قوائم، صلاحيات، لوحات، وتكاملات — على وتيرة أعمالكم.</li>
+    <li><strong>ذكاء اصطناعي وتحليلات:</strong> عروض ذكية، رفع متوسط الإيراد، وتنبؤ بمخاطر فقدان المشترك حسب الخط والفرع.</li>
+  </ul>
+  <div class="highlight">
+    <strong>الرسالة للإدارة:</strong>
+    كل موظف يرى ما يخصّه فقط — والإدارة ترى الصورة حسب المنطقة والفرع.
+    المنصة تنمو معكم: ما تحتاجونه في المرحلة التالية نرتّبه معاً على مزاج أعمالكم.
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="value">
+  <h2>٢ — القيمة للمشغّل</h2>
+  <ul>
+    <li><strong>تشغيل فعلي على الشبكة والفوترة:</strong> من تسجيل المشترك إلى تفعيل الخط والباقة والخدمات المضافة — ليس سجلاً معزولاً عن التشغيل.</li>
+    <li><strong>حوكمة وصلاحيات:</strong> كل دور يرى ويفعل ما يُخوّله فقط — على القائمة والعمليات والبيانات الحساسة.</li>
+    <li><strong>هيكل فروع ومناطق:</strong> المدير العام، مدير المنطقة، ومدير الفرع — كل واحد بنطاقه وبأرقامه.</li>
+    <li><strong>تكامل هواوي CBS و HLR:</strong> فوترة وشبكة مع سجل مراجعة لكل محاولة — واستئناف عند انقطاع مؤقت.</li>
+    <li><strong>قابلية تخصيص:</strong> كتالوج، عروض، صلاحيات، وتكاملات تُضبط على سياسة المشغّل.</li>
+    <li><strong>استيراد ضخم:</strong> آلاف الشرائح أو العملاء أو ترحيل الباقات دفعة واحدة مع تقارير أخطاء واضحة.</li>
+    <li><strong>ذكاء اصطناعي وتحليلات:</strong> عروض مستهدفة، احتفاظ بالمشتركين، ورفع متوسط الإيراد من نفس نقاط التماس مع العميل.</li>
+    <li><strong>ترحيل تدريجي:</strong> نقل البيانات من أنظمة قديمة على مراحل — عملاء، مخزون، باقات، ثم التشغيل الحي.</li>
+  </ul>
+</section>
+
+<!-- Customize -->
+<section id="customize">
+  <h2>٣ — قابلية التخصيص</h2>
+  <p>
+    <strong>Macquires ليست صندوقاً مغلقاً</strong> — منصة تشغيل تتشكّل على هوية شركتكم،
+    منتجاتكم، فروعكم، وسياساتكم. التخصيص على مستوى المنتج، الصلاحيات، التكامل، وتجربة الموظف معاً.
+  </p>
+
+  <div class="highlight">
+    <strong>الفكرة:</strong> أنتم تحدّدون القواعد — النظام يمشي وراءكم، لا العكس.
+  </div>
+
+  <div class="custom-grid">
+    <div class="custom-card"><strong>كتالوج وعروض</strong> باقات وخدمات وأسعار — تفعيل وإيقاف من العمليات الخلفية.</div>
+    <div class="custom-card"><strong>قوالب شبكة HLR</strong> كل خدمة إلها Template أمر — تغيّروا الصيغة حسب هواوي أو أي CORE.</div>
+    <div class="custom-card"><strong>مصفوفة صلاحيات</strong> أدوار جاهزة + Clone Role — تبنون أدوار فرع دمشق مختلفة عن حلب.</div>
+    <div class="custom-card"><strong>قوائم Persona</strong> كل شاشة مربوطة بشخصية — الكول سنتر ما بيشوف إعدادات الشبكة.</div>
+    <div class="custom-card"><strong>هيكل فروع</strong> HQ → مناطق → فروع مع مديرين ونطاق بيانات لكل مستوى.</div>
+    <div class="custom-card"><strong>لوحات Widgets</strong> الإدارة بتختار KPIs تظهر لكل شخصية (SysAdmin يضبط الـ Dashboard).</div>
+    <div class="custom-card"><strong>إعدادات تشغيل</strong> تشغيل أو إيقاف تكامل الفوترة والشبكة من لوحة مركزية.</div>
+    <div class="custom-card"><strong>تسلسل أرقام</strong> TT للتذاكر، طلبات تشغيل، فواتير — بصيغة تعرفونها أنتم.</div>
+    <div class="custom-card"><strong>استيراد ضخم</strong> أنواع Jobs وقوالب CSV — تضيفوا نوع ترحيل جديد بعقد واضح.</div>
+    <div class="custom-card"><strong>حقول مشترك</strong> أنواع عملاء، مجموعات، تصنيفات، ولاء، وحدود ائتمان — قابلة للتوسع.</div>
+    <div class="custom-card"><strong>تكاملات</strong> فوترة وشبكة وخدمات — إمكانية استبدال المورّد دون إعادة بناء المنصة.</div>
+    <div class="custom-card"><strong>عربي / إنجليزي</strong> قوائم ثنائية اللغة وتجربة RTL كاملة للموظف والإدارة.</div>
+  </div>
+
+  <h3>أمثلة عملية</h3>
+  <ul>
+    <li>تغيير قواعد العمل أو التكامل دون إعادة بناء الشاشات بالكامل.</li>
+    <li>صلاحيات دقيقة لكل دور — وإمكانية إضافة أدوار جديدة وتوزيعها فوراً.</li>
+    <li>ترتيب القوائم والمؤشرات حسب أسلوب عمل كل قسم.</li>
+    <li>ترحيل بيانات مرن يتوافق مع سياسة قواعد البيانات لديكم.</li>
+  </ul>
+
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>طلب المشغّل</th><th>الاستجابة</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>باقة جديدة أو خدمة «نغمتي»</td><td>إضافة للكتالوج وربطها بالشبكة — تظهر في مركز العمليات وملف 360</td></tr>
+      <tr><td>دور «مشرف منطقة»</td><td>دور وصلاحيات ونطاق فرع/منطقة</td></tr>
+      <tr><td>نظام فوترة مختلف</td><td>تكامل جديد دون تغيير تجربة الموظف</td></tr>
+      <tr><td>تقرير تسويقي خاص</td><td>لوحة ومؤشرات مخصّصة</td></tr>
+      <tr><td>موافقة على عمليات حساسة</td><td>سجل رقابي وتأكيد من العمليات الخلفية</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="highlight">
+    <strong>الخلاصة:</strong> المنصة تُبنى مرة — ثم تُخصَّص منتجاتكم وصلاحياتكم وتكاملاتكم
+    على وتيرة أعمالكم، لا على وتيرة مورّد خارجي.
+  </div>
+</section>
+
+<!-- AI -->
+<section id="ai-intelligence">
+  <h2>٤ — الذكاء الاصطناعي والإيرادات</h2>
+  <p>
+    حالياً <strong>طبقة الـ AI داخلة بقوة في عملية التحليلات والتشغيل</strong> — مش كإضافة جانبية،
+    كجزء من دورة حياة المشترك: من أول ما يتصل لحد ما النظام يقترح عليه عرض يزوّد الإيراد.
+  </p>
+
+  <div class="ai-hero-box">
+    <h3>🎯 الهدف التجاري: رفع ARPU (متوسط الإيراد لكل مشترك)</h3>
+    <ul>
+      <li>النظام بيحلل: استهلاك، رصيد، باقة حالية، VAS النشطة، نقاط ولاء، ومخاطر انسحاب.</li>
+      <li>وبيطلع <strong>عرض ذكي (Next Best Offer)</strong> للموظف أو للعميل — بالوقت المناسب، مو عشوائي.</li>
+      <li>الموظف بكبسة وحدة بفعّل العرض → CBS يخصم → HLR يفتح الخدمة → ARPU بيرتفع فعلياً.</li>
+    </ul>
+  </div>
+
+  <h3>وين الـ AI شغّال اليوم؟</h3>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>القدرة</th><th>شو بيعمل؟</th><th>أثر بزنس</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Voice AI → تذكرة</strong></td>
+        <td>يحلل نص المكالمة (شحن، نت، شريحة…) ويفتح تذكرة بأولوية صح</td>
+        <td>تقليل وقت الحل — رضا أعلى — فرصة Upsell بعد الحل</td>
+      </tr>
+      <tr>
+        <td><strong>درجة انسحاب Churn Risk</strong></td>
+        <td>على ملف المشترك و 360 — تنبيه للفريق قبل ما يفقد الخط</td>
+        <td>احتفاظ + عروض احتفاظ مستهدفة</td>
+      </tr>
+      <tr>
+        <td><strong>شرائح ولاء Loyalty Tier</strong></td>
+        <td>Platinum / Gold / Silver — ربط بعروض أفضل</td>
+        <td>تخصيص عرض حسب قيمة العميل</td>
+      </tr>
+      <tr>
+        <td><strong>مؤشرات ARPU باللوحة</strong></td>
+        <td>KPIs وتقارير MIS حسب فرع ومنطقة</td>
+        <td>الإدارة بتشوف أثر الحملات فوراً</td>
+      </tr>
+      <tr>
+        <td><strong>اقتراح عروض ذكية (NBA)</strong></td>
+        <td>على 360 والمعرض: «هاد المشترك مناسب له باقة نت أعلى / نغمتي / VAS تجوال»</td>
+        <td>رفع ARPU من نفس الزيارة — بدون حملة عمياء</td>
+      </tr>
+      <tr>
+        <td><strong>تحليلات استهلاك (CDR-ready)</strong></td>
+        <td>جاهزية لربط CDR و AI لاكتشاف أنماط (ليلي، سوشال، تجوال)</td>
+        <td>عروض Data و Voice مربحة ومستهدفة</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <h3>مسار عملي: من الفهم إلى الإيراد</h3>
+  <ol class="vas-steps">
+    <li><strong>النظام يحلّل</strong> الاستهلاك، الرصيد، الباقة، الخدمات النشطة، الولاء، ومخاطر الانسحاب.</li>
+    <li><strong>يقترح عرضاً مناسباً</strong> لموظف المعرض أو مركز الاتصال — في الوقت المناسب.</li>
+    <li><strong>الموظف يوافق</strong> من ملف 360 أو مركز العمليات — والتفعيل يمر على الفوترة والشبكة.</li>
+    <li><strong>اللوحة تتحدّث</strong> — الرصيد، الخدمات، والتقارير تعكس الأثر فوراً.</li>
+  </ol>
+
+  <div class="flow">[ بيانات المشترك والسلوك ]
+        ▼
+[ تحليلات وذكاء اصطناعي ]  ──►  مخاطر انسحاب · ولاء · عرض مقترح
+        ▼
+[ تفعيل على CBS + HLR ]  ──►  إيراد أعلى · رضا · احتفاظ
+
+  <div class="highlight">
+    <strong>الرسالة:</strong> Macquires ليست سجلاً للبيانات فقط — محرك إيرادات يفهم المشترك،
+    يقترح العرض المناسب، ويوصّله للشبكة والفوترة — والإدارة ترى الأثر على اللوحات.
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="sections">
+  <h2>٥ — أقسام المنصة</h2>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>القسم</th><th>شو بيعمل؟</th><th>مين بيشوفه؟</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>لوحات القيادة</td>
+        <td>KPIs، عناصر Widget حسب الشخصية، مؤشرات تشغيل</td>
+        <td>الكل (محتوى مختلف حسب الصلاحية)</td>
+      </tr>
+      <tr>
+        <td>العمليات التشغيلية</td>
+        <td>مركز عمليات الشبكة (Telecom Hub)، قمرة الباك أوفيس، تذاكر فنية، استيراد ضخم، مستودع أرقام، تكامل فوترة</td>
+        <td>BackOffice، Retail، CallCenter، Executive، SysAdmin — حسب الشاشة</td>
+      </tr>
+      <tr>
+        <td>إدارة المشتركين</td>
+        <td>سجل المشتركين، خطوط واشتراكات، مجموعات، تصنيفات، جهات اتصال</td>
+        <td>الكول سنتر والمعارض للبحث؛ الباك أوفيس للإدارة العميقة</td>
+      </tr>
+      <tr>
+        <td>كتالوج المنتجات</td>
+        <td>عروض تجارية، مواصفات منتجات، VAS، أنواع خطوط الاشتراك</td>
+        <td>BackOffice + Retail للعروض؛ SysAdmin للضبط الكامل</td>
+      </tr>
+      <tr>
+        <td>الحوكمة والنظام</td>
+        <td>مستخدمين، فروع، أدوار، إعدادات شبكة، Audit، مراقبة تكاملات، Widgets</td>
+        <td>SysAdmin فقط</td>
+      </tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 6 -->
+<section id="branches">
+  <h2>٦ — الفروع والهيكل التنظيمي</h2>
+  <p>
+    عنا شجرة وحدات تنظيمية (<strong>OrgUnit</strong>): <strong>المقر (HQ)</strong> ← <strong>مناطق (Region)</strong> ← <strong>فروع (Branch)</strong>.
+    كل فرع ممكن يكون إله مدير معيّن، والبيانات الاستراتيجية (تقارير MIS، مؤشرات) بتنفلتر حسب نطاق المستخدم.
+  </p>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>مستوى الوصول</th><th>مين؟</th><th>شو بيشوف؟</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>مدير عام (General Manager)</td>
+        <td>TelecomAdmin أو إدارة عليا على المقر</td>
+        <td>كل المناطق والفروع — فلاتر حرة</td>
+      </tr>
+      <tr>
+        <td>مدير منطقة (Regional Director)</td>
+        <td>مدير معيّن على Region</td>
+        <td>فروع منطقته فقط</td>
+      </tr>
+      <tr>
+        <td>مدير فرع (Branch Manager)</td>
+        <td>موظف مربوط بفرع Branch</td>
+        <td>فرعه فقط — بدون فلاتر تانية</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <p>كل مدير يرى أرقام منطقته أو فرعه فقط — دون تداخل مع فروع أخرى.</p>
+</section>
+
+<!-- 7 -->
+<section id="personas">
+  <h2>٧ — الأدوار والصلاحيات</h2>
+  <p>
+    عندنا <strong>٥ أدوار تشغيل قياسية</strong> مربوطة بشخصية واجهة. القائمة الجانبية = تقاطع
+    <em>الشخصية + الصلاحيات</em> — مو بس اسم الدور.
+  </p>
+
+  <div class="table-wrap"><table>
+    <thead>
+      <tr>
+        <th>الدور / الشخصية</th>
+        <th>لوحة الدخول</th>
+        <th>شو بيشوف وبيعمل؟ (بزنس)</th>
+        <th>صلاحيات أساسية</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="persona-sysadmin">
+        <td><strong>TelecomAdmin</strong><br><small>SysAdmin — مدير النظام</small></td>
+        <td>لوحة القيادة / إدارة المستخدمين</td>
+        <td>
+          كل شي: مستخدمين، فروع، أدوار، إعدادات شبكة، مراقبة تكاملات، Audit،
+          تفعيل/إيقاف عروض، استيراد ضخم، حل تذاكر، تجاوز PII — صلاحية كاملة.
+        </td>
+        <td>صلاحيات كاملة</td>
+      </tr>
+      <tr class="persona-exec">
+        <td><strong>TelecomManagement</strong><br><small>Executive — إدارة عليا</small></td>
+        <td>لوحة القيادة + MIS</td>
+        <td>
+          تقارير تشغيلية ومالية، مراقبة استيراد (قراءة)، Audit، بحث مشتركين —
+          <strong>بدون</strong> تشغيل خطوط أو تعديل مخزون حساس.
+        </td>
+        <td>تقارير، مراقبة، بحث — دون تشغيل خطوط</td>
+      </tr>
+      <tr class="persona-bo">
+        <td><strong>TelecomBackOffice</strong><br><small>BackOffice — عمليات خلفية</small></td>
+        <td><strong>قمرة العمليات الخلفية</strong></td>
+        <td>
+          طابور التذاكر الحي، حل مشاكل الشبكة والفوترة، استيراد آلاف الشرائح/العملاء/الباقات،
+          مستودع MSISDN، ترحيل باقات، إدارة VAS، تأكيد عمليات Telecom Hub.
+        </td>
+        <td>استيراد، مخزون، تذاكر، تشغيل شبكة وفوترة</td>
+      </tr>
+      <tr class="persona-retail">
+        <td><strong>TelecomShowroom</strong><br><small>Retail — معرض / فرع</small></td>
+        <td>لوحة القيادة</td>
+        <td>
+          استقبال عميل: إنشاء/تعديل مشترك، تفعيل خط، SIM Swap، تفعيل/إيقاف VAS على الخط،
+          فتح تذكرة — التأكيد النهائي للعمليات الثقيلة عند الباك أوفيس.
+        </td>
+        <td>استقبال عميل، تفعيل خط، خدمات، تذاكر</td>
+      </tr>
+      <tr class="persona-cc">
+        <td><strong>TelecomCallCenter</strong><br><small>CallCenter — مركز اتصال 111</small></td>
+        <td>لوحة القيادة</td>
+        <td>
+          بحث عن مشترك، فتح 360 للقراءة، تفعيل خدمات بسيطة على الخط،
+          <strong>فتح تذكرة فنية</strong> — ما بيحل التذكرة ولا بيشوف PII كامل.
+        </td>
+        <td>بحث، 360، خدمات بسيطة، فتح تذكرة</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+</section>
+
+<!-- 8 -->
+<section id="c360">
+  <h2>٨ — شاشة Customer 360 (مركز قيادة المشترك)</h2>
+  <p>
+    من <strong>سجل المشتركين</strong> أو صفحة <strong>Customer 360 Profile</strong> — شاشة واحدة فيها كل اللي بيحتاجه الموظف:
+  </p>
+  <ul>
+    <li>بيانات العميل: فرد/شركة، حالة، عناوين، تواصل، مجموعة وتصنيف.</li>
+    <li><strong>الخطوط والاشتراكات:</strong> MSISDN، ICCID، نوع خط، باقة/عرض، رصيد prepaid أو حد ائتمان postpaid، نقاط ولاء.</li>
+    <li><strong>آخر العمليات:</strong> تفعيل، ترحيل، SIM swap — مع رقم طلب وحالة.</li>
+    <li><strong>ذكاء تشغيلي:</strong> درجة انسحاب (Churn)، شريحة ولاء (Loyalty)، ومؤشرات بتغذّي <strong>عروض ذكية</strong> لرفع ARPU.</li>
+    <li><strong>جهات الاتصال</strong> وروابط سريعة: تفعيل خط جديد، فتح تذكرة دعم، مركز العمليات، تفعيل VAS/باقة بكبسة.</li>
+  </ul>
+  <div class="highlight">
+    <strong>القيمة:</strong> مركز الاتصال يفتح رقم واحد ويرى الصورة كاملة — والنظام يقترح العرض التالي (باقة، خدمة، أو إضافة)
+    عشان يرفع ARPU — والباك أوفيس بنفس الشاشة بيوصّلها لـ CBS و HLR فوراً.
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="catalog">
+  <h2>٩ — الباقات، العروض، والخدمات المضافة (VAS)</h2>
+
+  <h3>كتالوج العروض (Product Offering)</h3>
+  <p>
+    كل <strong>باقة/عرض تجاري</strong> مربوط بمنتج تقني، مكونات (Components)، وخطة سعر (Price Plan).
+    موظف الباك أوفيس يقدر <strong>يفعّل أو يوقف عرض</strong> من قمرة العمليات — وبينعكس على اختيار الباقات بالمعرض والعمليات.
+  </p>
+
+  <h3>الخدمات المضافة VAS — تظهر بالنظام مباشرة</h3>
+  <p>
+    بتضيف خدمة في <strong>كتالوج VAS</strong> — وبصير الموظف يشغّلها أو يطفّيها على خط العميل من 360 أو من العمليات.
+    التشغيل الفعلي على الشبكة يمر عبر قالب HLR (نفس فلسفة تكامل هواوي).
+  </p>
+
+  <h3>تفعيل باقة أو خدمة: ماذا يحدث؟</h3>
+  <p>
+    عندما يختار الموظف باقة أو خدمة (مثل «نغمتي» أو باقة إنترنت) من
+    <strong>مركز عمليات الشبكة</strong> أو <strong>ملف المشترك 360</strong> ويؤكد الطلب:
+  </p>
+  <ol class="vas-steps">
+    <li><strong>التحقق</strong> من الصلاحية والرصيد ونوع الخط.</li>
+    <li><strong>الفوترة (CBS)</strong> — خصم الرسوم أو تسجيل الاشتراك، وتحديث الرصيد على الشاشة.</li>
+    <li><strong>الشبكة (HLR)</strong> — تفعيل الخدمة فعلياً على خط المشترك.</li>
+    <li><strong>السجل</strong> — تحديث حالة الخدمة وسجل رقابي كامل.</li>
+    <li><strong>الواجهة</strong> — تظهر الخدمة نشطة على 360 دون إعادة تحميل الصفحة.</li>
+  </ol>
+
+  <div class="highlight">
+    <strong>القيمة:</strong> الموظف لا يسجّل طلباً فقط — النظام يخصم، يفعّل على الشبكة،
+    وتظهر النتيجة للجميع فوراً على ملف المشترك.
+  </div>
+
+  <h3>أين يُنفَّذ ذلك؟</h3>
+  <ul>
+    <li><strong>مركز عمليات الشبكة</strong> — تفعيل خط، إضافة باقة، ترحيل جماعي.</li>
+    <li><strong>ملف المشترك 360</strong> — تفعيل خدمة أو ترحيل باقة من مكان واحد.</li>
+    <li><strong>سجل المشتركين</strong> — نفس القدرات ضمن ملف العميل.</li>
+  </ul>
+
+  <h3>أنواع خطوط الاشتراك</h3>
+  <p>
+    Prepaid / Postpaid / Corporate… مع توافق المنتج مع نوع الاشتراك — عشان ما يختار موظف باقة غلط لنوع خط غلط.
+  </p>
+
+  <h3>ترحيل الباقات (Package Migration)</h3>
+  <p>
+    يدوي من Telecom Hub أو <strong>جماعي</strong> عبر ملف CSV (MSISDN، كود العرض الحالي، كود العرض الجديد) ضمن محرك الاستيراد الضخم.
+  </p>
+</section>
+
+<!-- 10 -->
+<section id="warehouse">
+  <h2>١٠ — مستودع الأرقام والشرائح + الاستيراد الضخم (Bulk)</h2>
+
+  <h3>مستودع MSISDN / SIM</h3>
+  <ul>
+    <li>تجمع أرقام، حالات الحجز والتخصيص، سجل تغييرات MSISDN.</li>
+    <li>استيراد دفعات شرائح (ICCID، IMSI، PIN/PUK) مع تحقق صيغة سورية للأرقام.</li>
+  </ul>
+
+  <h3>محرك Bulk Import — ثلاث أنواع ملفات جاهزة</h3>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>نوع الملف</th><th>الأعمدة</th><th>الاستخدام</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>MsisdnAsset</td>
+        <td>MSISDN, IMSI, ICCID, Pin1, Puk1</td>
+        <td>تعبئة المخزن بآلاف الشرائح دفعة واحدة</td>
+      </tr>
+      <tr>
+        <td>CustomerProfiles</td>
+        <td>CustomerCode, FullNameAr, NationalId, …</td>
+        <td>ترحيل قاعدة عملاء من نظام قديم</td>
+      </tr>
+      <tr>
+        <td>PackageMigration</td>
+        <td>MSISDN, CurrentOfferCode, NewOfferCode</td>
+        <td>ترحيل باقات جماعي بعد حملة أو تغيير تعرفة</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <p>
+    الشاشة: <strong>مراقبة الاستيراد الضخم</strong> — حالة كل Job (Pending / Processing / نجاح جزئي)،
+    عداد أخطاء الصفوف، وتصدير الأخطاء. القائمة الجانبية بتعرض Badge لما في استيراد شغّال.
+  </p>
+  <p>يدعم ملفات بآلاف الصفوف مع تقرير أخطاء واضح لكل سطر فاشل.</p>
+</section>
+
+<!-- 11 -->
+<section id="integration">
+  <h2>١١ — التكامل مع هواوي والشبكة (HLR / CBS)</h2>
+  <p>المنصة مش معزولة — كل عملية تشغيل مهمة بتطلع لطبقة تكامل:</p>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>النظام</th><th>الدور</th><th>ميزات التشغيل</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Huawei CBS</strong></td>
+        <td>فوترة، شحن، اشتراكات مدفوعة</td>
+        <td>Polly إعادة محاولة، سجل BillingIntegrationLog، تفعيل/إيقاف من الإعدادات</td>
+      </tr>
+      <tr>
+        <td><strong>HLR / Network</strong></td>
+        <td>تفعيل خط، SIM، بروفايل شبكة</td>
+        <td>Circuit Breaker — إذا الشبكة وقعت بتحفظ الطلب للمزامنة لاحقاً (Pending External Sync)</td>
+      </tr>
+      <tr>
+        <td><strong>VAS على HLR</strong></td>
+        <td>خدمات مضافة</td>
+        <td>قوالب أوامر — تفعيل/إلغاء خدمة على MSISDN</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <p>
+    <strong>مركز عمليات الشبكة (Telecom Hub):</strong> طلبات تشغيل من المعرض → تأكيد الباك أوفيس → إطلاق أحداث HLR ثم CBS تلقائياً.
+    <strong>شاشة التكامل:</strong> سجل كل محاولة (نجاح/فشل/تأجيل) للمراجعة والتدقيق.
+  </p>
+</section>
+
+<!-- 13 -->
+<section id="backoffice">
+  <h2>١٣ — قمرة الباك أوفيس (Back Office Command Center)</h2>
+  <p>
+    هاي <strong>لوحة الدخول الافتراضية</strong> لموظف العمليات الخلفية — مش مجرد تقرير،
+    <strong>مكان الشغل الحي</strong> لحل مشاكل المشتركين.
+  </p>
+
+  <h3>شو بيشوف على اللوحة؟</h3>
+  <ul>
+    <li><strong>KPIs حية:</strong> تذاكر مفتوحة، قيد المعالجة، أولوية حرجة، استيراد نشط.</li>
+    <li><strong>طابور عمل حي:</strong> بس التذاكر المفتوحة وقيد المعالجة — لما تحلها بتختفي من الطابور وتبقى بالأرشيف.</li>
+    <li><strong>درج تفاصيل (Drawer):</strong> مشترك، MSISDN، نوع المشكلة، نص الشكوى، تغيير حالة، ملاحظات حل.</li>
+    <li><strong>شريط إجراءات تقنية:</strong> استعلام حالة شبكة حية، إعادة مزامنة HLR، إعادة ضغط شحنة CBS، تصعيد Tier-3.</li>
+    <li><strong>كتالوج العروض:</strong> تفعيل/إيقاف عروض من نفس الشاشة.</li>
+    <li><strong>روابط سريعة:</strong> أرشيف التذاكر، الاستيراد الضخم، سجل عملياتي (Audit شخصي).</li>
+  </ul>
+
+  <h3>كيف بيحل مشاكل اليوزرات؟</h3>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>نوع المشكلة</th><th>إجراء الباك أوفيس</th><th>النتيجة للمشترك</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>شبكة / تغطية / 4G</td>
+        <td>استعلام HLR حي + HLR Resync من التذكرة</td>
+        <td>تسوية بروفايل الشبكة</td>
+      </tr>
+      <tr>
+        <td>شحن / رصيد / فوترة</td>
+        <td>Force CBS Sync</td>
+        <td>تسوية رصيد أو شحنة معلّقة</td>
+      </tr>
+      <tr>
+        <td>شريحة محظورة / PIN</td>
+        <td>تذكرة + عملية SIM من Hub</td>
+        <td>استعادة الخدمة</td>
+      </tr>
+      <tr>
+        <td>معقّدة / شبكة أساسية</td>
+        <td>تصعيد Tier-3 (Escalate)</td>
+        <td>فريق هندسي متخصص</td>
+      </tr>
+      <tr>
+        <td>جماعية (آلاف خطوط)</td>
+        <td>Bulk Package Migration أو استيراد</td>
+        <td>تغيير باقة أو مخزون دفعة واحدة</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="highlight">
+    كل إجراء حساس <strong>مسجّل Audit</strong> — الإدارة بتقدر تراجع مين حل إيش وبأي وقت.
+  </div>
+</section>
+
+<!-- 14 -->
+<section id="ticket-flow">
+  <h2>مسار الشكاوى والدعم الفني</h2>
+  <p>مسار الشكوى من الاتصال إلى الحل:</p>
+
+  <div class="flow">┌─────────────────────────────────────────────────────────────────┐
+│ ١) العميل يتصل — كول سنتر (111) أو تطبيق Voice AI (محاكي)      │
+└────────────────────────────┬────────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ٢) النظام يحدّد MSISDN ويلاقي الاشتراك النشط                    │
+│    محاكي AI: يحلل نص الصوت (شريحة / شحن / نت / تفعيل…)         │
+│    ويصنّف: نوع المشكلة + أولوية (عادي / عالي / حرج)             │
+└────────────────────────────┬────────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ٣) إنشاء تذكرة فنية تلقائياً                        │
+│    قناة: مركز الاتصال أو المساعد الصوتي             │
+│    حالة: Open — رقم تذكرة TT-xxxxx                               │
+└────────────────────────────┬────────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ٤) تظهر فوراً بقمرة الباك أوفيس + Badge بالقائمة الجانبية      │
+└────────────────────────────┬────────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ٥) موظف Back Office: يفتح Drawer → قيد المعالجة → إجراء تقني    │
+│    (HLR / CBS / تصعيد) → تم الحل + ملاحظات                      │
+└────────────────────────────┬────────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ٦) التذكرة تختفي من الطابور الحي — تبقى بالأرشيف للتدقيق       │
+│    العميل يرجع يتصل: الكول سنتر يشوف 360 محدّث                  │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>أدوار على مسار التذكرة</h3>
+  <ul>
+    <li><strong>Call Center:</strong> يفتح تذكرة، يشوف 360 — ما يحل ولا يصعّد للشبكة.</li>
+    <li><strong>Back Office:</strong> يحل، يزامن HLR/CBS، يصعّد إذا لزم.</li>
+    <li><strong>SysAdmin:</strong> كل الإجراءات + مراقبة التكامل.</li>
+  </ul>
+</section>
+
+<section id="closing">
+  <h2>الخلاصة</h2>
+  <p class="lead">
+    Macquires منصة تشغيل مشتركين (BSS/CRM) تجمع بين ملف المشترك الموحّد، التشغيل على الشبكة والفوترة،
+    الحوكمة بالفروع والصلاحيات، الاستيراد الضخم، والذكاء الاصطناعي لرفع الإيرادات —
+    مع قابلية تخصيص عالية تنمو مع أولوياتكم.
+  </p>
+  <div class="highlight">
+    جلسة اليوم أظهرت <strong>قلب التشغيل</strong> — نكمّل معكم خريطة التفعيل للمراحل التالية
+    على مزاج سوقكم وأسلوب عملكم.
+  </div>
+</section>
+
+</div>
+
+<footer>
+  Macquires CRM — منصة تشغيل مشتركين (BSS)
+</footer>
+
+</div>
+<a href="#top" class="back-top" aria-label="العودة للأعلى" title="العودة للأعلى">↑</a>
+
+</body>
+</html>

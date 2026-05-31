@@ -1,8 +1,15 @@
-﻿using Application.Common.Repositories;
+using Application.Common.Audit;
+using Application.Common.CQS.Queries;
+using Application.Common.Exceptions;
+using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
+using Domain.Enums;
+using Domain.ValueObjects;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.CustomerManager.Commands;
 
@@ -33,6 +40,14 @@ public class CreateCustomerRequest : IRequest<CreateCustomerResult>
     public string? CustomerGroupId { get; set; }
     public string? CustomerCategoryId { get; set; }
     public string? CreatedById { get; init; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("subscriberType")]
+    public CustomerKind? CustomerKind { get; set; }
+    public string? NationalId { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? CommercialRegistration { get; set; }
+    public string? TaxNumber { get; set; }
+    public string? AuthorizedSignatory { get; set; }
 }
 
 public class CreateCustomerValidator : AbstractValidator<CreateCustomerRequest>
@@ -48,58 +63,143 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerRequest>
         RuleFor(x => x.EmailAddress).NotEmpty();
         RuleFor(x => x.CustomerGroupId).NotEmpty();
         RuleFor(x => x.CustomerCategoryId).NotEmpty();
+
+        When(x => x.CustomerKind != CustomerKind.Corporate, () =>
+        {
+            RuleFor(x => x.NationalId)
+                .NotEmpty().WithMessage("الرقم الوطني مطلوب للأفراد.")
+                .Length(10).WithMessage("الرقم الوطني يجب أن يتكون من 10 خانات.");
+        });
+
+        When(x => x.CustomerKind == CustomerKind.Corporate, () =>
+        {
+            RuleFor(x => x.CommercialRegistration)
+                .NotEmpty().WithMessage("رقم السجل التجاري مطلوب للشركات.")
+                .Matches(@"^[A-Za-z0-9\-\s]{4,20}$").WithMessage("صيغة السجل التجاري غير صالحة.");
+        });
     }
 }
 
 public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, CreateCustomerResult>
 {
     private readonly ICommandRepository<Customer> _repository;
+    private readonly ICommandRepository<SubscriberProfile> _profileRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly NumberSequenceService _numberSequenceService;
+    private readonly IQueryContext _query;
+    private readonly IFieldEncryptionService _encryption;
+    private readonly IUserAuditService _audit;
 
     public CreateCustomerHandler(
         ICommandRepository<Customer> repository,
+        ICommandRepository<SubscriberProfile> profileRepository,
         IUnitOfWork unitOfWork,
-        NumberSequenceService numberSequenceService
-        )
+        NumberSequenceService numberSequenceService,
+        IQueryContext query,
+        IFieldEncryptionService encryption,
+        IUserAuditService audit)
     {
         _repository = repository;
+        _profileRepository = profileRepository;
         _unitOfWork = unitOfWork;
         _numberSequenceService = numberSequenceService;
+        _query = query;
+        _encryption = encryption;
+        _audit = audit;
     }
 
     public async Task<CreateCustomerResult> Handle(CreateCustomerRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = new Customer();
-        entity.CreatedById = request.CreatedById;
+        var address = new PostalAddress(request.Street, request.City, request.State, request.ZipCode, request.Country);
+        var accountNumber = _numberSequenceService.GenerateNumber(nameof(Customer), "", "CST");
+        var kind = request.CustomerKind ?? CustomerKind.Individual;
 
-        entity.Name = request.Name;
-        entity.Number = _numberSequenceService.GenerateNumber(nameof(Customer), "", "CST");
-        entity.Description = request.Description;
-        entity.Street = request.Street;
-        entity.City = request.City;
-        entity.State = request.State;
-        entity.ZipCode = request.ZipCode;
-        entity.Country = request.Country;
-        entity.PhoneNumber = request.PhoneNumber;
-        entity.FaxNumber = request.FaxNumber;
-        entity.EmailAddress = request.EmailAddress;
-        entity.Website = request.Website;
-        entity.WhatsApp = request.WhatsApp;
-        entity.LinkedIn = request.LinkedIn;
-        entity.Facebook = request.Facebook;
-        entity.Instagram = request.Instagram;
-        entity.TwitterX = request.TwitterX;
-        entity.TikTok = request.TikTok;
-        entity.CustomerGroupId = request.CustomerGroupId;
-        entity.CustomerCategoryId = request.CustomerCategoryId;
-
-        await _repository.CreateAsync(entity, cancellationToken);
-        await _unitOfWork.SaveAsync(cancellationToken);
-
-        return new CreateCustomerResult
+        if (kind == CustomerKind.Corporate)
         {
-            Data = entity
+            var reg = (request.CommercialRegistration ?? "").Trim();
+            var dup = await _query.Customer
+                .OfType<CorporateCustomer>()
+                .AnyAsync(c => c.CommercialRegistryNumber == reg, cancellationToken);
+            if (dup)
+            {
+                throw new BusinessRuleViolationException("رقم السجل التجاري مسجّل مسبقاً.");
+            }
+
+            var entity = CorporateCustomer.Create(
+                request.Name!,
+                accountNumber,
+                reg,
+                address,
+                request.EmailAddress,
+                request.PhoneNumber,
+                request.CustomerGroupId,
+                request.CustomerCategoryId,
+                request.TaxNumber,
+                request.AuthorizedSignatory);
+            entity.CreatedById = request.CreatedById;
+            entity.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
+            await _repository.CreateAsync(entity, cancellationToken);
+            await _unitOfWork.SaveAsync(cancellationToken);
+            await CreateDefaultProfileAsync(entity.Id, request, cancellationToken);
+            await LogCustomerCreatedAsync(entity, request, cancellationToken);
+            return new CreateCustomerResult { Data = entity };
+        }
+
+        var nationalId = (request.NationalId ?? "").Trim();
+        var nationalIdHash = _encryption.ComputeSearchHash(nationalId);
+        var dupNat = await _query.Customer
+            .OfType<IndividualCustomer>()
+            .AnyAsync(c => c.NationalIdSearchHash == nationalIdHash, cancellationToken);
+        if (dupNat)
+        {
+            throw new BusinessRuleViolationException("الرقم الوطني مسجّل مسبقاً.");
+        }
+
+        var individual = IndividualCustomer.Create(
+            request.Name!,
+            accountNumber,
+            nationalId,
+            address,
+            request.EmailAddress,
+            request.PhoneNumber,
+            request.CustomerGroupId,
+            request.CustomerCategoryId,
+            request.DateOfBirth.HasValue ? DateOnly.FromDateTime(request.DateOfBirth.Value) : null);
+        individual.CreatedById = request.CreatedById;
+        individual.SetNationalIdSearchHash(nationalIdHash);
+        individual.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
+        await _repository.CreateAsync(individual, cancellationToken);
+        await _unitOfWork.SaveAsync(cancellationToken);
+        await CreateDefaultProfileAsync(individual.Id, request, cancellationToken);
+        await LogCustomerCreatedAsync(individual, request, cancellationToken);
+        return new CreateCustomerResult { Data = individual };
+    }
+
+    private Task LogCustomerCreatedAsync(Customer entity, CreateCustomerRequest request, CancellationToken ct) =>
+        _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = request.CreatedById ?? "system",
+                ActionType = UserAuditActionTypes.CustomerCreated,
+                EntityType = nameof(Customer),
+                EntityId = entity.Id,
+                SummaryAr = $"إنشاء مشترك: {entity.DisplayName}",
+                Payload = new { entity.AccountNumber, request.PhoneNumber },
+            },
+            ct);
+
+    private async Task CreateDefaultProfileAsync(string customerId, CreateCustomerRequest request, CancellationToken ct)
+    {
+        var profile = new SubscriberProfile
+        {
+            CustomerId = customerId,
+            ServiceLineType = ServiceLineType.Mobile,
+            OperationalStatus = SubscriberOperationalStatus.Pending,
+            LoyaltyPoints = 0,
+            LoyaltyTier = "Bronze",
+            CreatedById = request.CreatedById
         };
+        await _profileRepository.CreateAsync(profile, ct);
+        await _unitOfWork.SaveAsync(ct);
     }
 }

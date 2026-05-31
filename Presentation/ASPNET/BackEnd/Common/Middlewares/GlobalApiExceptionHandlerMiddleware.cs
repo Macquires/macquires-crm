@@ -17,27 +17,27 @@ public class GlobalApiExceptionHandlerMiddleware
         {
             await _next(httpContext);
 
-            switch (httpContext.Response.StatusCode)
+            // Middleware may have already written the body (e.g. StrictPersonaPath 403 HTML/JSON).
+            if (!httpContext.Response.HasStarted)
             {
-                case StatusCodes.Status401Unauthorized:
-                    await customExceptionHandler.TryHandleAsync(
-                        httpContext,
-                        new UnauthorizedAccessException("Unauthorized - Token missing or invalid"),
-                        CancellationToken.None
-                    );
-                    break;
+                switch (httpContext.Response.StatusCode)
+                {
+                    case StatusCodes.Status401Unauthorized:
+                        await customExceptionHandler.TryHandleAsync(
+                            httpContext,
+                            new UnauthorizedAccessException("Unauthorized - Token missing or invalid"),
+                            CancellationToken.None
+                        );
+                        break;
 
-                case StatusCodes.Status403Forbidden:
-                    await customExceptionHandler.TryHandleAsync(
-                        httpContext,
-                        new Exception("Forbidden - Access denied"),
-                        CancellationToken.None
-                    );
-                    break;
-
-                default:
-                    // Let other status codes pass through
-                    break;
+                    case StatusCodes.Status403Forbidden:
+                        await customExceptionHandler.TryHandleAsync(
+                            httpContext,
+                            new Exception("Forbidden - Access denied"),
+                            CancellationToken.None
+                        );
+                        break;
+                }
             }
         }
         catch (Exception ex)

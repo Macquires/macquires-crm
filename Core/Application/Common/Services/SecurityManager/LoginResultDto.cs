@@ -12,4 +12,12 @@ public record LoginResultDto
     public string? Avatar { get; init; }
     public List<MenuNavigationTreeNodeDto>? MenuNavigation { get; init; }
     public List<string>? Roles { get; init; }
+    /// <summary>Resolved operator persona for sidebar/dashboard (e.g. CallCenter, Executive).</summary>
+    public string? PrimaryMenuPersona { get; init; }
+
+    /// <summary>Server-resolved landing route after successful login.</summary>
+    public string? LandingPath { get; init; }
+
+    /// <summary>Effective permission keys for client-side nav and landing fallback.</summary>
+    public List<string>? Permissions { get; init; }
 }

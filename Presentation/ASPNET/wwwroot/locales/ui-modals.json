@@ -1,0 +1,2064 @@
+{
+  "purchaseRequisition": {
+    "add": {
+      "ar": "إضافة طلب شراء",
+      "en": "Add Purchase Requisition"
+    },
+    "edit": {
+      "ar": "تعديل طلب شراء",
+      "en": "Edit Purchase Requisition"
+    },
+    "delete": {
+      "ar": "حذف طلب شراء؟",
+      "en": "Delete Purchase Requisition?"
+    }
+  },
+  "purchaseOrder": {
+    "add": {
+      "ar": "إضافة أمر شراء",
+      "en": "Add Purchase Order"
+    },
+    "edit": {
+      "ar": "تعديل أمر شراء",
+      "en": "Edit Purchase Order"
+    },
+    "delete": {
+      "ar": "حذف أمر شراء؟",
+      "en": "Delete Purchase Order?"
+    }
+  },
+  "customer": {
+    "add": {
+      "ar": "إضافة مشترك",
+      "en": "Add Customer"
+    },
+    "edit": {
+      "ar": "تعديل مشترك",
+      "en": "Edit Customer"
+    },
+    "delete": {
+      "ar": "حذف مشترك؟",
+      "en": "Delete Customer?"
+    }
+  },
+  "customerContact": {
+    "add": {
+      "ar": "إضافة جهة اتصال مشترك",
+      "en": "Add Customer Contact"
+    },
+    "edit": {
+      "ar": "تعديل جهة اتصال مشترك",
+      "en": "Edit Customer Contact"
+    },
+    "delete": {
+      "ar": "حذف جهة اتصال المشترك؟",
+      "en": "Delete Customer Contact?"
+    }
+  },
+  "debitNote": {
+    "add": {
+      "ar": "إضافة إشعار مدين",
+      "en": "Add Debit Note"
+    },
+    "edit": {
+      "ar": "تعديل إشعار مدين",
+      "en": "Edit Debit Note"
+    },
+    "delete": {
+      "ar": "حذف إشعار مدين؟",
+      "en": "Delete Debit Note?"
+    }
+  },
+  "creditNote": {
+    "add": {
+      "ar": "إضافة إشعار دائن",
+      "en": "Add Credit Note"
+    },
+    "edit": {
+      "ar": "تعديل إشعار دائن",
+      "en": "Edit Credit Note"
+    },
+    "delete": {
+      "ar": "حذف إشعار دائن؟",
+      "en": "Delete Credit Note?"
+    }
+  },
+  "product": {
+    "add": {
+      "ar": "إضافة منتج",
+      "en": "Add Product"
+    },
+    "edit": {
+      "ar": "تعديل منتج",
+      "en": "Edit Product"
+    },
+    "delete": {
+      "ar": "حذف منتج؟",
+      "en": "Delete Product?"
+    }
+  },
+  "budget": {
+    "add": {
+      "ar": "إضافة ميزانية",
+      "en": "Add Budget"
+    },
+    "edit": {
+      "ar": "تعديل ميزانية",
+      "en": "Edit Budget"
+    },
+    "delete": {
+      "ar": "حذف ميزانية؟",
+      "en": "Delete Budget?"
+    }
+  },
+  "expense": {
+    "add": {
+      "ar": "إضافة مصروف",
+      "en": "Add Expense"
+    },
+    "edit": {
+      "ar": "تعديل مصروف",
+      "en": "Edit Expense"
+    },
+    "delete": {
+      "ar": "حذف مصروف؟",
+      "en": "Delete Expense?"
+    }
+  },
+  "leadContact": {
+    "add": {
+      "ar": "إضافة جهة اتصال عميل محتمل",
+      "en": "Add Lead Contact"
+    },
+    "edit": {
+      "ar": "تعديل جهة اتصال عميل محتمل",
+      "en": "Edit Lead Contact"
+    },
+    "delete": {
+      "ar": "حذف جهة اتصال عميل محتمل؟",
+      "en": "Delete Lead Contact?"
+    }
+  },
+  "salesRepresentative": {
+    "add": {
+      "ar": "إضافة مندوب مبيعات",
+      "en": "Add Sales Representative"
+    },
+    "edit": {
+      "ar": "تعديل مندوب مبيعات",
+      "en": "Edit Sales Representative"
+    },
+    "delete": {
+      "ar": "حذف مندوب مبيعات؟",
+      "en": "Delete Sales Representative?"
+    }
+  },
+  "stockCount": {
+    "add": {
+      "ar": "إضافة جرد مخزون",
+      "en": "Add Stock Count"
+    },
+    "edit": {
+      "ar": "تعديل جرد مخزون",
+      "en": "Edit Stock Count"
+    },
+    "delete": {
+      "ar": "حذف جرد مخزون؟",
+      "en": "Delete Stock Count?"
+    }
+  },
+  "todo": {
+    "add": {
+      "ar": "إضافة مهمة",
+      "en": "Add Todo"
+    },
+    "edit": {
+      "ar": "تعديل مهمة",
+      "en": "Edit Todo"
+    },
+    "delete": {
+      "ar": "حذف مهمة؟",
+      "en": "Delete Todo?"
+    }
+  },
+  "deliveryOrder": {
+    "add": {
+      "ar": "إضافة أمر تسليم",
+      "en": "Add Delivery Order"
+    },
+    "edit": {
+      "ar": "تعديل أمر تسليم",
+      "en": "Edit Delivery Order"
+    },
+    "delete": {
+      "ar": "حذف أمر تسليم؟",
+      "en": "Delete Delivery Order?"
+    }
+  },
+  "scrapping": {
+    "add": {
+      "ar": "إضافة إتلاف مخزون",
+      "en": "Add Scrapping"
+    },
+    "edit": {
+      "ar": "تعديل إتلاف مخزون",
+      "en": "Edit Scrapping"
+    },
+    "delete": {
+      "ar": "حذف إتلاف مخزون؟",
+      "en": "Delete Scrapping?"
+    }
+  },
+  "purchaseReturn": {
+    "add": {
+      "ar": "إضافة مرتجع مشتريات",
+      "en": "Add Purchase Return"
+    },
+    "edit": {
+      "ar": "تعديل مرتجع مشتريات",
+      "en": "Edit Purchase Return"
+    },
+    "delete": {
+      "ar": "حذف مرتجع مشتريات؟",
+      "en": "Delete Purchase Return?"
+    }
+  },
+  "transferOut": {
+    "add": {
+      "ar": "إضافة صرف تحويل",
+      "en": "Add Transfer Out"
+    },
+    "edit": {
+      "ar": "تعديل صرف تحويل",
+      "en": "Edit Transfer Out"
+    },
+    "delete": {
+      "ar": "حذف صرف تحويل؟",
+      "en": "Delete Transfer Out?"
+    }
+  },
+  "transferIn": {
+    "add": {
+      "ar": "إضافة استلام تحويل",
+      "en": "Add Transfer In"
+    },
+    "edit": {
+      "ar": "تعديل استلام تحويل",
+      "en": "Edit Transfer In"
+    },
+    "delete": {
+      "ar": "حذف استلام تحويل؟",
+      "en": "Delete Transfer In?"
+    }
+  },
+  "user": {
+    "add": {
+      "ar": "إضافة مستخدم",
+      "en": "Add User"
+    },
+    "edit": {
+      "ar": "تعديل مستخدم",
+      "en": "Edit User"
+    },
+    "delete": {
+      "ar": "حذف مستخدم؟",
+      "en": "Delete User?"
+    }
+  },
+  "vendorContact": {
+    "add": {
+      "ar": "إضافة جهة اتصال مورد",
+      "en": "Add Vendor Contact"
+    },
+    "edit": {
+      "ar": "تعديل جهة اتصال مورد",
+      "en": "Edit Vendor Contact"
+    },
+    "delete": {
+      "ar": "حذف جهة اتصال مورد؟",
+      "en": "Delete Vendor Contact?"
+    }
+  },
+  "warehouse": {
+    "add": {
+      "ar": "إضافة مستودع",
+      "en": "Add Warehouse"
+    },
+    "edit": {
+      "ar": "تعديل مستودع",
+      "en": "Edit Warehouse"
+    },
+    "delete": {
+      "ar": "حذف مستودع؟",
+      "en": "Delete Warehouse?"
+    }
+  },
+  "lead": {
+    "add": {
+      "ar": "إضافة عميل محتمل",
+      "en": "Add Lead"
+    },
+    "edit": {
+      "ar": "تعديل عميل محتمل",
+      "en": "Edit Lead"
+    },
+    "delete": {
+      "ar": "حذف عميل محتمل؟",
+      "en": "Delete Lead?"
+    }
+  },
+  "customerCategory": {
+    "add": {
+      "ar": "إضافة تصنيف مشترك",
+      "en": "Add Customer Category"
+    },
+    "edit": {
+      "ar": "تعديل تصنيف مشترك",
+      "en": "Edit Customer Category"
+    },
+    "delete": {
+      "ar": "حذف تصنيف مشترك؟",
+      "en": "Delete Customer Category?"
+    }
+  },
+  "customerGroup": {
+    "add": {
+      "ar": "إضافة مجموعة مشتركين",
+      "en": "Add Customer Group"
+    },
+    "edit": {
+      "ar": "تعديل مجموعة مشتركين",
+      "en": "Edit Customer Group"
+    },
+    "delete": {
+      "ar": "حذف مجموعة مشتركين؟",
+      "en": "Delete Customer Group?"
+    }
+  },
+  "positiveAdjustment": {
+    "add": {
+      "ar": "إضافة تسوية موجبة",
+      "en": "Add Positive Adjustment"
+    },
+    "edit": {
+      "ar": "تعديل تسوية موجبة",
+      "en": "Edit Positive Adjustment"
+    },
+    "delete": {
+      "ar": "حذف تسوية موجبة؟",
+      "en": "Delete Positive Adjustment?"
+    }
+  },
+  "vendorGroup": {
+    "add": {
+      "ar": "إضافة مجموعة موردين",
+      "en": "Add Vendor Group"
+    },
+    "edit": {
+      "ar": "تعديل مجموعة موردين",
+      "en": "Edit Vendor Group"
+    },
+    "delete": {
+      "ar": "حذف مجموعة موردين؟",
+      "en": "Delete Vendor Group?"
+    }
+  },
+  "salesReturn": {
+    "add": {
+      "ar": "إضافة مرتجع مبيعات",
+      "en": "Add Sales Return"
+    },
+    "edit": {
+      "ar": "تعديل مرتجع مبيعات",
+      "en": "Edit Sales Return"
+    },
+    "delete": {
+      "ar": "حذف مرتجع مبيعات؟",
+      "en": "Delete Sales Return?"
+    }
+  },
+  "programManager": {
+    "add": {
+      "ar": "إضافة مدير برنامج",
+      "en": "Add Program Manager"
+    },
+    "edit": {
+      "ar": "تعديل مدير برنامج",
+      "en": "Edit Program Manager"
+    },
+    "delete": {
+      "ar": "حذف مدير برنامج؟",
+      "en": "Delete Program Manager?"
+    }
+  },
+  "tax": {
+    "add": {
+      "ar": "إضافة ضريبة",
+      "en": "Add Tax"
+    },
+    "edit": {
+      "ar": "تعديل ضريبة",
+      "en": "Edit Tax"
+    },
+    "delete": {
+      "ar": "حذف ضريبة؟",
+      "en": "Delete Tax?"
+    }
+  },
+  "paymentReceive": {
+    "add": {
+      "ar": "إضافة قبض دفعة",
+      "en": "Add Payment Receive"
+    },
+    "edit": {
+      "ar": "تعديل قبض دفعة",
+      "en": "Edit Payment Receive"
+    },
+    "delete": {
+      "ar": "حذف قبض دفعة؟",
+      "en": "Delete Payment Receive?"
+    }
+  },
+  "productGroup": {
+    "add": {
+      "ar": "إضافة مجموعة منتجات",
+      "en": "Add Product Group"
+    },
+    "edit": {
+      "ar": "تعديل مجموعة منتجات",
+      "en": "Edit Product Group"
+    },
+    "delete": {
+      "ar": "حذف مجموعة منتجات؟",
+      "en": "Delete Product Group?"
+    }
+  },
+  "salesQuotation": {
+    "add": {
+      "ar": "إضافة عرض سعر مبيعات",
+      "en": "Add Sales Quotation"
+    },
+    "edit": {
+      "ar": "تعديل عرض سعر مبيعات",
+      "en": "Edit Sales Quotation"
+    },
+    "delete": {
+      "ar": "حذف عرض سعر مبيعات؟",
+      "en": "Delete Sales Quotation?"
+    }
+  },
+  "vendorCategory": {
+    "add": {
+      "ar": "إضافة تصنيف مورد",
+      "en": "Add Vendor Category"
+    },
+    "edit": {
+      "ar": "تعديل تصنيف مورد",
+      "en": "Edit Vendor Category"
+    },
+    "delete": {
+      "ar": "حذف تصنيف مورد؟",
+      "en": "Delete Vendor Category?"
+    }
+  },
+  "campaign": {
+    "add": {
+      "ar": "إضافة حملة",
+      "en": "Add Campaign"
+    },
+    "edit": {
+      "ar": "تعديل حملة",
+      "en": "Edit Campaign"
+    },
+    "delete": {
+      "ar": "حذف حملة؟",
+      "en": "Delete Campaign?"
+    }
+  },
+  "bookingGroup": {
+    "add": {
+      "ar": "إضافة مجموعة حجوزات",
+      "en": "Add Booking Group"
+    },
+    "edit": {
+      "ar": "تعديل مجموعة حجوزات",
+      "en": "Edit Booking Group"
+    },
+    "delete": {
+      "ar": "حذف مجموعة حجوزات؟",
+      "en": "Delete Booking Group?"
+    }
+  },
+  "goodsReceive": {
+    "add": {
+      "ar": "إضافة استلام بضاعة",
+      "en": "Add Goods Receive"
+    },
+    "edit": {
+      "ar": "تعديل استلام بضاعة",
+      "en": "Edit Goods Receive"
+    },
+    "delete": {
+      "ar": "حذف استلام بضاعة؟",
+      "en": "Delete Goods Receive?"
+    }
+  },
+  "vendor": {
+    "add": {
+      "ar": "إضافة مورد",
+      "en": "Add Vendor"
+    },
+    "edit": {
+      "ar": "تعديل مورد",
+      "en": "Edit Vendor"
+    },
+    "delete": {
+      "ar": "حذف مورد؟",
+      "en": "Delete Vendor?"
+    }
+  },
+  "paymentMethod": {
+    "add": {
+      "ar": "إضافة طريقة دفع",
+      "en": "Add Payment Method"
+    },
+    "edit": {
+      "ar": "تعديل طريقة دفع",
+      "en": "Edit Payment Method"
+    },
+    "delete": {
+      "ar": "حذف طريقة دفع؟",
+      "en": "Delete Payment Method?"
+    }
+  },
+  "programResource": {
+    "add": {
+      "ar": "إضافة مورد برنامج",
+      "en": "Add ProgramResource"
+    },
+    "edit": {
+      "ar": "تعديل مورد برنامج",
+      "en": "Edit ProgramResource"
+    },
+    "delete": {
+      "ar": "حذف مورد برنامج؟",
+      "en": "Delete ProgramResource?"
+    }
+  },
+  "leadActivity": {
+    "add": {
+      "ar": "إضافة نشاط عميل محتمل",
+      "en": "Add Lead Activity"
+    },
+    "edit": {
+      "ar": "تعديل نشاط عميل محتمل",
+      "en": "Edit Lead Activity"
+    },
+    "delete": {
+      "ar": "حذف نشاط عميل محتمل؟",
+      "en": "Delete Lead Activity?"
+    }
+  },
+  "negativeAdjustment": {
+    "add": {
+      "ar": "إضافة تسوية سالبة",
+      "en": "Add Negative Adjustment"
+    },
+    "edit": {
+      "ar": "تعديل تسوية سالبة",
+      "en": "Edit Negative Adjustment"
+    },
+    "delete": {
+      "ar": "حذف تسوية سالبة؟",
+      "en": "Delete Negative Adjustment?"
+    }
+  },
+  "paymentDisburse": {
+    "add": {
+      "ar": "إضافة صرف دفعة",
+      "en": "Add Payment Disburse"
+    },
+    "edit": {
+      "ar": "تعديل صرف دفعة",
+      "en": "Edit Payment Disburse"
+    },
+    "delete": {
+      "ar": "حذف صرف دفعة؟",
+      "en": "Delete Payment Disburse?"
+    }
+  },
+  "salesOrder": {
+    "add": {
+      "ar": "إضافة أمر بيع",
+      "en": "Add Sales Order"
+    },
+    "edit": {
+      "ar": "تعديل أمر بيع",
+      "en": "Edit Sales Order"
+    },
+    "delete": {
+      "ar": "حذف أمر بيع؟",
+      "en": "Delete Sales Order?"
+    }
+  },
+  "salesTeam": {
+    "add": {
+      "ar": "إضافة فريق مبيعات",
+      "en": "Add Sales Team"
+    },
+    "edit": {
+      "ar": "تعديل فريق مبيعات",
+      "en": "Edit Sales Team"
+    },
+    "delete": {
+      "ar": "حذف فريق مبيعات؟",
+      "en": "Delete Sales Team?"
+    }
+  },
+  "invoice": {
+    "add": {
+      "ar": "إضافة فاتورة",
+      "en": "Add Invoice"
+    },
+    "edit": {
+      "ar": "تعديل فاتورة",
+      "en": "Edit Invoice"
+    },
+    "delete": {
+      "ar": "حذف فاتورة؟",
+      "en": "Delete Invoice?"
+    }
+  },
+  "bill": {
+    "add": {
+      "ar": "إضافة فاتورة مورد",
+      "en": "Add Bill"
+    },
+    "edit": {
+      "ar": "تعديل فاتورة مورد",
+      "en": "Edit Bill"
+    },
+    "delete": {
+      "ar": "حذف فاتورة مورد؟",
+      "en": "Delete Bill?"
+    }
+  },
+  "todoItem": {
+    "add": {
+      "ar": "إضافة عنصر مهمة",
+      "en": "Add Todo Item"
+    },
+    "edit": {
+      "ar": "تعديل عنصر مهمة",
+      "en": "Edit Todo Item"
+    },
+    "delete": {
+      "ar": "حذف عنصر مهمة؟",
+      "en": "Delete Todo Item?"
+    }
+  },
+  "bookingResource": {
+    "add": {
+      "ar": "إضافة مورد حجز",
+      "en": "Add Booking Resource"
+    },
+    "edit": {
+      "ar": "تعديل مورد حجز",
+      "en": "Edit Booking Resource"
+    },
+    "delete": {
+      "ar": "حذف مورد حجز؟",
+      "en": "Delete Booking Resource?"
+    }
+  },
+  "unitMeasure": {
+    "add": {
+      "ar": "إضافة وحدة قياس",
+      "en": "Add Unit Measure"
+    },
+    "edit": {
+      "ar": "تعديل وحدة قياس",
+      "en": "Edit Unit Measure"
+    },
+    "delete": {
+      "ar": "حذف وحدة قياس؟",
+      "en": "Delete Unit Measure?"
+    }
+  },
+  "booking": {
+    "add": {
+      "ar": "إضافة حجز",
+      "en": "Add Booking"
+    },
+    "edit": {
+      "ar": "تعديل حجز",
+      "en": "Edit Booking"
+    },
+    "delete": {
+      "ar": "حذف حجز؟",
+      "en": "Delete Booking?"
+    }
+  },
+  "labels": {
+    "close": {
+      "ar": "إغلاق",
+      "en": "Close"
+    },
+    "save": {
+      "ar": "حفظ",
+      "en": "Save"
+    },
+    "delete": {
+      "ar": "حذف",
+      "en": "Delete"
+    },
+    "saving": {
+      "ar": "جاري الحفظ…",
+      "en": "Saving..."
+    },
+    "deleting": {
+      "ar": "جاري الحذف…",
+      "en": "Deleting..."
+    },
+    "mainInfo": {
+      "ar": "المعلومات الأساسية",
+      "en": "Main Info"
+    },
+    "address": {
+      "ar": "العنوان",
+      "en": "Address"
+    },
+    "cancel": {
+      "ar": "إلغاء",
+      "en": "Cancel"
+    },
+    "submit": {
+      "ar": "إرسال",
+      "en": "Submit"
+    },
+    "submitting": {
+      "ar": "جاري الإرسال…",
+      "en": "Submitting..."
+    }
+  },
+  "form": {
+    "close": {
+      "ar": "إغلاق",
+      "en": "Close"
+    },
+    "save": {
+      "ar": "حفظ",
+      "en": "Save"
+    },
+    "delete": {
+      "ar": "حذف",
+      "en": "Delete"
+    },
+    "saving": {
+      "ar": "جاري الحفظ…",
+      "en": "Saving..."
+    },
+    "deleting": {
+      "ar": "جاري الحذف…",
+      "en": "Deleting..."
+    },
+    "submit": {
+      "ar": "إرسال",
+      "en": "Submit"
+    },
+    "submitting": {
+      "ar": "جاري الإرسال…",
+      "en": "Submitting..."
+    },
+    "cancel": {
+      "ar": "إلغاء",
+      "en": "Cancel"
+    },
+    "ph_selectDate": {
+      "ar": "اختر التاريخ",
+      "en": "Select Date"
+    },
+    "ph_selectStatus": {
+      "ar": "اختر الحالة",
+      "en": "Select Status"
+    },
+    "ph_selectSalesTeam": {
+      "ar": "اختر فريق المبيعات",
+      "en": "Select a Sales Team"
+    },
+    "ph_enterTitle": {
+      "ar": "أدخل العنوان",
+      "en": "Enter Title"
+    },
+    "ph_targetRevenue": {
+      "ar": "أدخل المبلغ المستهدف",
+      "en": "Enter Target Revenue Amount"
+    },
+    "ph_auto": {
+      "ar": "[تلقائي]",
+      "en": "[auto]"
+    },
+    "ph_search": {
+      "ar": "بحث",
+      "en": "Search"
+    },
+    "ph_selectVendor": {
+      "ar": "اختر مورداً",
+      "en": "Select a Vendor"
+    },
+    "ph_selectTax": {
+      "ar": "اختر ضريبة",
+      "en": "Select a Tax"
+    },
+    "ph_selectRequisitionStatus": {
+      "ar": "اختر حالة الطلب",
+      "en": "Select a Requisition Status"
+    },
+    "ph_selectProduct": {
+      "ar": "اختر منتجاً",
+      "en": "Select a Product"
+    },
+    "ph_selectCustomer": {
+      "ar": "اختر مشتركاً",
+      "en": "Select a Customer"
+    },
+    "ph_selectQuotationStatus": {
+      "ar": "اختر حالة عرض السعر",
+      "en": "Select a Quotation Status"
+    },
+    "field_quotationDate": {
+      "ar": "تاريخ عرض السعر",
+      "en": "Quotation Date"
+    },
+    "field_customer": {
+      "ar": "المشترك",
+      "en": "Customer"
+    },
+    "field_quotationStatus": {
+      "ar": "حالة عرض السعر",
+      "en": "Quotation Status"
+    },
+    "section_salesQuotationItems": {
+      "ar": "بنود عرض السعر",
+      "en": "Sales Quotation Item"
+    },
+    "validation_quotationDateRequired": {
+      "ar": "تاريخ عرض السعر مطلوب.",
+      "en": "Quotation date is required."
+    },
+    "validation_customerRequired": {
+      "ar": "المشترك مطلوب.",
+      "en": "Customer is required."
+    },
+    "validation_quotationStatusRequired": {
+      "ar": "حالة عرض السعر مطلوبة.",
+      "en": "Quotation status is required."
+    },
+    "field_requisitionDate": {
+      "ar": "تاريخ الطلب",
+      "en": "Requisition Date"
+    },
+    "field_vendor": {
+      "ar": "المورد",
+      "en": "Vendor"
+    },
+    "field_tax": {
+      "ar": "الضريبة",
+      "en": "Tax"
+    },
+    "field_requisitionStatus": {
+      "ar": "حالة الطلب",
+      "en": "Requisition Status"
+    },
+    "section_purchaseRequisitionItems": {
+      "ar": "بنود طلب الشراء",
+      "en": "Purchase Requisition Item"
+    },
+    "section_paymentSummary": {
+      "ar": "ملخص الدفع",
+      "en": "Payment Summary"
+    },
+    "summary_subtotal": {
+      "ar": "المجموع الفرعي",
+      "en": "Subtotal"
+    },
+    "summary_taxAmount": {
+      "ar": "مبلغ الضريبة",
+      "en": "Tax"
+    },
+    "summary_totalAmount": {
+      "ar": "الإجمالي",
+      "en": "Total Amount"
+    },
+    "validation_requisitionDateRequired": {
+      "ar": "تاريخ الطلب مطلوب.",
+      "en": "Requisition date is required."
+    },
+    "validation_vendorRequired": {
+      "ar": "المورد مطلوب.",
+      "en": "Vendor is required."
+    },
+    "validation_taxRequired": {
+      "ar": "الضريبة مطلوبة.",
+      "en": "Tax is required."
+    },
+    "validation_requisitionStatusRequired": {
+      "ar": "حالة الطلب مطلوبة.",
+      "en": "Requisition status is required."
+    },
+    "validation_quantityPositive": {
+      "ar": "يجب أن تكون الكمية موجبة وليست صفراً.",
+      "en": "Must be a positive number and not zero"
+    },
+    "field_title": {
+      "ar": "العنوان",
+      "en": "Title"
+    },
+    "field_number": {
+      "ar": "الرقم",
+      "en": "Number"
+    },
+    "field_startDate": {
+      "ar": "تاريخ البدء",
+      "en": "Start Date"
+    },
+    "field_finishDate": {
+      "ar": "تاريخ الانتهاء",
+      "en": "Finish Date"
+    },
+    "field_targetRevenue": {
+      "ar": "المبلغ المستهدف",
+      "en": "Target Revenue Amount"
+    },
+    "field_status": {
+      "ar": "الحالة",
+      "en": "Status"
+    },
+    "field_description": {
+      "ar": "الوصف",
+      "en": "Description"
+    },
+    "section_salesTeam": {
+      "ar": "فريق المبيعات",
+      "en": "Sales Team"
+    },
+    "section_budget": {
+      "ar": "الميزانية",
+      "en": "Budget"
+    },
+    "section_expense": {
+      "ar": "المصروف",
+      "en": "Expense"
+    },
+    "validation_startDateRequired": {
+      "ar": "تاريخ البدء مطلوب.",
+      "en": "Start date is required."
+    },
+    "validation_finishDateRequired": {
+      "ar": "تاريخ الانتهاء مطلوب.",
+      "en": "Finish date is required."
+    },
+    "validation_titleRequired": {
+      "ar": "العنوان مطلوب.",
+      "en": "Title is required."
+    },
+    "validation_targetRevenueRequired": {
+      "ar": "المبلغ المستهدف مطلوب.",
+      "en": "Target revenue amount is required."
+    },
+    "validation_statusRequired": {
+      "ar": "الحالة مطلوبة.",
+      "en": "Status is required."
+    },
+    "validation_salesTeamRequired": {
+      "ar": "فريق المبيعات مطلوب.",
+      "en": "Sales team is required."
+    },
+    "validation_returnDateRequired": {
+      "ar": "تاريخ الإرجاع مطلوب.",
+      "en": "Return date is required."
+    },
+    "validation_goodsReceiveIdRequired": {
+      "ar": "استلام المشتريات مطلوب.",
+      "en": "Goods Receive is required."
+    },
+    "swal_saveSuccessful": {
+      "ar": "تم الحفظ بنجاح",
+      "en": "Save Successful"
+    },
+    "swal_updateSuccessful": {
+      "ar": "تم التحديث بنجاح",
+      "en": "Update Successful"
+    },
+    "swal_updateFailed": {
+      "ar": "فشل التحديث",
+      "en": "Update Failed"
+    },
+    "swal_deleteSuccessful": {
+      "ar": "تم الحذف بنجاح",
+      "en": "Delete Successful"
+    },
+    "swal_formWillClose": {
+      "ar": "سيتم إغلاق النموذج…",
+      "en": "Form will be closed..."
+    },
+    "swal_deleteFailed": {
+      "ar": "فشل الحذف",
+      "en": "Delete Failed"
+    },
+    "swal_saveFailed": {
+      "ar": "فشل الحفظ",
+      "en": "Save Failed"
+    },
+    "swal_checkData": {
+      "ar": "يرجى التحقق من البيانات.",
+      "en": "Please check your data."
+    },
+    "swal_tryAgain": {
+      "ar": "حاول مرة أخرى",
+      "en": "Try Again"
+    },
+    "swal_errorOccurred": {
+      "ar": "حدث خطأ",
+      "en": "An Error Occurred"
+    },
+    "swal_tryAgainLater": {
+      "ar": "يرجى المحاولة لاحقاً.",
+      "en": "Please try again."
+    },
+    "swal_ok": {
+      "ar": "موافق",
+      "en": "OK"
+    },
+    "section_communication": {
+      "ar": "التواصل",
+      "en": "Communication"
+    },
+    "section_socialMedia": {
+      "ar": "وسائل التواصل",
+      "en": "Social Media"
+    },
+    "section_vendorContact": {
+      "ar": "جهة اتصال المورد",
+      "en": "Vendor Contact"
+    },
+    "section_userInfo": {
+      "ar": "بيانات المستخدم",
+      "en": "User Info"
+    },
+    "section_userPassword": {
+      "ar": "كلمة مرور المستخدم",
+      "en": "User Password"
+    },
+    "section_userRoles": {
+      "ar": "أدوار المستخدم",
+      "en": "User Roles"
+    },
+    "section_summaryShort": {
+      "ar": "الملخص",
+      "en": "Summary"
+    },
+    "section_deliveryItem": {
+      "ar": "بند التسليم",
+      "en": "Delivery Item"
+    },
+    "section_returnItem": {
+      "ar": "بنود المرتجع",
+      "en": "Return Item"
+    },
+    "section_receiveItem": {
+      "ar": "بنود الاستلام",
+      "en": "Receive Item"
+    },
+    "section_salesOrderItem": {
+      "ar": "بنود أمر البيع",
+      "en": "Sales Order Item"
+    },
+    "section_purchaseOrderItem": {
+      "ar": "بنود أمر الشراء",
+      "en": "Purchase Order Item"
+    },
+    "section_items": {
+      "ar": "البنود",
+      "en": "Items"
+    },
+    "section_invoiceSummary": {
+      "ar": "ملخص الفاتورة",
+      "en": "Invoice Summary"
+    },
+    "section_billSummary": {
+      "ar": "ملخص فاتورة المورد",
+      "en": "Bill Summary"
+    },
+    "section_debitNoteSummary": {
+      "ar": "ملخص إشعار المدين",
+      "en": "Debit Note Summary"
+    },
+    "section_creditNoteSummary": {
+      "ar": "ملخص إشعار الدائن",
+      "en": "Credit Note Summary"
+    },
+    "section_paymentMethodInfo": {
+      "ar": "بيانات طريقة الدفع",
+      "en": "Payment Method Info"
+    },
+    "section_taxInfo": {
+      "ar": "بيانات الضريبة",
+      "en": "Tax Info"
+    },
+    "section_salesTeamInfo": {
+      "ar": "بيانات فريق المبيعات",
+      "en": "Sales Team Info"
+    },
+    "section_leadActivityInfo": {
+      "ar": "بيانات نشاط العميل المحتمل",
+      "en": "Lead Activity Info"
+    },
+    "section_companyAddress": {
+      "ar": "عنوان الشركة",
+      "en": "Company Address"
+    },
+    "section_companyCommunication": {
+      "ar": "تواصل الشركة",
+      "en": "Company Communication"
+    },
+    "section_companySocialMedia": {
+      "ar": "وسائل تواصل الشركة",
+      "en": "Company Social Media"
+    },
+    "section_bantScore": {
+      "ar": "تقييم BANT",
+      "en": "BANT Score"
+    },
+    "section_dates": {
+      "ar": "التواريخ",
+      "en": "Dates"
+    },
+    "section_goals": {
+      "ar": "الأهداف",
+      "en": "Goals"
+    },
+    "section_leadContacts": {
+      "ar": "جهات اتصال العميل المحتمل",
+      "en": "Lead Contacts"
+    },
+    "section_leadActivities": {
+      "ar": "أنشطة العميل المحتمل",
+      "en": "Lead Activities"
+    },
+    "section_customerContact": {
+      "ar": "جهة اتصال المشترك",
+      "en": "Customer Contact"
+    },
+    "section_password": {
+      "ar": "كلمة المرور",
+      "en": "Password"
+    },
+    "summary_totalMovement": {
+      "ar": "إجمالي الحركة",
+      "en": "Total Movement"
+    },
+    "fld_address_city": {
+      "ar": "المدينة",
+      "en": "City"
+    },
+    "fld_address_country": {
+      "ar": "الدولة",
+      "en": "Country"
+    },
+    "fld_address_state": {
+      "ar": "المحافظة",
+      "en": "State"
+    },
+    "fld_address_street": {
+      "ar": "الشارع",
+      "en": "Street"
+    },
+    "fld_address_zip_code": {
+      "ar": "الرمز البريدي",
+      "en": "Zip Code"
+    },
+    "fld_adjustment_date": {
+      "ar": "تاريخ التسوية",
+      "en": "Adjustment Date"
+    },
+    "fld_amount": {
+      "ar": "المبلغ",
+      "en": "Amount"
+    },
+    "fld_amount_closed": {
+      "ar": "المبلغ المغلق",
+      "en": "Closed Amount"
+    },
+    "fld_amount_targeted": {
+      "ar": "المبلغ المستهدف",
+      "en": "Targeted Amount"
+    },
+    "fld_authority_score": {
+      "ar": "درجة الصلاحية",
+      "en": "Authority Score"
+    },
+    "fld_bill_date": {
+      "ar": "تاريخ الفاتورة",
+      "en": "Bill Date"
+    },
+    "fld_bill_id": {
+      "ar": "فاتورة المورد",
+      "en": "Bill"
+    },
+    "fld_bill_status": {
+      "ar": "حالة الفاتورة",
+      "en": "Bill Status"
+    },
+    "fld_booking_group_list": {
+      "ar": "مجموعة الحجز",
+      "en": "Booking Group"
+    },
+    "fld_booking_resource_id": {
+      "ar": "مورد الحجز",
+      "en": "Booking Resource"
+    },
+    "fld_budget_date": {
+      "ar": "تاريخ الميزانية",
+      "en": "Budget Date"
+    },
+    "fld_budget_score": {
+      "ar": "درجة الميزانية",
+      "en": "Budget Score"
+    },
+    "fld_campaign_id": {
+      "ar": "الحملة",
+      "en": "Campaign"
+    },
+    "fld_city": {
+      "ar": "المدينة",
+      "en": "City"
+    },
+    "fld_closing_note": {
+      "ar": "ملاحظة الإغلاق",
+      "en": "Closing Note"
+    },
+    "fld_closing_status": {
+      "ar": "حالة الإغلاق",
+      "en": "Closing Status"
+    },
+    "fld_company_address_city": {
+      "ar": "المدينة",
+      "en": "City"
+    },
+    "fld_company_address_country": {
+      "ar": "الدولة",
+      "en": "Country"
+    },
+    "fld_company_address_state": {
+      "ar": "المحافظة",
+      "en": "State"
+    },
+    "fld_company_address_street": {
+      "ar": "الشارع",
+      "en": "Street"
+    },
+    "fld_company_address_zip_code": {
+      "ar": "الرمز البريدي",
+      "en": "Zip Code"
+    },
+    "fld_company_description": {
+      "ar": "وصف الشركة",
+      "en": "Company Description"
+    },
+    "fld_company_email": {
+      "ar": "البريد الإلكتروني",
+      "en": "Email"
+    },
+    "fld_company_facebook": {
+      "ar": "فيسبوك",
+      "en": "Facebook"
+    },
+    "fld_company_fax_number": {
+      "ar": "رقم الفاكس",
+      "en": "Fax Number"
+    },
+    "fld_company_instagram": {
+      "ar": "إنستغرام",
+      "en": "Instagram"
+    },
+    "fld_company_linked_in": {
+      "ar": "لينكدإن",
+      "en": "LinkedIn"
+    },
+    "fld_company_name": {
+      "ar": "اسم الشركة",
+      "en": "Company Name"
+    },
+    "fld_company_phone_number": {
+      "ar": "رقم الهاتف",
+      "en": "Phone Number"
+    },
+    "fld_company_twitter": {
+      "ar": "تويتر",
+      "en": "Twitter"
+    },
+    "fld_company_website": {
+      "ar": "الموقع",
+      "en": "Website"
+    },
+    "fld_company_whats_app": {
+      "ar": "واتساب",
+      "en": "WhatsApp"
+    },
+    "fld_confirm_password": {
+      "ar": "تأكيد كلمة المرور",
+      "en": "Confirm Password"
+    },
+    "fld_count_date": {
+      "ar": "تاريخ الجرد",
+      "en": "Count Date"
+    },
+    "fld_country": {
+      "ar": "الدولة",
+      "en": "Country"
+    },
+    "fld_credit_note_date": {
+      "ar": "تاريخ إشعار الدائن",
+      "en": "CreditNote Date"
+    },
+    "fld_credit_note_status": {
+      "ar": "حالة إشعار الدائن",
+      "en": "CreditNote Status"
+    },
+    "fld_customer_category_id": {
+      "ar": "تصنيف المشترك",
+      "en": "Customer Category"
+    },
+    "fld_customer_group_id": {
+      "ar": "مجموعة المشتركين",
+      "en": "Customer Group"
+    },
+    "fld_date_closing_actual": {
+      "ar": "تاريخ الإغلاق الفعلي",
+      "en": "Actual Closing Date"
+    },
+    "fld_date_closing_estimation": {
+      "ar": "تاريخ الإغلاق المتوقع",
+      "en": "Estimated Closing Date"
+    },
+    "fld_date_prospecting": {
+      "ar": "تاريخ الاستكشاف",
+      "en": "Prospecting Date"
+    },
+    "fld_debit_note_date": {
+      "ar": "تاريخ إشعار المدين",
+      "en": "DebitNote Date"
+    },
+    "fld_debit_note_status": {
+      "ar": "حالة إشعار المدين",
+      "en": "DebitNote Status"
+    },
+    "fld_delivery_date": {
+      "ar": "تاريخ التسليم",
+      "en": "Delivery Date"
+    },
+    "fld_delivery_order_id": {
+      "ar": "أمر التسليم",
+      "en": "Delivery Order"
+    },
+    "fld_email": {
+      "ar": "البريد الإلكتروني",
+      "en": "Email"
+    },
+    "field_email": {
+      "ar": "البريد الإلكتروني",
+      "en": "Email"
+    },
+    "field_emailAddressRaw": {
+      "ar": "البريد الإلكتروني",
+      "en": "EmailAddress"
+    },
+    "fld_employee_number": {
+      "ar": "رقم الموظف",
+      "en": "EmployeeNumber"
+    },
+    "fld_end_time": {
+      "ar": "وقت الانتهاء",
+      "en": "End Time"
+    },
+    "fld_expense_date": {
+      "ar": "تاريخ المصروف",
+      "en": "Expense Date"
+    },
+    "fld_facebook": {
+      "ar": "فيسبوك",
+      "en": "Facebook"
+    },
+    "fld_fax_number": {
+      "ar": "رقم الفاكس",
+      "en": "Fax Number"
+    },
+    "fld_first_name": {
+      "ar": "الاسم الأول",
+      "en": "First Name"
+    },
+    "fld_from_date": {
+      "ar": "من تاريخ",
+      "en": "From Date"
+    },
+    "fld_full_name": {
+      "ar": "الاسم الكامل",
+      "en": "Full Name"
+    },
+    "fld_goods_receive_id": {
+      "ar": "استلام مشتريات",
+      "en": "Goods Receive"
+    },
+    "fld_instagram": {
+      "ar": "إنستغرام",
+      "en": "Instagram"
+    },
+    "fld_invoice_date": {
+      "ar": "تاريخ الفاتورة",
+      "en": "Invoice Date"
+    },
+    "fld_invoice_id": {
+      "ar": "فاتورة البيع",
+      "en": "Invoice"
+    },
+    "fld_invoice_status": {
+      "ar": "حالة الفاتورة",
+      "en": "Invoice Status"
+    },
+    "fld_job_title": {
+      "ar": "المسمى الوظيفي",
+      "en": "JobTitle"
+    },
+    "fld_last_name": {
+      "ar": "اسم العائلة",
+      "en": "Last Name"
+    },
+    "fld_lead_id": {
+      "ar": "عميل محتمل",
+      "en": "Lead"
+    },
+    "fld_linked_in": {
+      "ar": "لينكدإن",
+      "en": "LinkedIn"
+    },
+    "fld_location": {
+      "ar": "الموقع",
+      "en": "Location"
+    },
+    "fld_mobile_number": {
+      "ar": "رقم الجوال",
+      "en": "Mobile Number"
+    },
+    "fld_name": {
+      "ar": "الاسم",
+      "en": "Name"
+    },
+    "fld_need_score": {
+      "ar": "درجة الحاجة",
+      "en": "Need Score"
+    },
+    "fld_new_password": {
+      "ar": "كلمة المرور الجديدة",
+      "en": "New Password"
+    },
+    "fld_order_date": {
+      "ar": "تاريخ الطلب",
+      "en": "Order Date"
+    },
+    "fld_order_status": {
+      "ar": "حالة الطلب",
+      "en": "Order Status"
+    },
+    "fld_password": {
+      "ar": "كلمة المرور",
+      "en": "Password"
+    },
+    "field_paymentDisburseDate": {
+      "ar": "تاريخ صرف الدفع",
+      "en": "Payment Disburse Date"
+    },
+    "field_paymentReceiveDate": {
+      "ar": "تاريخ استلام الدفع",
+      "en": "Payment Receive Date"
+    },
+    "fld_payment_method_id": {
+      "ar": "طريقة الدفع",
+      "en": "Payment Method"
+    },
+    "fld_percentage": {
+      "ar": "النسبة",
+      "en": "Percentage"
+    },
+    "field_phoneNumber": {
+      "ar": "رقم الهاتف",
+      "en": "Phone Number"
+    },
+    "field_phoneNumberRaw": {
+      "ar": "رقم الهاتف",
+      "en": "PhoneNumber"
+    },
+    "fld_pipeline_stage": {
+      "ar": "مرحلة خط الأنابيب",
+      "en": "Pipeline Stage"
+    },
+    "fld_priority": {
+      "ar": "الأولوية",
+      "en": "Priority"
+    },
+    "fld_product_group_id": {
+      "ar": "مجموعة المنتجات",
+      "en": "Product Group"
+    },
+    "fld_program_manager_resource_id": {
+      "ar": "المورد",
+      "en": "Resource"
+    },
+    "fld_purchase_order_id": {
+      "ar": "أمر الشراء",
+      "en": "Purchase Order"
+    },
+    "fld_purchase_return_id": {
+      "ar": "مرتجع مشتريات",
+      "en": "Purchase Return"
+    },
+    "fld_receive_date": {
+      "ar": "تاريخ الاستلام",
+      "en": "Receive Date"
+    },
+    "fld_return_date": {
+      "ar": "تاريخ الإرجاع",
+      "en": "Return Date"
+    },
+    "fld_sales_order_id": {
+      "ar": "أمر البيع",
+      "en": "Sales Order"
+    },
+    "fld_sales_return_id": {
+      "ar": "مرتجع مبيعات",
+      "en": "Sales Return"
+    },
+    "fld_scrapping_date": {
+      "ar": "تاريخ الإتلاف",
+      "en": "Scrapping Date"
+    },
+    "fld_start_time": {
+      "ar": "وقت البدء",
+      "en": "Start Time"
+    },
+    "fld_state": {
+      "ar": "المحافظة",
+      "en": "State"
+    },
+    "field_paymentDisburseStatus": {
+      "ar": "حالة صرف الدفع",
+      "en": "Payment Disburse Status"
+    },
+    "field_paymentReceiveStatus": {
+      "ar": "حالة استلام الدفع",
+      "en": "Payment Receive Status"
+    },
+    "fld_street": {
+      "ar": "الشارع",
+      "en": "Street"
+    },
+    "fld_subject": {
+      "ar": "الموضوع",
+      "en": "Subject"
+    },
+    "fld_summary": {
+      "ar": "الملخص",
+      "en": "Summary"
+    },
+    "fld_tik_tok": {
+      "ar": "تيك توك",
+      "en": "TikTok"
+    },
+    "fld_timeline_score": {
+      "ar": "درجة الجدول الزمني",
+      "en": "Timeline Score"
+    },
+    "fld_to_date": {
+      "ar": "إلى تاريخ",
+      "en": "To Date"
+    },
+    "fld_todo_id": {
+      "ar": "مهمة",
+      "en": "Todo"
+    },
+    "fld_transfer_out_id": {
+      "ar": "صرف تحويل",
+      "en": "Transfer Out"
+    },
+    "fld_transfer_receive_date": {
+      "ar": "تاريخ الاستلام",
+      "en": "Receive Date"
+    },
+    "fld_transfer_release_date": {
+      "ar": "تاريخ الصرف",
+      "en": "Release Date"
+    },
+    "fld_twitter": {
+      "ar": "تويتر",
+      "en": "Twitter"
+    },
+    "fld_twitter_x": {
+      "ar": "تويتر / X",
+      "en": "Twitter/X"
+    },
+    "fld_type": {
+      "ar": "نوع النشاط",
+      "en": "Activity Type"
+    },
+    "fld_unit_measure_id": {
+      "ar": "وحدة القياس",
+      "en": "Unit Measure"
+    },
+    "fld_unit_price": {
+      "ar": "سعر الوحدة",
+      "en": "Unit Price"
+    },
+    "fld_vendor_category_id": {
+      "ar": "تصنيف المورد",
+      "en": "Vendor Category"
+    },
+    "fld_vendor_group_id": {
+      "ar": "مجموعة الموردين",
+      "en": "Vendor Group"
+    },
+    "fld_warehouse_from_id": {
+      "ar": "مستودع المصدر",
+      "en": "Warehouse From"
+    },
+    "fld_warehouse_id": {
+      "ar": "المستودع",
+      "en": "Warehouse"
+    },
+    "fld_warehouse_to_id": {
+      "ar": "مستودع الوجهة",
+      "en": "Warehouse To"
+    },
+    "fld_website": {
+      "ar": "الموقع",
+      "en": "Website"
+    },
+    "fld_whats_app": {
+      "ar": "واتساب",
+      "en": "WhatsApp"
+    },
+    "fld_zip_code": {
+      "ar": "الرمز البريدي",
+      "en": "Zip Code"
+    },
+    "ph_selectGoodsReceive": {
+      "ar": "اختر استلام مشتريات",
+      "en": "Select Goods Receive"
+    }
+  },
+  "manageContactModal": {
+    "title": {
+      "ar": "إدارة جهة الاتصال",
+      "en": "Manage Contact"
+    }
+  },
+  "leadContactModal": {
+    "title": {
+      "ar": "جهة الاتصال",
+      "en": "Contact"
+    }
+  },
+  "myProfile": {
+    "edit": {
+      "ar": "تعديل ملفي الشخصي",
+      "en": "Edit My Profile"
+    },
+    "changePassword": {
+      "ar": "تغيير كلمة المرور",
+      "en": "Change Password"
+    },
+    "changeAvatar": {
+      "ar": "تغيير الصورة الرمزية",
+      "en": "Change Avatar"
+    }
+  },
+  "company": {
+    "edit": {
+      "ar": "تعديل بيانات الشركة",
+      "en": "Edit Company"
+    }
+  },
+  "phByEn": {
+    "Authority Score": {
+      "ar": "درجة الصلاحية",
+      "en": "Authority Score"
+    },
+    "Budget Score": {
+      "ar": "درجة الميزانية",
+      "en": "Budget Score"
+    },
+    "Enter Amount": {
+      "ar": "أدخل المبلغ",
+      "en": "Enter Amount"
+    },
+    "Enter City": {
+      "ar": "أدخل المدينة",
+      "en": "Enter City"
+    },
+    "Enter Closed Amount": {
+      "ar": "أدخل المبلغ المغلق",
+      "en": "Enter Closed Amount"
+    },
+    "Enter Company Name": {
+      "ar": "أدخل اسم الشركة",
+      "en": "Enter Company Name"
+    },
+    "Enter Country": {
+      "ar": "أدخل الدولة",
+      "en": "Enter Country"
+    },
+    "Enter Currency": {
+      "ar": "أدخل العملة",
+      "en": "Enter Currency"
+    },
+    "Enter Email": {
+      "ar": "أدخل البريد الإلكتروني",
+      "en": "Enter Email"
+    },
+    "Enter Email Address": {
+      "ar": "أدخل عنوان البريد الإلكتروني",
+      "en": "Enter Email Address"
+    },
+    "Enter Employee Number": {
+      "ar": "أدخل رقم الموظف",
+      "en": "Enter Employee Number"
+    },
+    "Enter Facebook": {
+      "ar": "أدخل فيسبوك",
+      "en": "Enter Facebook"
+    },
+    "Enter Fax Number": {
+      "ar": "أدخل رقم الفاكس",
+      "en": "Enter Fax Number"
+    },
+    "Enter First Name": {
+      "ar": "أدخل الاسم الأول",
+      "en": "Enter First Name"
+    },
+    "Enter Full Name": {
+      "ar": "أدخل الاسم الكامل",
+      "en": "Enter Full Name"
+    },
+    "Enter Instagram": {
+      "ar": "أدخل إنستغرام",
+      "en": "Enter Instagram"
+    },
+    "Enter Job Title": {
+      "ar": "أدخل المسمى الوظيفي",
+      "en": "Enter Job Title"
+    },
+    "Enter Last Name": {
+      "ar": "أدخل اسم العائلة",
+      "en": "Enter Last Name"
+    },
+    "Enter LinkedIn": {
+      "ar": "أدخل لينكد إن",
+      "en": "Enter LinkedIn"
+    },
+    "Enter Location": {
+      "ar": "أدخل الموقع",
+      "en": "Enter Location"
+    },
+    "Enter Mobile Number": {
+      "ar": "أدخل رقم الجوال",
+      "en": "Enter Mobile Number"
+    },
+    "Enter Name": {
+      "ar": "أدخل الاسم",
+      "en": "Enter Name"
+    },
+    "Enter Payment Amount": {
+      "ar": "أدخل مبلغ الدفع",
+      "en": "Enter Payment Amount"
+    },
+    "Enter Percentage": {
+      "ar": "أدخل النسبة المئوية",
+      "en": "Enter Percentage"
+    },
+    "Enter Phone Number": {
+      "ar": "أدخل رقم الهاتف",
+      "en": "Enter Phone Number"
+    },
+    "Enter State": {
+      "ar": "أدخل المحافظة",
+      "en": "Enter State"
+    },
+    "Enter Street": {
+      "ar": "أدخل الشارع",
+      "en": "Enter Street"
+    },
+    "Enter Subject": {
+      "ar": "أدخل الموضوع",
+      "en": "Enter Subject"
+    },
+    "Enter Summary": {
+      "ar": "أدخل الملخص",
+      "en": "Enter Summary"
+    },
+    "Enter Target Amount": {
+      "ar": "أدخل المبلغ المستهدف",
+      "en": "Enter Target Amount"
+    },
+    "Enter TikTok": {
+      "ar": "أدخل تيك توك",
+      "en": "Enter TikTok"
+    },
+    "Enter Title": {
+      "ar": "أدخل العنوان",
+      "en": "Enter Title"
+    },
+    "Enter Twitter": {
+      "ar": "أدخل تويتر",
+      "en": "Enter Twitter"
+    },
+    "Enter Twitter/X": {
+      "ar": "أدخل تويتر / X",
+      "en": "Enter Twitter/X"
+    },
+    "Enter Unit Price": {
+      "ar": "أدخل سعر الوحدة",
+      "en": "Enter Unit Price"
+    },
+    "Enter Website": {
+      "ar": "أدخل الموقع الإلكتروني",
+      "en": "Enter Website"
+    },
+    "Enter WhatsApp": {
+      "ar": "أدخل واتساب",
+      "en": "Enter WhatsApp"
+    },
+    "Enter Zip Code": {
+      "ar": "أدخل الرمز البريدي",
+      "en": "Enter Zip Code"
+    },
+    "Need Score": {
+      "ar": "درجة الحاجة",
+      "en": "Need Score"
+    },
+    "Priority": {
+      "ar": "الأولوية",
+      "en": "Priority"
+    },
+    "Resource": {
+      "ar": "المورد",
+      "en": "Resource"
+    },
+    "Select Bill": {
+      "ar": "اختر الفاتورة",
+      "en": "Select Bill"
+    },
+    "Select Bill Status": {
+      "ar": "اختر حالة الفاتورة",
+      "en": "Select Bill Status"
+    },
+    "Select Booking Resource": {
+      "ar": "اختر مورد الحجز",
+      "en": "Select Booking Resource"
+    },
+    "Select Campaign": {
+      "ar": "اختر الحملة",
+      "en": "Select Campaign"
+    },
+    "Select CreditNote Status": {
+      "ar": "اختر حالة إشعار الدائن",
+      "en": "Select CreditNote Status"
+    },
+    "Select Date": {
+      "ar": "اختر التاريخ",
+      "en": "Select Date"
+    },
+    "Select DebitNote Status": {
+      "ar": "اختر حالة إشعار المدين",
+      "en": "Select DebitNote Status"
+    },
+    "Select Delivery Order": {
+      "ar": "اختر أمر التسليم",
+      "en": "Select Delivery Order"
+    },
+    "Select End Time": {
+      "ar": "اختر وقت الانتهاء",
+      "en": "Select End Time"
+    },
+    "Select Invoice": {
+      "ar": "اختر الفاتورة",
+      "en": "Select Invoice"
+    },
+    "Select Invoice Status": {
+      "ar": "اختر حالة الفاتورة",
+      "en": "Select Invoice Status"
+    },
+    "Select Payment Disburse Status": {
+      "ar": "اختر حالة الصرف",
+      "en": "Select Payment Disburse Status"
+    },
+    "Select Payment Method": {
+      "ar": "اختر طريقة الدفع",
+      "en": "Select Payment Method"
+    },
+    "Select Payment Receive Status": {
+      "ar": "اختر حالة التحصيل",
+      "en": "Select Payment Receive Status"
+    },
+    "Select Priority": {
+      "ar": "اختر الأولوية",
+      "en": "Select Priority"
+    },
+    "Select Product": {
+      "ar": "اختر المنتج",
+      "en": "Select Product"
+    },
+    "Select Purchase Order": {
+      "ar": "اختر أمر الشراء",
+      "en": "Select Purchase Order"
+    },
+    "Select Purchase Return": {
+      "ar": "اختر مرتجع الشراء",
+      "en": "Select Purchase Return"
+    },
+    "Select Resource": {
+      "ar": "اختر المورد",
+      "en": "Select Resource"
+    },
+    "Select Sales Order": {
+      "ar": "اختر أمر البيع",
+      "en": "Select Sales Order"
+    },
+    "Select Sales Return": {
+      "ar": "اختر مرتجع البيع",
+      "en": "Select Sales Return"
+    },
+    "Select Start Time": {
+      "ar": "اختر وقت البدء",
+      "en": "Select Start Time"
+    },
+    "Select Status": {
+      "ar": "اختر الحالة",
+      "en": "Select Status"
+    },
+    "Select Transfer Out": {
+      "ar": "اختر إخراج المخزون",
+      "en": "Select Transfer Out"
+    },
+    "Select Warehouse": {
+      "ar": "اختر المستودع",
+      "en": "Select Warehouse"
+    },
+    "Select Warehouse From": {
+      "ar": "اختر المستودع المصدر",
+      "en": "Select Warehouse From"
+    },
+    "Select Warehouse To": {
+      "ar": "اختر المستودع الوجهة",
+      "en": "Select Warehouse To"
+    },
+    "Select a Booking Group": {
+      "ar": "اختر مجموعة الحجز",
+      "en": "Select a Booking Group"
+    },
+    "Select a Campaign": {
+      "ar": "اختر الحملة",
+      "en": "Select a Campaign"
+    },
+    "Select a Closing Status": {
+      "ar": "اختر حالة الإغلاق",
+      "en": "Select a Closing Status"
+    },
+    "Select a Customer": {
+      "ar": "اختر المشترك",
+      "en": "Select a Customer"
+    },
+    "Select a Customer Category": {
+      "ar": "اختر فئة المشترك",
+      "en": "Select a Customer Category"
+    },
+    "Select a Customer Group": {
+      "ar": "اختر مجموعة المشتركين",
+      "en": "Select a Customer Group"
+    },
+    "Select a Lead": {
+      "ar": "اختر العميل المحتمل",
+      "en": "Select a Lead"
+    },
+    "Select a Pipeline Stage": {
+      "ar": "اختر مرحلة المسار",
+      "en": "Select a Pipeline Stage"
+    },
+    "Select a Product": {
+      "ar": "اختر المنتج",
+      "en": "Select a Product"
+    },
+    "Select a Product Group": {
+      "ar": "اختر مجموعة المنتجات",
+      "en": "Select a Product Group"
+    },
+    "Select a Sales Team": {
+      "ar": "اختر فريق المبيعات",
+      "en": "Select a Sales Team"
+    },
+    "Select a Tax": {
+      "ar": "اختر الضريبة",
+      "en": "Select a Tax"
+    },
+    "Select a Todo": {
+      "ar": "اختر المهمة",
+      "en": "Select a Todo"
+    },
+    "Select a Unit Measure": {
+      "ar": "اختر وحدة القياس",
+      "en": "Select a Unit Measure"
+    },
+    "Select a Vendor": {
+      "ar": "اختر المورد",
+      "en": "Select a Vendor"
+    },
+    "Select a Vendor Category": {
+      "ar": "اختر فئة المورد",
+      "en": "Select a Vendor Category"
+    },
+    "Select a Vendor Group": {
+      "ar": "اختر مجموعة الموردين",
+      "en": "Select a Vendor Group"
+    },
+    "Select a Warehouse": {
+      "ar": "اختر المستودع",
+      "en": "Select a Warehouse"
+    },
+    "Select an Activity Type": {
+      "ar": "اختر نوع النشاط",
+      "en": "Select an Activity Type"
+    },
+    "Select an Order Status": {
+      "ar": "اختر حالة الطلب",
+      "en": "Select an Order Status"
+    },
+    "Status": {
+      "ar": "الحالة",
+      "en": "Status"
+    },
+    "Summary": {
+      "ar": "الملخص",
+      "en": "Summary"
+    },
+    "Timeline Score": {
+      "ar": "درجة الجدول الزمني",
+      "en": "Timeline Score"
+    },
+    "[auto]": {
+      "ar": "[تلقائي]",
+      "en": "[auto]"
+    },
+    "Search": {
+      "ar": "بحث",
+      "en": "Search"
+    }
+  }
+}

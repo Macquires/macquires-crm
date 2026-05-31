@@ -12,4 +12,7 @@ public class BillingIntegrationLog : BaseEntity
     public bool Success { get; set; }
     public string Message { get; set; } = null!;
     public string? IntegrationTarget { get; set; }
+    public string? CorrelationId { get; set; }
+    public string? RequestPayload { get; set; }
+    public string? ResponsePayload { get; set; }
 }

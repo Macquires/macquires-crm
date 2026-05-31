@@ -1,0 +1,83 @@
+@page
+@{
+    ViewData["Title"] = "Telecom subscription types";
+}
+
+<div id="app" v-cloak>
+    <div class="row">
+        <div class="col-12">
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.mainTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" id="Id" name="Id" />
+                    <form id="MainForm">
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="Code">Code (integration)</label>
+                                <input id="Code" class="form-control" v-model="state.code" maxlength="50" autocomplete="off" :disabled="!!state.id" />
+                                <div class="form-text">Stable for Huawei / CBS (e.g. PREPAID). Cannot change after create.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="SortOrder">Sort order</label>
+                                <input id="SortOrder" type="number" class="form-control" v-model.number="state.sortOrder" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="NameAr">Name (Arabic)</label>
+                                <input id="NameAr" class="form-control" v-model="state.nameAr" maxlength="255" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="NameEn">Name (English)</label>
+                                <input id="NameEn" class="form-control" v-model="state.nameEn" maxlength="255" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="DisplayColor">Display color</label>
+                                <input id="DisplayColor" class="form-control" v-model="state.displayColor" maxlength="32" placeholder="#c8102e" />
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end gap-3 pb-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="IsActive" v-model="state.isActive" />
+                                    <label class="form-check-label" for="IsActive">Active</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="IsDefault" v-model="state.isDefault" :disabled="!state.isActive" />
+                                    <label class="form-check-label" for="IsDefault">Default for new lines</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span v-text="$mcqFooter.close"></span></button>
+                    <button type="button"
+                            id="MainSaveButton"
+                            class="btn btn-primary"
+                            v-on:click="handler.handleSubmit"
+                            v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
+                        <span v-show="!state.isSubmitting" v-text="$mcqFooter.save"></span>
+                        <span v-show="state.isSubmitting" v-text="$mcqFooter.saving"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/TelecomSubscriptionTypes/TelecomSubscriptionTypeList.cshtml.js"></script>
+}

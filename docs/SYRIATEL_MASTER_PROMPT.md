@@ -2,6 +2,8 @@
 
 This file is the **canonical prompt and discipline guide** for evolving the solution toward a **unified OSS/BSS telecom CRM** narrative (TM Forum SID concepts, Huawei CBS bridge story, action-oriented UI). It does **not** replace product ownership or legal commitments.
 
+**Arabic strategic prompt + project-alignment annex:** [CRM_MASTER_PROMPT_AR.md](./CRM_MASTER_PROMPT_AR.md) (same repo; do not duplicate SQL-level detail there — keep mapping in separate migration docs).
+
 **Product name (Syriatel / contract):** **Syriatel Macquires CRM** — the white-label build is referred to internally as **Macquires Telecom** until a full nuclear cut (Track B) or solution rename completes.
 
 ---
@@ -111,7 +113,15 @@ Password for all accounts below: **`123456`**. Each user has **one** Identity ro
 | Showroom | `st-showroom@syriatelecom-demo.local` | `TelecomShowroom` |
 | Back office | `st-backoffice@syriatelecom-demo.local` | `TelecomBackOffice` |
 | Call center | `st-callcenter@syriatelecom-demo.local` | `TelecomCallCenter` |
-| MIS / Management | `st-mis@syriatelecom-demo.local` | `TelecomManagement` |
+| GM / MIS | `st-mis@syriatelecom-demo.local` | `TelecomManagement` |
+| Regional director (North) | `st-regional-north@syriatelecom-demo.local` | `TelecomManagement` |
+| Regional director (Central) | `st-regional-central@syriatelecom-demo.local` | `TelecomManagement` |
+| Regional director (Coast) | `st-regional-coast@syriatelecom-demo.local` | `TelecomManagement` |
+| Branch manager (Mezzeh) | `st-branch-mezzeh@syriatelecom-demo.local` | `TelecomManagement` |
+| Branch manager (Aleppo) | `st-branch-aleppo@syriatelecom-demo.local` | `TelecomManagement` |
+| Branch manager (Tartus) | `st-branch-tartus@syriatelecom-demo.local` | `TelecomManagement` |
+
+Strategic analytics: `/Telecom/StrategicAnalytics` — GM sees national drill-down; regional/branch accounts are scoped via `OrgUnit` (seeded in `OrgUnitSeeder` + `StrategicMisDemoSeeder`).
 
 Seeder: `Infrastructure/SeedManager/Demos/TelecomDemoIdentitySeeder.cs` (runs after catalog roles are assigned). **JWT** issued on login/refresh includes **`ClaimTypes.Role`** entries so `[Authorize(Roles = …)]` on `TelecomController` is enforced.
 

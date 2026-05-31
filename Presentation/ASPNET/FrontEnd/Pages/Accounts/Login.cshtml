@@ -1,68 +1,178 @@
 ﻿@page
+@inject IHtmlLocalizer<SharedResources> L
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = L["Login_PageTitle"].Value;
+    ViewData["AuthHeroTitle"] = L["Login_AuthHeroTitle"].Value;
+    ViewData["AuthHeroLead"] = L["Login_AuthHeroLead"].Value;
+    ViewData["AuthHeroCompact"] = false;
+    ViewData["AuthViewportFit"] = false;
+    ViewData["AuthFooterOneLine"] = true;
 }
 
-<div id="app" class="container-fluid" v-cloak>
-    <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
-        <div class="bg-white rounded p-4 p-sm-5 my-4 mx-3">
-            <div class="row">
-                <div class="col-md-12 text-center mb-3">
-                    <h3 class="text-dark">Log In</h3>
-                    <a asp-page="/Index" class="">
-                        <p><i class="fas fa-home me-2" style="color: var(--primary);"></i><span class="text-dark">INDOTALENT</span></p>
-                    </a>
-                </div>
-                <div class="col-md-12">
-                    <form v-on:submit.prevent="handleSubmit">
-                        <div class="form-group mb-2">
-                            <label for="Email">Email address</label>
-                            <input id="Email"
-                                   name="Email"
-                                   type="email"
-                                   class="form-control"
-                                   placeholder="name@example.com"
-                                   v-model="state.email"
-                                   v-on:input="state.errors.email = ''">
-                            <label v-if="state.errors.email" class="text-danger">{{ state.errors.email }}</label>
-                        </div>
-                        <div class="form-group mb-2">
-                            <label for="Password">Password</label>
-                            <input id="Password"
-                                   name="Password"
-                                   type="password"
-                                   class="form-control"
-                                   placeholder="Password"
-                                   v-model="state.password"
-                                   v-on:input="state.errors.password = ''">
-                            <label v-if="state.errors.password" class="text-danger">{{ state.errors.password }}</label>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-end mb-2">
-                            <a asp-page="/Accounts/ForgotPassword">Forgot Password</a>
-                        </div>
-                        <button type="submit"
-                                v-bind:disabled="state.isSubmitting"
-                                class="btn btn-primary w-100 mb-2">
-                            <span class="spinner-border spinner-border-sm me-2"
-                                  v-if="state.isSubmitting"
-                                  role="status"
-                                  aria-hidden="true"></span>
-                            <span>{{ state.isSubmitting ? 'Logging In...' : 'Log In' }}</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
+@section styles {
+    <style>
+        .login-syriatel-wrap {
+            width: 100%;
+            margin: 0 auto;
+        }
 
-            <div class="row">
-                <div class="col-md-12">
-                    <p class="text-start mb-0">Don't have an Account? <a asp-page="/Accounts/Register">Register</a></p>
-                </div>
-            </div>
+        .login-syriatel-wrap--compact .login-syriatel-card {
+            max-width: 25rem;
+            padding: 1.15rem 1.25rem 1.25rem;
+            border-radius: 11px;
+        }
+
+        @@media (min-width: 400px) {
+            .login-syriatel-wrap--compact .login-syriatel-card {
+                padding: 1.3rem 1.4rem 1.4rem;
+            }
+        }
+
+        .login-syriatel-card {
+            width: 100%;
+            max-width: 460px;
+            border: 1px solid var(--sys-border, #e2e8f0);
+            border-radius: var(--sys-radius, 12px);
+            box-shadow: var(--sys-shadow-card, 0 4px 12px rgba(15, 23, 42, 0.03));
+            background: var(--sys-card-bg, #ffffff);
+        }
+
+        .login-syriatel-wrap--compact .login-lang-toggle {
+            margin: 0.4rem !important;
+        }
+
+        .login-syriatel-wrap--compact .login-syriatel-logo {
+            max-height: 64px;
+            margin-bottom: 0.5rem !important;
+        }
+
+        .login-syriatel-wrap--compact .login-syriatel-headline {
+            font-size: 1.1rem;
+        }
+
+        .login-lang-toggle .btn {
+            font-size: 0.72rem;
+            padding: 0.2rem 0.45rem;
+            border-color: var(--sys-border, #e2e8f0);
+            color: var(--sys-text-muted, #64748b);
+        }
+
+        .login-lang-toggle .btn.btn-secondary {
+            background: var(--sys-bg, #f8fafc) !important;
+            border-color: var(--sys-border, #e2e8f0) !important;
+            color: var(--sys-text-main, #1e293b) !important;
+        }
+
+        .login-syriatel-form .form-control:focus {
+            border-color: var(--sys-brand-red, #c8102e);
+            box-shadow: 0 0 0 0.2rem var(--sys-brand-red-ring, rgba(200, 16, 46, 0.15));
+        }
+
+        .login-syriatel-form .login-ltr-field {
+            direction: ltr;
+            text-align: start;
+        }
+
+        .login-syriatel-logo {
+            max-height: 80px;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .login-syriatel-wrap--compact .login-syriatel-form .form-label {
+            margin-bottom: 0.2rem;
+        }
+
+        .login-syriatel-wrap--compact .login-syriatel-form .mb-3 {
+            margin-bottom: 0.65rem !important;
+        }
+
+        .login-syriatel-wrap--compact .login-syriatel-form .mb-2 {
+            margin-bottom: 0.45rem !important;
+        }
+
+        .login-syriatel-wrap--compact .login-syriatel-form .mb-3foot {
+            margin-bottom: 0.55rem !important;
+        }
+    </style>
+}
+
+<div id="app"
+     class="login-syriatel-wrap login-syriatel-wrap--compact"
+     v-cloak
+     v-bind:dir="uiLang === 'ar' ? 'rtl' : 'ltr'"
+     v-bind:lang="uiLang">
+    <div class="login-syriatel-card position-relative">
+        <div class="login-lang-toggle btn-group btn-group-sm position-absolute top-0 end-0"
+             role="group"
+             v-bind:aria-label="t('langGroup')">
+            <button type="button"
+                    v-bind:class="langBtnClass('ar')"
+                    v-on:click="setLang('ar')">{{ t('langAr') }}</button>
+            <button type="button"
+                    v-bind:class="langBtnClass('en')"
+                    v-on:click="setLang('en')">{{ t('langEn') }}</button>
         </div>
+
+        <div class="text-center pt-2 mb-2">
+            <img src="@Url.Content("~/brand/logo.png")"
+                 alt="@L["Auth_LogoAlt"]"
+                 class="login-syriatel-logo"
+                 width="280"
+                 height="78"
+                 loading="eager" />
+            <h1 class="login-syriatel-headline text-dark mb-0 fw-semibold">{{ t('signInH1') }}</h1>
+            <p class="small text-muted mb-0 mt-1">{{ t('brandLine') }}</p>
+        </div>
+
+        <form class="login-syriatel-form" v-on:submit.prevent="handleSubmit">
+            <div class="mb-3">
+                <label class="form-label small fw-semibold text-secondary" for="Email">{{ t('emailLabel') }}</label>
+                <input id="Email"
+                       name="Email"
+                       type="email"
+                       class="form-control form-control-sm login-ltr-field"
+                       v-bind:placeholder="t('emailPlaceholder')"
+                       autocomplete="username"
+                       v-model="state.email"
+                       v-on:input="state.errors.email = ''">
+                <div v-if="state.errors.email" class="form-text text-danger small">{{ state.errors.email }}</div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label small fw-semibold text-secondary" for="Password">{{ t('passwordLabel') }}</label>
+                <input id="Password"
+                       name="Password"
+                       type="password"
+                       class="form-control form-control-sm login-ltr-field"
+                       v-bind:placeholder="t('passwordPlaceholder')"
+                       autocomplete="current-password"
+                       v-model="state.password"
+                       v-on:input="state.errors.password = ''">
+                <div v-if="state.errors.password" class="form-text text-danger small">{{ state.errors.password }}</div>
+            </div>
+            <div class="d-flex justify-content-end mb-3foot">
+                <a asp-page="/Accounts/ForgotPassword" class="small">{{ t('forgotLink') }}</a>
+            </div>
+            <button type="submit"
+                    v-bind:disabled="state.isSubmitting"
+                    class="btn btn-primary w-100 py-2 fw-semibold btn-sm d-inline-flex align-items-center justify-content-center gap-2">
+                <span class="spinner-border spinner-border-sm"
+                      v-if="state.isSubmitting"
+                      role="status"
+                      aria-hidden="true"></span>
+                <span>{{ state.isSubmitting ? t('submitSigning') : t('submit') }}</span>
+            </button>
+        </form>
+
+        <p class="text-center small text-muted mt-2 mb-0">
+            <a asp-page="/Accounts/Register">{{ t('requestAccess') }}</a>
+            <span class="text-muted px-1">{{ t('linkSep') }}</span>
+            <a asp-page="/Index">{{ t('home') }}</a>
+        </p>
     </div>
 </div>
 
-
 @section scripts {
-    <script type ="module" src="~/FrontEnd/Pages/Accounts/Login.cshtml.js"></script>
+    <script src="~/FrontEnd/Pages/Accounts/Login.cshtml.js"></script>
 }

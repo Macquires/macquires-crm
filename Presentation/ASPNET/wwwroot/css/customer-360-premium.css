@@ -1,0 +1,66 @@
+/* Customer 360 premium blocks — system tokens only */
+.customer-360-premium {
+    border-top: 4px solid var(--sys-brand-red);
+    background: linear-gradient(180deg, var(--sys-card-bg) 0%, var(--sys-bg) 100%);
+}
+
+.customer-360-asset-card {
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.customer-360-asset-card:hover {
+    box-shadow: var(--sys-shadow-card-hover);
+}
+
+.customer-360-asset-card.is-primary {
+    border-color: var(--sys-brand-red);
+}
+
+.customer-360-asset-card.is-processing {
+    opacity: 0.85;
+    background: color-mix(in srgb, var(--sys-card-bg) 82%, transparent);
+}
+
+.customer-360-skel {
+    background: linear-gradient(
+        90deg,
+        var(--sys-border) 25%,
+        var(--sys-bg) 50%,
+        var(--sys-border) 75%
+    );
+    background-size: 200% 100%;
+    animation: c360-skel-shimmer 1.2s infinite;
+}
+
+@keyframes c360-skel-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.c360-pipeline-step .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sys-border);
+}
+
+.c360-pipeline-step.done .dot {
+    background: var(--sys-text-main);
+}
+
+.c360-pipeline-step.active .dot {
+    background: var(--sys-text-muted);
+    box-shadow: 0 0 0 3px var(--sys-brand-red-ring);
+}
+
+.c360-pipeline-step.failed .dot {
+    background: var(--sys-brand-red);
+}
+
+.c360-pipeline-error {
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border);
+    color: var(--sys-brand-red);
+}

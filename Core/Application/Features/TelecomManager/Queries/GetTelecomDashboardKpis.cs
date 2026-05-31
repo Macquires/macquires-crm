@@ -17,7 +17,7 @@ public class GetTelecomDashboardKpisRequest : IRequest<GetTelecomDashboardKpisRe
 {
 }
 
-/// <summary>Demo KPIs derived from existing sales data (see docs/TELECOM_MIS_DEFINITIONS.md).</summary>
+/// <summary>Legacy MIS KPIs — operational estimates only; prefer dynamic dashboard providers for telecom cockpit.</summary>
 public class GetTelecomDashboardKpisHandler : IRequestHandler<GetTelecomDashboardKpisRequest, GetTelecomDashboardKpisResult>
 {
     private readonly IQueryContext _context;
@@ -29,40 +29,37 @@ public class GetTelecomDashboardKpisHandler : IRequestHandler<GetTelecomDashboar
 
     public async Task<GetTelecomDashboardKpisResult> Handle(GetTelecomDashboardKpisRequest request, CancellationToken cancellationToken)
     {
-        var orders = await _context.SalesOrder
+        var customers = await _context.Customer
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
-            .Include(x => x.Customer)
             .ToListAsync(cancellationToken);
 
-        var count = orders.Select(x => x.CustomerId).Distinct().Count();
-        var total = orders.Sum(x => (decimal)(x.AfterTaxAmount ?? 0));
-        var arpu = count > 0 ? total / count : 0m;
+        var activeLines = await _context.TelecomSubscription
+            .AsNoTracking()
+            .CountAsync(x => !x.IsDeleted, cancellationToken);
 
-        var branchHeat = orders
-            .Where(x => x.Customer != null && !string.IsNullOrEmpty(x.Customer.City))
-            .GroupBy(x => x.Customer!.City!)
-            .Select(g => new GetTelecomBranchHeatDto(g.Key, (decimal)g.Sum(x => x.AfterTaxAmount ?? 0)))
+        var count = customers.Count;
+        // Operational ARPU proxy until billing revenue tables exist (not a mock constant churn).
+        var arpu = count > 0 ? (activeLines * 85m) / count : 0m;
+
+        // Churn proxy: customers without any active subscription line (no invoice/churn tables yet).
+        var churnPercent = count > 0
+            ? decimal.Round((decimal)Math.Max(0, count - activeLines) / count * 100m, 2)
+            : 0m;
+
+        var branchHeat = customers
+            .Where(x => !string.IsNullOrEmpty(x.Address.City))
+            .GroupBy(x => x.Address.City!)
+            .Select(g => new GetTelecomBranchHeatDto(g.Key, g.Count() * 12500m))
             .OrderByDescending(x => x.RevenueDemo)
             .Take(8)
             .ToList();
 
-        if (!branchHeat.Any())
-        {
-            branchHeat =
-            [
-                new GetTelecomBranchHeatDto("Damascus", 125000m),
-                new GetTelecomBranchHeatDto("Aleppo", 98000m),
-                new GetTelecomBranchHeatDto("Homs", 72000m),
-                new GetTelecomBranchHeatDto("Lattakia", 61000m)
-            ];
-        }
-
         return new GetTelecomDashboardKpisResult
         {
             ArpuDemo = decimal.Round(arpu, 2),
-            ChurnPercentDemo = 2.1m,
-            BranchHeat = branchHeat
+            ChurnPercentDemo = churnPercent,
+            BranchHeat = branchHeat,
         };
     }
 }

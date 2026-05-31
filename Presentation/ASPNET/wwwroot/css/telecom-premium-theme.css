@@ -1,0 +1,876 @@
+/* Syriatel Premium Telecom Dashboard — enterprise BSS UI tokens (fonts loaded in __css.cshtml) */
+
+:root {
+    --sys-bg: #f8fafc;
+    --sys-card-bg: #ffffff;
+    --sys-text-main: #1e293b;
+    --sys-text-muted: #64748b;
+    --sys-border: #e2e8f0;
+    --sys-brand-red: #c8102e;
+    --sys-brand-red-hover: #a30d25;
+    --sys-brand-red-ring: rgba(200, 16, 46, 0.15);
+    --sys-radius: 12px;
+    --sys-shadow-card: 0 4px 12px rgba(15, 23, 42, 0.03);
+    --sys-shadow-card-hover: 0 8px 24px rgba(15, 23, 42, 0.06);
+    --sys-font-stack: 'Tajawal', 'Cairo', 'Inter', system-ui, sans-serif;
+    --sys-line-height: 1.6;
+
+    /* Legacy admin template / Syncfusion aliases → system tokens only */
+    --primary: var(--sys-brand-red);
+    --bs-primary: var(--sys-brand-red);
+    --bs-blue: var(--sys-brand-red);
+    --light: var(--sys-bg);
+    --dark: var(--sys-text-muted);
+}
+
+/* Scoped page shell */
+.telecom-premium-page {
+    font-family: var(--sys-font-stack);
+    line-height: var(--sys-line-height);
+    color: var(--sys-text-main);
+    background: var(--sys-bg);
+    min-height: calc(100vh - 4rem);
+    padding: 1rem 0 2rem;
+}
+
+/* Inside admin layout: do not force viewport band (breaks non-admin RTL shell) */
+body.syr-tel-portal .form-card.telecom-premium-page,
+body.syr-tel-portal .adminbody > .telecom-premium-page,
+body.syr-tel-portal .adminbody > #app.telecom-premium-page,
+body.syr-tel-portal .adminbody #bo-dashboard-page.telecom-premium-page {
+    min-height: 0;
+    background: transparent;
+    padding-top: 0;
+    padding-bottom: 1rem;
+}
+
+body.syr-tel-portal .form-card.telecom-premium-page {
+    padding: 0;
+}
+
+.telecom-premium-page h1,
+.telecom-premium-page h2,
+.telecom-premium-page h3,
+.telecom-premium-page h4,
+.telecom-premium-page .h1,
+.telecom-premium-page .h2,
+.telecom-premium-page .h3,
+.telecom-premium-page .h4 {
+    font-weight: 700;
+    color: var(--sys-text-main);
+    line-height: 1.35;
+}
+
+.telecom-premium-page .text-muted {
+    color: var(--sys-text-muted) !important;
+}
+
+/* Bento grid */
+.telecom-bento-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(12, 1fr);
+}
+
+@media (max-width: 991.98px) {
+    .telecom-bento-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .telecom-bento-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.telecom-bento-span-12 { grid-column: span 12; }
+.telecom-bento-span-8 { grid-column: span 8; }
+.telecom-bento-span-6 { grid-column: span 6; }
+.telecom-bento-span-4 { grid-column: span 4; }
+.telecom-bento-span-3 { grid-column: span 3; }
+
+@media (max-width: 991.98px) {
+    .telecom-bento-span-8,
+    .telecom-bento-span-6,
+    .telecom-bento-span-4,
+    .telecom-bento-span-3 {
+        grid-column: span 6;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .telecom-bento-span-12,
+    .telecom-bento-span-8,
+    .telecom-bento-span-6,
+    .telecom-bento-span-4,
+    .telecom-bento-span-3 {
+        grid-column: span 1;
+    }
+}
+
+.telecom-bento-card {
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    box-shadow: var(--sys-shadow-card);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.2s ease;
+}
+
+.telecom-bento-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sys-shadow-card-hover);
+}
+
+.telecom-bento-card .card-body {
+    padding: 1rem 1.15rem;
+}
+
+.telecom-bento-kpi-label {
+    font-size: 0.8rem;
+    color: var(--sys-text-muted);
+    font-weight: 500;
+}
+
+.telecom-bento-kpi-value {
+    font-size: clamp(1.35rem, 3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--sys-text-main);
+}
+
+/* Primary CTA — brand red only here */
+.telecom-premium-page .btn-telecom-primary {
+    background-color: var(--sys-brand-red);
+    border-color: var(--sys-brand-red);
+    color: var(--sys-card-bg);
+    font-weight: 600;
+    border-radius: calc(var(--sys-radius) - 2px);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.telecom-premium-page .btn-telecom-primary:hover,
+.telecom-premium-page .btn-telecom-primary:focus {
+    background-color: var(--sys-brand-red-hover);
+    border-color: var(--sys-brand-red-hover);
+    color: var(--sys-card-bg);
+    box-shadow: 0 4px 14px var(--sys-brand-red-ring);
+}
+
+.telecom-premium-page .btn-outline-telecom {
+    border-color: var(--sys-border);
+    color: var(--sys-text-main);
+    border-radius: calc(var(--sys-radius) - 2px);
+}
+
+.telecom-premium-page .btn-outline-telecom:hover {
+    background: var(--sys-bg);
+    border-color: var(--sys-text-muted);
+    color: var(--sys-text-main);
+}
+
+/* Duotone glowing badges */
+.telecom-duotone-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.telecom-duotone-badge .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.telecom-duotone-badge.duotone-success {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+    border-color: var(--sys-border);
+}
+
+.telecom-duotone-badge.duotone-success .pulse-dot {
+    background: var(--sys-text-main);
+    animation: telecom-pulse-muted 1.8s ease-in-out infinite;
+}
+
+.telecom-duotone-badge.duotone-warning {
+    background: var(--sys-bg);
+    color: var(--sys-text-muted);
+    border-color: var(--sys-border);
+}
+
+.telecom-duotone-badge.duotone-warning .pulse-dot {
+    background: var(--sys-text-muted);
+    animation: telecom-pulse-muted 1.8s ease-in-out infinite;
+}
+
+.telecom-duotone-badge.duotone-danger {
+    background: var(--sys-card-bg);
+    color: var(--sys-brand-red);
+    border-color: var(--sys-brand-red-ring);
+}
+
+.telecom-duotone-badge.duotone-danger .pulse-dot {
+    background: var(--sys-brand-red);
+    animation: telecom-pulse-red 1.2s ease-in-out infinite;
+}
+
+@keyframes telecom-pulse-red {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(1.15); }
+}
+
+.telecom-duotone-badge.duotone-info {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+    border-color: var(--sys-border);
+}
+
+.telecom-duotone-badge.duotone-info .pulse-dot {
+    background: var(--sys-text-muted);
+    animation: telecom-pulse-muted 1.8s ease-in-out infinite;
+}
+
+.telecom-duotone-badge.duotone-neutral {
+    background: var(--sys-bg);
+    color: var(--sys-text-muted);
+    border-color: var(--sys-border);
+}
+
+.telecom-duotone-badge.duotone-ai {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+    border-color: var(--sys-border);
+}
+
+.telecom-duotone-badge.duotone-ai .pulse-dot {
+    background: var(--sys-brand-red);
+    animation: telecom-pulse-red 1.6s ease-in-out infinite;
+}
+
+@keyframes telecom-pulse-muted {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 var(--sys-brand-red-ring); }
+    50% { opacity: 0.65; transform: scale(0.92); box-shadow: 0 0 0 4px transparent; }
+}
+
+/* Form controls */
+.telecom-premium-page .form-control,
+.telecom-premium-page .form-select,
+.telecom-premium-page .input-group-text {
+    border: 1px solid var(--sys-border);
+    border-radius: calc(var(--sys-radius) - 4px);
+    color: var(--sys-text-main);
+    background-color: var(--sys-card-bg);
+    box-shadow: inset 0 1px 2px var(--sys-shadow-card);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.telecom-premium-page .form-control:focus,
+.telecom-premium-page .form-select:focus {
+    border-color: var(--sys-brand-red);
+    box-shadow: 0 0 0 3px var(--sys-brand-red-ring);
+    outline: 0;
+}
+
+.telecom-premium-page .form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--sys-text-muted);
+}
+
+.telecom-premium-page .form-check-input:checked {
+    background-color: var(--sys-brand-red);
+    border-color: var(--sys-brand-red);
+}
+
+/* Integration health KPI strip */
+.telecom-health-bento .telecom-bento-card {
+    min-height: 72px;
+}
+
+.telecom-health-bento .health-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--sys-text-main);
+}
+
+/* Syncfusion grid overrides inside premium pages */
+.telecom-premium-page .e-grid {
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    overflow: hidden;
+    font-family: var(--sys-font-stack);
+}
+
+.telecom-premium-page .e-grid .e-headercell {
+    background: var(--sys-bg) !important;
+    color: var(--sys-text-main) !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem;
+    border-color: var(--sys-border) !important;
+}
+
+.telecom-premium-page .e-grid .e-rowcell {
+    color: var(--sys-text-main);
+    border-color: var(--sys-border) !important;
+}
+
+.telecom-premium-page .e-grid .e-altrow .e-rowcell {
+    background: color-mix(in srgb, var(--sys-bg) 55%, var(--sys-card-bg)) !important;
+}
+
+.telecom-premium-page .e-grid .e-row:hover .e-rowcell {
+    background: var(--sys-bg) !important;
+}
+
+.telecom-premium-page .e-gridpager {
+    background: var(--sys-card-bg) !important;
+    border-top: 1px solid var(--sys-border) !important;
+    color: var(--sys-text-muted);
+}
+
+.telecom-premium-page .grid-container {
+    border-radius: 0 0 var(--sys-radius) var(--sys-radius);
+}
+
+/* Hero panels */
+.telecom-premium-hero {
+    border: 1px solid var(--sys-border) !important;
+    border-inline-start: 4px solid var(--sys-brand-red) !important;
+    border-radius: var(--sys-radius) !important;
+    background: linear-gradient(135deg, var(--sys-card-bg) 0%, var(--sys-bg) 100%) !important;
+    box-shadow: var(--sys-shadow-card) !important;
+}
+
+[dir="rtl"] .telecom-premium-hero {
+    border-inline-start: none !important;
+    border-inline-end: 4px solid var(--sys-brand-red) !important;
+}
+
+/* Catalog offering cards align with bento */
+.telecom-premium-page .offering-card.telecom-bento-card,
+.telecom-catalog-root.telecom-premium-page .offering-card {
+    border-radius: var(--sys-radius) !important;
+}
+
+/* Legacy syriatel red mapping inside premium scope */
+.telecom-premium-page .btn-syriatel-red,
+.telecom-catalog-root.telecom-premium-page .btn-syriatel-red {
+    background-color: var(--sys-brand-red) !important;
+    border-color: var(--sys-brand-red) !important;
+}
+
+.telecom-premium-page .text-syriatel-red {
+    color: var(--sys-brand-red) !important;
+}
+
+/* Telecom Hub operation tiles — brand red only on primary activate */
+.telecom-premium-page .big-tile {
+    border: none;
+    border-radius: var(--sys-radius);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+}
+
+.telecom-premium-page .big-tile:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--sys-shadow-card-hover);
+}
+
+.telecom-premium-page .tile-activate {
+    background: linear-gradient(145deg, var(--sys-brand-red), var(--sys-brand-red-hover)) !important;
+}
+
+.telecom-premium-page .tile-migrate,
+.telecom-premium-page .tile-takeover,
+.telecom-premium-page .tile-simswap,
+.telecom-premium-page .tile-vas,
+.telecom-premium-page .tile-package,
+.telecom-premium-page .tile-support,
+.telecom-premium-page .telecom-dash-tile.tile-migrate,
+.telecom-premium-page .telecom-dash-tile.tile-takeover,
+.telecom-premium-page .telecom-dash-tile.tile-support {
+    background: linear-gradient(145deg, var(--sys-text-main), color-mix(in srgb, var(--sys-text-main) 85%, black)) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .telecom-search-group .form-control {
+    box-shadow: inset 0 1px 2px var(--sys-shadow-card);
+}
+
+/* Reduce aggressive danger headers on settings */
+.telecom-premium-page .settings-section-header {
+    background: var(--sys-bg) !important;
+    border-bottom: 1px solid var(--sys-border);
+    color: var(--sys-text-main);
+    font-weight: 700;
+}
+
+.telecom-premium-page .settings-section-header i {
+    color: var(--sys-brand-red);
+}
+
+/* Global Settings — integrations section */
+.global-settings-integrations {
+    border: 1px solid var(--sys-border);
+    background: linear-gradient(180deg, var(--sys-card-bg) 0%, var(--sys-bg) 100%);
+}
+
+.global-settings-integrations .integration-legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-radius: calc(var(--sys-radius) - 2px);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--sys-text-main);
+    height: 100%;
+}
+
+.global-settings-integrations .integration-legend-item .legend-key {
+    flex-shrink: 0;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+}
+
+.global-settings-integrations .integration-legend-on {
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border);
+}
+
+.global-settings-integrations .integration-legend-on .legend-key {
+    background: var(--sys-brand-red-ring);
+    color: var(--sys-text-main);
+}
+
+.global-settings-integrations .integration-legend-off {
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border);
+}
+
+.global-settings-integrations .integration-legend-off .legend-key {
+    background: var(--sys-border);
+    color: var(--sys-text-muted);
+}
+
+.global-settings-integrations .integration-legend-item code {
+    font-size: 0.8em;
+    color: var(--sys-text-muted);
+    background: color-mix(in srgb, var(--sys-card-bg) 60%, transparent);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+}
+
+.integration-toggle-card {
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    padding: 1rem 1.1rem;
+    height: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.integration-toggle-card.is-off {
+    background: var(--sys-bg);
+    border-color: var(--sys-text-muted);
+    box-shadow: inset 0 0 0 1px var(--sys-border);
+}
+
+.integration-toggle-card:not(.is-off) {
+    border-color: var(--sys-border);
+    box-shadow: var(--sys-shadow-card);
+}
+
+.integration-toggle-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+
+.integration-toggle-icon.icon-cbs {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+}
+
+.integration-toggle-icon.icon-hlr {
+    background: var(--sys-bg);
+    color: var(--sys-brand-red);
+}
+
+.integration-toggle-icon.icon-sms {
+    background: var(--sys-bg);
+    color: var(--sys-text-muted);
+}
+
+.integration-toggle-hint {
+    color: var(--sys-text-muted) !important;
+    min-height: 2.5rem;
+}
+
+.integration-switch-lg .form-check-input {
+    width: 2.75rem;
+    height: 1.4rem;
+    cursor: pointer;
+}
+
+.global-settings-save-bar {
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+}
+
+body.syr-tel-portal .adminbody {
+    padding-bottom: 1.25rem;
+}
+
+/* Grid panel: fixed viewport band; Syncfusion scrolls rows inside */
+.telecom-premium-page .telecom-grid-panel .grid-container {
+    height: calc(100vh - 17.5rem);
+    min-height: 280px;
+    max-height: calc(100vh - 13rem);
+    width: 100%;
+    overflow: hidden;
+}
+
+.telecom-premium-page .telecom-grid-panel .grid-container .e-grid {
+    height: 100% !important;
+}
+
+.telecom-premium-page .telecom-grid-panel .e-gridcontent {
+    overflow-x: auto !important;
+}
+
+.telecom-premium-page .telecom-grid-panel .e-gridpager {
+    display: block !important;
+    visibility: visible !important;
+    min-height: 42px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 991.98px) {
+    .telecom-premium-page .telecom-grid-panel .grid-container {
+        height: calc(100vh - 15rem);
+        min-height: 240px;
+    }
+}
+
+/* =============================================================================
+   Global system palette — Bootstrap, portal shell, Syncfusion, legacy admin
+   ============================================================================= */
+body.syr-tel-portal,
+body.syriatel-operator-console {
+    font-family: var(--sys-font-stack);
+    color: var(--sys-text-main);
+    background: var(--sys-bg) !important;
+}
+
+body.syr-tel-portal .content a:not(.btn):not(.dropdown-item),
+body.syr-tel-portal .content .navbar .nav-link,
+body.syr-tel-portal .text-primary {
+    color: var(--sys-brand-red) !important;
+}
+
+/* Sidebar nav keeps its own palette (see syr-tel-portal.css) */
+body.syr-tel-portal .sidebar.syr-sidebar a,
+body.syr-tel-portal .sidebar.syr-sidebar .nav-link {
+    color: inherit;
+}
+
+body.syr-tel-portal .btn-primary,
+body.syr-tel-portal .btn-danger,
+body.syr-tel-portal .e-btn.e-primary,
+body.syr-tel-portal .e-css.e-btn.e-primary {
+    background-color: var(--sys-brand-red) !important;
+    border-color: var(--sys-brand-red) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+body.syr-tel-portal .btn-primary:hover,
+body.syr-tel-portal .btn-danger:hover {
+    background-color: var(--sys-brand-red-hover) !important;
+    border-color: var(--sys-brand-red-hover) !important;
+}
+
+body.syr-tel-portal .btn-success {
+    background-color: var(--sys-text-main) !important;
+    border-color: var(--sys-text-main) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+body.syr-tel-portal .btn-info,
+body.syr-tel-portal .btn-secondary {
+    background-color: var(--sys-text-muted) !important;
+    border-color: var(--sys-text-muted) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+body.syr-tel-portal .text-info,
+body.syr-tel-portal .text-primary,
+body.syr-tel-portal .text-secondary {
+    color: var(--sys-text-muted) !important;
+}
+
+body.syr-tel-portal .btn-outline-primary,
+body.syr-tel-portal .btn-outline-danger {
+    color: var(--sys-brand-red) !important;
+    border-color: var(--sys-brand-red) !important;
+}
+
+body.syr-tel-portal .btn-outline-primary:hover,
+body.syr-tel-portal .btn-outline-danger:hover {
+    background: var(--sys-brand-red-ring) !important;
+}
+
+body.syr-tel-portal .bg-primary,
+body.syr-tel-portal .bg-danger {
+    background-color: var(--sys-brand-red) !important;
+}
+
+/* Status badges — semantic colors (success = green; others = Bootstrap defaults) */
+body.syr-tel-portal .badge.bg-success,
+.telecom-premium-page .badge.bg-success {
+    background-color: #198754 !important;
+    color: #fff !important;
+}
+
+body.syr-tel-portal .badge.bg-primary,
+.telecom-premium-page .badge.bg-primary {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+body.syr-tel-portal .badge.bg-danger,
+.telecom-premium-page .badge.bg-danger {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+body.syr-tel-portal .badge.bg-warning,
+.telecom-premium-page .badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+body.syr-tel-portal .badge.bg-info,
+.telecom-premium-page .badge.bg-info {
+    background-color: #0dcaf0 !important;
+    color: #000 !important;
+}
+
+body.syr-tel-portal .badge.bg-secondary,
+.telecom-premium-page .badge.bg-secondary {
+    background-color: #6c757d !important;
+    color: #fff !important;
+}
+
+body.syr-tel-portal .text-danger,
+body.syr-tel-portal .text-syriatel-red,
+body.syr-tel-portal .syriatel-brand-accent,
+.telecom-premium-page .text-danger,
+.telecom-premium-page h2.text-danger {
+    color: var(--sys-brand-red) !important;
+}
+
+.telecom-premium-page .text-success {
+    color: var(--sys-text-main) !important;
+}
+
+.telecom-premium-page .text-info,
+.telecom-premium-page .text-warning,
+.telecom-premium-page .text-primary,
+.telecom-premium-page .text-secondary {
+    color: var(--sys-text-muted) !important;
+}
+
+.telecom-premium-page .bg-white {
+    background-color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .bg-secondary:not(.badge) {
+    background-color: var(--sys-text-muted) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .btn-danger {
+    background-color: var(--sys-brand-red) !important;
+    border-color: var(--sys-brand-red) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .btn-success {
+    background-color: var(--sys-text-main) !important;
+    border-color: var(--sys-text-main) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .btn-info {
+    background-color: var(--sys-text-muted) !important;
+    border-color: var(--sys-text-muted) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .btn-outline-danger {
+    color: var(--sys-brand-red) !important;
+    border-color: var(--sys-brand-red) !important;
+}
+
+.telecom-premium-page .alert-success {
+    background: var(--sys-bg) !important;
+    border-color: var(--sys-border) !important;
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .text-success {
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .text-warning {
+    color: var(--sys-text-muted) !important;
+}
+
+body.syr-tel-portal .text-muted {
+    color: var(--sys-text-muted) !important;
+}
+
+body.syr-tel-portal .border,
+body.syr-tel-portal .card,
+body.syr-tel-portal fieldset,
+body.syr-tel-portal .form-card {
+    border-color: var(--sys-border) !important;
+}
+
+body.syr-tel-portal .card,
+body.syr-tel-portal fieldset,
+body.syr-tel-portal .form-card-header,
+body.syr-tel-portal .form-card-body,
+body.syr-tel-portal .form-card-footer {
+    background-color: var(--sys-card-bg) !important;
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .alert-success {
+    background: var(--sys-bg) !important;
+    border-color: var(--sys-border) !important;
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .alert-warning {
+    background: var(--sys-bg) !important;
+    border-color: var(--sys-text-muted) !important;
+    color: var(--sys-text-muted) !important;
+}
+
+body.syr-tel-portal .alert-danger {
+    background: var(--sys-card-bg) !important;
+    border-color: var(--sys-brand-red) !important;
+    color: var(--sys-brand-red) !important;
+}
+
+body.syr-tel-portal .e-grid .e-headercell {
+    background: var(--sys-bg) !important;
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .e-grid .e-rowcell {
+    color: var(--sys-text-main) !important;
+    border-color: var(--sys-border) !important;
+}
+
+body.syr-tel-portal .e-grid .e-altrow .e-rowcell {
+    background: color-mix(in srgb, var(--sys-bg) 55%, var(--sys-card-bg)) !important;
+}
+
+body.syr-tel-portal .e-grid .e-row:hover .e-rowcell {
+    background: var(--sys-bg) !important;
+}
+
+body.syr-tel-portal .e-grid .e-gridpager .e-currentitem,
+body.syr-tel-portal .e-checkbox-wrapper .e-frame.e-check,
+body.syr-tel-portal .e-treeview .e-list-item.e-active > .e-text-content,
+body.syr-tel-portal .e-treeview .e-list-item.e-active > .e-fullrow,
+body.syr-tel-portal .e-treeview .e-list-item.e-hover > .e-fullrow,
+body.syr-tel-portal .e-dropdownbase .e-list-item.e-active {
+    background-color: var(--sys-brand-red) !important;
+    border-color: var(--sys-brand-red) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+body.syr-tel-portal .e-row.e-altrow {
+    background-color: var(--sys-bg) !important;
+}
+
+body.syr-tel-portal ::-webkit-scrollbar-track {
+    background-color: var(--sys-bg);
+}
+
+body.syr-tel-portal ::-webkit-scrollbar-thumb {
+    background-color: var(--sys-border);
+    border-color: var(--sys-bg);
+}
+
+body.syr-tel-portal ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--sys-text-muted);
+}
+
+body.syr-tel-portal .syriatel-unified-header {
+    border-color: var(--sys-border) !important;
+    box-shadow: var(--sys-shadow-card) !important;
+}
+
+body.syr-tel-portal .syriatel-header-title {
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .syriatel-header-brand:hover .syriatel-header-title {
+    color: var(--sys-brand-red) !important;
+}
+
+body.syr-tel-portal .topbar-currency-pill {
+    background: var(--sys-bg) !important;
+    border-color: var(--sys-border) !important;
+    color: var(--sys-text-muted) !important;
+}
+
+body.syr-tel-portal .syriatel-map-vector {
+    border-color: var(--sys-border) !important;
+    background-color: var(--sys-bg) !important;
+}
+
+body.syr-tel-portal .syriatel-map-dot {
+    background: var(--sys-brand-red) !important;
+    border-color: var(--sys-card-bg) !important;
+    box-shadow: 0 0 0 0 var(--sys-brand-red-ring);
+}
+
+body.syr-tel-portal .syriatel-map-dot--muted {
+    background: var(--sys-text-muted) !important;
+}
+
+/* Sidebar — hidden scrollbar, normal scroll */
+body.syr-tel-portal .sidebar.syr-sidebar {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}

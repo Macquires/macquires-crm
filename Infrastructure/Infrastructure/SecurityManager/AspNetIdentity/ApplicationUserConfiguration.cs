@@ -37,6 +37,31 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
             .HasMaxLength(UserIdConsts.MaxLength)
             .IsRequired(false);
 
+        builder.Property(u => u.PrimaryMenuPersona)
+            .HasConversion<int?>()
+            .IsRequired(false);
+
+        builder.Property(u => u.ManagerUserId)
+            .HasMaxLength(UserIdConsts.MaxLength)
+            .IsRequired(false);
+
+        builder.Property(u => u.OrgUnitId)
+            .HasMaxLength(IdConsts.MaxLength)
+            .IsRequired(false);
+
+        builder.HasOne(u => u.Manager)
+            .WithMany()
+            .HasForeignKey(u => u.ManagerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(u => u.OrgUnit)
+            .WithMany()
+            .HasForeignKey(u => u.OrgUnitId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(u => u.ManagerUserId);
+        builder.HasIndex(u => u.OrgUnitId);
+
         builder.HasIndex(u => u.UserName);
         builder.HasIndex(u => u.Email);
         builder.HasIndex(u => u.FirstName);

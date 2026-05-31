@@ -1,4 +1,4 @@
-﻿// Demo-only — customer tiering for Syria Telecom datasets.
+﻿// Demo-only — customer tiering for Syriatel datasets.
 using Application.Common.Repositories;
 using Domain.Entities;
 

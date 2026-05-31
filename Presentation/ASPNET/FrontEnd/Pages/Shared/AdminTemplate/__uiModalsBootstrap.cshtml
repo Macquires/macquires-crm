@@ -1,0 +1,15 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnv
+@using System.IO
+@using System.Text.Json
+@{
+    var path = System.IO.Path.Combine(HostEnv.WebRootPath ?? string.Empty, "locales", "ui-modals.json");
+    var jsonText = File.Exists(path) ? File.ReadAllText(path) : "{}";
+    var jsonJsLiteral = JsonSerializer.Serialize(jsonText);
+}
+<script>
+    try {
+        window.__UI_MODALS = JSON.parse(@Html.Raw(jsonJsLiteral));
+    } catch (e) {
+        window.__UI_MODALS = window.__UI_MODALS || {};
+    }
+</script>

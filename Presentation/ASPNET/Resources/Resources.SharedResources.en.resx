@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nav_PortalTitle" xml:space="preserve">
+    <value>Syriatel Unified Portal</value>
+  </data>
+  <data name="Nav_LangArabic" xml:space="preserve">
+    <value>Arabic</value>
+  </data>
+  <data name="Nav_LangEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Nav_MenuToggle" xml:space="preserve">
+    <value>Menu</value>
+  </data>
+  <data name="Nav_Profile" xml:space="preserve">
+    <value>My Profile</value>
+  </data>
+  <data name="Nav_Logout" xml:space="preserve">
+    <value>Log Out</value>
+  </data>
+  <data name="Nav_LangToggleAria" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Page_TelecomHubTitle" xml:space="preserve">
+    <value>Syriatel Unified Portal — Operations Hub</value>
+  </data>
+  <data name="Login_PageTitle" xml:space="preserve">
+    <value>Sign in — Syriatel</value>
+  </data>
+  <data name="Login_AuthHeroTitle" xml:space="preserve">
+    <value>Syriatel CRM</value>
+  </data>
+  <data name="Login_AuthHeroLead" xml:space="preserve">
+    <value>OSS/BSS workspace — sign in with your work email.</value>
+  </data>
+  <data name="Auth_EyebrowSyriatelCrm" xml:space="preserve">
+    <value>Syriatel</value>
+  </data>
+  <data name="Auth_HeroTitleDefault" xml:space="preserve">
+    <value>Syriatel Operational Intelligence Portal</value>
+  </data>
+  <data name="Auth_HeroLeadDefault" xml:space="preserve">
+    <value>Unified access to OSS/BSS and intelligent operations. The platform goes beyond traditional management to deliver a predictive analytics engine powered by generative AI—surfacing market trajectories, real-time risk signals, and data-driven strategic roadmaps.</value>
+  </data>
+  <data name="Auth_Feature1" xml:space="preserve">
+    <value>Service lifecycle automation: deep integration with network operations for resilient uptime and uninterrupted data flows.</value>
+  </data>
+  <data name="Auth_Feature2" xml:space="preserve">
+    <value>Unified front-to-back experience: an intelligent UX connecting showrooms, back office, and contact centers in a secure on-premises workspace.</value>
+  </data>
+  <data name="Auth_Feature3Lead" xml:space="preserve">
+    <value>Behavioral prediction engine</value>
+  </data>
+  <data name="Auth_Feature3Rest" xml:space="preserve">
+    <value>: advanced pattern discovery and anomaly detection cues before incidents occur—plus smart recommendations to boost performance and reduce churn.</value>
+  </data>
+  <data name="Auth_HeroTagline" xml:space="preserve">
+    <value>Syriatel: where human operations meet AI-native insight to shape the future of telecom.</value>
+  </data>
+  <data name="Auth_LogoAlt" xml:space="preserve">
+    <value>Syriatel</value>
+  </data>
+  <data name="Auth_FooterLine1" xml:space="preserve">
+    <value>Platform, branding, and content are the property of Syriatel.</value>
+  </data>
+  <data name="Auth_FooterLine2" xml:space="preserve">
+    <value>All rights reserved © Syriatel.</value>
+  </data>
+  <data name="Auth_FooterLine3" xml:space="preserve">
+    <value>For authorized Syriatel use only.</value>
+  </data>
+  <data name="Auth_FooterCompactLine" xml:space="preserve">
+    <value>© Syriatel — All rights reserved</value>
+  </data>
+</root>

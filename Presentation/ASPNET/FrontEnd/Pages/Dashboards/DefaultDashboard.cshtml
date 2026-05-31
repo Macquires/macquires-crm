@@ -1,280 +1,174 @@
-﻿@page
+@page
 @{
     ViewData["Title"] = "لوحة التحكم — سوريا تيليكوم";
 }
 
-<div id="app" v-cloak>
-    <div class="form-card" id="formcard">
-
-        <div class="container-fluid pt-3 px-4">
-            <div class="rounded-3 p-4 mb-2 telecom-dash-hero border">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-                    <div>
-                        <h5 class="mb-1">مركز عمليات التليكوم (OSS/BSS)</h5>
-                        <p class="text-muted small mb-0">واجهة المعرض: أربع كبسات + بحث وتقارير — <a href="/Telecom/TelecomHub">افتح المركز الكامل</a></p>
-                    </div>
-                    <a class="btn btn-primary btn-sm" href="/Telecom/TelecomHub">انتقل إلى Telecom Hub</a>
+<div class="form-card syr-operator-page telecom-premium-page" id="formcard">
+    <div id="telecomOperatorDashSlim" dir="rtl" lang="ar">
+        <div class="container-fluid py-3 px-3 px-lg-4 syriatel-dash-slim dash-unified-layout">
+            <header class="mb-3">
+                <h1 class="h4 fw-semibold text-syriatel-red mb-1">سيريتل — لوحة القيادة</h1>
+                <p class="text-muted small mb-0" id="syrBentoSubtitle">جاري التحميل…</p>
+            </header>
+            <section class="dash-unified-cards" aria-label="مؤشرات التشغيل">
+                <div id="syrBentoCockpit" class="syr-bento-grid syr-bento-single-row" data-persona=""></div>
+            </section>
+            <section id="mis-reports" class="dash-unified-mis d-none mt-4" aria-label="تقارير MIS">
+                <div id="misReportsApp" v-cloak class="strategic-exec-root">
+                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml")
                 </div>
-                <div class="row g-3">
-                    <div class="col-6 col-lg-3">
-                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-activate text-decoration-none shadow-sm" href="/Telecom/TelecomHub">
-                            <div class="fw-semibold">تفعيل</div>
-                            <small>Activate</small>
-                        </a>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-migrate text-decoration-none shadow-sm" href="/Telecom/TelecomHub">
-                            <div class="fw-semibold">تحويل</div>
-                            <small>MGR</small>
-                        </a>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-takeover text-decoration-none shadow-sm" href="/Telecom/TelecomHub">
-                            <div class="fw-semibold">نقل ملكية</div>
-                            <small>Take Over</small>
-                        </a>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <a class="btn w-100 py-4 text-white telecom-dash-tile tile-support text-decoration-none shadow-sm" href="/ProgramManagers/ProgramManagerList">
-                            <div class="fw-semibold">دعم / شكوى</div>
-                            <small>Kanban</small>
-                        </a>
-                    </div>
+            </section>
+            <section id="strategic-analytics" class="dash-unified-strategic d-none mt-4" aria-label="التحليلات الاستراتيجية">
+                <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root">
+                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
                 </div>
-            </div>
-        </div>
-
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Lead Pipeline</h6>
-                            <a href="/Leads/LeadList">Leads</a>
-                        </div>
-                        <div ref="leadPipelineFunnelRef" align="center"></div>
-                    </div>
-                </div>
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Lead Closing</h6>
-                            <a href="/Leads/LeadList">Leads</a>
-                        </div>
-                        <div ref="salesTeamLeadClosingRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Campaign By Status</h6>
-                            <a href="/Campaigns/CampaignList">Campaigns</a>
-                        </div>
-                        <div ref="campaignByStatusRef" align="center"></div>
-                    </div>
-                </div>
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Lead Activity By Type</h6>
-                            <a href="/LeadActivities/LeadActivityList">Lead Activities</a>
-                        </div>
-                        <div ref="leadActivityByTypeRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-chart-line fa-3x" style="color: #E94649;"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Sales</p>
-                            <h6 class="mb-0 text-end"><span ref="cardSalesQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-undo-alt fa-3x" style="color: #F6B53F;"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Sales Rtrn.</p>
-                            <h6 class="mb-0 text-end"><span ref="cardSalesReturnQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-shopping-cart fa-3x text-primary"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Purchase</p>
-                            <h6 class="mb-0 text-end"><span ref="cardPurchaseQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-undo fa-3x" style="color: #C4C24A;"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Purchase Rtrn.</p>
-                            <h6 class="mb-0 text-end"><span ref="cardPurchaseReturnQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-truck fa-3x" style="color: #C4C24A;"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Delivery Order</p>
-                            <h6 class="mb-0 text-end"><span ref="cardDeliveryOrderQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-boxes fa-3x text-primary"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Goods Receive</p>
-                            <h6 class="mb-0 text-end"><span ref="cardGoodsReceiveQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-sign-out-alt fa-3x" style="color: #F6B53F;"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Transfer Out</p>
-                            <h6 class="mb-0 text-end"><span ref="cardTransferOutQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-xl-3">
-                    <div class="bg-white rounded d-flex align-items-center justify-content-between p-4">
-                        <i class="fas fa-sign-in-alt fa-3x" style="color: #E94649"></i>
-                        <div class="ms-3">
-                            <p class="mb-2">Transfer In</p>
-                            <h6 class="mb-0 text-end"><span ref="cardTransferInQtyRef"></span> Qty.</h6>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Customer Group</h6>
-                            <a href="/SalesReports/SalesReportList">Sales</a>
-                        </div>
-                        <div ref="customerGroupChartRef" align="center"></div>
-                    </div>
-                </div>
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Vendor Group</h6>
-                            <a href="/PurchaseReports/PurchaseReportList">Purchases</a>
-                        </div>
-                        <div ref="vendorGroupChartRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Customer Category</h6>
-                            <a href="/SalesReports/SalesReportList">Sales</a>
-                        </div>
-                        <div ref="customerCategoryChartRef" align="center"></div>
-                    </div>
-                </div>
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Vendor Category</h6>
-                            <a href="/PurchaseReports/PurchaseReportList">Purchases</a>
-                        </div>
-                        <div ref="vendorCategoryChartRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Latest Sales</h6>
-                            <a href="/SalesOrders/SalesOrderList">Sales</a>
-                        </div>
-                        <div ref="salesOrderGridRef" align="center"></div>
-                    </div>
-                </div>
-                <div class="col-sm-12 col-xl-6">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Latest Purchase</h6>
-                            <a href="/PurchaseOrders/PurchaseOrderList">Purchases</a>
-                        </div>
-                        <div ref="purchaseOrderGridRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4">
-                <div class="col-sm-12 col-xl-12">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Inventory Stock</h6>
-                            <a href="/StockReports/StockReportList">Stocks</a>
-                        </div>
-                        <div ref="stockChartRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid pt-4 px-4">
-            <div class="row g-4 mb-4">
-                <div class="col-sm-12 col-xl-12">
-                    <div class="bg-white text-center rounded p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="mb-0">Inventory Transaction</h6>
-                            <a href="/TransactionReports/TransactionReportList">Transactions</a>
-                        </div>
-                        <div ref="inventoryTransactionGridRef" align="center"></div>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
     </div>
 </div>
 
 @section styles {
     <style>
-        .telecom-dash-hero { background: linear-gradient(120deg, #f8fafc 0%, #eef2ff 100%); }
-        .telecom-dash-tile { border: none; border-radius: 12px; min-height: 100px; }
-        .telecom-dash-tile.tile-activate { background: linear-gradient(135deg, #0d6efd, #3d8bfd); }
-        .telecom-dash-tile.tile-migrate { background: linear-gradient(135deg, #fd7e14, #ffb347); }
-        .telecom-dash-tile.tile-takeover { background: linear-gradient(135deg, #6f42c1, #a98eda); }
-        .telecom-dash-tile.tile-support { background: linear-gradient(135deg, #198754, #51c685); }
+        .dash-unified-layout { display: flex; flex-direction: column; }
+        .dash-unified-cards { width: 100%; margin-bottom: 1.25rem; }
+        .syriatel-dash-slim .syr-bento-single-row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            gap: 0.75rem;
+            grid-template-columns: unset;
+            overflow-x: auto;
+            padding-bottom: 0.35rem;
+        }
+        .syriatel-dash-slim .syr-bento-single-row .syr-bento-card {
+            flex: 1 1 0;
+            min-width: 11rem;
+            grid-column: unset !important;
+            min-height: 7.5rem;
+        }
+        .syriatel-dash-slim .syr-bento-single-row .syr-bento-card .syr-bento-value { font-size: 1.35rem; }
+        .dash-unified-strategic,
+        .dash-unified-mis { width: 100%; }
+        .mis-workload-badge {
+            background: var(--sys-bg) !important;
+            color: var(--sys-text-main) !important;
+            border: 1px solid var(--sys-border);
+            font-weight: 500;
+        }
+        .strategic-exec-root {
+            max-width: 100%;
+            margin-inline: auto;
+            padding: 1.25rem 1rem 2.5rem;
+            color: var(--sys-text-main);
+            background: var(--sys-bg);
+            min-height: 40vh;
+            border-radius: var(--sys-radius);
+            border: 1px solid var(--sys-border);
+        }
+        .strategic-exec-hero { border-bottom: 1px solid var(--sys-border); padding-bottom: 1rem; }
+        .strategic-exec-kicker {
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--sys-brand-red);
+            font-weight: 600;
+        }
+        .strategic-exec-sub { color: var(--sys-text-muted); font-size: 0.9rem; }
+        .text-gold { color: var(--sys-brand-red) !important; }
+        .strategic-filter-bar {
+            background: var(--sys-card-bg);
+            border: 1px solid var(--sys-border);
+            box-shadow: var(--sys-shadow-card);
+        }
+        .strategic-label { color: var(--sys-text-main); font-size: 0.85rem; font-weight: 500; }
+        .strategic-select {
+            background: var(--sys-card-bg);
+            border-color: var(--sys-border);
+            color: var(--sys-text-main);
+        }
+        .strategic-select:focus {
+            border-color: var(--sys-brand-red);
+            box-shadow: 0 0 0 0.2rem var(--sys-brand-red-ring);
+        }
+        .strategic-bento-card {
+            background: var(--sys-card-bg);
+            border: 1px solid var(--sys-border);
+            border-radius: var(--sys-radius);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--sys-shadow-card);
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .strategic-bento-card:hover {
+            box-shadow: var(--sys-shadow-card-hover);
+            border-color: color-mix(in srgb, var(--sys-brand-red) 25%, var(--sys-border));
+        }
+        .strategic-card-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--sys-text-muted);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        .strategic-metric-xl { font-size: 2rem; font-weight: 700; color: var(--sys-text-main); }
+        .strategic-metric-lg { font-size: 1.5rem; font-weight: 600; color: var(--sys-text-main); }
+        .strategic-metric-unit { font-size: 0.9rem; color: var(--sys-text-muted); font-weight: 400; }
+        .strategic-metric-sub { font-size: 0.85rem; color: var(--sys-text-muted); }
+        .strategic-delta { font-size: 0.85rem; font-weight: 600; }
+        .strategic-delta-up { color: #15803d; }
+        .strategic-delta-down { color: #dc2626; }
+        .strategic-panel {
+            background: var(--sys-card-bg);
+            border: 1px solid var(--sys-border);
+            border-radius: var(--sys-radius);
+            box-shadow: var(--sys-shadow-card);
+        }
+        .strategic-panel-title { font-size: 0.95rem; font-weight: 600; color: var(--sys-text-main); }
+        .strategic-badge-level {
+            background: color-mix(in srgb, var(--sys-brand-red) 10%, var(--sys-card-bg));
+            color: var(--sys-brand-red);
+            border: 1px solid color-mix(in srgb, var(--sys-brand-red) 35%, var(--sys-border));
+            font-weight: 500;
+        }
+        .btn-strategic-gold {
+            background: var(--sys-brand-red);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+        }
+        .btn-strategic-gold:hover {
+            background: var(--sys-brand-red-hover);
+            color: #fff;
+        }
+        .btn-strategic-gold:disabled {
+            opacity: 0.65;
+        }
+        #ExecutiveLeaderboardGrid .e-grid { background: transparent; border-color: var(--sys-border); }
+        #ExecutiveLeaderboardGrid .e-headercell {
+            background: var(--sys-bg) !important;
+            color: var(--sys-brand-red) !important;
+            font-weight: 600;
+        }
+        #ExecutiveLeaderboardGrid .e-rowcell {
+            color: var(--sys-text-main);
+            background: var(--sys-card-bg);
+        }
+        #ExecutiveLeaderboardGrid .e-altrow .e-rowcell { background: var(--sys-bg); }
+        .syriatel-dash-slim .syr-bento-cta {
+            background: var(--sys-brand-red);
+            color: #fff;
+        }
+        .syriatel-dash-slim .syr-bento-cta:hover {
+            background: var(--sys-brand-red-hover);
+            color: #fff;
+        }
     </style>
 }
 
 @section scripts {
-    <script src="~/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml.js"></script>
+    <script src="~/lib/indotalent/syr-bento-cockpit.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/mis-reports-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/strategic-analytics-panel.js" asp-append-version="true"></script>
+    <script src="~/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml.js" asp-append-version="true"></script>
 }

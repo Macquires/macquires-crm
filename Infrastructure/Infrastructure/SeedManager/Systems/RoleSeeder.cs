@@ -1,4 +1,4 @@
-﻿using Infrastructure.SecurityManager.Roles;
+﻿using Application.Common.Security;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.SeedManager.Systems;
@@ -6,14 +6,12 @@ namespace Infrastructure.SeedManager.Systems;
 public class RoleSeeder
 {
     private readonly RoleManager<IdentityRole> _roleManager;
-    public RoleSeeder(RoleManager<IdentityRole> roleManager)
-    {
-        _roleManager = roleManager;
-    }
+
+    public RoleSeeder(RoleManager<IdentityRole> roleManager) => _roleManager = roleManager;
+
     public async Task GenerateDataAsync()
     {
-        var roles = RoleHelper.GetAdminRoles();
-        foreach (var role in roles)
+        foreach (var role in TelecomEnterpriseRoleMatrix.StandardRoles)
         {
             if (!await _roleManager.RoleExistsAsync(role))
             {

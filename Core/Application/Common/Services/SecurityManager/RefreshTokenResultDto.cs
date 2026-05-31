@@ -12,4 +12,7 @@ public record RefreshTokenResultDto
     public string? Avatar { get; init; }
     public List<MenuNavigationTreeNodeDto>? MenuNavigation { get; init; }
     public List<string>? Roles { get; init; }
+    public string? PrimaryMenuPersona { get; init; }
+    public string? LandingPath { get; init; }
+    public List<string>? Permissions { get; init; }
 }

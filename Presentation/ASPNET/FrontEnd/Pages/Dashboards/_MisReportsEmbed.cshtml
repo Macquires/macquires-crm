@@ -1,0 +1,48 @@
+<header class="strategic-exec-hero mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+            <p class="strategic-exec-kicker mb-1">MIS</p>
+            <h2 class="h5 mb-1 fw-bold text-syriatel-red">تقارير MIS</h2>
+            <p class="strategic-exec-sub mb-0">
+                ARPU، الانسحاب، وضغط العمل — نفس مؤشرات مركز العمليات، بعرض مركّز للإدارة.
+                <span v-if="loading" class="ms-2 spinner-border spinner-border-sm text-danger" role="status"></span>
+            </p>
+        </div>
+        <div class="text-end">
+            <a class="btn btn-strategic-gold btn-sm" href="/Telecom/TelecomHub">مركز العمليات</a>
+        </div>
+    </div>
+</header>
+
+<section class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="strategic-bento-card h-100">
+            <h3 class="strategic-card-title">ARPU <span class="fw-normal text-lowercase">(تقدير تشغيلي)</span></h3>
+            <p class="strategic-metric-xl text-syriatel-red mb-0">{{ formatMoney(kpis.arpuDemo) }}</p>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+        <div class="strategic-bento-card h-100">
+            <h3 class="strategic-card-title">نسبة الانسحاب <span class="fw-normal text-lowercase">(تقدير)</span></h3>
+            <p class="strategic-metric-xl mb-0">{{ kpis.churnPercentDemo }}%</p>
+        </div>
+    </div>
+    <div class="col-lg-4 d-none d-lg-block">
+        <div class="strategic-bento-card h-100 d-flex flex-column justify-content-center">
+            <p class="strategic-metric-sub mb-2">مؤشرات تشغيلية محدّثة مع تحميل اللوحة — للتفاصيل التشغيلية استخدم مركز العمليات.</p>
+            <a class="btn btn-outline-secondary btn-sm align-self-start" href="/Telecom/TelecomHub">تفاصيل مركز العمليات</a>
+        </div>
+    </div>
+</section>
+
+<section class="strategic-panel p-0 overflow-hidden">
+    <div class="px-3 py-3 border-bottom fw-semibold strategic-panel-title">ضغط العمل في الفروع</div>
+    <ul v-if="kpis.branchHeat && kpis.branchHeat.length" class="list-group list-group-flush mb-0">
+        <li v-for="b in kpis.branchHeat" :key="b.branchName"
+            class="list-group-item d-flex justify-content-between align-items-center py-3 bg-transparent">
+            <span>{{ b.branchName }}</span>
+            <span class="badge mis-workload-badge">{{ formatWorkload(b.revenueDemo) }}</span>
+        </li>
+    </ul>
+    <p v-else class="text-muted small mb-0 p-4 text-center">لا بيانات فرع بعد التحميل.</p>
+</section>

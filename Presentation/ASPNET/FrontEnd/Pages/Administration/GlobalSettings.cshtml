@@ -1,0 +1,134 @@
+@page "/Administration/GlobalSettings"
+@{
+    ViewData["Title"] = "الإعدادات العامة";
+}
+
+<div id="app" v-cloak class="telecom-premium-page container-fluid">
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body py-3">
+            <p class="text-muted small mb-0">
+                لوحة تحكم مركزية — صيانة، أمان، وتكاملات. التغييرات تُطبَّق فوراً (مع cache قصير).
+                <a href="/Administration">← الإدارة والنظام</a>
+            </p>
+        </div>
+    </div>
+
+    <form v-on:submit.prevent="handler.save">
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-header settings-section-header">
+                        <i class="bi bi-cone-striped me-1"></i> وضع الصيانة
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="MaintenanceMode" v-model="state.settings.maintenanceMode" />
+                            <label class="form-check-label" for="MaintenanceMode">تفعيل وضع الصيانة</label>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label" for="MsgAr">رسالة (عربي)</label>
+                            <textarea id="MsgAr" class="form-control" rows="2" v-model="state.settings.maintenanceMessageAr"></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label" for="MsgEn">Message (English)</label>
+                            <textarea id="MsgEn" class="form-control" rows="2" v-model="state.settings.maintenanceMessageEn"></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label" for="BypassIps">عناوين IP المستثناة من وضع الصيانة</label>
+                            <textarea id="BypassIps" class="form-control font-monospace" rows="2" v-model="state.settings.maintenanceBypassIPs" placeholder="127.0.0.1&#10;192.168.1.10"></textarea>
+                            <div class="form-text">عناوين مسموح لها بالوصول الكامل أثناء الصيانة (مكتب العمليات، VPN، أو بيئة التطوير). عنوان واحد في كل سطر، أو مفصولة بفاصلة.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-header settings-section-header">
+                        <i class="bi bi-shield-lock me-1"></i> الأمان
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="StrictPersona" v-model="state.settings.isStrictPersonaMode" />
+                            <label class="form-check-label" for="StrictPersona">
+                                <strong>Strict Persona Mode</strong> — الحاكم العسكري
+                            </label>
+                        </div>
+                        <p class="small text-muted">عند التفعيل: Persona تمنع المسارات والأوامر خارج حدود الموظف حتى لو الدور يسمح.</p>
+                        <div>
+                            <label class="form-label" for="JwtMin">مدة JWT (دقائق)</label>
+                            <input id="JwtMin" type="number" class="form-control" min="5" max="1440" v-model.number="state.settings.jwtAccessTokenMinutes" />
+                            <div class="form-text">قد يتطلب إعادة تسجيل الدخول بعد الحفظ.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="telecom-bento-card global-settings-integrations">
+                    <div class="card-header settings-section-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <span>
+                            <i class="bi bi-plug me-1"></i>
+                            <strong>التكاملات (طوارئ)</strong>
+                            <span class="text-muted fw-normal small ms-1">— قاطع Circuit Breaker</span>
+                        </span>
+                        <a href="/Telecom/IntegrationMonitor" class="btn btn-sm btn-outline-telecom">
+                            <i class="bi bi-activity me-1"></i> سجل التكاملات
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="integration-legend mb-4">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="integration-legend-item integration-legend-on">
+                                        <span class="legend-key">ON</span>
+                                        <span>تشغيل حي — عند الحفظ تُزامَن العمليات المعلقة فوراً مع الشبكة.</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="integration-legend-item integration-legend-off">
+                                        <span class="legend-key">OFF</span>
+                                        <span>طوارئ Fallback — العمل يكمل محلياً والسجل يظهر <code>FALLBACK_MODE</code>.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4" v-for="item in integrationToggles" :key="item.id">
+                                <div class="integration-toggle-card" :class="{ 'is-off': !item.enabled }">
+                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                        <div class="integration-toggle-icon" :class="item.iconClass">
+                                            <i :class="item.icon"></i>
+                                        </div>
+                                        <div class="form-check form-switch integration-switch-lg mb-0">
+                                            <input class="form-check-input" type="checkbox" :id="item.id" v-model="state.settings[item.field]" />
+                                        </div>
+                                    </div>
+                                    <h3 class="h6 mb-1 fw-bold" v-text="item.title"></h3>
+                                    <p class="small integration-toggle-hint mb-2" v-text="item.hint"></p>
+                                    <div v-html="integrationStatusBadge(item.enabled)"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telecom-bento-card mt-4 p-3 d-flex flex-wrap align-items-center justify-content-between gap-3 global-settings-save-bar">
+            <p class="small text-muted mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                اضغط حفظ لتطبيق التغييرات فوراً على كل الجلسات (مع cache قصير ~30 ثانية).
+            </p>
+            <button type="submit" class="btn btn-telecom-primary btn-lg px-4" v-bind:disabled="state.isSaving">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.isSaving"></span>
+                حفظ الإعدادات
+            </button>
+        </div>
+    </form>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Administration/GlobalSettings.cshtml.js"></script>
+}

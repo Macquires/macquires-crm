@@ -72,7 +72,7 @@
             obj: null,
             create: () => {
                 nameText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Name',
+                    placeholder: MacquiresUiI18n.phByEn('Enter Name'),
                 });
                 nameText.obj.appendTo(nameRef.value);
             },
@@ -229,7 +229,7 @@
 
                         if (args.item.id === 'AddCustom') {
                             state.deleteMode = false;
-                            state.mainTitle = 'Add Customer Group';
+                            state.mainTitle = MacquiresUiI18n.mb('customerGroup','add');
                             resetFormState();
                             mainModal.obj.show();
                         }
@@ -238,7 +238,7 @@
                             state.deleteMode = false;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Edit Customer Group';
+                                state.mainTitle = MacquiresUiI18n.mb('customerGroup','edit');
                                 state.id = selectedRecord.id ?? '';
                                 state.name = selectedRecord.name ?? '';
                                 state.description = selectedRecord.description ?? '';
@@ -250,7 +250,7 @@
                             state.deleteMode = true;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Delete Customer Group?';
+                                state.mainTitle = MacquiresUiI18n.mb('customerGroup','delete');
                                 state.id = selectedRecord.id ?? '';
                                 state.name = selectedRecord.name ?? '';
                                 state.description = selectedRecord.description ?? '';
@@ -279,7 +279,12 @@
 
         Vue.onMounted(async () => {
             try {
-                await SecurityManager.authorizePage(['CustomerGroups']);
+                await SecurityManager.authorizePage([
+                    'CustomerGroups',
+                    'TelecomAdmin',
+                    'TelecomBackOffice',
+                    'TelecomManagement',
+                ]);
                 await SecurityManager.validateToken();
 
                 await methods.populateMainData();

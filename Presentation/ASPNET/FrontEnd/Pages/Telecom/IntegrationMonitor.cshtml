@@ -1,0 +1,82 @@
+@page "/Telecom/IntegrationMonitor"
+@{
+    ViewData["Title"] = "سجل ربط الشبكة والتكاملات";
+}
+
+<div id="app" v-cloak class="telecom-premium-page container-fluid">
+    <div class="telecom-bento-grid telecom-health-bento mb-3" v-if="state.healthItems.length">
+        <div
+            v-for="item in state.healthItems"
+            :key="item.system"
+            class="telecom-bento-span-4">
+            <div class="telecom-bento-card h-100">
+                <div class="card-body d-flex align-items-center gap-2 py-3">
+                    <div v-html="healthBadge(item)"></div>
+                    <div class="small mb-0">
+                        <div class="health-title" v-text="item.labelAr"></div>
+                        <div class="text-muted" style="font-size:0.75rem" v-text="item.labelEn"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body py-3">
+            <p class="text-muted small mb-0">
+                مراقبة طلبات واستجابات تكاملات HLR و CBS وبوابة الرسائل — سطر بسطر.
+                <a href="/Administration/GlobalSettings" class="ms-1">الإعدادات العامة</a>
+                ·
+                <a href="/Administration">الحوكمة والنظام</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label" for="Msisdn">MSISDN</label>
+                    <input id="Msisdn" class="form-control" v-model="state.filters.msisdn" placeholder="09…" dir="ltr" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="System">النظام</label>
+                    <select id="System" class="form-select" v-model="state.filters.integrationSystem">
+                        <option value="">— الكل —</option>
+                        <option value="Huawei_HLR">Huawei HLR</option>
+                        <option value="Huawei_CBS">Huawei CBS</option>
+                        <option value="SmsGateway">SMS Gateway</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="FromDate">من تاريخ</label>
+                    <input id="FromDate" type="date" class="form-control" v-model="state.filters.fromDate" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="ToDate">إلى تاريخ</label>
+                    <input id="ToDate" type="date" class="form-control" v-model="state.filters.toDate" />
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-telecom-primary w-100" v-on:click="handler.search">
+                        <i class="bi bi-search me-1"></i> بحث
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card">
+        <div class="card-body p-0">
+            <div class="grid-container px-2 pb-2">
+                <div ref="mainGridRef"></div>
+            </div>
+            <p class="small text-muted px-3 pb-3 mb-0" v-if="state.totalCount > 0">
+                إجمالي السجلات: <strong v-text="state.totalCount"></strong>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml.js"></script>
+}

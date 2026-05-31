@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-hidden="true">
+  <defs>
+    <pattern id="sg" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#d8d8dc" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="#ececee"/>
+  <rect width="100%" height="100%" fill="url(#sg)" opacity="0.85"/>
+  <path d="M40 180 Q120 40 200 100 T360 60" fill="none" stroke="#d0d0d4" stroke-width="1.2"/>
+  <path d="M20 120 Q200 20 380 140" fill="none" stroke="#d8d8dc" stroke-width="1"/>
+</svg>

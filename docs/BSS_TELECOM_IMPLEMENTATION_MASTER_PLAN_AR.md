@@ -1,0 +1,2089 @@
+# خطة التنفيذ الشاملة — توسيع BSS/Telecom على macquires-crm
+
+> **تنفيذ (سير العمل):** سجل الدفعات في [`BSS_TELECOM_PLAN_EXECUTION_LOG.md`](BSS_TELECOM_PLAN_EXECUTION_LOG.md)؛ دليل ترحيل SQL في [`TELECOM_SQL_MANUAL_MIGRATIONS_RUNBOOK_AR.md`](TELECOM_SQL_MANUAL_MIGRATIONS_RUNBOOK_AR.md).  
+> **تنبيه:** إذا أعدتَ توليد هذا الملف عبر `_generate_master_plan.py` فستُعاد كتابة الملف بالكامل؛ الفقرات التنفيذية أعلاه مدمجة حالياً في السكربت.
+
+> **ملاحظة عن طول الوثيقة:** طلب «~2000 سطر» يُخدم هنا بدمج **خطة نوعية** + **ملحق Backlog مُولَّد آلياً** (بنود قابلة للاستيراد في Azure DevOps/Jira). البنود الآلية تتبع بوابات هندسية ثابتة لكل وحدة عمل؛ عند التنفيذ الفعلي يُفضّل دمج البنود المكررة أو حذف غير المنطبق بدل اعتبار كل سطر عملاً مستقلاً.
+
+## 0) قراءة سريعة
+
+| البند | المحتوى |
+|---|---|
+| الهدف | ترسيخ قدرات Lead-to-Cash للاتصالات داخل المعمارية الحالية دون كسر ERP الأساسي |
+| التقنية | .NET 9، EF Core 9، MediatR، Razor + JS، SQL Server |
+| مبدأ الحوكمة | BRD للأعمال؛ الكود مصدر الحقيقة؛ ملحقات SQL للهجرة منفصلة عن البرومبت |
+
+## 1) نطاق النظام (Scope)
+
+### 1.1 داخل النطاق الحالي (حسب المستودع)
+- **Customer 360 (جزئياً):** إدارة العملاء، جهات اتصال، بحث/مرشحات.
+- **Telecom Subscriber Layer:** SubscriberProfile متعدد لكل عميل، خط أساسي، تفاصيل مشترك.
+- **رقم/شريحة:** MsisdnAsset، تجمع الأرقام، دفعات استيراد، سجل تغييرات أرقام، تنظيف حجوزات.
+- **اشتراك/نوع اشتراك:** TelecomSubscription، TelecomSubscriptionTypeLookup، توافق المنتج مع نوع الاشتراك.
+- **كتالوج عروض:** ProductOffering + ProductOfferingComponent + PricePlan + ربط TelecomOperationRequest.
+- **طلبات التشغيل:** TelecomOperationRequest دورة حياة، مستندات، تأكيد.
+- **تكامل الفوترة:** BillingIntegrationLog وتكاملات Infrastructure.
+- **واجهات Telecom:** TelecomHub، ProductCatalog، TelecomMisReports، TelecomSubscriptionTypeList + CustomerList.
+
+### 1.2 خارج النطاق الفوري (متابعة معمارية)
+- **OM كامل:** طلب مركب موحّد يقسم إلى أوامر شبكة/مخزون/فوترة.
+- **GIS FTTH:** تغطية جغرافية وجدولة ميدانية كمنصة.
+- **HLR/HSS مباشر:** يُحكم بعقود تكامل وبوابات أمان/معدلات استدعاء.
+
+## 2) مبادئ معمارية (Clean Architecture)
+1. **Domain:** كيانات وEnums؛ بلا EF/HTTP.
+2. **Application:** Commands/Queries + Validation + Contracts.
+3. **Infrastructure:** EF، Repositories، تكاملات، خدمات خلفية.
+4. **Presentation:** Razor/JS؛ بدون منطق تكامل شبكة.
+5. **المراقبة:** Audit؛ سجلات تكامل؛ Idempotency حيث يلزم.
+
+## 3) كيانات رئيسية
+- ProductOffering, ProductOfferingComponent, PricePlan, TelecomSubscriptionTypeLookup
+- TelecomMsisdnChangeLog؛ تعديلات على Product, SubscriberProfile, TelecomSubscription, TelecomOperationRequest, MsisdnAsset
+
+## 4) سكربتات الترحيل اليدوية
+- `ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql`
+- `Product_CompatibleSubscriptionType_Manual.sql`
+- `SubscriberProfile_MultiProfilePerCustomer_Manual.sql`
+- `TelecomBssPrimaryLine_Manual.sql`
+- `TelecomSubscriptionTypes_Manual.sql`
+- `VerifySubscriptionTypeCounts.sql`
+
+## 5) Use Cases (Application)
+### TelecomManager
+- CreateTelecomOperationRequest / ConfirmTelecomOperationRequest / UploadTelecomOperationDocument
+- RegisterSubscriberProfileForCustomer / UpdateCustomerPrimaryTelecomLine / ImportSimInventoryBatch
+- GetTelecomOperationList / GetTelecomSubscriberProfileDetail / GetMsisdnAssetPoolList / GetTelecomUniversalSearch / GetBillingIntegrationLogList / GetTelecomDashboardKpis
+### ProductCatalogManager
+- CreateProductOffering / UpdateProductOffering / DeleteProductOffering / GetProductOfferingList / GetProductOfferingSingle
+### TelecomSubscriptionTypeManager
+- CreateTelecomSubscriptionType / UpdateTelecomSubscriptionType / GetTelecomSubscriptionTypeList
+### CustomerManager / ProductManager
+- FindCustomerCandidates؛ GetMigrationEligibleProducts؛ CreateCustomer/UpdateCustomer/GetCustomerList حسب الحقول الجديدة
+
+## 6) الواجهات
+- `FrontEnd/Pages/Telecom/TelecomHub.*`
+- `FrontEnd/Pages/Telecom/ProductCatalog.*`
+- `FrontEnd/Pages/Telecom/TelecomMisReports.*`
+- `FrontEnd/Pages/TelecomSubscriptionTypes/TelecomSubscriptionTypeList.cshtml`
+- `FrontEnd/Pages/Customers/CustomerList.*`
+- `NavigationTreeStructure*.cs` و `TelecomRoles.cs`
+
+## 7) مراحل التسليم
+- **A:** ترحيل SQL + EF + بذور دنيا.
+- **B:** كتالوج العروض وربط المنتج/نوع الاشتراك.
+- **C:** مشترك متعدد + خط أساسي + واجهات.
+- **D:** طلبات التشغيل + بحث شامل + KPIs.
+- **E:** تكامل الفوترة وموثوقية السجلات.
+- **F:** NFR أداء/فهرسة/أرشفة سجلات التكامل.
+
+## 8) تعريف جاهز (DoD)
+- Commands: صلاحية + Validation + أخطاء واضحة.
+- Queries: ترقيم صفحات + فهارس + تجنب N+1.
+- تكامل: طوابع زمنية + معرف ارتباط + Idempotency عند الحاجة.
+- واجهات: تحميل/فشل + RTL + عدم تسرّب PII في السجلات.
+
+---
+
+## ملحق A — Backlog مُولَّد (~2000 بند تتبع)
+
+- [ ] WI-0001 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0002 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0003 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0004 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0005 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0006 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0007 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0008 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0009 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0010 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0011 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0012 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0013 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0014 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0015 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0016 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0017 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0018 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0019 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0020 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0021 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0022 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0023 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0024 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0025 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0026 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0027 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0028 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0029 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0030 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0031 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0032 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0033 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0034 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0035 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0036 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0037 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0038 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0039 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0040 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0041 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0042 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0043 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0044 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0045 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0046 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0047 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0048 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0049 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0050 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0051 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0052 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0053 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0054 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0055 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0056 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0057 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0058 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0059 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0060 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0061 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0062 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0063 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0064 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0065 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0066 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0067 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0068 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0069 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0070 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0071 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0072 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0073 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0074 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0075 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0076 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0077 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0078 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0079 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0080 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0081 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0082 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0083 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0084 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0085 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0086 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0087 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0088 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0089 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0090 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0091 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0092 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0093 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0094 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0095 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0096 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0097 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0098 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0099 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0100 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0101 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0102 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0103 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0104 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0105 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0106 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0107 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0108 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0109 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0110 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0111 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0112 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0113 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0114 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0115 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0116 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0117 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0118 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0119 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0120 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0121 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0122 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0123 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0124 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0125 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0126 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0127 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0128 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0129 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0130 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0131 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0132 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0133 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0134 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0135 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0136 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0137 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0138 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0139 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0140 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0141 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0142 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0143 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0144 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0145 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0146 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0147 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0148 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0149 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0150 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0151 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0152 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0153 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0154 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0155 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0156 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0157 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0158 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0159 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0160 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0161 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0162 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0163 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0164 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0165 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0166 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0167 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0168 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0169 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0170 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0171 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0172 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0173 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0174 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0175 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0176 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0177 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0178 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0179 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0180 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0181 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0182 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0183 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0184 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0185 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0186 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0187 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0188 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0189 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0190 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0191 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0192 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0193 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0194 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0195 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0196 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0197 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0198 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0199 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0200 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0201 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0202 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0203 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0204 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0205 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0206 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0207 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0208 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0209 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0210 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0211 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0212 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0213 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0214 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0215 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0216 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0217 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0218 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0219 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0220 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0221 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0222 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0223 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0224 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0225 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0226 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0227 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0228 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0229 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0230 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0231 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0232 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0233 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0234 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0235 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0236 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0237 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0238 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0239 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0240 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0241 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0242 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0243 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0244 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0245 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0246 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0247 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0248 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0249 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0250 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0251 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0252 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0253 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0254 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0255 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0256 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0257 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0258 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0259 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0260 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0261 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0262 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0263 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0264 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0265 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0266 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0267 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0268 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0269 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0270 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0271 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0272 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0273 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0274 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0275 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0276 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0277 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0278 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0279 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0280 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0281 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0282 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0283 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0284 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0285 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0286 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0287 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0288 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0289 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0290 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0291 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0292 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0293 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0294 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0295 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0296 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0297 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0298 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0299 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0300 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0301 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0302 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0303 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0304 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0305 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0306 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0307 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0308 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0309 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0310 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0311 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0312 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0313 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0314 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0315 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0316 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0317 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0318 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0319 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0320 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0321 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0322 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0323 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0324 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0325 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0326 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0327 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0328 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0329 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0330 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0331 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0332 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0333 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0334 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0335 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0336 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0337 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0338 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0339 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0340 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0341 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0342 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0343 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0344 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0345 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0346 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0347 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0348 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0349 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0350 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0351 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0352 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0353 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0354 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0355 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0356 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0357 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0358 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0359 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0360 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0361 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0362 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0363 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0364 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0365 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0366 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0367 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0368 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0369 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0370 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0371 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0372 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0373 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0374 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0375 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0376 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0377 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0378 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0379 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0380 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0381 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0382 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0383 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0384 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0385 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0386 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0387 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0388 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0389 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0390 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0391 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0392 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0393 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0394 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0395 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0396 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0397 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0398 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0399 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0400 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0401 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0402 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0403 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0404 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0405 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0406 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0407 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0408 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0409 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0410 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0411 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0412 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0413 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0414 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0415 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0416 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0417 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0418 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0419 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0420 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0421 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0422 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0423 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0424 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0425 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0426 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0427 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0428 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0429 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0430 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0431 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0432 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0433 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0434 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0435 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0436 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0437 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0438 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0439 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0440 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0441 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0442 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0443 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0444 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0445 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0446 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0447 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0448 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0449 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0450 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0451 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0452 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0453 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0454 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0455 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0456 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0457 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0458 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0459 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0460 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0461 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0462 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0463 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0464 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0465 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0466 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0467 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0468 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0469 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0470 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0471 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0472 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0473 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0474 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0475 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0476 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0477 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0478 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0479 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0480 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0481 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0482 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0483 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0484 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0485 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0486 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0487 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0488 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0489 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0490 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0491 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0492 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0493 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0494 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0495 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0496 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0497 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0498 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0499 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0500 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0501 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0502 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0503 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0504 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0505 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0506 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0507 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0508 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0509 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0510 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0511 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0512 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0513 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0514 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0515 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0516 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0517 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0518 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0519 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0520 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0521 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0522 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0523 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0524 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0525 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0526 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0527 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0528 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0529 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0530 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0531 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0532 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0533 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0534 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0535 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0536 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0537 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0538 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0539 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0540 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0541 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0542 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0543 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0544 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0545 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0546 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0547 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0548 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0549 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0550 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0551 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0552 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0553 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0554 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0555 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0556 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0557 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0558 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0559 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0560 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0561 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0562 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0563 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0564 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0565 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0566 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0567 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0568 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0569 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0570 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0571 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0572 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0573 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0574 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0575 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0576 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0577 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0578 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0579 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0580 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0581 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0582 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0583 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0584 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0585 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0586 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0587 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0588 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0589 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0590 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0591 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0592 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0593 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0594 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0595 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0596 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0597 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0598 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0599 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0600 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0601 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0602 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0603 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0604 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0605 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0606 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0607 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0608 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0609 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0610 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0611 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0612 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0613 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0614 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0615 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0616 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0617 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0618 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0619 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0620 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0621 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0622 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0623 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0624 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0625 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0626 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0627 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0628 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0629 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0630 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0631 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0632 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0633 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0634 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0635 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0636 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0637 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0638 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0639 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0640 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0641 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0642 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0643 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0644 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0645 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0646 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0647 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0648 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0649 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0650 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0651 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0652 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0653 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0654 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0655 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0656 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0657 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0658 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0659 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0660 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0661 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0662 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0663 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0664 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0665 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0666 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0667 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0668 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0669 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0670 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0671 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0672 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0673 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0674 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0675 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0676 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0677 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0678 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0679 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0680 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0681 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0682 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0683 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0684 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0685 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0686 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0687 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0688 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0689 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0690 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0691 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0692 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0693 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0694 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0695 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0696 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0697 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0698 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0699 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0700 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0701 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0702 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0703 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0704 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0705 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0706 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0707 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0708 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0709 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0710 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0711 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0712 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0713 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0714 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0715 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0716 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0717 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0718 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0719 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0720 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0721 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0722 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0723 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0724 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0725 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0726 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0727 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0728 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0729 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0730 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0731 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0732 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0733 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0734 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0735 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0736 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0737 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0738 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0739 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0740 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0741 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0742 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0743 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0744 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0745 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0746 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0747 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0748 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0749 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0750 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0751 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0752 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0753 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0754 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0755 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0756 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0757 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0758 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0759 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0760 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0761 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0762 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0763 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0764 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0765 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0766 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0767 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0768 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0769 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0770 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0771 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0772 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0773 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0774 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0775 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0776 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0777 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0778 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0779 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0780 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0781 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0782 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0783 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0784 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0785 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0786 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0787 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0788 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0789 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0790 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0791 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0792 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0793 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0794 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0795 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0796 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0797 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0798 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0799 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0800 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0801 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0802 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0803 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0804 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0805 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0806 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0807 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0808 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0809 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0810 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0811 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0812 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0813 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0814 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0815 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0816 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0817 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0818 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0819 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0820 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0821 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0822 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0823 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0824 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0825 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0826 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0827 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0828 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0829 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0830 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0831 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0832 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0833 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0834 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0835 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0836 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0837 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0838 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0839 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0840 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0841 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0842 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0843 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0844 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0845 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0846 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0847 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0848 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0849 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0850 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0851 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0852 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0853 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0854 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0855 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0856 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0857 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0858 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0859 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0860 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0861 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0862 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0863 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0864 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0865 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0866 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0867 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0868 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0869 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0870 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0871 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0872 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0873 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0874 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0875 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0876 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0877 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0878 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0879 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0880 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0881 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0882 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0883 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0884 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0885 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0886 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0887 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0888 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0889 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0890 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0891 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0892 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0893 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0894 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0895 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0896 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0897 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0898 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0899 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0900 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0901 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0902 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0903 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0904 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0905 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0906 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0907 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0908 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0909 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0910 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0911 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0912 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0913 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0914 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0915 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0916 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0917 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0918 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0919 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0920 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0921 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0922 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0923 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0924 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0925 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0926 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0927 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0928 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0929 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0930 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0931 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0932 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0933 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0934 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0935 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0936 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0937 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0938 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0939 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0940 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0941 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0942 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0943 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0944 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0945 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0946 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0947 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0948 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0949 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0950 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0951 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0952 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0953 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0954 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0955 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0956 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0957 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0958 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0959 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0960 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0961 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0962 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0963 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0964 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0965 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0966 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0967 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0968 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0969 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0970 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0971 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0972 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0973 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0974 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0975 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0976 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0977 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0978 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0979 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0980 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0981 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0982 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0983 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0984 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-0985 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-0986 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-0987 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-0988 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-0989 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-0990 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-0991 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-0992 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-0993 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-0994 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-0995 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-0996 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-0997 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-0998 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-0999 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1000 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1001 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1002 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1003 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1004 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1005 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1006 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1007 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1008 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1009 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1010 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1011 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1012 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1013 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1014 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1015 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1016 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1017 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1018 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1019 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1020 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1021 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1022 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1023 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1024 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1025 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1026 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1027 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1028 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1029 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1030 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1031 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1032 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1033 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1034 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1035 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1036 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1037 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1038 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1039 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1040 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1041 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1042 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1043 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1044 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1045 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1046 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1047 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1048 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1049 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1050 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1051 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1052 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1053 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1054 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1055 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1056 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1057 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1058 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1059 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1060 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1061 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1062 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1063 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1064 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1065 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1066 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1067 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1068 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1069 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1070 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1071 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1072 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1073 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1074 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1075 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1076 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1077 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1078 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1079 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1080 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1081 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1082 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1083 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1084 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1085 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1086 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1087 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1088 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1089 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1090 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1091 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1092 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1093 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1094 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1095 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1096 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1097 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1098 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1099 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1100 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1101 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1102 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1103 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1104 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1105 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1106 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1107 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1108 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1109 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1110 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1111 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1112 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1113 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1114 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1115 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1116 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1117 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1118 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1119 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1120 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1121 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1122 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1123 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1124 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1125 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1126 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1127 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1128 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1129 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1130 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1131 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1132 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1133 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1134 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1135 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1136 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1137 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1138 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1139 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1140 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1141 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1142 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1143 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1144 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1145 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1146 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1147 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1148 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1149 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1150 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1151 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1152 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1153 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1154 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1155 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1156 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1157 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1158 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1159 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1160 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1161 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1162 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1163 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1164 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1165 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1166 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1167 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1168 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1169 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1170 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1171 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1172 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1173 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1174 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1175 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1176 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1177 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1178 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1179 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1180 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1181 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1182 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1183 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1184 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1185 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1186 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1187 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1188 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1189 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1190 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1191 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1192 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1193 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1194 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1195 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1196 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1197 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1198 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1199 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1200 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1201 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1202 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1203 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1204 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1205 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1206 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1207 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1208 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1209 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1210 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1211 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1212 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1213 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1214 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1215 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1216 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1217 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1218 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1219 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1220 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1221 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1222 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1223 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1224 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1225 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1226 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1227 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1228 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1229 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1230 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1231 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1232 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1233 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1234 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1235 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1236 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1237 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1238 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1239 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1240 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1241 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1242 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1243 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1244 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1245 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1246 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1247 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1248 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1249 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1250 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1251 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1252 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1253 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1254 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1255 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1256 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1257 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1258 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1259 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1260 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1261 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1262 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1263 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1264 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1265 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1266 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1267 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1268 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1269 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1270 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1271 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1272 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1273 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1274 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1275 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1276 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1277 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1278 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1279 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1280 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1281 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1282 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1283 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1284 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1285 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1286 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1287 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1288 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1289 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1290 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1291 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1292 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1293 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1294 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1295 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1296 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1297 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1298 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1299 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1300 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1301 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1302 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1303 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1304 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1305 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1306 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1307 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1308 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1309 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1310 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1311 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1312 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1313 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1314 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1315 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1316 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1317 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1318 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1319 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1320 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1321 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1322 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1323 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1324 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1325 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1326 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1327 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1328 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1329 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1330 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1331 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1332 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1333 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1334 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1335 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1336 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1337 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1338 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1339 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1340 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1341 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1342 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1343 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1344 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1345 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1346 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1347 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1348 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1349 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1350 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1351 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1352 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1353 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1354 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1355 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1356 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1357 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1358 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1359 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1360 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1361 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1362 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1363 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1364 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1365 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1366 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1367 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1368 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1369 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1370 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1371 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1372 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1373 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1374 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1375 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1376 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1377 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1378 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1379 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1380 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1381 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1382 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1383 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1384 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1385 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1386 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1387 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1388 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1389 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1390 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1391 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1392 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1393 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1394 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1395 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1396 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1397 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1398 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1399 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1400 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1401 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1402 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1403 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1404 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1405 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1406 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1407 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1408 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1409 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1410 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1411 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1412 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1413 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1414 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1415 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1416 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1417 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1418 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1419 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1420 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1421 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1422 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1423 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1424 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1425 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1426 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1427 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1428 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1429 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1430 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1431 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1432 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1433 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1434 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1435 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1436 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1437 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1438 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1439 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1440 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1441 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1442 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1443 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1444 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1445 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1446 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1447 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1448 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1449 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1450 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1451 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1452 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1453 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1454 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1455 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1456 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1457 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1458 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1459 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1460 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1461 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1462 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1463 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1464 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1465 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1466 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1467 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1468 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1469 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1470 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1471 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1472 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1473 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1474 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1475 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1476 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1477 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1478 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1479 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1480 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1481 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1482 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1483 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1484 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1485 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1486 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1487 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1488 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1489 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1490 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1491 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1492 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1493 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1494 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1495 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1496 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1497 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1498 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1499 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1500 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1501 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1502 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1503 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1504 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1505 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1506 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1507 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1508 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1509 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1510 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1511 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1512 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1513 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1514 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1515 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1516 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1517 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1518 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1519 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1520 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1521 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1522 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1523 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1524 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1525 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1526 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1527 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1528 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1529 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1530 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1531 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1532 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1533 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1534 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1535 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1536 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1537 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1538 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1539 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1540 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1541 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1542 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1543 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1544 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1545 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1546 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1547 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1548 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1549 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1550 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1551 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1552 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1553 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1554 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1555 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1556 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1557 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1558 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1559 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1560 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1561 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1562 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1563 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1564 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1565 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1566 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1567 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1568 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1569 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1570 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1571 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1572 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1573 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1574 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1575 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1576 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1577 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1578 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1579 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1580 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1581 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1582 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1583 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1584 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1585 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1586 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1587 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1588 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1589 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1590 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1591 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1592 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1593 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1594 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1595 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1596 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1597 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1598 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1599 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1600 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1601 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1602 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1603 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1604 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1605 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1606 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1607 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1608 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1609 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1610 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1611 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1612 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1613 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1614 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1615 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1616 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1617 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1618 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1619 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1620 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1621 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1622 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1623 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1624 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1625 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1626 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1627 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1628 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1629 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1630 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1631 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1632 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1633 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1634 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1635 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1636 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1637 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1638 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1639 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1640 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1641 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1642 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1643 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1644 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1645 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1646 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1647 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1648 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1649 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1650 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1651 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1652 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1653 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1654 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1655 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1656 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1657 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1658 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1659 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1660 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1661 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1662 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1663 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1664 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1665 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1666 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1667 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1668 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1669 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1670 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1671 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1672 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1673 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1674 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1675 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1676 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1677 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1678 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1679 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1680 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1681 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1682 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1683 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1684 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1685 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1686 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1687 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1688 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1689 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1690 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1691 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1692 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1693 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1694 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1695 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1696 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1697 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1698 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1699 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1700 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1701 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1702 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1703 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1704 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1705 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1706 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1707 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1708 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1709 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1710 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1711 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1712 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1713 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1714 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1715 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1716 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1717 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1718 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1719 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1720 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1721 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1722 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1723 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1724 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1725 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1726 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1727 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1728 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1729 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1730 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1731 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1732 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1733 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1734 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1735 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1736 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1737 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1738 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1739 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1740 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1741 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1742 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1743 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1744 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1745 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1746 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1747 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1748 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1749 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1750 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1751 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1752 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1753 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1754 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1755 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1756 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1757 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1758 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1759 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1760 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1761 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1762 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1763 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1764 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1765 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1766 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1767 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1768 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1769 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1770 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1771 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1772 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1773 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1774 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1775 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1776 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1777 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1778 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1779 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1780 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1781 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1782 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1783 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1784 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1785 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1786 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1787 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1788 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1789 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1790 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1791 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1792 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1793 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1794 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1795 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1796 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1797 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1798 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1799 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1800 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1801 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1802 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1803 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1804 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1805 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1806 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1807 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1808 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1809 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1810 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1811 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1812 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1813 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1814 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1815 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1816 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1817 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1818 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1819 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1820 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1821 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1822 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1823 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1824 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1825 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1826 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1827 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1828 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1829 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1830 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1831 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1832 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1833 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1834 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1835 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1836 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1837 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1838 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1839 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1840 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1841 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1842 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1843 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1844 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1845 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1846 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1847 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1848 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1849 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1850 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1851 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1852 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1853 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1854 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1855 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1856 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1857 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1858 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1859 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1860 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1861 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1862 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1863 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1864 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1865 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1866 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1867 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1868 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1869 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1870 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1871 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1872 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1873 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1874 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1875 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1876 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1877 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1878 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1879 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1880 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1881 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1882 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1883 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1884 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1885 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1886 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1887 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1888 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1889 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1890 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1891 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1892 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1893 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1894 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1895 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1896 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1897 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1898 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1899 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1900 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1901 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1902 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1903 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1904 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1905 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1906 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1907 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1908 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1909 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1910 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1911 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1912 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1913 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1914 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1915 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1916 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1917 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1918 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1919 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1920 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1921 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1922 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1923 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1924 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1925 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1926 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1927 | Application | Handler ConfirmTelecomOperationRequest | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1928 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1929 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1930 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1931 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1932 | Application | Handler GetTelecomOperationList | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1933 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1934 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1935 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1936 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1937 | Application | Handler GetTelecomDashboardKpis | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1938 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1939 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1940 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1941 | Domain/Data | كيان MsisdnAsset | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1942 | Application | Handler GetProductOfferingSingle | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1943 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1944 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1945 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1946 | Domain/Data | كيان ProductOfferingComponent | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1947 | Application | Handler GetMigrationEligibleProducts | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1948 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1949 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1950 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1951 | Domain/Data | كيان SubscriberProfile | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1952 | Application | Handler ConfirmTelecomOperationRequest | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1953 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1954 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1955 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1956 | Domain/Data | كيان BillingIntegrationLog | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1957 | Application | Handler GetTelecomOperationList | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1958 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1959 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1960 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1961 | Domain/Data | كيان TelecomMsisdnChangeLog | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1962 | Application | Handler GetTelecomDashboardKpis | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1963 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1964 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1965 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1966 | Domain/Data | كيان Product | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1967 | Application | Handler GetProductOfferingSingle | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1968 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1969 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1970 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1971 | Domain/Data | كيان PricePlan | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1972 | Application | Handler GetMigrationEligibleProducts | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1973 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1974 | Database | سكربت VerifySubscriptionTypeCounts.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1975 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1976 | Domain/Data | كيان TelecomSubscription | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1977 | Application | Handler ConfirmTelecomOperationRequest | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1978 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1979 | Database | سكربت TelecomSubscriptionTypes_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1980 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1981 | Domain/Data | كيان ProductOffering | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1982 | Application | Handler GetTelecomOperationList | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1983 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1984 | Database | سكربت TelecomBssPrimaryLine_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-1985 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية
+- [ ] WI-1986 | Domain/Data | كيان TelecomOperationRequest | معالجة أخطاء التكامل + إعادة المحاولة + تسجيل مُهيكل
+- [ ] WI-1987 | Application | Handler GetTelecomDashboardKpis | اختبارات وحدات للقواعد الحرجة
+- [ ] WI-1988 | Presentation | صفحة Telecom/TelecomMisReports | اختبارات تكامل لمسار DB (حسب التوفر)
+- [ ] WI-1989 | Database | سكربت SubscriberProfile_MultiProfilePerCustomer_Manual.sql | مراجعة أداء الاستعلام + خطة فهرسة
+- [ ] WI-1990 | Cross-cutting | أمن/مراقبة/أداء/NFR | مراجعة أمن البيانات (PII) في السجلات والاستجابات
+- [ ] WI-1991 | Domain/Data | كيان Customer | تحديث الواجهة Razor/JS + تجربة المستخدم RTL
+- [ ] WI-1992 | Application | Handler GetProductOfferingSingle | تحديث Swagger/Endpoints إن وُجدت
+- [ ] WI-1993 | Presentation | صفحة Telecom/TelecomMisReports | تحديث البذور/العرض التوضيحي
+- [ ] WI-1994 | Database | سكربت Product_CompatibleSubscriptionType_Manual.sql | قبول المستخدم + قائمة تحقق للترحيل
+- [ ] WI-1995 | Cross-cutting | أمن/مراقبة/أداء/NFR | متابعة الإنتاج + مراقبة لاحقة
+- [ ] WI-1996 | Domain/Data | كيان TelecomSubscriptionTypeLookup | تحليل القواعد والحالات الحدّية في Domain
+- [ ] WI-1997 | Application | Handler GetMigrationEligibleProducts | تحديث/مراجعة الـ EF Configuration والفهارس والعلاقات
+- [ ] WI-1998 | Presentation | صفحة Telecom/TelecomMisReports | تنفيذ/تعديل الـ Command أو الـ Query في Application
+- [ ] WI-1999 | Database | سكربت ProductOffering_ProductId_TelecomOp_ProductOfferingId_Manual.sql | التحقق FluentValidation + سياسات التفويض
+- [ ] WI-2000 | Cross-cutting | أمن/مراقبة/أداء/NFR | ربط التكامل عبر Contracts + تجنب تسرّب تفاصيل البنية

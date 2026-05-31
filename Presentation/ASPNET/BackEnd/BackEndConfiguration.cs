@@ -5,6 +5,7 @@ using Infrastructure.DataAccessManager.EFCore;
 using Infrastructure.SeedManager;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
+using System.Text.Json;
 
 namespace ASPNET.BackEnd;
 
@@ -34,12 +35,14 @@ public static class BackEndConfiguration
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                 options.JsonSerializerOptions.WriteIndented = true;
             });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Indotalent API", Version = "v1" });
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Syriatel CRM API", Version = "v1" });
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -90,6 +93,12 @@ public static class BackEndConfiguration
         IConfiguration configuration
         )
     {
+        using (var scope = host.Services.CreateScope())
+        {
+            var encryption = scope.ServiceProvider.GetRequiredService<Application.Common.Security.IFieldEncryptionService>();
+            Infrastructure.DataAccessManager.EFCore.Converters.FieldEncryptionScope.Initialize(encryption);
+        }
+
         // >>> Create database
         host.CreateDatabase();
 
@@ -107,7 +116,7 @@ public static class BackEndConfiguration
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Indotalent V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Syriatel CRM API V1");
             });
         }
 

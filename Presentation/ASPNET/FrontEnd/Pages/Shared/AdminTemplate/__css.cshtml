@@ -1,12 +1,23 @@
-﻿<link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet">
+﻿<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet">
 <link href="~/lib/bootstrap/dist/css/bootstrap-icons.css" rel="stylesheet">
 <link href="~/lib/dropzone/dropzone.min.css" rel="stylesheet">
 <link href="~/admin_template/css/bootstrap.min.css" rel="stylesheet">
 <link href="~/admin_template/css/style.css" rel="stylesheet">
+<link href="~/css/telecom-premium-theme.css" rel="stylesheet" asp-append-version="true">
+<link href="~/css/syr-tel-portal.css" rel="stylesheet" asp-append-version="true">
+<link href="~/css/syr-swal.css" rel="stylesheet" asp-append-version="true">
+<link href="~/css/admin-shell-layout.css" rel="stylesheet" asp-append-version="true">
 
 
 <style>
     /* CUSTOM */
+
+    body {
+        font-family: 'Tajawal', 'Almarai', 'Segoe UI', system-ui, sans-serif;
+    }
 
     /*Form Group*/
     .form-group{
@@ -19,24 +30,110 @@
     }
 
     .e-grid .e-row.e-altrow {
-        background-color: #F3F6F9;
+        background-color: var(--sys-bg);
     }
 
     .e-headertext {
         padding-left: 5px;
     }
+    html[dir="rtl"] .e-headertext {
+        padding-left: 0;
+        padding-right: 5px;
+    }
     .e-grid .e-gridpager .e-currentitem {
         background-color: var(--primary);
-        color: #fff !important;
+        color: var(--sys-card-bg) !important;
     }
 
     .e-grid .e-gridpager .e-numericitem {
         color: var(--primary);
     }
 
+    /* Modal header: keep title at inline-start, close (X) at inline-end (LTR + RTL) */
+    .modal .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+    .modal .modal-header .modal-title {
+        margin-bottom: 0;
+        min-width: 0;
+    }
+    .modal .modal-header .btn-close {
+        flex-shrink: 0;
+        padding: 0.5rem;
+        margin-block: -0.5rem;
+        margin-inline-end: -0.5rem;
+        margin-inline-start: auto;
+    }
+
+    /* Offcanvas header: title at inline-start, close (X) at inline-end (LTR + RTL) */
+    .offcanvas-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+    .offcanvas-header .offcanvas-title {
+        margin-bottom: 0;
+        min-width: 0;
+    }
+    .offcanvas-header .btn-close {
+        flex-shrink: 0;
+        padding: 0.5rem;
+        margin-block: -0.5rem;
+        margin-inline-end: -0.5rem;
+        margin-inline-start: auto;
+    }
+
+    /* RTL: all Bootstrap modals — direction, header, form rows, Ej2 */
+    html[dir="rtl"] .modal .modal-content {
+        direction: rtl;
+        text-align: right;
+    }
+    html[dir="rtl"] .modal-header {
+        text-align: right;
+    }
+    html[dir="rtl"] .modal-footer {
+        flex-direction: row-reverse;
+        justify-content: flex-start;
+    }
+    html[dir="rtl"] .modal form#MainForm .row,
+    html[dir="rtl"] .modal #ComplexDiv > .row {
+        flex-direction: row-reverse;
+        flex-wrap: wrap;
+    }
+    html[dir="rtl"] .modal .card-header h5,
+    html[dir="rtl"] .modal .card-header,
+    html[dir="rtl"] .modal label:not(.form-check-label) {
+        text-align: right;
+    }
+    html[dir="rtl"] .modal .form-control,
+    html[dir="rtl"] .modal textarea {
+        text-align: right;
+    }
+    html[dir="rtl"] .modal .d-flex.justify-content-between {
+        flex-direction: row-reverse;
+    }
+    html[dir="rtl"] .modal .text-danger {
+        display: block;
+        text-align: right;
+    }
+    html[dir="rtl"] .modal .e-control-wrapper,
+    html[dir="rtl"] .modal .e-input-group,
+    html[dir="rtl"] .modal .e-ddl,
+    html[dir="rtl"] .modal .e-datepicker {
+        direction: rtl;
+    }
+    html[dir="rtl"] .modal .e-input-group input.e-input,
+    html[dir="rtl"] .modal .e-input-group textarea.e-input {
+        text-align: right;
+    }
+
     .e-contextmenu-wrapper ul .e-menu-item.e-selected, .e-contextmenu-container ul .e-menu-item.e-selected {
         background-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
         outline: 0 solid var(--primary);
         outline-offset: 0;
     }
@@ -44,55 +141,55 @@
     .e-checkbox-wrapper .e-frame.e-stop, .e-css.e-checkbox-wrapper .e-frame.e-stop {
         background-color: var(--primary);
         border-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-checkbox-wrapper .e-frame.e-check, .e-css.e-checkbox-wrapper .e-frame.e-check {
         background-color: var(--primary);
         border-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-item.e-hover > .e-text-content .e-icon-collapsible {
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-item.e-hover > .e-text-content .e-icon-expandable {
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-item.e-hover > .e-text-content .e-list-text {
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-item.e-active.e-animation-active > .e-text-content .e-list-text {
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-item.e-active > .e-text-content {
-        background-color: #2a2a3c;
-        color: #fff;
+        background-color: var(--sys-brand-red);
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-item.e-active > .e-fullrow {
-        background-color: #2a2a3c;
-        border-color: #2a2a3c;
+        background-color: var(--sys-brand-red);
+        border-color: var(--sys-brand-red);
     }
 
     .e-treeview .e-list-item.e-active.e-animation-active > .e-fullrow {
-        background-color: #2a2a3c;
-        border-color: #2a2a3c;
+        background-color: var(--sys-brand-red);
+        border-color: var(--sys-brand-red);
     }
 
     .e-treeview .e-list-item.e-hover > .e-fullrow {
-        background-color: #2a2a3c;
-        border-color: #2a2a3c;
+        background-color: var(--sys-brand-red);
+        border-color: var(--sys-brand-red);
     }
 
     .e-treeview .e-list-item.e-active.e-hover > .e-fullrow {
-        background-color: #2a2a3c;
-        border-color: #2a2a3c;
-        color: #fff;
+        background-color: var(--sys-brand-red);
+        border-color: var(--sys-brand-red);
+        color: var(--sys-card-bg);
     }
 
     .e-treeview .e-list-text {
@@ -102,7 +199,7 @@
 
     .e-filemanager .e-treeview .e-list-item.e-active > .e-text-content {
         background-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-filemanager .e-treeview .e-list-item.e-active > .e-fullrow {
@@ -118,7 +215,7 @@
     .e-filemanager .e-treeview .e-list-item.e-active.e-hover > .e-fullrow {
         background-color: var(--primary);
         border-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-filemanager .e-grid td.e-active {
@@ -131,7 +228,7 @@
 
     .e-dropdownbase .e-list-item.e-item-focus, .e-dropdownbase .e-list-item.e-active, .e-dropdownbase .e-list-item.e-active.e-hover, .e-dropdownbase .e-list-item.e-hover {
         background-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-schedule .e-timeline-view .e-appointment, .e-schedule .e-timeline-month-view .e-appointment {
@@ -150,13 +247,13 @@
     .e-btn.e-primary, .e-css.e-btn.e-primary {
         background-color: var(--primary);
         border-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     .e-footer-content .e-btn.e-primary.e-flat:not([DISABLED]) {
         background-color: var(--primary);
         border-color: var(--primary);
-        color: #fff;
+        color: var(--sys-card-bg);
     }
 
     /*BS Navbar*/
@@ -177,27 +274,27 @@
 
     /* Fieldset */
     fieldset {
-        background-color: #fff;
+        background-color: var(--sys-card-bg);
         width: 100%;
         padding: 15px;
         margin-left: 0px;
         margin-right: 0px;
         margin-top: 10px;
         margin-bottom: 10px;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--sys-border);
     }
 
 
     /* For FormCard */
     .form-card {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--sys-border);
         width: 100%;
         overflow-y: auto;
     }
 
     .form-card-header {
-        background-color: #ffffff; 
-        color: #000000; 
+        background-color: var(--sys-card-bg); 
+        color: var(--sys-text-main); 
         padding: 10px;
         border-top-left-radius: 5px;
         border-top-right-radius: 5px;
@@ -205,7 +302,7 @@
     }
 
     .form-card-body {
-        background-color: #ffffff; 
+        background-color: var(--sys-card-bg); 
         padding-top: 5px;
         padding-right: 0;
         padding-bottom: 5px;
@@ -213,8 +310,8 @@
     }
 
     .form-card-footer {
-        background-color: #ffffff; 
-        color: #000000;
+        background-color: var(--sys-card-bg); 
+        color: var(--sys-text-main);
         padding-top: 5px;
         padding-right: 0;
         padding-bottom: 5px;
@@ -234,7 +331,8 @@
     }
 
     html, body {
-        overflow-y: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .sticky-top {
@@ -267,7 +365,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--sys-border);
         }
 
 
@@ -286,26 +384,7 @@
     }
 </style>
 <style>
-    /* CSS scrollbar sidebar */
-    #navbarnav::-webkit-scrollbar {
-        width: 12px;
-    }
-
-    #navbarnav::-webkit-scrollbar-track {
-        background-color: #191C24;
-    }
-
-    #navbarnav::-webkit-scrollbar-thumb {
-        background-color: #2a2a3c;
-        border-radius: 6px;
-        border: 3px solid #191C24;
-        transition: filter 0.3s;
-    }
-
-        #navbarnav::-webkit-scrollbar-thumb:hover {
-            cursor: pointer;
-            background-color: var(--dark);
-        }
+    /* Sidebar scroll — blends with menu (see syr-tel-portal.css) */
 
 </style>
 <style>
@@ -316,13 +395,13 @@
     }
 
     ::-webkit-scrollbar-track {
-        background-color: #f8f9fa;
+        background-color: var(--sys-bg);
     }
 
     ::-webkit-scrollbar-thumb {
-        background-color: #dee2e6;
+        background-color: var(--sys-border);
         border-radius: 6px;
-        border: 3px solid #f8f9fa;
+        border: 3px solid var(--sys-bg);
         transition: filter 0.3s;
     }
 
@@ -334,9 +413,8 @@
 </style>
 <style>
     #navbarnav {
-        width: 250px;
-        height: 70vh;
-        overflow-y: auto;
+        width: 100%;
+        overflow: visible;
     }
 
     a {
@@ -349,6 +427,220 @@
 
     .text-primary {
         color: var(--primary) !important;
+    }
+
+    body.syr-tel-portal .adminbody {
+        background: var(--sys-bg) !important;
+    }
+
+    .syriatel-brand-accent {
+        color: var(--sys-brand-red) !important;
+    }
+
+    .topbar-currency-pill {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.7rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        background: var(--sys-bg);
+        border: 1px solid var(--sys-border);
+        color: var(--sys-text-muted);
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        max-width: 10rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .topbar-currency-pill .sy-currency-code {
+        color: var(--sys-text-muted);
+        font-weight: 600;
+    }
+
+    .syriatel-unified-header {
+        min-height: 52px;
+        border-color: var(--sys-border) !important;
+        box-shadow: var(--sys-shadow-card) !important;
+    }
+
+    .syriatel-header-brand:hover .syriatel-header-title {
+        color: var(--sys-brand-red);
+    }
+
+    .syriatel-header-logo {
+        height: auto;
+        width: auto;
+        max-height: 44px;
+        max-width: 200px;
+        object-fit: contain;
+    }
+
+    .syriatel-header-title {
+        font-family: 'Almarai', 'Tajawal', sans-serif;
+        font-weight: 800;
+        font-size: clamp(0.85rem, 2vw, 1.15rem);
+        color: var(--sys-text-main);
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+    }
+
+    .syriatel-sidebar-logo {
+        max-height: 52px;
+        width: auto;
+        max-width: 100%;
+        object-fit: contain;
+    }
+
+    .syriatel-lang-toggle .btn {
+        font-size: 0.72rem;
+        padding: 0.2rem 0.45rem;
+        border-color: var(--sys-border);
+        color: var(--sys-text-muted);
+    }
+
+    .syriatel-lang-toggle .btn.active {
+        background: var(--sys-bg) !important;
+        border-color: var(--sys-border) !important;
+        color: var(--sys-text-main) !important;
+    }
+
+    /* Clean vector map + pulsing status nodes */
+    .syriatel-map-vector {
+        position: relative;
+        height: 220px;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 1px solid var(--sys-border);
+        background-color: var(--sys-bg);
+        background-image: url('/brand/syriatel-map-grid.svg');
+        background-size: cover;
+        background-position: center;
+    }
+
+    .syriatel-map-dot {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--sys-brand-red);
+        border: 2px solid var(--sys-card-bg);
+        box-shadow: 0 0 0 0 var(--sys-brand-red-ring);
+        animation: syriatel-map-pulse 1.85s ease-in-out infinite;
+    }
+
+    .syriatel-map-dot--delay {
+        animation-delay: 0.6s;
+    }
+
+    .syriatel-map-dot--delay2 {
+        animation-delay: 1.1s;
+    }
+
+    .syriatel-map-dot--muted {
+        background: var(--sys-text-muted);
+        box-shadow: 0 0 0 0 var(--sys-brand-red-ring);
+        animation: syriatel-map-pulse-muted 2.2s ease-in-out infinite;
+    }
+
+    @@keyframes syriatel-map-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 var(--sys-brand-red-ring); }
+        50% { transform: scale(1.2); opacity: 0.92; box-shadow: 0 0 0 12px transparent; }
+    }
+
+    @@keyframes syriatel-map-pulse-muted {
+        0%, 100% { opacity: 0.85; }
+        50% { opacity: 0.45; }
+    }
+
+    /* RTL / LTR: sidebar mirror + unified header + hub (admin template uses physical left/margins) */
+    #sidebar,
+    .content {
+        transition: transform 0.28s ease, margin 0.28s ease, margin-inline 0.28s ease, padding-inline 0.28s ease;
+    }
+
+    /* Sidebar position + content margins: syr-tel-portal.css (margin-inline-*) */
+
+    /* Sidebar nav: logical alignment + mirrored “pill” borders */
+    html[dir="rtl"] .sidebar .navbar,
+    html[dir="rtl"] .sidebar .navbar-nav,
+    html[dir="rtl"] .sidebar #mainMenuContainer,
+    html[dir="rtl"] .sidebar #mainMenu {
+        text-align: start;
+    }
+
+    html[dir="rtl"] .sidebar .navbar .navbar-nav .nav-link {
+        border-left: none !important;
+        border-right: 3px solid var(--light);
+        border-radius: 30px 0 0 30px;
+    }
+
+    html[dir="rtl"] .sidebar .navbar .navbar-nav .nav-link:hover,
+    html[dir="rtl"] .sidebar .navbar .navbar-nav .nav-link.active {
+        border-color: var(--primary);
+    }
+
+    html[dir="rtl"] .sidebar .navbar .dropdown-item {
+        padding-left: 10px;
+        padding-right: 25px;
+        border-radius: 30px 0 0 30px;
+    }
+
+    html[dir="rtl"] .sidebar .navbar .dropdown-toggle::after {
+        right: auto;
+        left: 15px;
+    }
+
+    html[dir="rtl"] .content .navbar .navbar-nav .nav-link {
+        margin-left: 0 !important;
+        margin-right: 25px;
+    }
+
+    html[dir="rtl"] .content .navbar .dropdown-toggle::after {
+        margin-left: 0;
+        margin-right: 6px;
+    }
+
+    @@media (max-width: 575.98px) {
+        html[dir="rtl"] .content .navbar .navbar-nav .nav-link {
+            margin-left: 0 !important;
+            margin-right: 15px;
+        }
+    }
+
+    /* Top navbar: rely on dir=rtl flex + logical margins (avoid row-reverse fighting native RTL order) */
+    html[dir="rtl"] .syriatel-unified-header {
+        direction: rtl;
+        text-align: start;
+    }
+
+    html[dir="rtl"] .syriatel-unified-header .syriatel-header-main,
+    html[dir="rtl"] .syriatel-unified-header .syriatel-header-actions {
+        flex-direction: row;
+    }
+
+    html[dir="rtl"] .syriatel-unified-header .syriatel-header-brand {
+        margin-inline-start: 0.5rem;
+        margin-inline-end: 0;
+    }
+
+    html[dir="ltr"] .syriatel-unified-header .syriatel-header-brand {
+        margin-inline-start: 0.5rem;
+    }
+
+    html[dir="rtl"] .syriatel-unified-header .dropdown-menu {
+        text-align: start;
+    }
+
+    html[dir="rtl"] .syriatel-unified-header .nav-link.dropdown-toggle {
+        flex-direction: row;
+    }
+    html[dir="rtl"] .telecom-hub-root .telecom-search-group .input-group-text {
+        border-radius: 0 0.5rem 0.5rem 0;
+    }
+    html[dir="ltr"] .telecom-hub-root .telecom-search-group .input-group-text {
+        border-radius: 0.5rem 0 0 0.5rem;
     }
 
 </style>
@@ -371,7 +663,7 @@
         line-height: 1.5;
         border-radius: 0.25rem;
         box-shadow: none; 
-        border: 1px solid #ced4da; 
+        border: 1px solid var(--sys-border); 
     }
 
     form textarea.form-control {

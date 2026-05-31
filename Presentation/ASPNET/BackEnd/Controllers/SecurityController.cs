@@ -1,10 +1,13 @@
 ﻿using Application.Features.SecurityManager.Commands;
 using Application.Features.SecurityManager.Queries;
+using Application.Features.TelecomBackOfficeManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using Infrastructure.SecurityManager.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ASPNET.BackEnd.Controllers;
 
@@ -34,9 +37,18 @@ public class SecurityController : BaseApiController
 
     [AllowAnonymous]
     [HttpPost("Logout")]
-    public async Task<ActionResult<ApiSuccessResult<LogoutResult>>> LogoutAsync(LogoutRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiSuccessResult<LogoutResult>>> LogoutAsync(
+        [FromBody] LogoutRequest? request,
+        CancellationToken cancellationToken)
     {
-        var response = await _sender.Send(request, cancellationToken);
+        var userId = request?.UserId?.Trim();
+        if (string.IsNullOrEmpty(userId))
+        {
+            userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+        }
+
+        var response = await _sender.Send(new LogoutRequest { UserId = userId }, cancellationToken);
 
         return Ok(new ApiSuccessResult<LogoutResult>
         {
@@ -150,15 +162,52 @@ public class SecurityController : BaseApiController
         });
     }
 
+    /// <summary>Authoritative permissions, landing path, and menu for the current operator (fixes stale localStorage).</summary>
+    [Authorize]
+    [HttpGet("GetOperatorSession")]
+    public async Task<ActionResult<ApiSuccessResult<GetOperatorSessionResult>>> GetOperatorSessionAsync(
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+        var response = await _sender.Send(
+            new GetOperatorSessionRequest { UserId = userId, Roles = roles },
+            cancellationToken);
+
+        return Ok(new ApiSuccessResult<GetOperatorSessionResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetOperatorSessionAsync),
+            Content = response,
+        });
+    }
 
     [Authorize]
     [HttpGet("GetMyProfileList")]
     public async Task<ActionResult<ApiSuccessResult<GetMyProfileListResult>>> GetMyProfileListAsync(
-        [FromQuery] string userId,
+        [FromQuery] string? userId,
         CancellationToken cancellationToken
         )
     {
-        var request = new GetMyProfileListRequest { UserId = userId };
+        var effectiveUserId = string.IsNullOrWhiteSpace(userId)
+            ? User.FindFirstValue(ClaimTypes.NameIdentifier)
+            : userId.Trim();
+
+        if (string.IsNullOrWhiteSpace(effectiveUserId))
+        {
+            return BadRequest(new ApiErrorResult
+            {
+                Code = StatusCodes.Status400BadRequest,
+                Message = "User id is required.",
+            });
+        }
+
+        var request = new GetMyProfileListRequest { UserId = effectiveUserId };
         var response = await _sender.Send(request, cancellationToken);
 
         return Ok(new ApiSuccessResult<GetMyProfileListResult>
@@ -204,7 +253,7 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpGet("GetRoleList")]
     public async Task<ActionResult<ApiSuccessResult<GetRoleListResult>>> GetRoleListAsync(
         CancellationToken cancellationToken
@@ -222,13 +271,14 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpGet("GetUserList")]
     public async Task<ActionResult<ApiSuccessResult<GetUserListResult>>> GetUserListAsync(
         CancellationToken cancellationToken
         )
     {
-        var request = new GetUserListRequest { };
+        var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var request = new GetUserListRequest { ActorUserId = actorId };
         var response = await _sender.Send(request, cancellationToken);
 
         return Ok(new ApiSuccessResult<GetUserListResult>
@@ -239,7 +289,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpPost("CreateUser")]
     public async Task<ActionResult<ApiSuccessResult<CreateUserResult>>> CreateUserAsync(
         CreateUserRequest request,
@@ -257,7 +307,7 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpPost("UpdateUser")]
     public async Task<ActionResult<ApiSuccessResult<UpdateUserResult>>> UpdateUserAsync(
         UpdateUserRequest request,
@@ -274,7 +324,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpPost("DeleteUser")]
     public async Task<ActionResult<ApiSuccessResult<DeleteUserResult>>> DeleteUserAsync(
     DeleteUserRequest request,
@@ -292,7 +342,7 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpPost("UpdatePasswordUser")]
     public async Task<ActionResult<ApiSuccessResult<UpdatePasswordUserResult>>> UpdatePasswordUserAsync(
     UpdatePasswordUserRequest request,
@@ -309,7 +359,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [AllowAnonymous]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpPost("GetUserRoles")]
     public async Task<ActionResult<ApiSuccessResult<GetUserRolesResult>>> GetUserRolesAsync(GetUserRolesRequest request, CancellationToken cancellationToken)
     {
@@ -323,7 +373,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [AllowAnonymous]
+    [Authorize(Roles = TelecomRoles.Admin)]
     [HttpPost("UpdateUserRole")]
     public async Task<ActionResult<ApiSuccessResult<UpdateUserRoleResult>>> UpdateUserRoleAsync(UpdateUserRoleRequest request, CancellationToken cancellationToken)
     {
@@ -337,7 +387,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [AllowAnonymous]
+    [Authorize]
     [HttpPost("UpdateMyProfileAvatar")]
     public async Task<ActionResult<ApiSuccessResult<UpdateMyProfileAvatarResult>>> UpdateMyProfileAvatarAsync(UpdateMyProfileAvatarRequest request, CancellationToken cancellationToken)
     {
@@ -348,6 +398,214 @@ public class SecurityController : BaseApiController
             Code = StatusCodes.Status200OK,
             Message = $"Success executing {nameof(UpdateMyProfileAvatarAsync)}",
             Content = response
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetMenuBadges")]
+    public async Task<ActionResult<ApiSuccessResult<GetMenuBadgesResult>>> GetMenuBadgesAsync(CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetMenuBadgesRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetMenuBadgesResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetMenuBadgesAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetPermissionCatalog")]
+    public async Task<ActionResult<ApiSuccessResult<GetPermissionCatalogResult>>> GetPermissionCatalogAsync(
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetPermissionCatalogRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetPermissionCatalogResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetPermissionCatalogAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetRolePermissions")]
+    public async Task<ActionResult<ApiSuccessResult<GetRolePermissionsResult>>> GetRolePermissionsAsync(
+        [FromQuery] string? roleName,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(roleName))
+        {
+            return BadRequest(new ApiErrorResult
+            {
+                Code = StatusCodes.Status400BadRequest,
+                Message = "roleName query parameter is required.",
+            });
+        }
+
+        var response = await _sender.Send(new GetRolePermissionsRequest { RoleName = roleName.Trim() }, cancellationToken);
+        return Ok(new ApiSuccessResult<GetRolePermissionsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetRolePermissionsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("CloneRolePermissions")]
+    public async Task<ActionResult<ApiSuccessResult<CloneRolePermissionsResult>>> CloneRolePermissionsAsync(
+        CloneRolePermissionsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<CloneRolePermissionsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(CloneRolePermissionsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("UpdateRolePermissions")]
+    public async Task<ActionResult<ApiSuccessResult<UpdateRolePermissionsResult>>> UpdateRolePermissionsAsync(
+        UpdateRolePermissionsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<UpdateRolePermissionsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(UpdateRolePermissionsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetGlobalSettings")]
+    public async Task<ActionResult<ApiSuccessResult<GetGlobalSettingsResult>>> GetGlobalSettingsAsync(
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetGlobalSettingsRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetGlobalSettingsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetGlobalSettingsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("UpdateGlobalSettings")]
+    public async Task<ActionResult<ApiSuccessResult<UpdateGlobalSettingsResult>>> UpdateGlobalSettingsAsync(
+        UpdateGlobalSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<UpdateGlobalSettingsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(UpdateGlobalSettingsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("ResolveAuditDisplayNames")]
+    public async Task<ActionResult<ApiSuccessResult<ResolveAuditDisplayNamesResult>>> ResolveAuditDisplayNamesAsync(
+        [FromQuery] string? profileId,
+        [FromQuery] string? technicalTicketId,
+        [FromQuery] string? customerId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(
+            new ResolveAuditDisplayNamesRequest
+            {
+                ProfileId = profileId,
+                TechnicalTicketId = technicalTicketId,
+                CustomerId = customerId,
+            },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<ResolveAuditDisplayNamesResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ResolveAuditDisplayNamesAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetUserAuditLogList")]
+    public async Task<ActionResult<ApiSuccessResult<GetUserAuditLogListResult>>> GetUserAuditLogListAsync(
+        [FromQuery] GetUserAuditLogListRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<GetUserAuditLogListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetUserAuditLogListAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetOrgUnitList")]
+    public async Task<ActionResult<ApiSuccessResult<GetOrgUnitListResult>>> GetOrgUnitListAsync(
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetOrgUnitListRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetOrgUnitListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetOrgUnitListAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("CreateOrgUnit")]
+    public async Task<ActionResult<ApiSuccessResult<CreateOrgUnitResult>>> CreateOrgUnitAsync(
+        CreateOrgUnitRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<CreateOrgUnitResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(CreateOrgUnitAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("UpdateOrgUnit")]
+    public async Task<ActionResult<ApiSuccessResult<UpdateOrgUnitResult>>> UpdateOrgUnitAsync(
+        UpdateOrgUnitRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<UpdateOrgUnitResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(UpdateOrgUnitAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpPost("GetPersonaMenuNavigation")]
+    public async Task<ActionResult<ApiSuccessResult<GetPersonaMenuNavigationResult>>> GetPersonaMenuNavigationAsync(
+        GetPersonaMenuNavigationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<GetPersonaMenuNavigationResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetPersonaMenuNavigationAsync),
+            Content = response,
         });
     }
 

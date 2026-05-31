@@ -1,12 +1,5 @@
 namespace Domain.Enums;
 
-public enum TelecomSubscriptionType
-{
-    Prepaid = 0,
-    Postpaid = 1,
-    Hybrid = 2
-}
-
 public enum MsisdnPoolStatus
 {
     Available = 0,
@@ -37,8 +30,20 @@ public enum TelecomOperationKind
 public enum TelecomOperationStatus
 {
     Draft = 0,
+  /// <summary>Confirmed locally by agent (pre-provisioning).</summary>
     Confirmed = 1,
+  /// <summary>Deferred external retry / queue.</summary>
     PendingExternal = 2,
     Completed = 3,
-    Failed = 4
+    Failed = 4,
+  /// <summary>Documents uploaded; awaiting confirmation.</summary>
+    PendingDocuments = 5,
+  /// <summary>Provisioning in progress (CBS/HLR).</summary>
+    Provisioning = 6
+}
+
+public enum SubscriberType
+{
+    Individual = 0,
+    Corporate = 1
 }

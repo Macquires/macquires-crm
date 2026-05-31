@@ -1,0 +1,85 @@
+@page
+@{
+    ViewData["Title"] = "كتالوج الخدمات المضافة (VAS)";
+}
+
+<div id="app" v-cloak>
+    <div class="row">
+        <div class="col-12">
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.mainTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" v-model="state.id" />
+                    <form id="MainForm">
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="ServiceCode">Service code (CBS/HLR)</label>
+                                <input id="ServiceCode" class="form-control font-monospace text-uppercase" v-model="state.serviceCode" maxlength="64" :disabled="!!state.id" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="SortOrder">Sort order</label>
+                                <input id="SortOrder" type="number" class="form-control" v-model.number="state.sortOrder" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="NameAr">Name (Arabic)</label>
+                                <input id="NameAr" class="form-control" v-model="state.nameAr" maxlength="255" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="NameEn">Name (English)</label>
+                                <input id="NameEn" class="form-control" v-model="state.nameEn" maxlength="255" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="MonthlyFee">Monthly fee (SYP)</label>
+                                <input id="MonthlyFee" type="number" step="0.01" min="0" class="form-control" v-model.number="state.monthlyFee" />
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end pb-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="IsActive" v-model="state.isActive" />
+                                    <label class="form-check-label" for="IsActive">Active in catalog</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <label class="form-label" for="HlrCommandTemplate">HLR command template</label>
+                                <input id="HlrCommandTemplate" class="form-control font-monospace small" v-model="state.hlrCommandTemplate" maxlength="512" placeholder="ADD-SUPPLEMENTARY: MSISDN={MSISDN}; SVC=...; ACTION={ACTION}" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <label class="form-label" for="Description">Description</label>
+                                <textarea id="Description" class="form-control" rows="2" v-model="state.description"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" v-on:click="handler.handleSubmit" v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting"></span>
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Telecom/VasCatalogList.cshtml.js"></script>
+}

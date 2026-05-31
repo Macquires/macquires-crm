@@ -1,0 +1,891 @@
+@page "/Telecom/Customer360Profile"
+@{
+    ViewData["Title"] = "ملف المشترك 360";
+}
+<link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+<style>
+    #c360-page { min-height: 80vh; }
+    .c360-hero {
+        background: linear-gradient(
+            135deg,
+            var(--sys-text-main) 0%,
+            color-mix(in srgb, var(--sys-text-main) 75%, var(--sys-text-muted)) 100%
+        );
+        color: var(--sys-card-bg);
+        border-radius: var(--sys-radius);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .c360-hero-kpi {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+        min-width: 7rem;
+    }
+    .c360-tab-btn.active {
+        background: var(--sys-brand-red) !important;
+        color: var(--sys-card-bg) !important;
+        border-color: var(--sys-brand-red) !important;
+    }
+    .btn-purple-glow {
+        background: linear-gradient(135deg, var(--sys-brand-red), var(--sys-brand-red-hover));
+        border: none;
+        color: var(--sys-card-bg);
+        box-shadow: 0 4px 14px var(--sys-brand-red-ring);
+    }
+    .btn-purple-glow:hover { color: var(--sys-card-bg); filter: brightness(1.08); }
+    .c360-sub-card {
+        border: 1px solid var(--sys-border);
+        border-radius: var(--sys-radius);
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .c360-sub-card:hover { box-shadow: var(--sys-shadow-card-hover); }
+    .c360-wallet-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+        gap: 0.5rem;
+    }
+    .c360-wallet-kpi {
+        background: var(--sys-bg);
+        border: 1px solid var(--sys-border);
+        border-radius: 8px;
+        padding: 0.5rem 0.65rem;
+    }
+    .c360-wallet-kpi .kpi-label { font-size: 0.7rem; color: var(--sys-text-muted); }
+    .c360-wallet-kpi .kpi-value { font-size: 0.95rem; font-weight: 700; }
+    .c360-quota-bar {
+        height: 6px;
+        border-radius: 4px;
+        background: var(--sys-border);
+        overflow: hidden;
+        margin-top: 0.35rem;
+    }
+    .c360-quota-bar > span {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--sys-brand-red), var(--sys-brand-red-hover));
+        border-radius: 4px;
+    }
+    .c360-ticket-row {
+        border: 1px solid var(--sys-border);
+        border-radius: var(--sys-radius);
+        padding: 1rem 1.15rem;
+        background: var(--sys-card-bg);
+    }
+    .c360-skel {
+        height: 140px;
+        border-radius: var(--sys-radius);
+        background: linear-gradient(90deg, var(--sys-border) 25%, var(--sys-bg) 50%, var(--sys-border) 75%);
+        background-size: 200% 100%;
+        animation: c360-shimmer 1.2s infinite;
+    }
+    @@keyframes c360-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    .c360-wiz-step { border: 1px solid var(--sys-border); }
+    .c360-wiz-step-active { background: var(--sys-brand-red); color: var(--sys-card-bg); border-color: var(--sys-brand-red); font-weight: 600; }
+    .c360-wiz-step-muted { background: var(--sys-bg); color: var(--sys-text-muted); }
+    .c360-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+        gap: 0.85rem;
+    }
+    .c360-action-card {
+        border: 1px solid var(--sys-border);
+        border-radius: var(--sys-radius);
+        background: var(--sys-card-bg);
+        padding: 1rem 0.85rem;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        position: relative;
+        min-height: 7.5rem;
+    }
+    .c360-action-card:not(.is-locked):hover {
+        transform: translateY(-2px);
+        box-shadow: var(--sys-shadow-card-hover);
+        border-color: var(--sys-brand-red);
+    }
+    .c360-action-card.is-locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .c360-action-card .c360-action-icon {
+        font-size: 1.65rem;
+        display: block;
+        margin-bottom: 0.35rem;
+    }
+    .c360-actions-lock::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: color-mix(in srgb, var(--sys-card-bg) 35%, transparent);
+        border-radius: var(--sys-radius);
+        pointer-events: none;
+        z-index: 2;
+    }
+    .c360-vas-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .c360-vas-summary-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: var(--sys-bg);
+        border: 1px solid var(--sys-border);
+        color: var(--sys-text-main);
+    }
+    .c360-vas-summary-pill strong {
+        color: var(--sys-brand-red);
+        font-weight: 700;
+    }
+    .c360-vas-line-block {
+        border: 1px solid var(--sys-border);
+        border-radius: var(--sys-radius);
+        overflow: hidden;
+        background: var(--sys-card-bg);
+        margin-bottom: 0.85rem;
+    }
+    .c360-vas-line-block:last-child { margin-bottom: 0; }
+    .c360-vas-line-head {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        padding: 0.65rem 1rem;
+        background: var(--sys-bg);
+        border-bottom: 1px solid var(--sys-border);
+    }
+    .c360-vas-line-head .line-msisdn {
+        font-family: ui-monospace, monospace;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--sys-text-main);
+        direction: ltr;
+    }
+    .c360-vas-table {
+        margin: 0;
+        font-size: 0.875rem;
+    }
+    .c360-vas-table thead th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--sys-text-muted);
+        background: var(--sys-card-bg);
+        border-bottom: 1px solid var(--sys-border);
+        white-space: nowrap;
+        padding: 0.55rem 1rem;
+    }
+    .c360-vas-table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--sys-border);
+    }
+    .c360-vas-table tbody tr:last-child td { border-bottom: none; }
+    .c360-vas-table tbody tr:hover td { background: color-mix(in srgb, var(--sys-bg) 65%, var(--sys-card-bg)); }
+    .c360-vas-service-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 0;
+    }
+    .c360-vas-service-icon {
+        flex-shrink: 0;
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--sys-brand-red-ring);
+        color: var(--sys-brand-red);
+        font-size: 1rem;
+    }
+    .c360-vas-service-name {
+        font-weight: 600;
+        color: var(--sys-text-main);
+        line-height: 1.3;
+    }
+    .c360-vas-service-code {
+        font-size: 0.72rem;
+        color: var(--sys-text-muted);
+        font-family: ui-monospace, monospace;
+        direction: ltr;
+        display: inline-block;
+    }
+    .c360-vas-dt {
+        font-size: 0.8rem;
+        color: var(--sys-text-muted);
+        white-space: nowrap;
+    }
+    .c360-vas-dt-empty { color: var(--sys-border); }
+    .c360-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+        gap: 1rem 1.25rem;
+    }
+    .c360-info-item label {
+        display: block;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--sys-text-muted);
+        margin-bottom: 0.2rem;
+    }
+    .c360-info-item p {
+        margin: 0;
+        font-weight: 500;
+        word-break: break-word;
+    }
+    .c360-info-section-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--sys-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 1.25rem 0 0.75rem;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px dashed var(--sys-border);
+    }
+    .c360-info-section-title:first-child { margin-top: 0; }
+    .c360-sub-table th {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+    }
+    .c360-sub-table td { font-size: 0.85rem; vertical-align: middle; }
+    .c360-sub-table .font-monospace { font-size: 0.82rem; }
+</style>
+
+<div id="app" v-cloak class="telecom-premium-page">
+    <div class="container-fluid py-4" id="c360-page">
+        <div v-if="state.loadError" class="alert alert-danger shadow-sm">{{ state.loadError }}</div>
+        <div v-if="state.loading" class="c360-skel mb-3"></div>
+
+        <template v-else-if="state.profile">
+            <div class="c360-hero p-4 mb-4 shadow">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <p class="small text-white-50 mb-1 text-uppercase letter-spacing-1">Customer 360 Command Center</p>
+                        <h1 class="h3 fw-bold mb-2">{{ state.profile.core?.displayName || '—' }}</h1>
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                            <span class="badge" style="background:var(--sys-brand-red);color:var(--sys-card-bg)">{{ customerStatusLabel }}</span>
+                            <span class="badge" style="background:color-mix(in srgb,var(--sys-text-main) 75%,transparent);color:var(--sys-card-bg)">{{ customerKindLabel }}</span>
+                            <span v-if="activeLinesCount" class="badge" style="background:var(--sys-text-main);color:var(--sys-card-bg)">{{ activeLinesCount }} خط نشط</span>
+                        </div>
+                        <p class="small mb-0 opacity-75 font-monospace" dir="ltr">{{ state.profile.core?.nationalIdMasked || state.profile.core?.commercialRegistry || '—' }}</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-start">
+                        <div class="c360-hero-kpi text-center">
+                            <div class="small text-white-50 d-block">تذاكر</div>
+                            <strong class="fs-5">{{ (state.profile.supportTickets || []).length }}</strong>
+                        </div>
+                        <div class="c360-hero-kpi text-center">
+                            <div class="small text-white-50 d-block">VAS</div>
+                            <strong class="fs-5">{{ activeVasCount }}</strong>
+                        </div>
+                        <button type="button" class="btn btn-purple-glow btn-sm" @@click="openAiWizard">
+                            <i class="bi bi-robot me-1"></i> وكيل الكول سنتر AI
+                        </button>
+                        <a href="/Telecom/UnifiedSearch" class="btn btn-light btn-sm"><i class="bi bi-search me-1"></i>بحث</a>
+                        <a :href="'/Customers/CustomerList?customerId=' + encodeURIComponent(state.customerId)" class="btn btn-outline-light btn-sm">سجل CRM</a>
+                        <a href="/Telecom/TelecomHub" class="btn btn-outline-light btn-sm">مركز العمليات</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم 1: معلومات العميل الكاملة -->
+            <div class="telecom-bento-card mb-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold text-danger mb-4"><i class="bi bi-person-lines-fill me-2"></i>معلومات العميل الكاملة</h2>
+
+                    <div class="c360-info-section-title">الهوية والحالة</div>
+                    <div class="c360-info-grid">
+                        <div class="c360-info-item"><label>الاسم الكامل</label><p>{{ coreField('displayName') }}</p></div>
+                        <div class="c360-info-item"><label>رقم الحساب</label><p class="font-monospace" dir="ltr">{{ coreField('accountNumber') }}</p></div>
+                        <div class="c360-info-item"><label>نوع العميل</label><p>{{ customerKindLabel }}</p></div>
+                        <div class="c360-info-item"><label>الحالة</label><p><span class="badge" :class="statusBadgeClass">{{ customerStatusLabel }}</span></p></div>
+                        <div v-if="coreField('statusReasonCodeLabel')" class="c360-info-item"><label>سبب الحالة</label><p>{{ coreField('statusReasonCodeLabel') }}</p></div>
+                        <div v-if="coreField('statusReasonNote')" class="c360-info-item"><label>ملاحظة الحالة</label><p>{{ coreField('statusReasonNote') }}</p></div>
+                        <div class="c360-info-item"><label>المجموعة</label><p>{{ coreField('customerGroupName') }}</p></div>
+                        <div class="c360-info-item"><label>التصنيف</label><p>{{ coreField('customerCategoryName') }}</p></div>
+                        <div v-if="coreField('description')" class="c360-info-item" style="grid-column:1/-1"><label>الوصف</label><p>{{ coreField('description') }}</p></div>
+                    </div>
+
+                    <div v-if="isIndividual" class="c360-info-section-title">بيانات الفرد</div>
+                    <div v-if="isIndividual" class="c360-info-grid">
+                        <div class="c360-info-item"><label>الرقم الوطني</label><p class="font-monospace" dir="ltr">{{ coreField('nationalIdMasked') }}</p></div>
+                        <div class="c360-info-item"><label>تاريخ الميلاد</label><p>{{ formatDateOnly(coreField('dateOfBirth')) }}</p></div>
+                        <div class="c360-info-item"><label>الجنسية</label><p>{{ coreField('nationality') }}</p></div>
+                        <div class="c360-info-item"><label>الجنس</label><p>{{ coreField('genderLabel') }}</p></div>
+                        <div class="c360-info-item"><label>المهنة</label><p>{{ coreField('occupation') }}</p></div>
+                    </div>
+
+                    <div v-if="isCorporate" class="c360-info-section-title">بيانات الشركة</div>
+                    <div v-if="isCorporate" class="c360-info-grid">
+                        <div class="c360-info-item"><label>السجل التجاري</label><p class="font-monospace" dir="ltr">{{ coreField('commercialRegistry') }}</p></div>
+                        <div class="c360-info-item"><label>الرقم الضريبي</label><p class="font-monospace" dir="ltr">{{ coreField('taxNumber') }}</p></div>
+                        <div class="c360-info-item"><label>المفوّض بالتوقيع</label><p>{{ coreField('authorizedSignatoryName') }}</p></div>
+                        <div class="c360-info-item"><label>الكيان القانوني</label><p>{{ coreField('legalStatusLabel') }}</p></div>
+                        <div class="c360-info-item"><label>وضع الفوترة</label><p>{{ coreField('billingConsolidationModeLabel') }}</p></div>
+                        <div v-if="coreField('parentCustomerDisplayName')" class="c360-info-item"><label>الشركة الأم</label><p>{{ coreField('parentCustomerDisplayName') }}</p></div>
+                    </div>
+
+                    <div class="c360-info-section-title">التواصل</div>
+                    <div class="c360-info-grid">
+                        <div class="c360-info-item"><label>الهاتف الأساسي</label><p class="font-monospace" dir="ltr">{{ coreField('primaryPhone') }}</p></div>
+                        <div class="c360-info-item"><label>البريد الإلكتروني</label><p class="font-monospace" dir="ltr">{{ coreField('contactEmail') }}</p></div>
+                        <div class="c360-info-item"><label>فاكس</label><p class="font-monospace" dir="ltr">{{ coreField('faxNumber') }}</p></div>
+                        <div class="c360-info-item"><label>الموقع</label><p><a v-if="coreField('website')" :href="coreField('website')" target="_blank" rel="noopener">{{ coreField('website') }}</a><span v-else>—</span></p></div>
+                        <div class="c360-info-item"><label>واتساب</label><p class="font-monospace" dir="ltr">{{ coreField('whatsApp') }}</p></div>
+                        <div class="c360-info-item"><label>LinkedIn</label><p>{{ coreField('linkedIn') }}</p></div>
+                        <div class="c360-info-item"><label>Facebook</label><p>{{ coreField('facebook') }}</p></div>
+                        <div class="c360-info-item"><label>Instagram</label><p>{{ coreField('instagram') }}</p></div>
+                        <div class="c360-info-item"><label>X / Twitter</label><p>{{ coreField('twitterX') }}</p></div>
+                        <div class="c360-info-item"><label>TikTok</label><p>{{ coreField('tikTok') }}</p></div>
+                    </div>
+
+                    <div class="c360-info-section-title">العنوان</div>
+                    <div class="c360-info-grid">
+                        <div class="c360-info-item"><label>الشارع</label><p>{{ coreField('street') }}</p></div>
+                        <div class="c360-info-item"><label>المدينة</label><p>{{ coreField('city') }}</p></div>
+                        <div class="c360-info-item"><label>المحافظة</label><p>{{ coreField('state') }}</p></div>
+                        <div class="c360-info-item"><label>الرمز البريدي</label><p>{{ coreField('zipCode') }}</p></div>
+                        <div class="c360-info-item"><label>الدولة</label><p>{{ coreField('country') }}</p></div>
+                    </div>
+
+                    <div v-if="(state.profile.core?.contacts || []).length" class="c360-info-section-title">جهات الاتصال</div>
+                    <div v-if="(state.profile.core?.contacts || []).length" class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>الاسم</th><th>المسمى</th><th>الهاتف</th><th>البريد</th><th>ملاحظات</th></tr></thead>
+                            <tbody>
+                                <tr v-for="c in (state.profile.core?.contacts || [])" :key="c.id">
+                                    <td>{{ c.name || '—' }}</td>
+                                    <td>{{ c.jobTitle || '—' }}</td>
+                                    <td class="font-monospace" dir="ltr">{{ c.phoneNumber || '—' }}</td>
+                                    <td class="font-monospace" dir="ltr">{{ c.emailAddress || '—' }}</td>
+                                    <td class="small text-muted">{{ c.description || '—' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="c360-info-section-title">سجل النظام</div>
+                    <div class="c360-info-grid">
+                        <div class="c360-info-item"><label>تاريخ الإنشاء</label><p>{{ formatDt(coreField('createdAtUtc', true)) }}</p></div>
+                        <div class="c360-info-item"><label>آخر تحديث</label><p>{{ formatDt(coreField('updatedAtUtc', true)) }}</p></div>
+                        <div class="c360-info-item"><label>معرّف العميل</label><p class="font-monospace small" dir="ltr">{{ state.customerId }}</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم 2: الاشتراكات الكاملة -->
+            <div class="telecom-bento-card mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h2 class="h5 fw-bold text-danger mb-0"><i class="bi bi-reception-4 me-2"></i>جميع الاشتراكات</h2>
+                        <span class="badge bg-dark">{{ allSubscriptions.length }} اشتراك</span>
+                    </div>
+                    <div v-if="!allSubscriptions.length" class="text-center text-muted py-4">
+                        <i class="bi bi-sim display-6 d-block mb-2 opacity-50"></i>
+                        لا توجد اشتراكات مسجّلة لهذا العميل.
+                    </div>
+                    <div v-else class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 c360-sub-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>MSISDN</th>
+                                    <th>الباقة / المنتج</th>
+                                    <th>نوع الاشتراك</th>
+                                    <th>الحالة</th>
+                                    <th>نوع الخط</th>
+                                    <th>ICCID</th>
+                                    <th>IMSI</th>
+                                    <th>نوع الشريحة</th>
+                                    <th>حالة الشريحة</th>
+                                    <th>الوثائق</th>
+                                    <th>الرصيد / الحد</th>
+                                    <th>الولاء</th>
+                                    <th>التفعيل</th>
+                                    <th>HLR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="sub in allSubscriptions" :key="sub.id">
+                                    <td>
+                                        <span class="font-monospace fw-bold" dir="ltr">{{ sub.msisdn || '—' }}</span>
+                                        <span v-if="sub.isPrimaryLine" class="badge ms-1" style="background:var(--sys-brand-red);color:var(--sys-card-bg);font-size:0.65rem">أساسي</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ sub.productOfferingName || sub.productName || '—' }}</strong>
+                                        <br /><span class="small text-muted">{{ sub.productName || '' }}</span>
+                                    </td>
+                                    <td>{{ sub.subscriptionTypeName || sub.subscriptionTypeCode || '—' }}</td>
+                                    <td><span class="badge" :class="operationalBadgeClass(sub.profileOperationalStatus)">{{ operationalStatusLabel(sub.profileOperationalStatus) }}</span></td>
+                                    <td>{{ sub.serviceLineTypeLabel || '—' }}</td>
+                                    <td class="font-monospace" dir="ltr">{{ sub.iccid || '—' }}</td>
+                                    <td class="font-monospace" dir="ltr">{{ sub.imsi || '—' }}</td>
+                                    <td>{{ sub.simType || '—' }}</td>
+                                    <td>{{ sub.simStatus || '—' }}</td>
+                                    <td>{{ sub.documentStatusLabel || '—' }}</td>
+                                    <td class="small">
+                                        <span v-if="sub.prepaidBalance != null">رصيد: {{ sub.prepaidBalance }}</span>
+                                        <span v-if="sub.postpaidCreditLimit != null"><br />حد: {{ sub.postpaidCreditLimit }}</span>
+                                        <span v-if="sub.prepaidBalance == null && sub.postpaidCreditLimit == null">—</span>
+                                    </td>
+                                    <td class="small">
+                                        <span v-if="sub.loyaltyTier">{{ sub.loyaltyTier }}</span>
+                                        <span v-if="sub.loyaltyPoints"> ({{ sub.loyaltyPoints }} نقطة)</span>
+                                        <span v-if="!sub.loyaltyTier && !sub.loyaltyPoints">—</span>
+                                    </td>
+                                    <td class="small text-muted">{{ formatDt(sub.activationDateUtc) }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" :disabled="state.hlrBusy === sub.id" @@click="checkHlr(sub)">
+                                            <span v-if="state.hlrBusy === sub.id" class="spinner-border spinner-border-sm"></span>
+                                            <span v-else-if="state.hlrBySub[sub.id]">{{ state.hlrBySub[sub.id].hlrSubscriberState }}</span>
+                                            <span v-else><i class="bi bi-broadcast"></i></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="nav nav-pills gap-2 mb-3 flex-wrap">
+                <li class="nav-item" v-for="tab in tabs" :key="tab.id">
+                    <button type="button" class="nav-link c360-tab-btn" :class="{ active: state.activeTab === tab.id }" @@click="state.activeTab = tab.id">
+                        <i :class="tab.icon + ' me-1'"></i>{{ tab.label }}
+                    </button>
+                </li>
+            </ul>
+
+            <div class="mb-4 position-relative" :class="{ 'c360-actions-lock': state.isProvisioningInFlight }">
+                <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>مركز التشغيل والتفعيل (Provisioning Hub)</h2>
+                <div class="c360-actions-grid">
+                    <button type="button" class="c360-action-card border-0" @@click="openAiWizard">
+                        <i class="bi bi-headset c360-action-icon" style="color:var(--sys-text-main)"></i>
+                        <span class="small fw-semibold d-block">الدعم الفني</span>
+                        <span class="text-muted" style="font-size:0.7rem;">AI Voice Wizard</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.provisioning }" :disabled="!can.provisioning || state.isProvisioningInFlight" @@click="openProvisioningWizard('addpackage')">
+                        <i class="bi bi-stars c360-action-icon" style="color:var(--sys-text-muted)"></i>
+                        <span class="small fw-semibold d-block">إضافة باقة / VAS</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('simswap')">
+                        <i class="bi bi-sim c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">تبديل شريحة</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.takeover }" :disabled="!can.takeover || state.isProvisioningInFlight" @@click="openProvisioningWizard('takeover')">
+                        <i class="bi bi-arrow-left-right c360-action-icon" style="color:var(--sys-text-muted)"></i>
+                        <span class="small fw-semibold d-block">نقل ملكية</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.provisioning }" :disabled="!can.provisioning || state.isProvisioningInFlight" @@click="openProvisioningWizard('migrate')">
+                        <i class="bi bi-arrow-up-circle c360-action-icon" style="color:var(--sys-text-main)"></i>
+                        <span class="small fw-semibold d-block">ترحيل باقة MGR</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('activate')">
+                        <i class="bi bi-reception-4 c360-action-icon" style="color:var(--sys-text-muted)"></i>
+                        <span class="small fw-semibold d-block">تفعيل خط جديد</span>
+                    </button>
+                </div>
+                <p v-if="state.isProvisioningInFlight" class="small text-primary mt-2 mb-0"><span class="spinner-border spinner-border-sm me-1"></span>جاري التنفيذ على CBS/HLR…</p>
+            </div>
+
+            <!-- Tab: Profile & billing -->
+            <div v-show="state.activeTab === 'profile'" class="row g-3 mb-4">
+                <div class="col-lg-5">
+                    <div class="telecom-bento-card h-100">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-person-vcard me-2"></i>البيانات الشخصية والقانونية</h2>
+                            <div class="row g-3">
+                                <div class="col-12"><label class="small text-muted">الاسم</label><p class="fw-semibold mb-0">{{ state.profile.core?.displayName }}</p></div>
+                                <div class="col-md-6"><label class="small text-muted">نوع العميل</label><p class="mb-0">{{ customerKindLabel }}</p></div>
+                                <div class="col-md-6"><label class="small text-muted">هاتف أساسي</label><p class="mb-0 font-monospace" dir="ltr">{{ state.profile.core?.primaryPhone || '—' }}</p></div>
+                                <div class="col-12"><label class="small text-muted">هوية / سجل تجاري</label><p class="mb-0 font-monospace" dir="ltr">{{ state.profile.core?.nationalIdMasked || state.profile.core?.commercialRegistry || '—' }}</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="telecom-bento-card h-100">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-wallet2 me-2"></i>الفوترة والرصيد (CBS Mock)</h2>
+                            <div v-if="state.cbsBusy" class="c360-skel mb-3" style="height:3rem;"></div>
+                            <div v-else-if="state.cbsData" class="alert alert-success border-0 mb-3">
+                                <strong>{{ state.cbsData.msisdn }}</strong> —
+                                <span class="fw-bold">{{ state.cbsData.balance }} {{ state.cbsData.currency || 'SYP' }}</span>
+                            </div>
+                            <p v-else class="small text-muted">لا يوجد MSISDN لاستعلام الرصيد.</p>
+                            <h3 class="small fw-semibold text-muted mb-2">سجل تكامل الفوترة</h3>
+                            <div class="table-responsive" style="max-height:220px;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light sticky-top"><tr><th>العملية</th><th>النتيجة</th><th>الوقت</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="l in (state.profile.billingLogs || []).slice(0,8)" :key="l.id">
+                                            <td class="small">{{ l.operationNumber }}</td>
+                                            <td><span class="badge" :style="l.success ? 'background:var(--sys-text-main);color:var(--sys-card-bg)' : 'background:var(--sys-border);color:var(--sys-text-main)'">{{ l.success ? 'OK' : 'Retry' }}</span></td>
+                                            <td class="small text-muted">{{ formatDt(l.createdAtUtc) }}</td>
+                                        </tr>
+                                        <tr v-if="!(state.profile.billingLogs || []).length"><td colspan="3" class="text-muted text-center small">لا سجلات.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Services & VAS -->
+            <div v-show="state.activeTab === 'services'" class="mb-4">
+                <div class="telecom-bento-card mb-3">
+                    <div class="card-body p-4">
+                        <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-reception-4 me-2"></i>الباقات والخطوط المفعّلة</h2>
+                        <div v-if="!(state.profile.core?.activeSubscriptions || []).length" class="text-muted small">لا اشتراكات مسجّلة.</div>
+                        <div class="row g-3">
+                            <div v-for="sub in (state.profile.core?.activeSubscriptions || [])" :key="sub.id" class="col-lg-6">
+                                <div class="c360-sub-card p-3 h-100 bg-white">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <strong class="font-monospace fs-5" dir="ltr">{{ sub.msisdn || '—' }}</strong>
+                                        <span v-if="sub.isPrimaryLine" class="badge" style="background:var(--sys-brand-red);color:var(--sys-card-bg)">أساسي</span>
+                                    </div>
+                                    <p class="mb-1 fw-semibold">{{ sub.productOfferingName || sub.productName || '—' }}</p>
+                                    <p class="small text-muted mb-2">{{ sub.subscriptionTypeName }} · {{ sub.simType || 'SIM' }}</p>
+                                    <div v-if="state.lineWalletsBusy[sub.id]" class="c360-skel my-2" style="height:4.5rem;"></div>
+                                    <div v-else-if="lineWallet(sub.id)" class="border rounded p-2 mb-2 bg-light">
+                                        <div v-if="lineWallet(sub.id).success" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                            <div>
+                                                <span class="small text-muted d-block">الرصيد الحالي (CBS)</span>
+                                                <span class="fw-bold text-success fs-6">{{ formatAmount(lineWallet(sub.id).balance) }} {{ lineWallet(sub.id).currency || 'ل.س' }}</span>
+                                            </div>
+                                            <button v-if="canRecharge" type="button" class="btn btn-danger btn-sm" :disabled="state.rechargeBusy === sub.id" @@click="openRechargeModal(sub)">
+                                                <span v-if="state.rechargeBusy === sub.id" class="spinner-border spinner-border-sm"></span>
+                                                <span v-else><i class="bi bi-lightning-charge me-1"></i>شحن رصيد</span>
+                                            </button>
+                                        </div>
+                                        <p v-else class="small text-muted mb-2">{{ lineWallet(sub.id).errorMessage || 'تعذّر تحميل الرصيد' }}</p>
+                                        <p class="small fw-semibold text-danger mb-1">حصص الباقة والمتبقي</p>
+                                        <div v-if="!(lineWallet(sub.id).buckets || []).length" class="small text-muted">لا تفاصيل حصص لهذه الباقة.</div>
+                                        <div v-for="b in (lineWallet(sub.id).buckets || [])" :key="sub.id + '-' + (b.componentType ?? b.ComponentType)" class="mb-2">
+                                            <div class="d-flex justify-content-between small">
+                                                <span>{{ bucketLabel(b) }}</span>
+                                                <span class="fw-semibold" dir="ltr">
+                                                    <template v-if="b.isUnlimited || b.IsUnlimited">غير محدود</template>
+                                                    <template v-else>{{ formatAmount(b.remaining ?? b.Remaining) }} / {{ formatAmount(b.included ?? b.Included) }} {{ b.unit ?? b.Unit ?? '' }}</template>
+                                                </span>
+                                            </div>
+                                            <div v-if="!(b.isUnlimited || b.IsUnlimited)" class="c360-quota-bar">
+                                                <span :style="{ width: (100 - (b.usagePercent ?? b.UsagePercent ?? 0)) + '%' }"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="badge" :class="operationalBadgeClass(sub.profileOperationalStatus)">{{ sub.profileOperationalStatus || '—' }}</span>
+                                    <div v-if="state.hlrBySub[sub.id]" class="small border-top mt-2 pt-2">
+                                        <span style="color:var(--sys-text-main)">HLR:</span> {{ state.hlrBySub[sub.id].hlrSubscriberState }}
+                                        <span v-if="state.hlrBySub[sub.id].differsFromCrm" class="text-warning ms-1">· اختلاف CRM</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" :disabled="state.hlrBusy === sub.id" @@click="checkHlr(sub)">
+                                        <span v-if="state.hlrBusy === sub.id" class="spinner-border spinner-border-sm"></span>
+                                        <span v-else><i class="bi bi-broadcast me-1"></i>فحص HLR</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="telecom-bento-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <h2 class="h6 fw-bold text-danger mb-0"><i class="bi bi-stars me-2"></i>الخدمات المضافة (VAS)</h2>
+                            <button v-if="can.provisioning" type="button" class="btn btn-outline-danger btn-sm" @@click="openProvisioningWizard('addpackage')">
+                                <i class="bi bi-plus-circle me-1"></i>تفعيل خدمة
+                            </button>
+                        </div>
+                        <div v-if="!(state.profile.activeVasServices || []).length" class="text-muted small">لا خدمات VAS مفعّلة على خطوط هذا المشترك.</div>
+                        <template v-else>
+                            <div class="c360-vas-summary">
+                                <span class="c360-vas-summary-pill"><i class="bi bi-collection"></i> الإجمالي: <strong>{{ vasSummary.total }}</strong></span>
+                                <span class="c360-vas-summary-pill"><i class="bi bi-check-circle"></i> نشطة: <strong>{{ vasSummary.active }}</strong></span>
+                                <span v-if="vasSummary.suspended" class="c360-vas-summary-pill"><i class="bi bi-pause-circle"></i> موقوفة: <strong>{{ vasSummary.suspended }}</strong></span>
+                                <span class="c360-vas-summary-pill"><i class="bi bi-phone"></i> خطوط: <strong>{{ groupedVasByLine.length }}</strong></span>
+                            </div>
+                            <div v-for="group in groupedVasByLine" :key="group.msisdn" class="c360-vas-line-block">
+                                <div class="c360-vas-line-head">
+                                    <i class="bi bi-sim text-muted"></i>
+                                    <span class="line-msisdn">{{ group.msisdn }}</span>
+                                    <span class="badge" style="background:var(--sys-text-muted);color:var(--sys-card-bg)">{{ group.items.length }} خدمة</span>
+                                    <span v-if="group.activeCount" class="badge bg-success">{{ group.activeCount }} نشطة</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table c360-vas-table align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="min-width:14rem">الخدمة</th>
+                                                <th>الحالة</th>
+                                                <th>تاريخ التفعيل</th>
+                                                <th>تاريخ الإيقاف</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="v in group.items" :key="v.id">
+                                                <td>
+                                                    <div class="c360-vas-service-cell">
+                                                        <span class="c360-vas-service-icon"><i class="bi bi-stars"></i></span>
+                                                        <div class="min-w-0">
+                                                            <div class="c360-vas-service-name">{{ v.serviceNameAr || '—' }}</div>
+                                                            <span v-if="v.serviceCode" class="c360-vas-service-code">{{ v.serviceCode }}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge rounded-pill" :class="vasBadgeClass(v.status)">{{ vasStatusLabel(v.status) }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="c360-vas-dt" :class="{ 'c360-vas-dt-empty': !v.activatedAtUtc }">{{ v.activatedAtUtc ? formatDt(v.activatedAtUtc) : '—' }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="c360-vas-dt" :class="{ 'c360-vas-dt-empty': !v.deactivatedAtUtc }">{{ v.deactivatedAtUtc ? formatDt(v.deactivatedAtUtc) : '—' }}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Tickets -->
+            <div v-show="state.activeTab === 'tickets'" class="mb-4">
+                <div class="telecom-bento-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <h2 class="h6 fw-bold text-danger mb-0"><i class="bi bi-ticket-detailed me-2"></i>مركز الشكاوى والدعم الفني</h2>
+                            <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-secondary btn-sm">الأرشيف الكامل</a>
+                        </div>
+                        <div v-if="!(state.profile.supportTickets || []).length" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                            لا تذاكر مرتبطة بهذا المشترك.
+                        </div>
+                        <div v-for="t in mappedTickets" :key="t.id" class="c360-ticket-row mb-3">
+                            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                                <div>
+                                    <strong class="font-monospace">{{ t.ticketNumber }}</strong>
+                                    <span class="badge ms-2" :class="t.statusBadge">{{ t.statusLabel }}</span>
+                                    <span class="badge bg-secondary ms-1">{{ t.priorityLabel }}</span>
+                                </div>
+                                <span class="small text-muted">{{ t.createdDisplay }}</span>
+                            </div>
+                            <p class="small mb-1"><span class="text-muted">MSISDN:</span> <span class="font-monospace" dir="ltr">{{ t.msisdn }}</span> · {{ t.issueLabel }}</p>
+                            <p class="small text-muted mb-3">{{ t.notes || '—' }}</p>
+                            <div class="d-flex flex-wrap gap-2" v-if="t.canOperate">
+                                <button v-if="can.cbs" type="button" class="btn btn-outline-warning btn-sm"
+                                    :disabled="isTicketBusy(t.id, 'cbs')" @@click="forceCbs(t)">
+                                    <span v-if="isTicketBusy(t.id, 'cbs')" class="spinner-border spinner-border-sm"></span>
+                                    <span v-else><i class="bi bi-currency-exchange me-1"></i>ضغط شحنة CBS</span>
+                                </button>
+                                <button v-if="can.hlr" type="button" class="btn btn-outline-danger btn-sm"
+                                    :disabled="isTicketBusy(t.id, 'hlr')" @@click="hlrResync(t)">
+                                    <span v-if="isTicketBusy(t.id, 'hlr')" class="spinner-border spinner-border-sm"></span>
+                                    <span v-else><i class="bi bi-broadcast me-1"></i>مزامنة HLR</span>
+                                </button>
+                                <button v-if="can.escalate" type="button" class="btn btn-outline-dark btn-sm"
+                                    :disabled="isTicketBusy(t.id, 'escalate')" @@click="escalateTicket(t)">
+                                    <span v-if="isTicketBusy(t.id, 'escalate')" class="spinner-border spinner-border-sm"></span>
+                                    <span v-else><i class="bi bi-arrow-up-circle me-1"></i>تصعيد Tier-3</span>
+                                </button>
+                            </div>
+                            <p v-else class="small text-muted mb-0"><i class="bi bi-lock me-1"></i>التذكرة مغلقة — لا إجراءات تشغيلية.</p>
+                            <p v-if="!can.cbs && !can.hlr && !can.escalate && t.canOperate" class="small text-warning mb-0 mt-2">
+                                <i class="bi bi-shield-exclamation me-1"></i>لا توجد صلاحيات RBAC لإجراءات التذاكر على حسابك.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- AI Voice Wizard Modal -->
+    <div class="modal fade" id="c360AiWizardModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0" style="background:linear-gradient(135deg,var(--sys-brand-red),var(--sys-brand-red-hover));color:var(--sys-card-bg);">
+                    <h5 class="modal-title"><i class="bi bi-robot me-2"></i>محاكاة مكالمة كول سنتر AI</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">يُنشئ تذكرة آلية مربوطة بالمشترك الحالي وتظهر فوراً في تبويب الشكاوى.</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">MSISDN</label>
+                        <input type="text" class="form-control font-monospace" v-model="state.aiSim.msisdn" dir="ltr" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">نص المكالمة (عامية)</label>
+                        <textarea class="form-control" rows="3" v-model="state.aiSim.transcript" placeholder="أخي شحنت كاش والنت واقف عندي بعد الشحن..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-purple-glow" :disabled="state.aiSim.busy" @@click="simulateAiCall">
+                        <span v-if="state.aiSim.busy" class="spinner-border spinner-border-sm"></span>
+                        <span v-else><i class="bi bi-mic me-1"></i>تشغيل المحاكاة</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="c360ProvWizardModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger">{{ wizardTitle }}</h5>
+                    <button type="button" class="btn-close" aria-label="إغلاق" @@click="closeProvisioningWizard"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                        <span v-for="s in 3" :key="s" class="c360-wiz-step flex-grow-1 text-center small py-2 rounded"
+                              :class="state.wizard.step >= s ? 'c360-wiz-step-active' : 'c360-wiz-step-muted'">
+                            {{ s === 1 ? 'بيانات' : s === 2 ? 'تسجيل' : 'تم' }}
+                        </span>
+                    </div>
+                    <div v-show="state.wizard.step === 1">
+                        <div class="alert alert-light border small py-2 mb-3">
+                            <span class="text-muted">الخط المرتبط بالعملية:</span>
+                            <strong class="d-block font-monospace" dir="ltr">{{ state.wizard.primaryLabel || '—' }}</strong>
+                        </div>
+                        <div v-if="lineOptions.length > 1" class="mb-3">
+                            <label class="form-label small fw-semibold">اختر الاشتراك</label>
+                            <select class="form-select form-select-sm" v-model="state.prov.selectedLineKey" @@change="onWizardLineChanged">
+                                <option v-for="ln in lineOptions" :key="ln.key" :value="ln.key">{{ ln.label }}</option>
+                            </select>
+                        </div>
+                        <div v-if="state.wizard.kind === 'takeover'" class="border rounded p-3 mb-3 bg-light">
+                            <label class="form-label small fw-semibold">المالك الجديد <span class="text-danger">*</span></label>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchNationalId" placeholder="رقم وطني" /></div>
+                                <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchPhone" placeholder="جوال" /></div>
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.wizard.takeoverBusy" @@click="searchTakeoverTarget">
+                                        <span v-if="state.wizard.takeoverBusy" class="spinner-border spinner-border-sm me-1"></span>بحث المالك الجديد
+                                    </button>
+                                </div>
+                            </div>
+                            <ul class="list-group list-group-flush border rounded mb-0" v-if="state.wizard.takeoverResults.length">
+                                <li v-for="c in state.wizard.takeoverResults" :key="c.id" class="list-group-item list-group-item-action small"
+                                    :class="{ active: state.wizard.takeoverTargetCustomerId === c.id }" @@click="selectTakeoverTarget(c)" style="cursor:pointer">
+                                    {{ c.name }} · {{ c.phoneNumber || '—' }}
+                                </li>
+                            </ul>
+                            <p v-if="state.wizard.takeoverTargetLabel" class="small text-success mb-0 mt-2">{{ state.wizard.takeoverTargetLabel }}</p>
+                            <div class="mt-3">
+                                <label class="form-label small fw-semibold">هوية المالك الجديد <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                       @@change="onWizardIdentityFileChange" />
+                            </div>
+                        </div>
+                        <div v-if="state.wizard.kind === 'migrate'" class="mb-3">
+                            <p v-if="state.wizard.mgrCurrentPlan" class="small text-muted">الباقة الحالية: <strong>{{ state.wizard.mgrCurrentPlan }}</strong></p>
+                            <div v-if="state.wizard.migrationBusy" class="c360-skel" style="height:3rem;"></div>
+                            <select v-else class="form-select" v-model="state.wizard.selectedOfferingId">
+                                <option value="">— الباقة الجديدة —</option>
+                                <option v-for="o in state.wizard.migrationOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
+                            </select>
+                        </div>
+                        <div v-if="state.wizard.kind === 'addpackage'" class="mb-3">
+                            <div v-if="state.wizard.catalogBusy" class="c360-skel mb-2" style="height:4rem;"></div>
+                            <select v-else class="form-select" v-model="state.wizard.selectedVasCode">
+                                <option value="">— خدمة VAS —</option>
+                                <option v-for="v in state.wizard.vasCatalog" :key="v.serviceCode" :value="v.serviceCode">{{ v.nameAr }} ({{ v.serviceCode }})</option>
+                            </select>
+                        </div>
+                        <div v-if="state.wizard.kind === 'simswap'" class="mb-3">
+                            <label class="form-label small">ICCID الجديد (19 رقم)</label>
+                            <input class="form-control font-monospace" v-model="state.wizard.simIccid" dir="ltr" maxlength="19" />
+                        </div>
+                        <div v-if="state.wizard.kind === 'activate'">
+                            <p class="small text-muted">خط إضافي لنفس المشترك.</p>
+                            <div class="mb-2">
+                                <label class="form-label small">MSISDN متاح</label>
+                                <select class="form-select form-select-sm" v-model="state.wizard.msisdnAssetId" :disabled="state.wizard.poolBusy" @@change="onActivateMsisdnChanged">
+                                    <option value="">— اختر —</option>
+                                    <option v-for="a in state.wizard.poolNumbers" :key="a.id" :value="a.id">{{ a.msisdn || a.id }}</option>
+                                </select>
+                            </div>
+                            <div v-if="state.wizard.selectedPoolImsi" class="mb-2">
+                                <label class="form-label small text-muted">IMSI (من المخزون)</label>
+                                <input class="form-control form-control-sm font-monospace bg-light" :value="state.wizard.selectedPoolImsi" dir="ltr" readonly />
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">الباقة</label>
+                                <select class="form-select form-select-sm" v-model="state.wizard.selectedOfferingId" :disabled="state.wizard.poolBusy">
+                                    <option value="">— اختر —</option>
+                                    <option v-for="o in state.wizard.offerings" :key="o.id" :value="o.id">{{ o.name || o.nameEn }}</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">ICCID</label>
+                                <input class="form-control font-monospace form-control-sm" v-model="state.wizard.simIccid" dir="ltr" maxlength="19" />
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small">ملاحظات</label>
+                            <textarea class="form-control form-control-sm" rows="2" v-model="state.wizard.notes" maxlength="500"></textarea>
+                        </div>
+                    </div>
+                    <div v-show="state.wizard.step === 2">
+                        <p class="small text-muted mb-3">مسودة الطلب ثم تسجيل الوثيقة ثم تأكيد CBS.</p>
+                        <div v-if="!state.wizard.createdOperationId" class="d-grid">
+                            <button type="button" class="btn btn-danger" :disabled="state.wizard.submitBusy" @@click="submitWizardCreateDraft">
+                                <span v-if="state.wizard.submitBusy" class="spinner-border spinner-border-sm me-1"></span>إنشاء مسودة الطلب
+                            </button>
+                        </div>
+                        <div v-else class="border rounded p-3 bg-light">
+                            <p class="mb-2 small"><strong>رقم الطلب:</strong> {{ state.wizard.createdOperationNumber }}</p>
+                            <button v-if="!state.wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="state.wizard.uploadBusy" @@click="submitWizardMarkDocument">
+                                <span v-if="state.wizard.uploadBusy" class="spinner-border spinner-border-sm me-1"></span>تسجيل رفع الوثيقة
+                            </button>
+                            <p v-else class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>تم تسجيل الوثيقة.</p>
+                            <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover'" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy" @@click="submitWizardConfirmCbs">
+                                <span v-if="state.wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>تأكيد CBS
+                            </button>
+                            <p v-if="state.wizard.kind === 'takeover' && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
+                                بانتظار اعتماد الباك أوفيس من مركز Telecom Hub.
+                            </p>
+                            <p v-if="state.wizard.confirmed" class="small text-success mb-0">{{ state.wizard.confirmStatusHint || 'تم التأكيد والتنفيذ.' }}</p>
+                        </div>
+                    </div>
+                    <div v-show="state.wizard.step === 3">
+                        <p class="mb-2">تمت العملية <strong>{{ state.wizard.createdOperationNumber }}</strong>.</p>
+                        <p class="small text-muted mb-0">راجع تبويب الباقات والخدمات.</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="state.wizard.step === 1 || (state.wizard.step === 2 && state.wizard.createdOperationId)" @@click="wizardStepPrev">السابق</button>
+                        <button v-if="state.wizard.step === 1" type="button" class="btn btn-danger btn-sm" @@click="wizardStepNext">التالي: التسجيل</button>
+                        <button v-if="state.wizard.step === 2" type="button" class="btn btn-danger btn-sm" :disabled="!canWizardFinishStep2" @@click="wizardStepNext">التالي: الخلاصة</button>
+                        <button v-if="state.wizard.step === 3" type="button" class="btn btn-primary btn-sm" @@click="finishProvisioningWizard">إغلاق</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/FrontEnd/Pages/Telecom/Customer360Profile.cshtml.js" asp-append-version="true"></script>
+}

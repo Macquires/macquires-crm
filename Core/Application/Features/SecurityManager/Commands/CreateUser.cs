@@ -1,4 +1,6 @@
-﻿using Application.Common.Services.SecurityManager;
+﻿using Application.Common.Audit;
+using Application.Common.Security;
+using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
 
@@ -10,8 +12,9 @@ public class CreateUserResult
     public CreateUserResultDto? Data { get; set; }
 }
 
-public class CreateUserRequest : IRequest<CreateUserResult>
+public class CreateUserRequest : IRequest<CreateUserResult>, IRequirePermission
 {
+    public string PermissionKey => PermissionCatalog.AdminUsersManage;
     public string? Email { get; init; }
     public string? Password { get; init; }
     public string? ConfirmPassword { get; init; }
@@ -21,6 +24,10 @@ public class CreateUserRequest : IRequest<CreateUserResult>
     public bool? IsBlocked { get; init; }
     public bool? IsDeleted { get; init; }
     public string? CreatedById { get; init; }
+    public string? PrimaryMenuPersona { get; init; }
+    public string? ManagerUserId { get; init; }
+    public string? OrgUnitId { get; init; }
+    public bool? SyncTelecomRoleFromPersona { get; init; }
 }
 
 public class CreateUserValidator : AbstractValidator<CreateUserRequest>
@@ -38,14 +45,23 @@ public class CreateUserValidator : AbstractValidator<CreateUserRequest>
 public class CreateUserHandler : IRequestHandler<CreateUserRequest, CreateUserResult>
 {
     private readonly ISecurityService _securityService;
+    private readonly IUserAuditService _audit;
 
-    public CreateUserHandler(ISecurityService securityService)
+    public CreateUserHandler(ISecurityService securityService, IUserAuditService audit)
     {
         _securityService = securityService;
+        _audit = audit;
     }
 
     public async Task<CreateUserResult> Handle(CreateUserRequest request, CancellationToken cancellationToken)
     {
+        TelecomMenuPersona? persona = null;
+        if (!string.IsNullOrWhiteSpace(request.PrimaryMenuPersona)
+            && Enum.TryParse<TelecomMenuPersona>(request.PrimaryMenuPersona, true, out var parsed))
+        {
+            persona = parsed;
+        }
+
         var result = await _securityService.CreateUserAsync(
             request.Email ?? "",
             request.Password ?? "",
@@ -56,12 +72,26 @@ public class CreateUserHandler : IRequestHandler<CreateUserRequest, CreateUserRe
             request.IsBlocked ?? false,
             request.IsDeleted ?? false,
             request.CreatedById ?? "",
+            persona,
+            request.ManagerUserId,
+            request.OrgUnitId,
+            request.SyncTelecomRoleFromPersona ?? true,
             cancellationToken
             );
 
-        return new CreateUserResult
-        {
-            Data = result
-        };
+        await _audit.LogAsync(
+            new UserAuditLogRequest
+            {
+                ActorUserId = request.CreatedById ?? result?.UserId ?? "system",
+                UserId = result?.UserId,
+                ActionType = UserAuditActionTypes.UserCreated,
+                EntityType = "ApplicationUser",
+                EntityId = result?.UserId,
+                SummaryAr = $"إنشاء مستخدم: {request.Email}",
+                Payload = new { request.Email, request.PrimaryMenuPersona },
+            },
+            cancellationToken);
+
+        return new CreateUserResult { Data = result };
     }
 }

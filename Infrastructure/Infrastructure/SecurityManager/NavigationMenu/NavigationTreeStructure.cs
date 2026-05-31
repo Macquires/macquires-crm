@@ -1,467 +1,114 @@
-﻿using Application.Common.Services.SecurityManager;
+﻿using Application.Common.Security;
+using Application.Common.Services.SecurityManager;
+using Application.Common.Telecom;
 using Infrastructure.SecurityManager.Roles;
 using System.Text.Json;
 
 namespace Infrastructure.SecurityManager.NavigationMenu;
 
-
-
-
-
-
 public class JsonStructureItem
 {
     public string? URL { get; set; }
     public string? Name { get; set; }
+    /// <summary>Optional English label from JSON; usually filled by <see cref="ApplyBilingualTelecomLabels"/>.</summary>
+    public string? NameEn { get; set; }
     public bool IsModule { get; set; }
+    public List<string>? Personas { get; set; }
+    public string? Icon { get; set; }
+    public int SortOrder { get; set; }
+    public string? BadgeKey { get; set; }
+    public bool IsQuickAction { get; set; }
     public List<JsonStructureItem> Children { get; set; } = new List<JsonStructureItem>();
 }
 
-public static class NavigationTreeStructure
+public static partial class NavigationTreeStructure
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     public static readonly string JsonStructure = """
     [
         {
             "URL": "#",
-            "Name": "Dashboards",
+            "Name": "لوحات القيادة",
             "IsModule": true,
+            "Icon": "bi-grid-1x2",
+            "SortOrder": 1,
             "Children": [
-                {
-                    "URL": "/Telecom/TelecomHub",
-                    "Name": "مركز التليكوم",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Dashboards/DefaultDashboard",
-                    "Name": "Default",
-                    "IsModule": false
-                }
+                { "URL": "/Dashboards/DefaultDashboard", "Name": "لوحة القيادة الرئيسية", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-grid-1x2", "SortOrder": 1 }
             ]
         },
         {
             "URL": "#",
-            "Name": "Pipeline",
+            "Name": "العمليات التشغيلية",
             "IsModule": true,
+            "Icon": "bi-heart-pulse",
+            "SortOrder": 2,
             "Children": [
-                {
-                    "URL": "/Campaigns/CampaignList",
-                    "Name": "Campaign",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Budgets/BudgetList",
-                    "Name": "Budget",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Expenses/ExpenseList",
-                    "Name": "Expense",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Leads/LeadList",
-                    "Name": "Lead",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/LeadContacts/LeadContactList",
-                    "Name": "Lead Contact",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/LeadActivities/LeadActivityList",
-                    "Name": "Lead Activity",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/SalesTeams/SalesTeamList",
-                    "Name": "Sales Team",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/SalesRepresentatives/SalesRepresentativeList",
-                    "Name": "Sales Representative",
-                    "IsModule": false
-                }
+                { "URL": "/Telecom/TelecomHub", "Name": "مركز عمليات الشبكة", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-broadcast", "SortOrder": 1, "IsQuickAction": true, "BadgeKey": "pendingOperations" },
+                { "URL": "/Telecom/BackOfficeDashboard", "Name": "قمرة العمليات الخلفية", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-speedometer2", "SortOrder": 2, "IsQuickAction": true, "BadgeKey": "overdueTickets" },
+                { "URL": "/Telecom/TechnicalTicketList", "Name": "إدارة التذاكر الفنية", "IsModule": false, "Personas": ["CallCenter","BackOffice","SysAdmin"], "Icon": "bi-ticket-detailed", "SortOrder": 3, "BadgeKey": "openTechnicalTickets" },
+                { "URL": "/Telecom/BulkImportMonitor", "Name": "مراقبة الاستيراد الضخم", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-cloud-upload", "SortOrder": 4, "BadgeKey": "bulkImportActive" },
+                { "URL": "/Telecom/MsisdnInventory", "Name": "مستودع الأرقام والشرائح", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-boxes", "SortOrder": 5 },
+                { "URL": "/Telecom/BillingIntegration", "Name": "التكامل مع نظام الفوترة", "IsModule": false, "Personas": ["Executive","BackOffice","SysAdmin"], "Icon": "bi-receipt-cutoff", "SortOrder": 6 }
             ]
         },
         {
             "URL": "#",
-            "Name": "Third Party",
+            "Name": "إدارة المشتركين",
             "IsModule": true,
+            "Icon": "bi-people",
+            "SortOrder": 3,
             "Children": [
-                {
-                    "URL": "/CustomerGroups/CustomerGroupList",
-                    "Name": "Customer Group",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/CustomerCategories/CustomerCategoryList",
-                    "Name": "Customer Category",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Customers/CustomerList",
-                    "Name": "Customer",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/CustomerContacts/CustomerContactList",
-                    "Name": "Customer Contact",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/VendorGroups/VendorGroupList",
-                    "Name": "Vendor Group",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/VendorCategories/VendorCategoryList",
-                    "Name": "Vendor Category",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Vendors/VendorList",
-                    "Name": "Vendor",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/VendorContacts/VendorContactList",
-                    "Name": "Vendor Contact",
-                    "IsModule": false
-                }
+                { "URL": "/Customers/CustomerList", "Name": "سجل المشتركين", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-person-lines-fill", "SortOrder": 1, "IsQuickAction": true },
+                { "URL": "/Telecom/TelecomHub?entry=subscriber", "Name": "سجل الخطوط والاشتراكات", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-search", "SortOrder": 2, "IsQuickAction": true },
+                { "URL": "/CustomerGroups/CustomerGroupList", "Name": "المجموعات والحسابات", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-diagram-3", "SortOrder": 3 },
+                { "URL": "/CustomerCategories/CustomerCategoryList", "Name": "شرائح وتصنيفات العملاء", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-tags", "SortOrder": 4 },
+                { "URL": "/CustomerContacts/CustomerContactList", "Name": "جهات اتصال المشتركين", "IsModule": false, "Personas": ["CallCenter","BackOffice","SysAdmin"], "Icon": "bi-telephone", "SortOrder": 5 }
             ]
         },
         {
             "URL": "#",
-            "Name": "Sales",
+            "Name": "كتالوج المنتجات",
             "IsModule": true,
+            "Icon": "bi-box-seam",
+            "SortOrder": 4,
             "Children": [
-                {
-                    "URL": "/SalesQuotations/SalesQuotationList",
-                    "Name": "Sales Quotation",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/SalesOrders/SalesOrderList",
-                    "Name": "Sales Order",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/DeliveryOrders/DeliveryOrderList",
-                    "Name": "Delivery Order",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/SalesReturns/SalesReturnList",
-                    "Name": "Sales Return",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Invoices/InvoiceList",
-                    "Name": "Invoice",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/CreditNotes/CreditNoteList",
-                    "Name": "Credit Note",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PaymentReceives/PaymentReceiveList",
-                    "Name": "Payment Receive",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/SalesReports/SalesReportList",
-                    "Name": "Sales Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/DeliveryReports/DeliveryReportList",
-                    "Name": "Delivery Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/SalesReturnReports/SalesReturnReportList",
-                    "Name": "Sales Return Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/InvoiceReports/InvoiceReportList",
-                    "Name": "Invoice Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PaymentReceiveReports/PaymentReceiveReportList",
-                    "Name": "Payment Receive Report",
-                    "IsModule": false
-                }
+                { "URL": "/Telecom/ProductCatalog", "Name": "العروض والخدمات التجارية", "IsModule": false, "Personas": ["Retail","BackOffice","SysAdmin"], "Icon": "bi-box-seam", "SortOrder": 1 },
+                { "URL": "/Products/ProductList", "Name": "مواصفات المنتجات التقنية", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-hdd-stack", "SortOrder": 2 },
+                { "URL": "/Telecom/VasCatalogList", "Name": "كتالوج الخدمات المضافة (VAS)", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-toggle-on", "SortOrder": 3 },
+                { "URL": "/TelecomSubscriptionTypes/TelecomSubscriptionTypeList", "Name": "أنواع خطوط الاشتراك", "IsModule": false, "Personas": ["Retail","BackOffice","SysAdmin"], "Icon": "bi-sim", "SortOrder": 4 }
             ]
         },
         {
             "URL": "#",
-            "Name": "الاتصالات",
+            "Name": "الحوكمة والنظام",
             "IsModule": true,
+            "Personas": ["SysAdmin"],
+            "Icon": "bi-building-gear",
+            "SortOrder": 90,
             "Children": [
-                {
-                    "URL": "/Telecom/TelecomHub",
-                    "Name": "مركز التليكوم",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/ProgramManagers/ProgramManagerList",
-                    "Name": "تذاكر الشبكة (Kanban)",
-                    "IsModule": false
-                }
+                { "URL": "/Administration/UserList", "Name": "إدارة المستخدمين", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-people-fill", "SortOrder": 1 },
+                { "URL": "/Administration/BranchList", "Name": "إدارة الفروع", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-diagram-3-fill", "SortOrder": 2 },
+                { "URL": "/Administration/RoleList", "Name": "الصلاحيات والأدوار", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-shield-lock-fill", "SortOrder": 3 },
+                { "URL": "/Administration/GlobalSettings", "Name": "الإعدادات العامة للشبكة", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-sliders", "SortOrder": 4 },
+                { "URL": "/Administration/AuditLogList", "Name": "سجل الرقابة", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-journal-text", "SortOrder": 5 },
+                { "URL": "/Telecom/IntegrationMonitor", "Name": "سجل ربط الشبكة والتكاملات", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-hdd-network", "SortOrder": 6 },
+                { "URL": "/Dashboards/DashboardWidgetList", "Name": "عناصر لوحة القيادة", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-layout-three-columns", "SortOrder": 7 },
+                { "URL": "/Companies/MyCompany", "Name": "بيانات المشغّل", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-building", "SortOrder": 8 },
+                { "URL": "/NumberSequences/NumberSequenceList", "Name": "تسلسل الأرقام التشغيلي", "IsModule": false, "Personas": ["SysAdmin"], "Icon": "bi-123", "SortOrder": 9 }
             ]
         },
         {
             "URL": "#",
-            "Name": "Purchase",
+            "Name": "حسابي",
             "IsModule": true,
+            "Icon": "bi-person-circle",
+            "SortOrder": 95,
             "Children": [
-                {
-                    "URL": "/PurchaseRequisitions/PurchaseRequisitionList",
-                    "Name": "Purchase Requisition",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PurchaseOrders/PurchaseOrderList",
-                    "Name": "Purchase Order",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/GoodsReceives/GoodsReceiveList",
-                    "Name": "Goods Receive",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PurchaseReturns/PurchaseReturnList",
-                    "Name": "Purchase Return",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Bills/BillList",
-                    "Name": "Bill",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/DebitNotes/DebitNoteList",
-                    "Name": "Debit Note",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PaymentDisburses/PaymentDisburseList",
-                    "Name": "Payment Disburse",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PurchaseReports/PurchaseReportList",
-                    "Name": "Purchase Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/ReceiveReports/ReceiveReportList",
-                    "Name": "Receive Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PurchaseReturnReports/PurchaseReturnReportList",
-                    "Name": "Purchase Return Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/BillReports/BillReportList",
-                    "Name": "Bill Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PaymentDisburseReports/PaymentDisburseReportList",
-                    "Name": "Payment Disburse Report",
-                    "IsModule": false
-                }
-            ]
-        },
-        {
-            "URL": "#",
-            "Name": "Inventory",
-            "IsModule": true,
-            "Children": [
-                {
-                    "URL": "/UnitMeasures/UnitMeasureList",
-                    "Name": "Unit Measure",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/ProductGroups/ProductGroupList",
-                    "Name": "Product Group",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Products/ProductList",
-                    "Name": "Product",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Warehouses/WarehouseList",
-                    "Name": "Warehouse",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/TransferOuts/TransferOutList",
-                    "Name": "Transfer Out",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/TransferIns/TransferInList",
-                    "Name": "Transfer In",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PositiveAdjustments/PositiveAdjustmentList",
-                    "Name": "Positive Adjustment",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/NegativeAdjustments/NegativeAdjustmentList",
-                    "Name": "Negative Adjustment",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Scrappings/ScrappingList",
-                    "Name": "Scrapping",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/StockCounts/StockCountList",
-                    "Name": "Stock Count",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/TransactionReports/TransactionReportList",
-                    "Name": "Transaction Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/StockReports/StockReportList",
-                    "Name": "Stock Report",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/MovementReports/MovementReportList",
-                    "Name": "Movement Reports",
-                    "IsModule": false
-                }
-            ]
-        },
-        {
-            "URL": "#",
-            "Name": "Utilities",
-            "IsModule": true,
-            "Children": [
-                {
-                    "URL": "/BookingGroups/BookingGroupList",
-                    "Name": "Booking Group",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/BookingResources/BookingResourceList",
-                    "Name": "Booking Resource",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/BookingManagers/BookingManagerList",
-                    "Name": "Booking Manager",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/BookingSchedulers/BookingSchedulerList",
-                    "Name": "Booking Scheduler",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/ProgramResources/ProgramResourceList",
-                    "Name": "Program Resource",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/ProgramManagers/ProgramManagerList",
-                    "Name": "Program Manager",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/ProgramKanbans/ProgramKanbanList",
-                    "Name": "Program Kanban",
-                    "IsModule": false
-                },    
-                {
-                    "URL": "/Todos/TodoList",
-                    "Name": "Todo",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/TodoItems/TodoItemList",
-                    "Name": "Todo Item",
-                    "IsModule": false
-                }
-            ]
-        },
-        {
-            "URL": "#",
-            "Name": "Membership",
-            "IsModule": true,
-            "Children": [
-                {
-                    "URL": "/Users/UserList",
-                    "Name": "Users",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Roles/RoleList",
-                    "Name": "Roles",
-                    "IsModule": false
-                }
-            ]
-        },
-        {
-            "URL": "#",
-            "Name": "Profiles",
-            "IsModule": true,
-            "Children": [
-                {
-                    "URL": "/Profiles/MyProfile",
-                    "Name": "My Profile",
-                    "IsModule": false
-                }
-            ]
-        },
-        {
-            "URL": "#",
-            "Name": "Settings",
-            "IsModule": true,
-            "Children": [
-                {
-                    "URL": "/Companies/MyCompany",
-                    "Name": "My Company",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/Taxs/TaxList",
-                    "Name": "Tax",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/PaymentMethods/PaymentMethodList",
-                    "Name": "Payment Method",
-                    "IsModule": false
-                },
-                {
-                    "URL": "/NumberSequences/NumberSequenceList",
-                    "Name": "Number Sequence",
-                    "IsModule": false
-                }
+                { "URL": "/Profiles/MyProfile", "Name": "ملفي التشغيلي", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-person", "SortOrder": 1 }
             ]
         }
     ]
@@ -469,9 +116,8 @@ public static class NavigationTreeStructure
 
     public static List<MenuNavigationTreeNodeDto> GetCompleteMenuNavigationTreeNode()
     {
-        var json = JsonStructure;
-
-        var menus = JsonSerializer.Deserialize<List<JsonStructureItem>>(json);
+        var menus = JsonSerializer.Deserialize<List<JsonStructureItem>>(JsonStructure, JsonOptions);
+        ApplyBilingualTelecomLabels(menus);
 
         List<MenuNavigationTreeNodeDto> nodes = new List<MenuNavigationTreeNodeDto>();
 
@@ -483,23 +129,44 @@ public static class NavigationTreeStructure
                 var nodeId = index.ToString();
                 if (item.IsModule)
                 {
-                    nodes.Add(new MenuNavigationTreeNodeDto(nodeId, item.Name ?? "", param_hasChild: true, param_expanded: false));
+                    nodes.Add(new MenuNavigationTreeNodeDto(
+                        nodeId,
+                        item.Name ?? "",
+                        param_hasChild: true,
+                        param_expanded: false,
+                        param_nameEn: item.NameEn ?? item.Name,
+                        param_personas: item.Personas,
+                        param_icon: item.Icon,
+                        param_sortOrder: item.SortOrder));
                 }
                 else
                 {
-                    nodes.Add(new MenuNavigationTreeNodeDto(nodeId, item.Name ?? "", parentId, item.URL));
+                    nodes.Add(new MenuNavigationTreeNodeDto(
+                        nodeId,
+                        item.Name ?? "",
+                        parentId,
+                        item.URL,
+                        param_nameEn: item.NameEn ?? item.Name,
+                        param_personas: item.Personas,
+                        param_icon: item.Icon,
+                        param_sortOrder: item.SortOrder,
+                        param_badgeKey: item.BadgeKey,
+                        param_isQuickAction: item.IsQuickAction));
                 }
 
                 index++;
 
-                if (item.Children != null && item.Children.Count > 0)
+                if (item.Children is { Count: > 0 })
                 {
                     AddNodes(item.Children, nodeId);
                 }
             }
         }
 
-        if (menus != null) AddNodes(menus);
+        if (menus != null)
+        {
+            AddNodes(menus);
+        }
 
         return nodes;
     }
@@ -520,8 +187,7 @@ public static class NavigationTreeStructure
 
     public static List<string> GetCompleteFirstMenuNavigationSegment()
     {
-        var json = JsonStructure;
-        var menus = JsonSerializer.Deserialize<List<JsonStructureItem>>(json);
+        var menus = JsonSerializer.Deserialize<List<JsonStructureItem>>(JsonStructure, JsonOptions);
         var result = new List<string>();
 
         if (menus != null)
@@ -555,49 +221,74 @@ public static class NavigationTreeStructure
         }
     }
 
-    /// <summary>True when the user has only Syriatel telecom roles (no CRM navigation roles like Customers as catalog role).</summary>
-    public static bool IsStrictTelecomWorkspaceUser(IReadOnlyList<string> roleNames)
+    /// <summary>True when the user has only Syriatel telecom roles (no legacy CRM navigation roles).</summary>
+    public static bool IsStrictTelecomWorkspaceUser(IReadOnlyList<string> roleNames) =>
+        TelecomWorkspaceRules.IsStrictTelecomWorkspaceUser(roleNames);
+
+    /// <summary>
+    /// Strict telecom: persona menu first, then RBAC permission intersection.
+    /// Non-strict: permission filter when keys exist, otherwise persona.
+    /// </summary>
+    public static List<MenuNavigationTreeNodeDto> ApplyTelecomWorkspaceMenuFilter(
+        IReadOnlyList<string> roleNames,
+        IReadOnlySet<string> userPermissions,
+        List<MenuNavigationTreeNodeDto> nodes,
+        TelecomMenuPersona? previewPersona = null)
     {
-        if (roleNames == null || roleNames.Count == 0)
+        if (!IsStrictTelecomWorkspaceUser(roleNames))
         {
-            return false;
-        }
-
-        foreach (var r in roleNames)
-        {
-            if (!TelecomRoles.All.Contains(r, StringComparer.OrdinalIgnoreCase))
+            if (userPermissions.Count > 0)
             {
-                return false;
+                return ApplyPermissionMenuFilter(userPermissions, nodes);
             }
+
+            return ApplyPersonaMenuFilter(roleNames, nodes, previewPersona);
         }
 
-        return true;
+        var personaFiltered = ApplyPersonaMenuFilter(roleNames, nodes, previewPersona);
+        if (userPermissions.Count == 0)
+        {
+            return personaFiltered;
+        }
+
+        return ApplyPermissionMenuFilter(userPermissions, personaFiltered);
     }
 
-    /// <summary>Restricts the flat tree to telecom-relevant areas for strict telecom users.</summary>
-    public static List<MenuNavigationTreeNodeDto> ApplyStrictTelecomMenuFilter(
+    /// <summary>
+    /// Server-side menu filter for strict telecom workspace users.
+    /// Only leaves tagged with the resolved <see cref="TelecomMenuPersona"/> are returned (with ancestor modules).
+    /// </summary>
+    public static List<MenuNavigationTreeNodeDto> ApplyPersonaMenuFilter(
         IReadOnlyList<string> roleNames,
-        List<MenuNavigationTreeNodeDto> nodes)
+        List<MenuNavigationTreeNodeDto> nodes,
+        TelecomMenuPersona? previewPersona = null)
     {
-        if (!IsStrictTelecomWorkspaceUser(roleNames) || nodes.Count == 0)
+        if (nodes.Count == 0)
         {
             return nodes;
         }
 
-        static bool LeafAllowed(string? url)
+        var persona = previewPersona ?? TelecomPersonaResolver.ResolvePrimary(roleNames);
+        if (persona == null)
         {
-            if (string.IsNullOrEmpty(url) || url == "#")
-            {
-                return false;
-            }
-
-            var seg = GetFirstSegmentFromUrlPath(url);
-            return seg is "Telecom" or "Customers" or "ProgramManagers" or "Dashboards";
+            return nodes;
         }
 
-        var keep = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var leaf in nodes.Where(n => !n.HasChild && n.NavURL != null && LeafAllowed(n.NavURL)))
+        if (!previewPersona.HasValue && !IsStrictTelecomWorkspaceUser(roleNames))
         {
+            return nodes;
+        }
+
+        var personaName = persona.Value.ToString();
+        var keep = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var leaf in nodes.Where(n => !n.HasChild && !string.IsNullOrWhiteSpace(n.NavURL)))
+        {
+            if (!LeafAllowedForPersona(leaf, personaName))
+            {
+                continue;
+            }
+
             string? cursor = leaf.Id;
             while (!string.IsNullOrEmpty(cursor))
             {
@@ -608,5 +299,45 @@ public static class NavigationTreeStructure
 
         return nodes.Where(n => keep.Contains(n.Id)).ToList();
     }
-}
 
+    private static bool LeafAllowedForPersona(MenuNavigationTreeNodeDto leaf, string personaKey) =>
+        leaf.Personas != null
+        && leaf.Personas.Count > 0
+        && leaf.Personas.Contains(personaKey, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Filters strict telecom menu leaves by effective RBAC permission keys.</summary>
+    public static List<MenuNavigationTreeNodeDto> ApplyPermissionMenuFilter(
+        IReadOnlySet<string> userPermissions,
+        List<MenuNavigationTreeNodeDto> nodes)
+    {
+        if (nodes.Count == 0 || userPermissions.Count == 0)
+        {
+            return nodes;
+        }
+
+        var keep = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var leaf in nodes.Where(n => !n.HasChild && !string.IsNullOrWhiteSpace(n.NavURL)))
+        {
+            if (!NavigationPermissionRules.IsNavUrlAllowed(leaf.NavURL, userPermissions))
+            {
+                continue;
+            }
+
+            string? cursor = leaf.Id;
+            while (!string.IsNullOrEmpty(cursor))
+            {
+                keep.Add(cursor);
+                cursor = nodes.FirstOrDefault(n => n.Id == cursor)?.Pid;
+            }
+        }
+
+        return nodes.Where(n => keep.Contains(n.Id)).ToList();
+    }
+
+    [Obsolete("Use ApplyPersonaMenuFilter. Kept for backward compatibility during migration.")]
+    public static List<MenuNavigationTreeNodeDto> ApplyStrictTelecomMenuFilter(
+        IReadOnlyList<string> roleNames,
+        List<MenuNavigationTreeNodeDto> nodes) =>
+        ApplyPersonaMenuFilter(roleNames, nodes);
+}

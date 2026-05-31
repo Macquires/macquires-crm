@@ -2,12 +2,18 @@
 <script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
 <script src="~/lib/axios/axios.min.js"></script>
 <script src="~/lib/sweetalert/sweetalert2v11.js"></script>
+<script src="~/lib/indotalent/syr-swal.js" asp-append-version="true"></script>
 <script src="~/lib/dropzone/dropzone.min.js"></script>
 <script src="~/lib/indotalent/storage-manager.js"></script>
+<script src="~/lib/indotalent/portal-navigation.js"></script>
+<script src="~/lib/indotalent/portal-admin-tools.js"></script>
+<script src="~/lib/indotalent/omni-search.js" asp-append-version="true"></script>
 <script src="~/lib/indotalent/security-manager.js"></script>
 <script src="~/lib/indotalent/axios-manager.js"></script>
 <script src="~/lib/indotalent/number-format-manager.js"></script>
 <script src="~/lib/indotalent/date-format-manager.js"></script>
+<script src="~/lib/indotalent/syncfusion-grid-i18n.js"></script>
+<script src="~/lib/indotalent/telecom-ui-badges.js" asp-append-version="true"></script>
 <script src="~/lib/jspdf/html2canvas.min.js"></script>
 <script src="~/lib/jspdf/jspdf.umd.min.js"></script>
 
@@ -59,6 +65,16 @@
         return bodyHeight * 1;
     }
 
+    /** Height for telecom grid panels (.telecom-grid-panel .grid-container). */
+    var computeTelecomGridHeight = (panelSelector) => {
+        var sel = panelSelector || '.telecom-grid-panel';
+        var box = document.querySelector(sel + ' .grid-container') || document.querySelector(sel);
+        var h = box && box.clientHeight ? box.clientHeight : 0;
+        if (h > 120) return h;
+        var vh = window.innerHeight || 800;
+        return Math.max(300, Math.min(520, vh - 260));
+    };
+
     var getDashminPivotHeight = () => {
         var screenHeight = window.innerHeight;
         var headerHeight = document.querySelector('.adminheader').offsetHeight;
@@ -78,14 +94,35 @@
     }
 
     var setFormCardHeight = () => {
-        var maxHeight = getDashminBodyHeight();
         var formCard = document.querySelector('.form-card');
-        if (formCard) {
-            formCard.style.height = maxHeight + 'px';
+        if (!formCard) {
+            return;
         }
+        if (document.body.classList.contains('syr-tel-portal')) {
+            formCard.style.height = '';
+            formCard.style.minHeight = '';
+            formCard.style.maxHeight = '';
+            return;
+        }
+        if (document.body.classList.contains('syriatel-operator-console')) {
+            formCard.style.height = '';
+            formCard.style.minHeight = '';
+            return;
+        }
+        var header = document.querySelector('.adminheader');
+        var footer = document.querySelector('.adminfooter');
+        if (!header || !footer) {
+            formCard.style.height = '';
+            return;
+        }
+        var maxHeight = getDashminBodyHeight();
+        formCard.style.height = maxHeight + 'px';
     }
 
     window.addEventListener('load', function () {
+        if (typeof hideSpinnerAndShowContent === 'function') {
+            hideSpinnerAndShowContent();
+        }
         var formcard = document.getElementById('formcard');
         if (formcard) {
             var formcardPosition = sessionStorage.getItem('formcardPosition');

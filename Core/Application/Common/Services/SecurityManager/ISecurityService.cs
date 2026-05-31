@@ -71,8 +71,15 @@ public interface ISecurityService
         CancellationToken cancellationToken
         );
 
+    public Task<CloneRolePermissionsResultDto> CloneRolePermissionsAsync(
+        string sourceRoleName,
+        string newRoleName,
+        string? createdById = null,
+        CancellationToken cancellationToken = default);
+
     public Task<List<GetUserListResultDto>> GetUserListAsync(
-        CancellationToken cancellationToken
+        string? actorUserId,
+        CancellationToken cancellationToken = default
         );
 
     public Task<CreateUserResultDto> CreateUserAsync(
@@ -85,6 +92,10 @@ public interface ISecurityService
         bool isBlocked = false,
         bool isDeleted = false,
         string createdById = "",
+        TelecomMenuPersona? primaryMenuPersona = null,
+        string? managerUserId = null,
+        string? orgUnitId = null,
+        bool syncTelecomRoleFromPersona = true,
         CancellationToken cancellationToken = default
         );
 
@@ -96,6 +107,10 @@ public interface ISecurityService
         bool isBlocked = false,
         bool isDeleted = false,
         string updatedById = "",
+        TelecomMenuPersona? primaryMenuPersona = null,
+        string? managerUserId = null,
+        string? orgUnitId = null,
+        bool syncTelecomRoleFromPersona = true,
         CancellationToken cancellationToken = default
         );
 

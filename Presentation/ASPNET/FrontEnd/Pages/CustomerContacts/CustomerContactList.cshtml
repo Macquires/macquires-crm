@@ -1,4 +1,4 @@
-﻿@page
+@page
 @{
     ViewData["Title"] = "Customer Contact List";
 }
@@ -26,47 +26,47 @@
                             <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h5>Main Info</h5>
+                                        <h5><span data-mcq-i18n="mainInfo"></span></h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="row mb-2">
                                             <div class="col-md-6">
-                                                <label for="Name">Name</label>
+                                                <label for="Name"><span data-mcq-i18n="fld_name">Name</span></label>
                                                 <input ref="nameRef" v-model="state.name" class="form-control" placeholder="" />
                                                 <label class="text-danger" v-text="state.errors.name"></label>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="Number">Number</label>
+                                                <label for="Number"><span data-mcq-i18n="field_number">Number</span></label>
                                                 <input ref="numberRef" v-model="state.number" class="form-control" placeholder="" readonly />
                                             </div>
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-md-6">
-                                                <label for="PhoneNumber">PhoneNumber</label>
+                                                <label for="PhoneNumber"><span data-mcq-i18n="field_phoneNumberRaw">PhoneNumber</span></label>
                                                 <input ref="phoneNumberRef" v-model="state.phoneNumber" class="form-control" placeholder="" />
                                                 <label class="text-danger" v-text="state.errors.phoneNumber"></label>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="EmailAddress">EmailAddress</label>
+                                                <label for="EmailAddress"><span data-mcq-i18n="field_emailAddressRaw">EmailAddress</span></label>
                                                 <input ref="emailAddressRef" v-model="state.emailAddress" class="form-control" placeholder="" />
                                                 <label class="text-danger" v-text="state.errors.emailAddress"></label>
                                             </div>
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-md-6">
-                                                <label for="JobTitle">JobTitle</label>
+                                                <label for="JobTitle"><span data-mcq-i18n="fld_job_title">JobTitle</span></label>
                                                 <input ref="jobTitleRef" v-model="state.jobTitle" class="form-control" placeholder="" />
                                                 <label class="text-danger" v-text="state.errors.jobTitle"></label>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="CustomerId">Customer</label>
+                                                <label for="CustomerId"><span data-mcq-i18n="field_customer">Customer</span></label>
                                                 <div ref="customerIdRef"></div>
                                                 <label class="text-danger" v-text="state.errors.customerId"></label>
                                             </div>
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-12">
-                                                <label for="Description">Description</label>
+                                                <label for="Description"><span data-mcq-i18n="field_description">Description</span></label>
                                                 <textarea v-model="state.description" id="Description" name="Description" class="form-control" rows="3" placeholder=""></textarea>
                                             </div>
                                         </div>
@@ -77,7 +77,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span v-text="$mcqFooter.close"></span></button>
                     <button type="button"
                             id="MainSaveButton"
                             class="btn"
@@ -85,8 +85,10 @@
                             v-on:click="handler.handleSubmit"
                             v-bind:disabled="state.isSubmitting">
                         <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
-                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
-                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                        <span v-show="!state.isSubmitting && !state.deleteMode" v-text="$mcqFooter.save"></span>
+                        <span v-show="!state.isSubmitting && state.deleteMode" v-text="$mcqFooter.del"></span>
+                        <span v-show="state.isSubmitting && !state.deleteMode" v-text="$mcqFooter.saving"></span>
+                        <span v-show="state.isSubmitting && state.deleteMode" v-text="$mcqFooter.deleting"></span>
                     </button>
                 </div>
             </div>

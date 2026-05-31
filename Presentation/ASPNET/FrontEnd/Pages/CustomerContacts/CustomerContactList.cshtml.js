@@ -149,7 +149,7 @@
             obj: null,
             create: () => {
                 nameText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Name'
+                    placeholder: MacquiresUiI18n.phByEn('Enter Name')
                 });
                 nameText.obj.appendTo(nameRef.value);
             },
@@ -165,7 +165,7 @@
             obj: null,
             create: () => {
                 numberText.obj = new ej.inputs.TextBox({
-                    placeholder: '[auto]',
+                    placeholder: MacquiresUiI18n.phByEn('[auto]'),
                     readonly: true
                 });
                 numberText.obj.appendTo(numberRef.value);
@@ -181,7 +181,7 @@
             obj: null,
             create: () => {
                 jobTitleText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Job Title'
+                    placeholder: MacquiresUiI18n.phByEn('Enter Job Title')
                 });
                 jobTitleText.obj.appendTo(jobTitleRef.value);
             },
@@ -196,7 +196,7 @@
             obj: null,
             create: () => {
                 phoneNumberText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Phone Number'
+                    placeholder: MacquiresUiI18n.phByEn('Enter Phone Number')
                 });
                 phoneNumberText.obj.appendTo(phoneNumberRef.value);
             },
@@ -211,7 +211,7 @@
             obj: null,
             create: () => {
                 emailAddressText.obj = new ej.inputs.TextBox({
-                    placeholder: 'Enter Email Address'
+                    placeholder: MacquiresUiI18n.phByEn('Enter Email Address')
                 });
                 emailAddressText.obj.appendTo(emailAddressRef.value);
             },
@@ -229,7 +229,7 @@
                     customerListLookup.obj = new ej.dropdowns.DropDownList({
                         dataSource: state.customerListLookupData,
                         fields: { value: 'id', text: 'name' },
-                        placeholder: 'Select a Customer',
+                        placeholder: MacquiresUiI18n.phByEn('Select a Customer'),
                         change: (e) => {
                             state.customerId = e.value;
                         }
@@ -307,7 +307,7 @@
                         mainGrid.refresh();
 
                         if (!state.deleteMode) {
-                            state.mainTitle = 'Edit Customer Contact';
+                            state.mainTitle = MacquiresUiI18n.mb('customerContact','edit');
                             state.id = response?.data?.content?.data.id ?? '';
                             state.number = response?.data?.content?.data.number ?? '';
                             state.name = response?.data?.content?.data.name ?? '';
@@ -366,7 +366,13 @@
 
         Vue.onMounted(async () => {
             try {
-                await SecurityManager.authorizePage(['CustomerContacts']);
+                await SecurityManager.authorizePage([
+                    'CustomerContacts',
+                    'TelecomAdmin',
+                    'TelecomCallCenter',
+                    'TelecomBackOffice',
+                    'TelecomManagement',
+                ]);
                 await SecurityManager.validateToken();
 
                 await methods.populateMainData();
@@ -472,7 +478,7 @@
 
                         if (args.item.id === 'AddCustom') {
                             state.deleteMode = false;
-                            state.mainTitle = 'Add Customer Contact';
+                            state.mainTitle = MacquiresUiI18n.mb('customerContact','add');
                             resetFormState();
                             mainModal.obj.show();
                         }
@@ -481,7 +487,7 @@
                             state.deleteMode = false;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Edit Customer Contact';
+                                state.mainTitle = MacquiresUiI18n.mb('customerContact','edit');
                                 state.id = selectedRecord.id ?? '';
                                 state.number = selectedRecord.number ?? '';
                                 state.name = selectedRecord.name ?? '';
@@ -498,7 +504,7 @@
                             state.deleteMode = true;
                             if (mainGrid.obj.getSelectedRecords().length) {
                                 const selectedRecord = mainGrid.obj.getSelectedRecords()[0];
-                                state.mainTitle = 'Delete Customer Contact?';
+                                state.mainTitle = MacquiresUiI18n.mb('customerContact','delete');
                                 state.id = selectedRecord.id ?? '';
                                 state.number = selectedRecord.number ?? '';
                                 state.name = selectedRecord.name ?? '';

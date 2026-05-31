@@ -1,9 +1,12 @@
-﻿using Application.Features.DashboardManager.Queries;
+using Application.Features.DashboardManager.Commands;
+using Application.Features.DashboardManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using Infrastructure.SecurityManager.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ASPNET.BackEnd.Controllers;
 
@@ -14,152 +17,168 @@ public class DashboardController : BaseApiController
     {
     }
 
+    private List<string> GetUserRoles() =>
+        User.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
 
-    [Authorize]
-    [HttpGet("GetCardsDashboard")]
-    public async Task<ActionResult<ApiSuccessResult<GetCardsDashboardResult>>> GetCardsDashboardAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetMyWidgets")]
+    public async Task<ActionResult<ApiSuccessResult<GetMyDashboardWidgetsResult>>> GetMyWidgetsAsync(
+        [FromQuery] string? previewPersona,
+        CancellationToken cancellationToken)
     {
-        var request = new GetCardsDashboardRequest { };
-        var response = await _sender.Send(request, cancellationToken);
+        // Widget definitions are cached in memory; avoid failing when the browser aborts a duplicate request.
+        var response = await _sender.Send(
+            new GetMyDashboardWidgetsRequest { Roles = GetUserRoles(), PreviewPersona = previewPersona },
+            CancellationToken.None);
 
-        return Ok(new ApiSuccessResult<GetCardsDashboardResult>
+        return Ok(new ApiSuccessResult<GetMyDashboardWidgetsResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetCardsDashboardAsync)}",
-            Content = response
+            Message = nameof(GetMyWidgetsAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetSalesDashboard")]
-    public async Task<ActionResult<ApiSuccessResult<GetSalesDashboardResult>>> GetSalesDashboardAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetWidgetData")]
+    public async Task<ActionResult<ApiSuccessResult<GetDashboardWidgetDataResult>>> GetWidgetDataAsync(
+        [FromQuery] string providerKey,
+        [FromQuery] string? previewPersona,
+        CancellationToken cancellationToken)
     {
-        var request = new GetSalesDashboardRequest { };
-        var response = await _sender.Send(request, cancellationToken);
+        var response = await _sender.Send(
+            new GetDashboardWidgetDataRequest
+            {
+                Roles = GetUserRoles(),
+                ProviderKey = providerKey,
+                PreviewPersona = previewPersona,
+            },
+            CancellationToken.None);
 
-        return Ok(new ApiSuccessResult<GetSalesDashboardResult>
+        return Ok(new ApiSuccessResult<GetDashboardWidgetDataResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetSalesDashboardAsync)}",
-            Content = response
+            Message = nameof(GetWidgetDataAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetPurchaseDashboard")]
-    public async Task<ActionResult<ApiSuccessResult<GetPurchaseDashboardResult>>> GetPurchaseDashboardAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpPost("GetWidgetDataBatch")]
+    public async Task<ActionResult<ApiSuccessResult<GetDashboardWidgetDataBatchResult>>> GetWidgetDataBatchAsync(
+        GetDashboardWidgetDataBatchRequest request,
+        CancellationToken cancellationToken)
     {
-        var request = new GetPurchaseDashboardRequest { };
-        var response = await _sender.Send(request, cancellationToken);
+        var response = await _sender.Send(
+            new GetDashboardWidgetDataBatchRequest
+            {
+                Roles = GetUserRoles(),
+                ProviderKeys = request.ProviderKeys,
+                PreviewPersona = request.PreviewPersona,
+            },
+            CancellationToken.None);
 
-        return Ok(new ApiSuccessResult<GetPurchaseDashboardResult>
+        return Ok(new ApiSuccessResult<GetDashboardWidgetDataBatchResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetPurchaseDashboardAsync)}",
-            Content = response
+            Message = nameof(GetWidgetDataBatchAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetInventoryDashboard")]
-    public async Task<ActionResult<ApiSuccessResult<GetInventoryDashboardResult>>> GetInventoryDashboardAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetRegisteredProviders")]
+    public async Task<ActionResult<ApiSuccessResult<GetRegisteredDashboardProvidersResult>>> GetRegisteredProvidersAsync(
+        CancellationToken cancellationToken)
     {
-        var request = new GetInventoryDashboardRequest { };
-        var response = await _sender.Send(request, cancellationToken);
-
-        return Ok(new ApiSuccessResult<GetInventoryDashboardResult>
+        var response = await _sender.Send(new GetRegisteredDashboardProvidersRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetRegisteredDashboardProvidersResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetInventoryDashboardAsync)}",
-            Content = response
+            Message = nameof(GetRegisteredProvidersAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetLeadPipelineFunnel")]
-    public async Task<ActionResult<ApiSuccessResult<GetLeadPipelineFunnelResult>>> GetLeadPipelineFunnelAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpGet("GetDashboardWidgetList")]
+    public async Task<ActionResult<ApiSuccessResult<GetDashboardWidgetListResult>>> GetDashboardWidgetListAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] bool isDeleted = false,
+        [FromQuery] bool activeOnly = false)
     {
-        var request = new GetLeadPipelineFunnelRequest { };
-        var response = await _sender.Send(request, cancellationToken);
+        var response = await _sender.Send(
+            new GetDashboardWidgetListRequest { IsDeleted = isDeleted, ActiveOnly = activeOnly },
+            cancellationToken);
 
-        return Ok(new ApiSuccessResult<GetLeadPipelineFunnelResult>
+        return Ok(new ApiSuccessResult<GetDashboardWidgetListResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetLeadPipelineFunnelAsync)}",
-            Content = response
+            Message = nameof(GetDashboardWidgetListAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetSalesTeamLeadClosing")]
-    public async Task<ActionResult<ApiSuccessResult<GetSalesTeamLeadClosingResult>>> GetSalesTeamLeadClosingAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("CreateDashboardWidget")]
+    public async Task<ActionResult<ApiSuccessResult<CreateDashboardWidgetResult>>> CreateDashboardWidgetAsync(
+        CreateDashboardWidgetRequest request,
+        CancellationToken cancellationToken)
     {
-        var request = new GetSalesTeamLeadClosingRequest { };
         var response = await _sender.Send(request, cancellationToken);
-
-        return Ok(new ApiSuccessResult<GetSalesTeamLeadClosingResult>
+        return Ok(new ApiSuccessResult<CreateDashboardWidgetResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetSalesTeamLeadClosingAsync)}",
-            Content = response
+            Message = nameof(CreateDashboardWidgetAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetCampaignByStatus")]
-    public async Task<ActionResult<ApiSuccessResult<GetCampaignByStatusResult>>> GetCampaignByStatusAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("UpdateDashboardWidget")]
+    public async Task<ActionResult<ApiSuccessResult<UpdateDashboardWidgetResult>>> UpdateDashboardWidgetAsync(
+        UpdateDashboardWidgetRequest request,
+        CancellationToken cancellationToken)
     {
-        var request = new GetCampaignByStatusRequest { };
         var response = await _sender.Send(request, cancellationToken);
-
-        return Ok(new ApiSuccessResult<GetCampaignByStatusResult>
+        return Ok(new ApiSuccessResult<UpdateDashboardWidgetResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetCampaignByStatusAsync)}",
-            Content = response
+            Message = nameof(UpdateDashboardWidgetAsync),
+            Content = response,
         });
     }
 
-
-    [Authorize]
-    [HttpGet("GetLeadActivityByType")]
-    public async Task<ActionResult<ApiSuccessResult<GetLeadActivityByTypeResult>>> GetLeadActivityByTypeAsync(
-        CancellationToken cancellationToken
-        )
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("DeleteDashboardWidget")]
+    public async Task<ActionResult<ApiSuccessResult<DeleteDashboardWidgetResult>>> DeleteDashboardWidgetAsync(
+        DeleteDashboardWidgetRequest request,
+        CancellationToken cancellationToken)
     {
-        var request = new GetLeadActivityByTypeRequest { };
         var response = await _sender.Send(request, cancellationToken);
-
-        return Ok(new ApiSuccessResult<GetLeadActivityByTypeResult>
+        return Ok(new ApiSuccessResult<DeleteDashboardWidgetResult>
         {
             Code = StatusCodes.Status200OK,
-            Message = $"Success executing {nameof(GetLeadActivityByTypeAsync)}",
-            Content = response
+            Message = nameof(DeleteDashboardWidgetAsync),
+            Content = response,
         });
     }
 
-
-
+    [Authorize(Roles = TelecomRoles.Admin)]
+    [HttpPost("ReorderDashboardWidgets")]
+    public async Task<ActionResult<ApiSuccessResult<ReorderDashboardWidgetsResult>>> ReorderDashboardWidgetsAsync(
+        ReorderDashboardWidgetsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ReorderDashboardWidgetsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ReorderDashboardWidgetsAsync),
+            Content = response,
+        });
+    }
 }
-
-

@@ -1,5 +1,6 @@
-﻿const App = {
+const App = {
     setup() {
+        const DASHBOARD_AUTH_ROLES = ['Dashboards', 'TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement'];
         const state = Vue.reactive({
             cardsData: {},
             salesData: {},
@@ -246,7 +247,7 @@
                         title: 'Sales by Customer Group',
                         tooltip: { enable: true, header: "<b>${point.tooltip}</b>", shared: true },
                         legendSettings: { enableHighlight: true },
-                        palettes: ["#E94649", "#F6B53F", "#009CFF", "#C4C24A"],
+                        palettes: ["#c8102e", "#1e293b", "#64748b", "#a30d25"],
                     },
                     customerGroupChartRef.value);
             },
@@ -266,7 +267,7 @@
                         title: 'Purchase by Vendor Group',
                         tooltip: { enable: true, header: "<b>${point.tooltip}</b>", shared: true },
                         legendSettings: { enableHighlight: true },
-                        palettes: ["#E94649", "#F6B53F", "#009CFF", "#C4C24A"],
+                        palettes: ["#c8102e", "#1e293b", "#64748b", "#a30d25"],
                     },
                     vendorGroupChartRef.value);
             },
@@ -286,7 +287,7 @@
                         title: 'Sales by Customer Category',
                         tooltip: { enable: true, header: "<b>${point.tooltip}</b>", shared: true },
                         legendSettings: { enableHighlight: true },
-                        palettes: ["#E94649", "#F6B53F", "#009CFF", "#C4C24A"],
+                        palettes: ["#c8102e", "#1e293b", "#64748b", "#a30d25"],
                     },
                     customerCategoryChartRef.value);
             },
@@ -306,7 +307,7 @@
                         title: 'Purchase by Vendor Category',
                         tooltip: { enable: true, header: "<b>${point.tooltip}</b>", shared: true },
                         legendSettings: { enableHighlight: true },
-                        palettes: ["#E94649", "#F6B53F", "#009CFF", "#C4C24A"],
+                        palettes: ["#c8102e", "#1e293b", "#64748b", "#a30d25"],
                     },
                     vendorCategoryChartRef.value);
             },
@@ -326,7 +327,7 @@
                         title: 'Stock by Warehouse',
                         tooltip: { enable: true, header: "<b>${point.tooltip}</b>", shared: true },
                         legendSettings: { visible: true },
-                        palettes: ["#E94649", "#F6B53F", "#009CFF", "#C4C24A"],
+                        palettes: ["#c8102e", "#1e293b", "#64748b", "#a30d25"],
                     },
                     stockChartRef.value);
             },
@@ -444,43 +445,10 @@
                     pointRender: function (args) {
                         var selectedTheme = location.hash.split('/')[1];
                         selectedTheme = selectedTheme ? selectedTheme : 'Fluent2';
-                        if (selectedTheme.indexOf('dark') > -1) {
-                            if (selectedTheme.indexOf('material') > -1) {
-                                args.border.color = '#303030';
-                            }
-                            else if (selectedTheme.indexOf('bootstrap5') > -1) {
-                                args.border.color = '#212529';
-                            }
-                            else if (selectedTheme.indexOf('bootstrap') > -1) {
-                                args.border.color = '#1A1A1A';
-
-                            }
-                            else if (selectedTheme.indexOf('fabric') > -1) {
-                                args.border.color = '#201f1f';
-
-                            }
-                            else if (selectedTheme.indexOf('fluent') > -1) {
-                                args.border.color = '#252423';
-
-                            }
-                            else if (selectedTheme.indexOf('bootstrap') > -1) {
-                                args.border.color = '#1A1A1A';
-
-                            }
-                            else if (selectedTheme.indexOf('tailwind') > -1) {
-                                args.border.color = '#1F2937';
-
-                            }
-                            else {
-                                args.border.color = '#222222';
-
-                            }
-                        }
-                        else if (selectedTheme.indexOf('highcontrast') > -1) {
-                            args.border.color = '#000000';
-                        }
-                        else {
-                            args.border.color = '#FFFFFF';
+                        if (selectedTheme.indexOf('dark') > -1 || selectedTheme.indexOf('highcontrast') > -1) {
+                            args.border.color = '#1e293b';
+                        } else {
+                            args.border.color = '#ffffff';
                         }
                     }
                 }, campaignByStatusRef.value);
@@ -509,7 +477,7 @@
 
         Vue.onMounted(async () => {
             try {
-                await SecurityManager.authorizePage(['Dashboards']);
+                await SecurityManager.authorizePage(DASHBOARD_AUTH_ROLES);
                 await SecurityManager.validateToken();
 
                 await methods.populateLeadPipelineFunnel();
@@ -560,4 +528,88 @@
     }
 };
 
-Vue.createApp(App).mount('#app');
+function initTelecomOperatorSlimDashboard() {
+    const slim = document.getElementById('telecomOperatorDashSlim');
+    const host = document.getElementById('syrBentoCockpit');
+    const DASHBOARD_AUTH_ROLES = [
+        'TelecomAdmin',
+        'TelecomShowroom',
+        'TelecomBackOffice',
+        'TelecomCallCenter',
+        'TelecomManagement',
+    ];
+
+    (async () => {
+        try {
+            if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
+                await PortalNavigation.syncOperatorSession(false);
+            }
+
+            const allowed =
+                typeof SecurityManager.authorizeTelecomAccess === 'function'
+                    ? await SecurityManager.authorizeTelecomAccess({
+                          roles: DASHBOARD_AUTH_ROLES,
+                          permissions: [
+                              'customer.view',
+                              'telecom.reports.mis',
+                              'admin.users.manage',
+                              'admin.settings.manage',
+                              'admin.roles.manage',
+                          ],
+                      })
+                    : typeof StorageManager.isPathAllowedForCurrentMenu === 'function' &&
+                      StorageManager.isPathAllowedForCurrentMenu();
+
+            if (allowed === false) {
+                if (host) {
+                    host.innerHTML =
+                        '<p class="text-muted col-12">لا تملك صلاحية عرض لوحة القيادة. تواصل مع مسؤول النظام.</p>';
+                }
+                return;
+            }
+
+            await SecurityManager.validateToken();
+
+            if (typeof SyrBentoCockpit !== 'undefined' && host) {
+                await SyrBentoCockpit.mount(host);
+            }
+            if (typeof MisReportsPanel !== 'undefined') {
+                await MisReportsPanel.initFromDashboard();
+            }
+            if (typeof StrategicAnalyticsPanel !== 'undefined') {
+                await StrategicAnalyticsPanel.initFromDashboard();
+                document.querySelectorAll('.syr-bento-single-row .syr-bento-card').forEach((card) => {
+                    const cta = card.querySelector('a.syr-bento-cta[href*="#strategic-analytics"]');
+                    if (cta) {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('slim dash', e);
+            if (host) {
+                host.innerHTML =
+                    '<p class="text-danger col-12">تعذّر تحميل لوحة القيادة. أعد تحميل الصفحة أو تحقق من الاتصال.</p>';
+            }
+        } finally {
+            if (typeof hideSpinnerAndShowContent === 'function') {
+                hideSpinnerAndShowContent();
+            }
+            if (typeof setFormCardHeight === 'function') {
+                setFormCardHeight();
+            }
+        }
+    })();
+}
+
+(async function bootstrapDefaultDashboard() {
+    try {
+        if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
+            await PortalNavigation.syncOperatorSession(true);
+        }
+    } catch (e) {
+        console.warn('DefaultDashboard: session sync failed', e);
+    }
+
+    initTelecomOperatorSlimDashboard();
+})();

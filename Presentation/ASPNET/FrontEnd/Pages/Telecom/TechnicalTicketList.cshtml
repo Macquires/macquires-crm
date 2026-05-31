@@ -1,0 +1,103 @@
+@page "/Telecom/TechnicalTicketList"
+@{ ViewData["Title"] = "تذاكر الدعم الفني"; }
+<div id="app" v-cloak class="telecom-premium-page container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h1 class="h4 fw-bold text-danger mb-1"><i class="bi bi-ticket-detailed me-2"></i>تذاكر الدعم الفني</h1>
+            <p class="text-muted small mb-0">الأرشيف الشامل — كل التذاكر محفوظة (مفتوحة، محلولة، مصعّدة)</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="/Telecom/BackOfficeDashboard" class="btn btn-outline-telecom btn-sm">قمرة العمليات</a>
+            <a href="/Customers/CustomerList" class="btn btn-danger btn-sm"><i class="bi bi-person-plus me-1"></i>فتح تذكرة من المشترك</a>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body">
+            <h2 class="h6 fw-bold mb-2"><i class="bi bi-mic me-2 text-primary"></i>محاكاة مكالمة كول سنتر AI (ديمو)</h2>
+            <p class="small text-muted mb-3">يُنشئ تذكرة آلية مربوطة بالاشتراك وتظهر في الطابور الحي والأرشيف.</p>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">MSISDN</label>
+                    <input type="text" class="form-control font-monospace" v-model="state.aiSim.msisdn" placeholder="0933123456" />
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label small">نص المكالمة (عامية)</label>
+                    <input type="text" class="form-control" v-model="state.aiSim.transcript" placeholder="أخي شحنت كاش والنت واقف عندي..." />
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary w-100" v-on:click="handler.simulateAiCall" v-bind:disabled="state.aiSim.busy">
+                        <span v-if="state.aiSim.busy" class="spinner-border spinner-border-sm"></span>
+                        <span v-else>إنشاء تذكرة AI</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">فلتر الحالة</label>
+                    <select class="form-select" v-model="state.filters.status" v-on:change="handler.search">
+                        <option value="">— الكل —</option>
+                        <option value="0">مفتوحة</option>
+                        <option value="1">قيد المعالجة</option>
+                        <option value="2">تم الحل</option>
+                        <option value="3">مصعّدة</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">بحث MSISDN</label>
+                    <input type="search" class="form-control font-monospace" v-model="state.filters.msisdn" v-on:keyup.enter="handler.search" />
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-telecom-primary w-100" v-on:click="handler.search">بحث</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card telecom-grid-panel tt-grid-panel mb-0">
+        <div class="card-body pb-2">
+            <p class="small text-muted mb-2">انقر مرتين على صف لتحديث الحالة وملاحظات الحل</p>
+            <div class="grid-container">
+                <div ref="gridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="ticketStatusDrawer" style="width:min(440px,100vw);">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="ttDrawerTitle">—</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <p class="mb-1"><strong>المشترك:</strong> <span id="ttDrawerCustomer">—</span></p>
+        <p class="mb-2"><strong>MSISDN:</strong> <span id="ttDrawerMsisdn">—</span></p>
+        <p class="mb-2 small text-muted" id="ttDrawerNotes">—</p>
+        <label class="form-label small fw-semibold" for="ttTicketStatus">الحالة</label>
+        <select id="ttTicketStatus" class="form-select mb-2">
+            <option value="0">مفتوحة</option>
+            <option value="1">قيد المعالجة</option>
+            <option value="2">تم الحل</option>
+            <option value="3">مصعّدة</option>
+        </select>
+        <label class="form-label small fw-semibold" for="ttTicketPriority">الأولوية</label>
+        <select id="ttTicketPriority" class="form-select mb-2">
+            <option value="0">منخفض</option>
+            <option value="1">متوسط</option>
+            <option value="2">عالي</option>
+            <option value="3">حرج</option>
+        </select>
+        <label class="form-label small fw-semibold" for="ttOperatorNotes">ملاحظات الحل الفنية</label>
+        <textarea id="ttOperatorNotes" class="form-control mb-3" rows="4" placeholder="اشرح الإجراء الفني المطبق..."></textarea>
+        <button type="button" class="btn btn-primary btn-lg w-100" id="ttSaveStatusBtn" v-on:click="handler.saveStatus">حفظ الحالة</button>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+    <script src="~/FrontEnd/Pages/Telecom/TechnicalTicketList.cshtml.js" asp-append-version="true"></script>
+}

@@ -1,124 +1,72 @@
-﻿@{
+@using System.Globalization
+@{
     var userEmail = "Loading...";
     var avatarUrl = "/noimage.png";
-    var appName = "CRM";
+    var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
 }
 
-<div id="sidebar" class="sidebar bg-dark pb-3">
-    <nav class="navbar bg-dark navbar-dark pt-0">
-        <div class="col-md-12 text-center pt-3 mb-4 d-grid align-items-center" style="height: 64px; border-bottom: 1px dashed #393945;">
-            <a href="#" class="navbar-brand mx-4 mb-3">
-                <h3 class="text-white"><i class="fas fa-home me-2" style="color: var(--primary);"></i>@appName</h3>
+<div id="sidebar" class="sidebar syr-sidebar pb-3" dir="@(uiRtl ? "rtl" : "ltr")" lang="@uiLang">
+    <nav class="navbar pt-0 flex-column align-items-stretch w-100">
+        <div class="syr-sidebar-brand-block text-center pt-3 pb-2 px-3">
+            <a id="syrBrandHome" href="/Dashboards/DefaultDashboard" class="text-decoration-none d-inline-block">
+                <img src="@Url.Content("~/brand/logo.png")"
+                     alt="Syriatel"
+                     class="syr-sidebar-logo"
+                     width="120"
+                     height="38"
+                     loading="eager" />
             </a>
+            <div class="syr-sidebar-divider" aria-hidden="true"></div>
+            <span id="syrPersonaChip" class="syr-persona-chip">—</span>
         </div>
 
-        <div class="d-flex align-items-center ms-4 mb-4">
-            <div class="position-relative">
-                <img id ="AvatarImageSide" class="rounded-circle" src="@avatarUrl" alt="" style="width: 40px; height: 40px;">
-                <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
-            </div>
-            <div class="ms-3">
-                <h6 class="mb-0" id="userEmail">@userEmail</h6>
-            </div>
+        <button type="button" class="syr-omni-trigger" data-syr-omni-open="1" aria-label="Omni-Search">
+            <i class="bi bi-search"></i>
+            <span>@(uiRtl ? "بحث سريع…" : "Quick search…")</span>
+            <kbd class="syr-omni-kbd">Ctrl+K</kbd>
+        </button>
+
+        <div id="syrQuickActions" class="syr-quick-actions"></div>
+
+        <div id="navbarnav" class="navbar-nav w-100 flex-grow-1 px-0">
+            <div id="syrPortalNav" class="w-100"></div>
         </div>
-        <div id="navbarnav" class="navbar-nav w-100">
-            <div id="mainMenuContainer">
-                <div id="mainMenu"></div>
+
+        <div class="d-flex align-items-center mx-3 mt-3 pt-3 border-top syr-sidebar-user">
+            <div class="position-relative flex-shrink-0">
+                <img id="AvatarImageSide" class="rounded-circle" src="@avatarUrl" alt="" style="width: 40px; height: 40px;">
+                <div class="bg-success rounded-circle border border-2 position-absolute syr-sidebar-online-dot end-0 bottom-0 p-1"></div>
+            </div>
+            <div class="ms-3 min-w-0">
+                <h6 class="mb-0 small text-truncate syr-sidebar-user-email" id="userEmail">@userEmail</h6>
             </div>
         </div>
     </nav>
 </div>
 
-@* _sidebar.cshtml *@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         try {
             const email = StorageManager.getEmail();
-            const userEmail = `${email}`;
-            document.getElementById('userEmail').textContent = userEmail;
-
-            const currentUrl = window.location.pathname;
-            const firstSegment = currentUrl.split('/')[1];
-
-            /** Syriatel telecom roles — must stay in sync with Infrastructure.SecurityManager.Roles.TelecomRoles */
-            const TELECOM_ROLES = new Set(['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement']);
-
-            function telecomRoleAllowsNav(role, segment) {
-                if (!TELECOM_ROLES.has(role)) return false;
-                const s = (segment || '').toLowerCase();
-                if (s === 'telecom' || s === 'customers' || s === 'dashboards') return true;
-                if (s === 'programmanagers') return role === 'TelecomAdmin' || role === 'TelecomCallCenter' || role === 'TelecomManagement';
-                return false;
+            document.getElementById('userEmail').textContent = email || '';
+            const brand = document.getElementById('syrBrandHome');
+            if (brand && typeof StorageManager.getLandingPath === 'function') {
+                const landing = StorageManager.getLandingPath();
+                if (landing) brand.setAttribute('href', landing);
             }
 
-            function legacyRoleMatchesUrl(role, segment) {
-                return role.toLowerCase() === (segment || '').toLowerCase();
+            if (typeof PortalNavigation !== 'undefined') {
+                PortalNavigation.init();
             }
-
-            function filterMenu(menuData, userRoles) {
-                const roles = userRoles || [];
-                const childMenus = menuData.filter(menu => {
-                    if (!menu.navURL) return false;
-                    const firstSegment = menu.navURL.split('/')[1];
-                    return roles.some(role =>
-                        telecomRoleAllowsNav(role, firstSegment) || legacyRoleMatchesUrl(role, firstSegment));
-                });
-
-                const validChildIds = new Set(childMenus.map(menu => menu.id));
-                const parentIds = new Set(childMenus.map(menu => menu.pid));
-                return menuData.filter(menu => validChildIds.has(menu.id) || parentIds.has(menu.id));
+            if (typeof OmniSearch !== 'undefined') {
+                OmniSearch.init();
             }
-
-            function updateMenuSelection(menuData, segment) {
-                const parentMap = {};
-                menuData.forEach(item => {
-                    parentMap[item.id] = item;
-                });
-
-                menuData.forEach(item => {
-                    item.isSelected = false;
-                    item.expanded = false;
-                    if (item.navURL && item.navURL.includes(`/${segment}`)) {
-                        item.isSelected = true;
-                        let parentId = item.pid;
-                        while (parentId) {
-                            const parent = parentMap[parentId];
-                            if (parent) {
-                                parent.expanded = true;
-                                parentId = parent.pid;
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                });
-
-                return menuData;
+            if (typeof PortalAdminTools !== 'undefined') {
+                PortalAdminTools.init();
             }
-
-            const userRoles = StorageManager.getUserRoles();
-            let menuData = StorageManager.getMenuNavigation();
-            const filteredMenu = filterMenu(menuData, userRoles);
-            menuData = updateMenuSelection(filteredMenu, firstSegment);
-
-            const mainMenu = new ej.navigations.TreeView({
-                fullRowNavigable: true,
-                fields: {
-                    dataSource: menuData,
-                    id: 'id',
-                    text: 'name',
-                    selected: 'isSelected',
-                    parentID: 'pid',
-                    hasChildren: 'hasChild',
-                    expanded: 'expanded',
-                    navigateUrl: 'navURL',
-                },
-                enablePersistence: false,
-            });
-            mainMenu.appendTo('#mainMenu');
-
         } catch (error) {
-            console.error('Error fetching data from StorageManager:', error);
+            console.error('Sidebar init:', error);
         }
     });
 </script>

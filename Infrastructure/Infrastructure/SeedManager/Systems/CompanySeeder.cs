@@ -1,4 +1,4 @@
-﻿// Demo-only fictional operator branding for presentation datasets.
+﻿// Demo-only fictional Syriatel operator branding for presentation datasets.
 using Application.Common.Repositories;
 using Domain.Entities;
 
@@ -22,7 +22,7 @@ public class CompanySeeder
         {
             CreatedAtUtc = DateTime.UtcNow,
             IsDeleted = false,
-            Name = "سوريا تيليكوم — بيئة العرض التجريبية",
+            Name = "سيريتل — بيئة العرض التجريبية",
             Currency = "SYP",
             Street = "كورنيش المزة — مجمع الاتصالات",
             City = "دمشق",
@@ -31,8 +31,8 @@ public class CompanySeeder
             Country = "سوريا",
             PhoneNumber = "011-0000000",
             FaxNumber = "011-0000001",
-            EmailAddress = "info@syriatelecom-demo.local",
-            Website = "https://syriatelecom-demo.local"
+            EmailAddress = "info@syriatel-demo.local",
+            Website = "https://syriatel-demo.local"
         };
 
         await _repository.CreateAsync(entity);

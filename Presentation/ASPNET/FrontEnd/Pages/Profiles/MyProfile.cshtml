@@ -1,162 +1,85 @@
-﻿@page
+﻿@page "/Profiles/MyProfile"
 @{
     ViewData["Title"] = "My Profile";
 }
 
 <div id="app" v-cloak>
-    <div class="row">
+    <div class="row mb-3">
         <div class="col-12">
-            <div class="grid-container">
-                <div ref="mainGridRef"></div>
-            </div>
+            <h1 class="h4 mb-1">My Profile</h1>
+            <p class="text-muted small mb-0">Account details, password, and avatar.</p>
         </div>
     </div>
 
-    <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ state.mainTitle }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" v-model="state.userId" id="UserId" name="UserId" />
-                    <form id="MainForm">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Main Info</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row mb-0">
-                                            <div class="col-md-6">
-                                                <label for="FirstName">First Name</label>
-                                                <input ref="firstNameRef" v-model="state.firstName" type="text" class="form-control" placeholder="">
-                                                <label class="text-danger">{{ state.errors.firstName }}</label>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="LastName">Last Name</label>
-                                                <input ref="lastNameRef" v-model="state.lastName" type="text" class="form-control" placeholder="">
-                                                <label class="text-danger">{{ state.errors.lastName }}</label>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-0">
-                                            <div class="col-12">
-                                                <label for="CompanyName">Company Name</label>
-                                                <textarea ref="companyNameRef" v-model="state.companyName" class="form-control" rows="3"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button"
-                            id="MainSaveButton"
-                            class="btn"
-                            v-bind:class="state.deleteMode ? 'btn-danger' : 'btn-primary'"
-                            v-on:click="handler.handleSubmit"
-                            v-bind:disabled="state.isSubmitting">
-                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
-                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
-                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">Avatar</div>
+                <div class="card-body text-center">
+                    <img :src="state.avatarPreview" alt="" class="rounded-circle mb-3" style="width: 96px; height: 96px; object-fit: cover;" />
+                    <input type="file" class="form-control form-control-sm" accept="image/*" v-on:change="handler.onAvatarSelected" />
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 w-100" v-bind:disabled="state.isUploadingAvatar" v-on:click="handler.uploadAvatar">
+                        <span v-if="state.isUploadingAvatar" class="spinner-border spinner-border-sm me-1"></span>
+                        Upload
                     </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal untuk Change Password -->
-    <div class="modal fade" ref="changePasswordModalRef" id="ChangePasswordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ state.changePasswordTitle }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" v-model="state.userId" id="UserId" name="UserId" />
-                    <form id="ChangePasswordForm">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header bg-primary text-white">
-                                        Old Password
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="OldPassword">Old Password</label>
-                                            <input ref="oldPasswordRef" v-model="state.oldPassword" type="password" class="form-control" placeholder="Enter old password">
-                                            <label class="text-danger">{{ state.errors.oldPassword }}</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header bg-success text-white">
-                                        New Password
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="NewPassword">New Password</label>
-                                            <input ref="newPasswordRef" v-model="state.newPassword" type="password" class="form-control" placeholder="Enter new password">
-                                            <label class="text-danger">{{ state.errors.newPassword }}</label>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="ConfirmNewPassword">Confirm New Password</label>
-                                            <input ref="confirmNewPasswordRef" v-model="state.confirmNewPassword" type="password" class="form-control" placeholder="Confirm new password">
-                                            <label class="text-danger">{{ state.errors.confirmNewPassword }}</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        <div class="col-lg-8">
+            <form class="card shadow-sm mb-3" v-on:submit.prevent="handler.saveProfile">
+                <div class="card-header">Basic info</div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label" for="FirstName">First name</label>
+                            <input id="FirstName" class="form-control" v-model="state.firstName" required />
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="ChangePasswordSaveButton" class="btn btn-primary" v-on:click="handler.handleChangePassword">
-                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
-                        <span v-if="!state.isSubmitting">Save</span>
-                        <span v-else>Saving...</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal untuk Change Avatar -->
-    <div class="modal fade" ref="changeAvatarModalRef" id="ChangeAvatarModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ state.changeAvatarTitle }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" v-model="state.userId" id="UserId" name="UserId" />
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>Uploader Area</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form ref="imageUploadRef" id="ImageUpload" class="dropzone"></form>
-                                </div>
-                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="LastName">Last name</label>
+                            <input id="LastName" class="form-control" v-model="state.lastName" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="CompanyName">Company name</label>
+                            <input id="CompanyName" class="form-control" v-model="state.companyName" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Email</label>
+                            <input class="form-control" v-model="state.email" readonly />
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary" v-bind:disabled="state.isSavingProfile">
+                        <span v-if="state.isSavingProfile" class="spinner-border spinner-border-sm me-1"></span>
+                        Save
+                    </button>
                 </div>
-            </div>
+            </form>
+
+            <form class="card shadow-sm" v-on:submit.prevent="handler.changePassword">
+                <div class="card-header">Change password</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label" for="OldPassword">Current password</label>
+                        <input id="OldPassword" type="password" class="form-control" v-model="state.oldPassword" autocomplete="current-password" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="NewPassword">New password</label>
+                        <input id="NewPassword" type="password" class="form-control" v-model="state.newPassword" autocomplete="new-password" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="ConfirmPassword">Confirm password</label>
+                        <input id="ConfirmPassword" type="password" class="form-control" v-model="state.confirmPassword" autocomplete="new-password" />
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-outline-danger" v-bind:disabled="state.isSavingPassword">
+                        <span v-if="state.isSavingPassword" class="spinner-border spinner-border-sm me-1"></span>
+                        Update password
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

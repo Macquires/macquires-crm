@@ -1,0 +1,56 @@
+@page "/Administration/RoleList"
+@{
+    ViewData["Title"] = "الأدوار والصلاحيات";
+}
+
+<div id="app" v-cloak>
+    <div class="row mb-2">
+        <div class="col-12">
+            <p class="text-muted small mb-0">
+                مصفوفة الصلاحيات (RBAC) — وضع Persona الصارم يحمي المسارات والأوامر الحساسة.
+                <a href="/Administration">← الإدارة والنظام</a>
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="grid-container">
+                <div ref="roleGridRef"></div>
+            </div>
+        </div>
+        <div class="col-md-8 mb-3">
+            <div v-if="state.selectedRole" class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong v-text="'صلاحيات: ' + state.selectedRole"></strong>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" v-on:click="handler.cloneRole" v-bind:disabled="!state.selectedRole">
+                            نسخ الدور
+                        </button>
+                        <button class="btn btn-sm btn-primary" v-on:click="handler.savePermissions" v-bind:disabled="state.isSaving">
+                            حفظ المصفوفة
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" style="max-height: 65vh; overflow-y: auto;">
+                    <div v-for="group in state.permissionGroups" :key="group.module" class="mb-3">
+                        <h6 class="text-primary border-bottom pb-1" v-text="group.module"></h6>
+                        <div v-for="perm in group.items" :key="permKey(perm)" class="form-check">
+                            <input class="form-check-input" type="checkbox" :id="permKey(perm)"
+                                   :checked="state.selectedPermissionKeys.includes(permKey(perm))"
+                                   v-on:change="handler.togglePermission(permKey(perm), $event.target.checked)" />
+                            <label class="form-check-label" :for="permKey(perm)">
+                                <span v-text="permLabel(perm)"></span>
+                                <small class="text-muted ms-1" v-text="'(' + permKey(perm) + ')'"></small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p v-else class="text-muted">اختر دوراً من القائمة لعرض وتعديل صلاحياته.</p>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Administration/RoleList.cshtml.js"></script>
+}

@@ -1,0 +1,146 @@
+/* Audit detail modal — system tokens only */
+.audit-detail-modal .modal-content {
+    border: none;
+    border-radius: var(--sys-radius);
+    box-shadow: var(--sys-shadow-card-hover) !important;
+    overflow: hidden;
+}
+
+.audit-detail-modal .modal-footer {
+    border-top: 1px solid var(--sys-border);
+    background: var(--sys-bg);
+}
+
+.audit-detail-modal .btn-close:focus {
+    box-shadow: 0 0 0 3px var(--sys-brand-red-ring) !important;
+}
+
+.audit-detail-modal .audit-detail-hero {
+    background: linear-gradient(
+        135deg,
+        var(--sys-text-main) 0%,
+        color-mix(in srgb, var(--sys-text-main) 80%, var(--sys-text-muted)) 100%
+    );
+    color: var(--sys-card-bg);
+    padding: 1.25rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.audit-detail-modal .audit-detail-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, var(--sys-brand-red-ring) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.audit-detail-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: calc(var(--sys-radius) - 4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: color-mix(in srgb, var(--sys-card-bg) 12%, transparent);
+}
+
+.audit-detail-icon--network,
+.audit-detail-icon--search,
+.audit-detail-icon--security,
+.audit-detail-icon--default {
+    background: color-mix(in srgb, var(--sys-card-bg) 15%, transparent);
+    color: var(--sys-border);
+}
+
+.audit-detail-badge-pill {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--sys-brand-red);
+    color: var(--sys-card-bg);
+}
+
+.audit-detail-hero-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--sys-card-bg);
+}
+
+.audit-detail-body {
+    padding: 1.25rem 1.5rem;
+    background: var(--sys-card-bg);
+}
+
+.audit-detail-kv {
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: calc(var(--sys-radius) - 4px);
+    padding: 0.85rem 1rem;
+}
+
+.audit-detail-kv dt {
+    font-size: 0.72rem;
+    color: var(--sys-text-muted);
+    margin-bottom: 0.15rem;
+}
+
+.audit-detail-kv dd {
+    font-size: 0.9rem;
+    color: var(--sys-text-main);
+    margin: 0;
+}
+
+.audit-detail-payload-wrap {
+    border-top: 1px dashed var(--sys-border);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.audit-detail-payload-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--sys-text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.audit-detail-payload-box {
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: calc(var(--sys-radius) - 4px);
+    padding: 0.75rem;
+    max-height: 200px;
+    overflow: auto;
+    font-size: 0.8rem;
+    color: var(--sys-text-main);
+}
+
+.audit-detail-copy-btn {
+    background: var(--sys-card-bg);
+    color: var(--sys-text-muted);
+    border: 1px solid var(--sys-border);
+}
+
+.audit-detail-copy-btn:hover {
+    background: var(--sys-brand-red-ring);
+    color: var(--sys-brand-red);
+}
+
+.audit-detail-state-ok {
+    color: var(--sys-text-main);
+    background: var(--sys-bg);
+}
+
+.audit-detail-state-warn {
+    background: var(--sys-bg);
+    border: 1px solid var(--sys-border) !important;
+}
+
+.audit-detail-json {
+    background: var(--sys-text-main) !important;
+    color: var(--sys-text-muted) !important;
+    border-radius: calc(var(--sys-radius) - 4px);
+}

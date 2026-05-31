@@ -14,7 +14,9 @@ public class TelecomSubscription : BaseEntity
     public string? ProductId { get; set; }
     public Product? Product { get; set; }
 
-    public TelecomSubscriptionType SubscriptionType { get; set; } = TelecomSubscriptionType.Prepaid;
+    public string SubscriptionTypeId { get; set; } = TelecomSubscriptionTypeWellKnownIds.Prepaid;
+
+    public TelecomSubscriptionTypeLookup? SubscriptionTypeLookup { get; set; }
 
     public TelecomDocumentStatus DocumentStatus { get; set; } = TelecomDocumentStatus.Missing;
 

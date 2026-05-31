@@ -1,0 +1,201 @@
+@page
+
+@{
+
+    ViewData["Title"] = "مراقبة الاستيراد الضخم";
+
+}
+
+
+
+<link rel="stylesheet" href="~/css/customer-360-premium.css" asp-append-version="true" />
+
+
+
+<div id="app" v-cloak>
+
+    <div class="container-fluid py-4">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+
+            <div>
+
+                <h1 class="h4 mb-1 fw-bold text-danger"><i class="fas fa-file-import me-2"></i><span data-telecom-i18n="bulkImport.title">مراقبة الاستيراد الضخم</span></h1>
+
+                <p class="text-muted small mb-0" data-telecom-i18n="bulkImport.subtitle">تتبّع عمليات الاستيراد حتى 100,000 سطر.</p>
+
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <a href="/Telecom/TelecomHub" class="btn btn-outline-secondary btn-sm">← مركز العمليات</a>
+
+                <button type="button" class="btn btn-danger btn-sm" :disabled="loading" v-on:click="loadJobs">
+
+                    <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
+
+                    <i class="fas fa-sync-alt me-1"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="card border-0 shadow-sm mb-3">
+
+            <div class="card-body py-3">
+
+                <p class="small text-muted mb-2" data-telecom-i18n="bulkImport.templatesHint">حمّل القالب المعتمد، عبّئه، ثم ارفعه لتفادي رفض الأعمدة.</p>
+
+                <div class="d-flex flex-wrap gap-3">
+
+                    <a href="#" class="small text-danger text-decoration-none" v-on:click.prevent="downloadTemplate(0)">
+
+                        <i class="bi bi-download me-1"></i><span data-telecom-i18n="bulkImport.templateMsisdn">قالب استيراد الأرقام المعتمد</span>
+
+                    </a>
+
+                    <a href="#" class="small text-danger text-decoration-none" v-on:click.prevent="downloadTemplate(1)">
+
+                        <i class="bi bi-download me-1"></i><span data-telecom-i18n="bulkImport.templateCustomers">قالب ملفات العملاء</span>
+
+                    </a>
+
+                    <a href="#" class="small text-danger text-decoration-none" v-on:click.prevent="downloadTemplate(2)">
+
+                        <i class="bi bi-download me-1"></i><span data-telecom-i18n="bulkImport.templatePackages">قالب ترحيل الباقات</span>
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="card border-0 shadow-sm mb-4">
+
+            <div class="card-body">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-4">
+
+                        <label class="form-label small fw-semibold" data-telecom-i18n="bulkImport.jobType">نوع الاستيراد</label>
+
+                        <select class="form-select form-select-sm" v-model="uploadJobType">
+
+                            <option value="0">MSISDN / SIM</option>
+
+                            <option value="1">Customers</option>
+
+                            <option value="2">Packages</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-5">
+
+                        <label class="form-label small fw-semibold" data-telecom-i18n="bulkImport.upload">رفع ملف</label>
+
+                        <input type="file" class="form-control form-control-sm" accept=".csv,.txt" ref="fileInputRef" v-on:change="onFileSelected" />
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <button type="button" class="btn btn-danger btn-sm w-100" :disabled="uploading || !selectedFile" v-on:click="uploadFile">
+
+                            <span v-if="uploading" class="spinner-border spinner-border-sm me-1"></span>
+
+                            <span data-telecom-i18n="bulkImport.upload">رفع</span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body p-0 grid-container">
+
+                <div ref="mainGridRef"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="modal fade" ref="errorsModalRef" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title"><span data-telecom-i18n="bulkImport.errorsTitle">تفاصيل الأخطاء</span> — <span class="font-monospace small" dir="ltr">{{ errorJobLabel }}</span></h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body p-2">
+
+                    <div ref="errorsGridRef"></div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">إغلاق</button>
+
+                    <button type="button" class="btn btn-danger btn-sm" v-on:click="exportErrors" :disabled="!errorJobId">
+
+                        <i class="fas fa-file-export me-1"></i><span data-telecom-i18n="bulkImport.exportErrors">تصدير</span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+@section scripts {
+    <script id="bulkJobStatusTemplate" type="text/x-template">
+        <span class="${jobStatusBadgeClass}">${jobStatusLabel}</span>
+    </script>
+    <script id="bulkProgressTemplate" type="text/x-template">
+        <div class="progress" style="height:8px;"><div class="progress-bar bg-danger" style="width:${progressPct}%"></div></div>
+        <small class="text-muted">${processedRows} / ${totalRows}</small>
+    </script>
+    <script id="bulkSuccessCountTemplate" type="text/x-template">
+        <span class="text-success fw-semibold">${successCount}</span>
+    </script>
+    <script src="~/FrontEnd/Pages/Telecom/BulkImportMonitor.cshtml.js"></script>
+}
+
+

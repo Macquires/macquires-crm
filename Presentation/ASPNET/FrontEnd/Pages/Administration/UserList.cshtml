@@ -1,0 +1,119 @@
+@page "/Administration/UserList"
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+}
+
+<div id="app" v-cloak>
+    <div class="row mb-2">
+        <div class="col-12">
+            <p class="text-muted small mb-0">
+                مركز عمليات الموظفين — Persona، المدير المباشر، والفرع.
+                <a href="/Administration/BranchList">إدارة الفروع</a>
+                · <a href="/Administration">← الإدارة والنظام</a>
+                · <a href="/Administration/AuditLogList">سجل الرقابة</a>
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="grid-container">
+                <div ref="mainGridRef"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="UserModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="state.mainTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="UserForm">
+                        <div class="row mb-2" v-if="!state.userId">
+                            <div class="col-md-6">
+                                <label class="form-label" for="Email">البريد الإلكتروني</label>
+                                <input id="Email" type="email" class="form-control" v-model="state.email" autocomplete="off" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="Password">كلمة المرور</label>
+                                <input id="Password" type="password" class="form-control" v-model="state.password" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="ConfirmPassword">تأكيد</label>
+                                <input id="ConfirmPassword" type="password" class="form-control" v-model="state.confirmPassword" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="FirstName">الاسم الأول</label>
+                                <input id="FirstName" class="form-control" v-model="state.firstName" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="LastName">اسم العائلة</label>
+                                <input id="LastName" class="form-control" v-model="state.lastName" />
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label" for="Persona">Persona (المنيو)</label>
+                                <select id="Persona" class="form-select" v-model="state.primaryMenuPersona">
+                                    <option v-for="p in state.personaOptions" :key="p" :value="p">{{ p }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="Manager">المدير المباشر</label>
+                                <select id="Manager" class="form-select" v-model="state.managerUserId">
+                                    <option value="">— بدون —</option>
+                                    <option v-for="m in state.managerOptions" :key="m.id" :value="m.id">{{ m.label }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="OrgUnit">الوحدة التنظيمية</label>
+                                <select id="OrgUnit" class="form-select" v-model="state.orgUnitId">
+                                    <option value="">— بدون —</option>
+                                    <option v-for="o in state.orgUnits" :key="o.id" :value="o.id">{{ o.nameAr }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6 d-flex gap-3 align-items-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="IsBlocked" v-model="state.isBlocked" />
+                                    <label class="form-check-label" for="IsBlocked">حساب موقوف</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="EmailConfirmed" v-model="state.emailConfirmed" />
+                                    <label class="form-check-label" for="EmailConfirmed">البريد مؤكد</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6" v-if="state.userId">
+                                <label class="form-label">أدوار Identity (Telecom)</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <label v-for="role in state.telecomRoles" :key="role" class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="checkbox"
+                                               :checked="state.selectedRoles.includes(role)"
+                                               v-on:change="handler.toggleRole(role, $event.target.checked)" />
+                                        <span class="form-check-label small">{{ role }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-primary" v-on:click="handler.handleSubmit" v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting"></span>
+                        حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Administration/UserList.cshtml.js"></script>
+}

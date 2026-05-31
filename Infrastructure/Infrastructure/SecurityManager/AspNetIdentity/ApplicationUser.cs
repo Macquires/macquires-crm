@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Application.Common.Services.SecurityManager;
+using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.SecurityManager.AspNetIdentity;
 
@@ -15,6 +17,18 @@ public class ApplicationUser : IdentityUser
     public string? CreatedById { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedById { get; set; }
+
+    /// <summary>Explicit UI persona; overrides role-derived persona when set.</summary>
+    public TelecomMenuPersona? PrimaryMenuPersona { get; set; }
+
+    public string? ManagerUserId { get; set; }
+    public ApplicationUser? Manager { get; set; }
+
+    public string? OrgUnitId { get; set; }
+    public OrgUnit? OrgUnit { get; set; }
+
+    public DateTime? LastLoginAtUtc { get; set; }
+    public DateTime? LastActivityAtUtc { get; set; }
 
 
     public ApplicationUser(

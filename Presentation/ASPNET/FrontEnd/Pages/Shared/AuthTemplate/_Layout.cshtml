@@ -1,5 +1,17 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using System.Globalization
+@inject IHtmlLocalizer<SharedResources> L
+@{
+    var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
+    var heroTitle = ViewData["AuthHeroTitle"] as string ?? L["Auth_HeroTitleDefault"].Value;
+    var heroLead = ViewData["AuthHeroLead"] as string ?? L["Auth_HeroLeadDefault"].Value;
+    var authHeroCompact = ViewData["AuthHeroCompact"] as bool? == true;
+    var authViewportFit = ViewData["AuthViewportFit"] as bool? == true;
+    var authFooterOneLine = ViewData["AuthFooterOneLine"] as bool? == true;
+    var bodyClass = "syriatel-auth-body" + (authViewportFit ? " syriatel-auth-body--fit" : "");
+}
+<!DOCTYPE html>
+<html lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")">
 
 <head>
     <meta charset="utf-8">
@@ -13,10 +25,341 @@
     <link href="~/lib/bootstrap/dist/css/bootstrap-icons.css" rel="stylesheet">
     <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="~/auth_template/css/style.css" rel="stylesheet">
+    <link href="~/css/telecom-premium-theme.css" rel="stylesheet" asp-append-version="true">
+    <link href="~/css/syr-swal.css" rel="stylesheet" asp-append-version="true">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
     @await RenderSectionAsync("styles", required: false)
     <style>
         [v-cloak] {
             display: none !important;
+        }
+
+        /* Match in-app theme: admin_template + Syriatel accent (same as sidebar tower) */
+        .syriatel-auth-body {
+            --primary: var(--sys-brand-red);
+            --light: var(--sys-bg);
+            --dark: var(--sys-text-muted);
+            --syriatel-accent: var(--sys-brand-red);
+            --syriatel-hero-overlay: color-mix(in srgb, var(--sys-text-main) 90%, transparent);
+            --syriatel-primary-hover: var(--sys-brand-red-hover);
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .syriatel-auth-hero {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+            flex: 1 1 auto;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            background-color: var(--sys-text-main);
+            /* Gradient fills box; photo anchored top-center so focal area isn’t cropped oddly on wide screens */
+            background-image: linear-gradient(var(--syriatel-hero-overlay), var(--syriatel-hero-overlay)),
+                url('@Url.Content("~/auth_template/img/bg-dark.jpg")');
+            background-size: cover, cover;
+            background-position: center, center top;
+            background-repeat: no-repeat, no-repeat;
+            animation: auth-hero-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .syriatel-auth-hero::after {
+            content: '';
+            position: absolute;
+            inset: -55% -30%;
+            width: 48%;
+            background: linear-gradient(
+                118deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0) 36%,
+                rgba(255, 255, 255, 0.06) 44%,
+                rgba(255, 255, 255, 0.22) 49.5%,
+                rgba(255, 255, 255, 0.1) 52%,
+                rgba(200, 16, 46, 0.18) 56%,
+                transparent 66%
+            );
+            transform: translateX(-135%) skewX(-14deg);
+            animation: auth-hero-sheen 5.5s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform, opacity;
+        }
+
+        .syriatel-auth-hero .syriatel-auth-hero-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        @@keyframes auth-hero-in {
+            from {
+                opacity: 0.88;
+                transform: scale(1.02);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @@keyframes auth-hero-sheen {
+            0%,
+            10% {
+                transform: translateX(-135%) skewX(-14deg);
+                opacity: 0;
+            }
+            16% {
+                opacity: 1;
+            }
+            40%,
+            100% {
+                transform: translateX(135%) skewX(-14deg);
+                opacity: 0;
+            }
+        }
+
+        .syriatel-auth-eyebrow {
+            letter-spacing: 0.2em;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        html[dir="ltr"] .syriatel-auth-eyebrow {
+            text-transform: uppercase;
+        }
+
+        .syriatel-auth-hero-title {
+            font-weight: 700;
+            font-size: clamp(1.65rem, 3vw, 2.35rem);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            color: var(--sys-card-bg) !important;
+        }
+
+        .syriatel-auth-hero-lead {
+            font-size: 1rem;
+            line-height: 1.65;
+            opacity: 0.95;
+            max-width: 36rem;
+            color: var(--sys-card-bg) !important;
+        }
+
+        .syriatel-auth-feature-list {
+            max-width: 32rem;
+            margin-inline: auto;
+        }
+
+        .text-lg-start .syriatel-auth-feature-list {
+            margin-inline: 0 auto;
+        }
+
+        .syriatel-auth-icon {
+            color: var(--syriatel-accent);
+            width: 1.25rem;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .max-w-hero {
+            max-width: 40rem;
+        }
+
+        .syriatel-auth-hero-logo {
+            max-height: 72px;
+            width: auto;
+            max-width: min(100%, 260px);
+            object-fit: contain;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .text-lg-start .syriatel-auth-hero-logo {
+            margin-inline: 0 auto;
+        }
+
+        .text-center .syriatel-auth-hero-logo {
+            margin-inline: auto;
+        }
+
+        .syriatel-auth-form-column .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .syriatel-auth-form-column .btn-primary:hover {
+            background-color: var(--syriatel-primary-hover);
+            border-color: var(--syriatel-primary-hover);
+        }
+
+        .syriatel-auth-form-column a:not(.btn) {
+            color: var(--primary);
+        }
+
+        .syriatel-auth-form-column a:not(.btn):hover {
+            color: var(--syriatel-primary-hover);
+        }
+
+        .syriatel-auth-footer {
+            flex-shrink: 0;
+            background: var(--sys-text-main);
+            color: color-mix(in srgb, var(--sys-card-bg) 88%, transparent);
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .syriatel-auth-footer strong {
+            color: var(--sys-card-bg);
+            font-weight: 600;
+        }
+
+        /* Shell grows between header area and footer; form column flex-centers the card */
+        .syriatel-auth-shell {
+            flex: 1 1 auto;
+            display: grid;
+            width: 100%;
+            min-height: 0;
+        }
+
+        @@media (max-width: 991.98px) {
+            .syriatel-auth-shell {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+        }
+
+        @@media (min-width: 992px) {
+            .syriatel-auth-shell {
+                grid-template-columns: 5fr 7fr;
+                grid-template-rows: 1fr;
+                align-items: stretch;
+            }
+        }
+
+        /* Grid + place-items: reliable vertical + horizontal center of the login card in the white pane */
+        .syriatel-auth-form-column {
+            display: grid;
+            place-items: center;
+            align-content: center;
+            align-self: stretch;
+            box-sizing: border-box;
+            padding: clamp(1rem, 3vw, 2.5rem) clamp(0.75rem, 2vw, 1.5rem);
+            min-height: 0;
+        }
+
+        .syriatel-auth-hero-column {
+            display: flex;
+            flex-direction: column;
+            align-self: stretch;
+            min-height: 0;
+        }
+
+        .syriatel-auth-form-inner {
+            width: min(100%, 26rem);
+            max-width: 26rem;
+            margin-inline: auto;
+            box-sizing: border-box;
+            justify-self: center;
+        }
+
+        /* Login (and similar): one screen, no page scroll — column scrolls only if needed */
+        .syriatel-auth-body--fit {
+            height: 100dvh;
+            max-height: 100dvh;
+            overflow: hidden;
+        }
+
+        .syriatel-auth-body--fit .syriatel-auth-shell {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .syriatel-auth-body--fit .syriatel-auth-form-column,
+        .syriatel-auth-body--fit .syriatel-auth-hero-column {
+            min-height: 0;
+        }
+
+        .syriatel-auth-body--fit .syriatel-auth-form-column {
+            display: grid;
+            place-items: center;
+            align-content: safe center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: clamp(0.5rem, 1.8vw, 1rem) clamp(0.5rem, 1.5vw, 1rem);
+        }
+
+        .syriatel-auth-body--fit .syriatel-auth-hero-column {
+            overflow: hidden;
+        }
+
+        .syriatel-auth-body--fit .syriatel-auth-hero {
+            min-height: 0 !important;
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .syriatel-auth-body--fit .syriatel-auth-footer {
+            flex-shrink: 0;
+            padding-top: 0.35rem;
+            padding-bottom: 0.35rem;
+            font-size: 0.6875rem;
+            line-height: 1.35;
+        }
+
+        .syriatel-auth-hero--compact .syriatel-auth-hero-logo {
+            max-height: 40px;
+            margin-bottom: 0.35rem;
+        }
+
+        .syriatel-auth-hero--compact .syriatel-auth-eyebrow {
+            margin-bottom: 0.2rem;
+            font-size: 0.62rem;
+            letter-spacing: 0.12em;
+        }
+
+        .syriatel-auth-hero--compact .syriatel-auth-hero-title {
+            font-size: clamp(1rem, 2.8vw, 1.25rem);
+            margin-bottom: 0.35rem !important;
+        }
+
+        .syriatel-auth-hero--compact .syriatel-auth-hero-lead {
+            font-size: 0.8125rem;
+            line-height: 1.4;
+            margin-bottom: 0 !important;
+        }
+
+        @@media (max-width: 991.98px) {
+            .syriatel-auth-body--fit .syriatel-auth-shell {
+                grid-template-rows: minmax(0, 1fr) auto;
+            }
+        }
+
+        /* Bootstrap 5.1 uses physical left/right for text-lg-* and me-*; fix RTL hero + lists */
+        @@media (min-width: 992px) {
+            html[dir="rtl"] .syriatel-auth-hero-inner.text-lg-start {
+                text-align: right !important;
+            }
+
+            html[dir="rtl"] ul.syriatel-auth-feature-list.text-lg-start {
+                text-align: right !important;
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .syriatel-auth-hero {
+                animation: none;
+            }
+
+            .syriatel-auth-hero::after {
+                display: none;
+            }
         }
     </style>
 
@@ -27,6 +370,7 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.min.js" defer></script>
     <script src="~/lib/axios/axios.min.js" defer></script>
     <script src="~/lib/sweetalert/sweetalert2v11.js" defer></script>
+    <script src="~/lib/indotalent/syr-swal.js" asp-append-version="true" defer></script>
     <script src="~/lib/indotalent/storage-manager.js" defer></script>
     <script src="~/lib/indotalent/security-manager.js" defer></script>
     <script src="~/lib/indotalent/axios-manager.js" defer></script>
@@ -34,22 +378,48 @@
 
 </head>
 
-<body>
-    <div class="row m-0 p-0">
-        <div class="col-5 m-0 p-0 bg-white auth-area">
-            <div class="container-fluid position-relative d-flex p-0 col-10">
+<body class="@bodyClass" lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")">
+    <div class="syriatel-auth-shell">
+        <div class="syriatel-auth-form-column bg-white auth-area">
+            <div class="syriatel-auth-form-inner position-relative">
                 @RenderBody()
             </div>
         </div>
-        <div class="col-7 m-0 p-0">
-            <div class="container-fluid position-relative d-flex align-items-center justify-content-center p-0" style="background-image: url('/auth_template/img/bg-dark.jpg'); background-size: cover; height: 100vh;">
-                <div class="text-center">
-                    <h1 class="text-white">Katenjo CRM</h1>
-                    <h5 class="text-white">Powerful CRM Solution with a Completely REST API on ASP.NET Core</h5>
+        <div class="syriatel-auth-hero-column">
+            <div class="syriatel-auth-hero d-flex align-items-center justify-content-center @(authHeroCompact ? "syriatel-auth-hero--compact p-3 p-lg-4" : "p-4 p-lg-5")">
+                <div class="syriatel-auth-hero-inner text-center text-lg-start max-w-hero mx-auto mx-lg-0">
+                    <img src="@Url.Content("~/brand/logo.png")" alt="@L["Auth_LogoAlt"]" class="syriatel-auth-hero-logo" width="260" height="72" loading="eager" />
+                    <p class="syriatel-auth-eyebrow mb-2">@L["Auth_EyebrowSyriatelCrm"]</p>
+                    <h1 class="syriatel-auth-hero-title text-white mb-3">@heroTitle</h1>
+                    <p class="syriatel-auth-hero-lead text-white @(authHeroCompact ? "" : "mb-4")">@heroLead</p>
+                    @if (!authHeroCompact)
+                    {
+                        <ul class="list-unstyled syriatel-auth-feature-list text-lg-start mb-0">
+                            <li class="d-flex gap-3 align-items-start text-white mb-3"><i class="fas fa-network-wired syriatel-auth-icon flex-shrink-0" aria-hidden="true"></i><span>@L["Auth_Feature1"]</span></li>
+                            <li class="d-flex gap-3 align-items-start text-white mb-3"><i class="fas fa-headset syriatel-auth-icon flex-shrink-0" aria-hidden="true"></i><span>@L["Auth_Feature2"]</span></li>
+                            <li class="d-flex gap-3 align-items-start text-white mb-0"><i class="fas fa-brain syriatel-auth-icon flex-shrink-0" aria-hidden="true"></i><span><strong>@L["Auth_Feature3Lead"]</strong>@L["Auth_Feature3Rest"]</span></li>
+                        </ul>
+                        <p class="syriatel-auth-hero-tagline mt-4 mb-0 small text-white opacity-75">@L["Auth_HeroTagline"]</p>
+                    }
                 </div>
             </div>
         </div>
     </div>
+
+    <footer class="syriatel-auth-footer py-3 px-3 text-center">
+        <div class="container-fluid">
+            @if (authFooterOneLine)
+            {
+                <p class="mb-0">@L["Auth_FooterCompactLine"]</p>
+            }
+            else
+            {
+                <p class="mb-1 mb-md-0">@L["Auth_FooterLine1"]</p>
+                <p class="mb-0">@L["Auth_FooterLine2"]</p>
+                <p class="mb-0 mt-2 small opacity-75">@L["Auth_FooterLine3"]</p>
+            }
+        </div>
+    </footer>
 
     @await RenderSectionAsync("scripts", required: false)
 </body>

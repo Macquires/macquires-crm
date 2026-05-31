@@ -1,0 +1,81 @@
+@using System.Globalization
+@* Minimal shell for iframe / embedded pages: no sidebar, navbar, or footer. *@
+<!DOCTYPE html>
+@{
+    var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
+}
+<html lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")">
+
+<head>
+    <meta charset="utf-8">
+    <title>@ViewData["Title"]</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <link href="~/lib/syncfusion/css/bootstrap5.css" rel="stylesheet" />
+    <script src="~/lib/syncfusion/js/ej2.min.js"></script>
+
+    <style>
+        [v-cloak] {
+            display: none !important;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .embed-chromeless-root {
+            min-height: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+
+    <script src="~/lib/vue/vue.global.prod.js"></script>
+    @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__uiModalsBootstrap.cshtml")
+
+    @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml")
+    @await RenderSectionAsync("styles", required: false)
+</head>
+
+<body lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")" class="embed-chromeless">
+    <div class="embed-chromeless-root container-fluid pt-0 px-2 pb-2 adminbody bg-light">
+        @Html.AntiForgeryToken()
+        <div id="Toast"></div>
+        <div id="spinner" class="show position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+            <div class="spinner-grow text-primary" style="width: 15rem; height: 15rem;" role="status"></div>
+        </div>
+        @RenderBody()
+    </div>
+
+    @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml")
+    <script>
+        (function () {
+            function safeHeight() {
+                try {
+                    return Math.max(260, window.innerHeight - 88);
+                } catch (_) {
+                    return 420;
+                }
+            }
+            window.getDashminGridHeight = safeHeight;
+            window.getDashminBodyHeight = function () { return safeHeight(); };
+            window.getDashminPivotHeight = safeHeight;
+            window.getDashminSchedulerHeight = safeHeight;
+            window.getDashminFileManagerHeight = safeHeight;
+        })();
+    </script>
+    @await RenderSectionAsync("scripts", required: false)
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                if (typeof setFormCardHeight === 'function') {
+                    setFormCardHeight();
+                }
+            } catch (_) { /* ignore */ }
+        });
+    </script>
+</body>
+
+</html>

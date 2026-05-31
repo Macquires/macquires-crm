@@ -30,5 +30,11 @@ public class TelecomSubscriptionConfiguration : BaseEntityConfiguration<TelecomS
             .WithMany()
             .HasForeignKey(x => x.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(x => x.SubscriptionTypeId).HasMaxLength(IdConsts.MaxLength).IsRequired();
+        builder.HasOne(x => x.SubscriptionTypeLookup)
+            .WithMany()
+            .HasForeignKey(x => x.SubscriptionTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

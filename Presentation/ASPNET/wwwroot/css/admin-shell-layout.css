@@ -1,0 +1,53 @@
+/* Admin shell — must load last. Overrides style.css physical LTR-only margins. */
+
+body.syr-tel-portal > .container-fluid {
+    flex-wrap: nowrap !important;
+    max-width: 100% !important;
+    overflow-x: clip;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar {
+    position: fixed !important;
+    inset-inline-start: 0 !important;
+    inset-inline-end: auto !important;
+    left: unset !important;
+    right: unset !important;
+    width: 280px !important;
+    height: 100vh !important;
+}
+
+body.syr-tel-portal .offcanvas {
+    position: fixed !important;
+    z-index: 1045;
+}
+
+@media (min-width: 992px) {
+    body.syr-tel-portal .content {
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: 280px !important;
+        margin-inline-end: 0 !important;
+        width: calc(100% - 280px) !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    body.syr-tel-portal .content {
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: 0 !important;
+        width: 100% !important;
+    }
+
+    body.syr-tel-portal .sidebar.syr-sidebar {
+        margin-left: unset !important;
+        margin-right: unset !important;
+        margin-inline-start: -280px !important;
+    }
+
+    body.syr-tel-portal .sidebar.syr-sidebar.open {
+        margin-inline-start: 0 !important;
+    }
+}

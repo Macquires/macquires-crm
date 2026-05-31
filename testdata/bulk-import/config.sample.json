@@ -1,0 +1,9 @@
+{
+  "CustomerGroupId": "REPLACE_WITH_CustomerGroup_Id",
+  "CustomerCategoryId": "REPLACE_WITH_CustomerCategory_Id",
+  "ProductId": "REPLACE_WITH_Product_Id",
+  "ProductOfferingId": "",
+  "RowCount": 3000,
+  "MsisdnStartIndex": 1000000,
+  "InjectErrorPercent": 2
+}

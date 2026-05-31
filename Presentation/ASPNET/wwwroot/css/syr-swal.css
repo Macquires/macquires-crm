@@ -1,0 +1,138 @@
+/**
+ * Syriatel compact SweetAlert2 — matches login/auth alert proportions (Tajawal / Almarai).
+ */
+.syr-swal-popup {
+    font-family: 'Tajawal', 'Almarai', 'Segoe UI', system-ui, sans-serif;
+    width: auto;
+    max-width: min(22rem, 92vw);
+    padding: 1.15rem 1.25rem 1rem;
+    border-radius: 11px;
+    border: 1px solid var(--sys-border, #e2e8f0);
+    box-shadow: var(--sys-shadow-card, 0 4px 12px rgba(15, 23, 42, 0.08));
+    background: var(--sys-card-bg, #fff);
+}
+
+.syr-swal-popup.syr-swal-popup--rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.syr-swal-popup.syr-swal-popup--wide,
+.syr-swal-popup.audit-swal-popup {
+    max-width: min(92vw, 720px);
+    padding: 0;
+    border-radius: var(--sys-radius, 12px);
+}
+
+.syr-swal-title {
+    font-family: 'Almarai', 'Tajawal', sans-serif !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--sys-text-main, #1e293b) !important;
+    line-height: 1.35 !important;
+    padding: 0.25rem 0 0 !important;
+    margin: 0 !important;
+}
+
+.syr-swal-html.swal2-html-container {
+    font-size: 0.8125rem !important;
+    font-weight: 400 !important;
+    line-height: 1.55 !important;
+    color: var(--sys-text-muted, #64748b) !important;
+    margin: 0.35rem 0 0 !important;
+    padding: 0 0.15rem !important;
+}
+
+.syr-swal-html strong {
+    color: var(--sys-text-main, #1e293b);
+    font-weight: 600;
+}
+
+.syr-swal-icon {
+    margin: 0.35rem auto 0.15rem !important;
+    transform: scale(0.58);
+    transform-origin: center;
+}
+
+.syr-swal-icon .swal2-icon-content {
+    font-size: 1.75rem !important;
+}
+
+.syr-swal-actions {
+    gap: 0.45rem !important;
+    margin: 0.85rem 0 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+html[dir="rtl"] .syr-swal-actions {
+    flex-direction: row-reverse;
+}
+
+.syr-swal-confirm.btn {
+    background-color: var(--sys-brand-red, #c8102e) !important;
+    border-color: var(--sys-brand-red, #c8102e) !important;
+    color: #fff !important;
+    font-family: 'Tajawal', 'Almarai', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.38rem 0.9rem;
+    border-radius: 8px;
+    min-width: 4.25rem;
+    box-shadow: none;
+}
+
+.syr-swal-confirm.btn:hover,
+.syr-swal-confirm.btn:focus {
+    background-color: var(--sys-brand-red-hover, #a50d25) !important;
+    border-color: var(--sys-brand-red-hover, #a50d25) !important;
+    color: #fff !important;
+}
+
+.syr-swal-cancel.btn,
+.syr-swal-deny.btn {
+    font-family: 'Tajawal', 'Almarai', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.38rem 0.9rem;
+    border-radius: 8px;
+    min-width: 4.25rem;
+    border-color: var(--sys-border, #e2e8f0) !important;
+    color: var(--sys-text-muted, #64748b) !important;
+    background: var(--sys-card-bg, #fff) !important;
+}
+
+.syr-swal-cancel.btn:hover,
+.syr-swal-deny.btn:hover {
+    background: var(--sys-bg, #f8fafc) !important;
+    color: var(--sys-text-main, #1e293b) !important;
+}
+
+.syr-swal-popup .swal2-textarea {
+    font-family: 'Tajawal', 'Almarai', sans-serif;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    border-radius: 8px;
+    border-color: var(--sys-border, #e2e8f0);
+    margin-top: 0.5rem;
+}
+
+.syr-swal-popup .swal2-input {
+    font-size: 0.8125rem;
+    border-radius: 8px;
+}
+
+.syr-swal-popup .swal2-timer-progress-bar {
+    background: var(--sys-brand-red, #c8102e);
+}
+
+.syr-swal-popup .swal2-close {
+    font-size: 1.25rem;
+    color: var(--sys-text-muted, #64748b);
+}
+
+.syr-swal-popup .swal2-close:focus {
+    box-shadow: 0 0 0 2px var(--sys-brand-red-ring, rgba(200, 16, 46, 0.15));
+}
