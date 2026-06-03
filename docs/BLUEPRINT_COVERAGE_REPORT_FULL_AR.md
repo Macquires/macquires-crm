@@ -185,31 +185,33 @@
 
 ## B.4 — نقل الملكية (Transfer of Ownership / TakeOver)
 
-**نسبة التغطية: 68%** | **الحالة: جزئي قوي**
+**نسبة التغطية: ~92%** | **الحالة: جاهز للديمو التشغيلي**
 
 ### 1) الوضع الحالي
 
-- `TelecomOperationKind.TakeOver` (TKO-)
-- `ApplyTakeOverAsync` في `TelecomActivationWorkflow.cs`
-- UI: takeover wizard + identity document upload + BackOffice approval
-- `ValidateTakeOverDebtAsync` — فحص ذمم mock قبل الإنشاء
+- `TelecomOperationKind.TakeOver` (TKO-) + حقول سيادة (`TransferReason`, `DepositTransferPolicy`, `PriorSubscriberProfileId`, …)
+- `ITakeOverEligibilityChecker` — VAL-07-01..05 (وثيقة، ذمم، قائمة سوداء، طلب مفتوح)
+- فصل صلاحيات: `telecom.line.transfer_request` (إنشاء/معرض) و `telecom.line.transfer_ownership` (اعتماد BO)
+- UI: Customer 360 / Hub / قائمة المشتركين — مسودة + هوية → `PendingDocuments` بدون Confirm من المعرض
+- `TakeOverCompletionService` — SMS + `FieldChangesJson` (صندوق أسود)
+- `GetTakeOverOwnershipKpis` + كرت Back Office
+- HLR فشل → `VAL-07-04` rollback محلي + عكس CBS (`CbsTransferOwnership`)
 
 ### 2) CBS / HLR
 
-- CBS provision + HLR `TakeOver_OwnershipTransfer` عبر نفس pipeline
-- `GetOutstandingBalanceAsync` قبل الموافقة
+- CBS `CbsTransferOwnership` + HLR `TakeOver_OwnershipTransfer`
+- Re-validate عند Confirm + polling Hub (2s)
 
-### 3) الفجوات
+### 3) الفجوات المتبقية
 
-- لا OTP للمالك القديم/الجديد
-- لا regulatory cap على نقل الملكية
-- debt check على mock balance
+- لا OTP للمالك القديم/الجديد (مؤجل بالخطة)
+- لا regulatory cap على عدد عمليات النقل
+- Obligation matrix كامل (B.5) — snapshot `TakeOverObligationStatus` فقط
 
 ### 4) Roadmap
 
-| **Quick Win** | SLA + ticket auto على TKO failed |
-| **Medium** | CBS ownership transfer API mapping |
-| **Long-Term** | OTP + notarized document workflow (DMS) |
+| **Long-Term** | OTP + DMS للوثائق الموثقة |
+| **Medium** | Obligation entity + CBS contract sync (B.5) |
 
 ---
 
@@ -241,53 +243,60 @@
 
 ## B.6 — تبديل شريحة (Change SIM / SimSwap)
 
-**نسبة التغطية: 65%** | **الحالة: جزئي قوي**
+**نسبة التغطية: ~90%** | **الحالة: جاهز للديمو التشغيلي** (S1–S4 مُنفَّذة 2026-06)
 
-### 1) الوضع الحالي
+### 1) الوضع الحالي (منفَّذ)
 
-- `TelecomOperationKind.SimSwap` (SIM-)
-- `ApplySimSwapAsync` في workflow
-- UI: wizard simswap + ICCID 19 رقم
-- `IccidValidator.cs` — Luhn
-- HLR: `HlrSimProfileUpdate` / `SimSwap_IccidUpdate`
+- `TelecomOperationKind.SimSwap` (SIM-) + حقول سيادة: `ReplacementReason`, `IsLostOrStolenReport`, `PriorSimInventoryId`
+- SQL: `TelecomSimSwapFields_Manual.sql` + فهرس `IX_TelecomOperationRequest_SimSwap`
+- `SimSwapEligibilityChecker` — VAL-04-01..03 (ICCID/Luhn، blacklist، ذمم، طلب مفتوح، وثيقة BO)
+- `ApplySimSwapAsync` — quarantine للشريحة السابقة + تفعيل الجديدة
+- `CbsSimProfileUpdate` + `HlrSimProfileUpdate` + `TelecomHlrFailureCompensator` — VAL-04-ROLLBACK
+- `SimSwapCompletionService` — `FieldChangesJson` + SMS بعد HLR
+- صلاحيات: `telecom.line.simswap_request` (معرض) · `telecom.line.simswap_approve` (BO) · `telecom.line.simswap` (Standard confirm)
+- FE: Customer 360 / Hub / Customer List — سبب التبديل + مسار مفقودة/مسروقة بدون Confirm فوري من المعرض
+- Hub: اعتماد BO + polling 2s · badges TKO/SIM
+- `GetSimSwapKpis` + كرت Back Office Dashboard
 
 ### 2) CBS / HLR
 
-- CBS touch (generic provision) + HLR ICCID update async
-- Decision matrix في Blueprint (KYC + fraud) — **جزئي** via validators
+- Handshake مزدوج CBS ثم HLR؛ تعويض HLR يعيد الشريحة القديمة ويحرّر الجديدة للمخزن
 
-### 3) الفجوات
+### 3) الفجوات المتبقية (مؤجّلة عن الديمو)
 
-- لا OTP للـ lost/stolen path
-- لا quarantine workflow كامل للشريحة القديمة (SimStatus exists لكن لا op)
+- OTP خارجي لمسار الضياع (قرار: BO approval بدون OTP)
+- eSIM / DP+ كامل
+- Fraud hold مخصّص على Confirm (جزء منه مغطّى بـ VAL-04)
 
 ### 4) Roadmap
 
-| **Quick Win** | Lost/Stolen flag → auto quarantine on swap |
-| **Medium** | Fraud hold integration on SimSwap confirm |
+| **مؤجّل** | OTP + eSIM lifecycle كامل |
+| **Medium** | Fraud hold integration موسّع على Confirm |
 
 ---
 
-## B.7 — تغيير رقم الهاتف (Change Number / MNP)
+## B.7 — تغيير رقم الهاتف (Change Number / CNR)
 
-**نسبة التغطية: 25%** | **الحالة: جزئي ضعيف**
+**نسبة التغطية: ~85%** | **الحالة: مكتمل للديمو الداخلي (بدون MNP خارجي)**
 
 ### 1) الوضع الحالي
 
-- `TelecomOperationKind.NumberPortability` (MNP-) — **enum + numbering prefix فقط**
-- `TelecomMsisdnChangeLog.cs` — audit عند bind
-- `TelecomDirectoryMockSyncIntegration` — `NotifyMsisdnChangedAsync`
-- **لا UI wizard** لـ MNP أو change number
+- `TelecomOperationKind.NumberPortability` — ترقيم **CNR-**، مسار داخلي (ليس Port-In/Out)
+- `ChangeNumberEligibilityChecker` (VAL-05)، `ChangeNumberCompletionService`، `TelecomMsisdnChangeLog`
+- CBS `CbsMsisdnReassign` + HLR `HlrMsisdnUpdate` + تعويض VAL-05-ROLLBACK
+- أرقام مميزة (Silver/Gold/Platinum) → `ApprovalLevelRequired = BackOffice` + وثيقة دفع
+- UI: **Telecom Hub** (tile + wizard)، **Customer 360**، **Customer List**، **Back Office KPIs** (`GetChangeNumberKpis`)
+- صلاحيات: `telecom.line.change_number_request` / `_approve` / `change_number`
 
 ### 2) CBS / HLR
 
-- Directory sync mock فقط
-- **لا** orchestration MNP كامل
+- تفعيل كامل عبر `TelecomActivationWorkflow.ApplyChangeNumberAsync` (ديمو)
+- Directory/SMS mock عند الإكمال
 
 ### 3) الفجوات
 
-- Blueprint change number ≠ portability — كلاهما غير مكتمل
-- لا premium number pricing
+- **MNP** (نقل مشغّل / Port-In/Out) — مؤجّل
+- تسعير مميز تلقائي من كتالوج (حالياً إدخال يدوي + BO)
 
 ### 4) Roadmap
 
@@ -298,28 +307,25 @@
 
 ## B.8 — إنهاء وإلغاء الخط (Termination)
 
-**نسبة التغطية: 20%** | **الحالة: جزئي ضعيف**
+**نسبة التغطية: ~75%** | **الحالة: تشغيلي (ديمو داخلي)**
 
 ### 1) الوضع الحالي
 
-- `SubscriberProfile.Terminate()` → `SubscriberOperationalStatus.Terminated`
-- `MsisdnAsset` → Quarantined/Available transitions في domain
-- **لا** `TelecomOperationKind.Termination`
-- **لا** CBS deactivate + HLR delete subscriber
+- `TelecomOperationKind.Termination` (7) + ترقيم **TRM-**
+- `TerminationEligibilityChecker` (VAL-10: طوعي + retention، ديون، عمليات مفتوحة، BO لـ Fraud/Regulatory/Collections)
+- `ApplyTerminationAsync` + `RevertTerminationAsync` + `TerminationCompletionService`
+- CBS: `CbsGenerateFinalBill` (ديمو) | HLR: `HlrDeactivateSubscriber`
+- UI: **Telecom Hub**، **Customer 360**، **Customer List**، **Back Office KPIs** (`GetTerminationKpis`)
 
-### 2) CBS / HLR
+### 2) الفجوات المتبقية
 
-- **غائب** — لا `HlrDeactivateSubscriber` orchestration
+- لا dunning/MNP؛ deposit refund chain محدود (ديمو)
+- اختبارات integration workflow كاملة (مثل CNR end-to-end)
 
-### 3) الفجوات
+### 3) Roadmap
 
-- لا voluntary vs involuntary termination paths
-- لا final bill / deposit refund chain
-
-### 4) Roadmap
-
-| **Quick Win** | `Termination` operation kind + CBS reverse + HLR deactivate |
-| **Medium** | UI wizard + regulatory retention period |
+| **Medium** | اختبارات workflow + deposit refund حقيقي |
+| **Long** | فترة حجز تنظيمي + involuntary automation |
 
 ---
 
@@ -352,15 +358,16 @@
 
 ## B.10 — تفعيل العروض وباقات VAS (Services & Subscription)
 
-**نسبة التغطية: 60%** | **الحالة: جزئي قوي**
+**نسبة التغطية: ~78%** | **الحالة: جزئي قوي**
 
 ### 1) الوضع الحالي
 
 - `ProductOffering` + `ProductOfferingComponent` + `PricePlan`
-- `TelecomValueAddedService`, `SubscriberActiveService`
-- `ToggleSubscriberVasService.cs` → `ServiceModification` operation
-- `HlrVasProvisioningService.cs` (mock)
-- UI: VasCatalogList, Customer360 addpackage wizard
+- `TelecomSubscription.ProductOfferingId` + `OfferSubscriptionEligibilityChecker` (VAL-11)
+- `Migration` (MGR-) + `CbsChangePrimaryOffer` + `MigrationCompletionService` + compensator rollback
+- `ToggleSubscriberVasService.cs` → `ServiceModification` + VAL-11 + audit
+- `GetOfferSubscriptionKpis` + Back Office panel
+- UI: VasCatalogList, Customer360/Hub migrate + addpackage, ProductCatalog
 
 ### 2) CBS / HLR
 
@@ -550,7 +557,7 @@
 | 3 | تغيير نوع الخط | 40% | جزئي ضعيف | Medium |
 | 4 | نقل الملكية | 68% | جزئي قوي | Medium |
 | 5 | الالتزامات | 15% | حد أدنى | Long |
-| 6 | تبديل شريحة | 65% | جزئي قوي | Quick |
+| 6 | تبديل شريحة | ~90% | جاهز ديمو | OTP/eSIM (Long) |
 | 7 | تغيير الرقم | 25% | جزئي ضعيف | Long |
 | 8 | إنهاء الخط | 20% | جزئي ضعيف | Quick |
 | 9 | الحظر المؤقت | 25% | جزئي ضعيف | Quick |
@@ -679,8 +686,8 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 | 7 | Transfer of Ownership | 68% |
 | 8 | Suspension & Barring | 25% |
 | 9 | Reconnect / Reactivation | 20% |
-| 10 | Service Termination | 20% |
-| 11 | Product Catalog & Subscription | 65% |
+| 10 | Service Termination | ~75% |
+| 11 | Product Catalog & Subscription | ~78% |
 | 12 | Recharge, Voucher & Payment | 35% |
 | 13 | Billing Inquiry & Dispute | 25% |
 | 14 | Device Sales & Installment | 5% |
@@ -734,7 +741,7 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 
 1. `Suspension` + `Reconnect` + `Termination` كـ `TelecomOperationKind` جديدة
 2. SLA fields على `TelecomTechnicalTicket` (DueAtUtc, Breached)
-3. Lost/Stolen → quarantine on SimSwap
+3. ~~Lost/Stolen → quarantine on SimSwap~~ ✅ (S1–S4)
 4. Consent flag على Customer
 
 ## Medium (quarter) — رفع ~10–15%

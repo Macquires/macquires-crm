@@ -5,6 +5,7 @@ using Application.Common.Extensions;
 using Application.Common.Integrations;
 using Application.Common.Security;
 using Application.Common.Telecom;
+using Application.Common.Telecom.SellingLine;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -47,19 +48,22 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
     private readonly IQueryContext _query;
     private readonly IOperatorContext _operator;
     private readonly IPermissionEvaluator _permissions;
+    private readonly ISellingLineEligibilityChecker _sellingLineEligibility;
 
     public ConfirmTelecomOperationRequestHandler(
         ITelecomActivationWorkflow workflow,
         IUserAuditService audit,
         IQueryContext query,
         IOperatorContext operatorContext,
-        IPermissionEvaluator permissions)
+        IPermissionEvaluator permissions,
+        ISellingLineEligibilityChecker sellingLineEligibility)
     {
         _workflow = workflow;
         _audit = audit;
         _query = query;
         _operator = operatorContext;
         _permissions = permissions;
+        _sellingLineEligibility = sellingLineEligibility;
     }
 
     public async Task<ConfirmTelecomOperationRequestResult> Handle(
@@ -71,7 +75,9 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
             .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == request.Id, cancellationToken)
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
-        await EnsurePermissionForKindAsync(operation.Kind, cancellationToken);
+        await EnsurePermissionAsync(operation, cancellationToken);
+
+        await _sellingLineEligibility.ValidateForConfirmAsync(operation, cancellationToken);
 
         var result = await _workflow.ConfirmActivationAsync(request.Id, request.UpdatedById, cancellationToken);
 
@@ -83,9 +89,17 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
                 ActionType = UserAuditActionTypes.TelecomOperationConfirmed,
                 EntityType = nameof(TelecomOperationRequest),
                 EntityId = request.Id,
-                SummaryAr = operation.Kind == TelecomOperationKind.TakeOver
-                    ? $"اعتماد نقل ملكية {msisdn} — CBS/HLR"
-                    : $"تأكيد {operation.Kind} للخط {msisdn}",
+                SummaryAr = operation.Kind switch
+                {
+                    TelecomOperationKind.TakeOver => $"اعتماد نقل ملكية {msisdn} — CBS/HLR",
+                    TelecomOperationKind.SimSwap => $"اعتماد تبديل شريحة {msisdn} — CBS/HLR",
+                    TelecomOperationKind.ChangeGsmType => $"تأكيد تحويل نوع الخط CGT {msisdn} — CBS/HLR",
+                    TelecomOperationKind.NumberPortability => $"اعتماد تغيير رقم CNR {msisdn} — CBS/HLR",
+                    TelecomOperationKind.Termination => $"اعتماد إنهاء خط TRM {msisdn} — CBS/HLR",
+                    TelecomOperationKind.TemporarySuspension => $"اعتماد حظر خط SUS {msisdn} — CBS/HLR",
+                    TelecomOperationKind.Reconnect => $"اعتماد إعادة تفعيل RCN {msisdn} — CBS/HLR",
+                    _ => $"تأكيد {operation.Kind} للخط {msisdn}",
+                },
                 Payload = new { request.Id, operation.Kind, msisdn, result.IdempotentReplay, source = "Customer360" },
             },
             cancellationToken);
@@ -117,17 +131,115 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
         };
     }
 
-    private async Task EnsurePermissionForKindAsync(TelecomOperationKind kind, CancellationToken cancellationToken)
+    private async Task EnsurePermissionAsync(TelecomOperationRequest operation, CancellationToken cancellationToken)
     {
         if (!_operator.IsAuthenticated || string.IsNullOrEmpty(_operator.UserId))
         {
             throw new BusinessRuleViolationException("يجب تسجيل الدخول لتنفيذ هذه العملية.");
         }
 
-        var key = TelecomOperationPermissionResolver.PermissionKeyForKind(kind);
-        if (!await _permissions.HasPermissionAsync(_operator.UserId, key, cancellationToken))
+        foreach (var key in ResolvePermissionKeys(operation))
         {
-            throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
+            if (await _permissions.HasPermissionAsync(_operator.UserId, key, cancellationToken))
+            {
+                return;
+            }
         }
+
+        throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
+    }
+
+    private static IEnumerable<string> ResolvePermissionKeys(TelecomOperationRequest operation)
+    {
+        if (operation.Kind == TelecomOperationKind.SimSwap && operation.IsLostOrStolenReport)
+        {
+            yield return PermissionCatalog.TelecomLineSimSwapApprove;
+            yield return PermissionCatalog.TelecomLineSimSwap;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.SimSwap)
+        {
+            yield return PermissionCatalog.TelecomLineSimSwap;
+            yield return PermissionCatalog.TelecomLineSimSwapApprove;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.NumberPortability
+            && string.Equals(operation.ApprovalLevelRequired, "BackOffice", StringComparison.Ordinal))
+        {
+            yield return PermissionCatalog.TelecomLineChangeNumberApprove;
+            yield return PermissionCatalog.TelecomLineChangeNumber;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.NumberPortability)
+        {
+            yield return PermissionCatalog.TelecomLineChangeNumber;
+            yield return PermissionCatalog.TelecomLineChangeNumberApprove;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.Termination
+            && string.Equals(operation.ApprovalLevelRequired, "BackOffice", StringComparison.Ordinal))
+        {
+            yield return PermissionCatalog.TelecomLineTerminationApprove;
+            yield return PermissionCatalog.TelecomLineTermination;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.Termination)
+        {
+            yield return PermissionCatalog.TelecomLineTermination;
+            yield return PermissionCatalog.TelecomLineTerminationApprove;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.TemporarySuspension
+            && string.Equals(operation.ApprovalLevelRequired, "BackOffice", StringComparison.Ordinal))
+        {
+            yield return PermissionCatalog.TelecomLineSuspensionApprove;
+            yield return PermissionCatalog.TelecomLineSuspension;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.TemporarySuspension)
+        {
+            yield return PermissionCatalog.TelecomLineSuspension;
+            yield return PermissionCatalog.TelecomLineSuspensionApprove;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.Reconnect
+            && string.Equals(operation.ApprovalLevelRequired, "BackOffice", StringComparison.Ordinal))
+        {
+            yield return PermissionCatalog.TelecomLineReconnectApprove;
+            yield return PermissionCatalog.TelecomLineReconnect;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.Reconnect)
+        {
+            yield return PermissionCatalog.TelecomLineReconnect;
+            yield return PermissionCatalog.TelecomLineReconnectApprove;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.DepositRefundSettlement
+            && string.Equals(operation.ApprovalLevelRequired, "BackOffice", StringComparison.Ordinal))
+        {
+            yield return PermissionCatalog.TelecomLineRefundApprove;
+            yield return PermissionCatalog.TelecomLineRefund;
+            yield break;
+        }
+
+        if (operation.Kind == TelecomOperationKind.DepositRefundSettlement)
+        {
+            yield return PermissionCatalog.TelecomLineRefund;
+            yield return PermissionCatalog.TelecomLineRefundApprove;
+            yield break;
+        }
+
+        yield return TelecomOperationPermissionResolver.PermissionKeyForKind(operation.Kind);
     }
 }

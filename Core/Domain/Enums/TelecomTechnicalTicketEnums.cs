@@ -9,6 +9,10 @@ public enum TechnicalTicketCategory
     OwnershipTransfer = 3,
     LineActivation = 4,
     VasActivation = 5,
+    FraudPayment = 6,
+    ChangeGsmType = 7,
+    DeviceSale = 8,
+    Collections = 9,
 }
 
 public enum TechnicalTicketIssueType

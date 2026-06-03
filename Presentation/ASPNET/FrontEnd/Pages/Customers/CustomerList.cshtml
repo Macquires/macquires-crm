@@ -278,6 +278,8 @@
                                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                                                     <li v-if="gridAccess.canMigrateLine"><a class="dropdown-item" href="#" v-on:click.prevent="openMigrateModal(sub)">ترحيل الباقة</a></li>
                                                                     <li v-if="gridAccess.canSimSwapLine"><a class="dropdown-item" href="#" v-on:click.prevent="openSimSwapModal(sub)">تبديل الشريحة</a></li>
+                                                                    <li v-if="gridAccess.canChangeNumberLine"><a class="dropdown-item" href="#" v-on:click.prevent="openChangeNumberModal(sub)">تغيير رقم الخط</a></li>
+                                                                    <li v-if="gridAccess.canTerminateLine && !isLineTerminated(sub)"><a class="dropdown-item text-danger" href="#" v-on:click.prevent="openTerminationModal(sub)">إنهاء الخط (TRM)</a></li>
                                                                     <li v-if="gridAccess.canTakeOverLine"><a class="dropdown-item" href="#" v-on:click.prevent="openTakeOverModal(sub)">نقل الملكية</a></li>
                                                                 </ul>
                                                             </div>
@@ -577,6 +579,99 @@
         </div>
     </div>
 
+    <div class="modal fade" id="C360TerminationModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">إنهاء الخط (TRM)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">الخط: {{ lineActionModal.sub?.msisdn }}</p>
+                    <label class="form-label small fw-semibold">نوع الإنهاء <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.trmTerminationType" v-on:change="onTerminationTypeChangeList" :disabled="lineActionModal.busy">
+                        <option value="Voluntary">طوعي</option>
+                        <option value="Collections">تحصيل</option>
+                        <option value="Regulatory">تنظيمي</option>
+                        <option value="Fraud">احتيال</option>
+                    </select>
+                    <label class="form-label small fw-semibold">سبب الإنهاء <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.trmTerminationReason" :disabled="lineActionModal.busy" placeholder="طلب عميل، قرار إداري…" />
+                    <div v-if="lineActionModal.trmTerminationType === 'Voluntary'" class="mb-2">
+                        <label class="form-label small fw-semibold">نتيجة عرض الاحتفاظ <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" v-model="lineActionModal.trmRetentionOfferOutcome" :disabled="lineActionModal.busy">
+                            <option value="Accepted">قبل العرض</option>
+                            <option value="Declined">رفض العرض</option>
+                            <option value="NotOffered">لم يُعرض</option>
+                        </select>
+                    </div>
+                    <div v-if="lineActionModal.trmRequiresBackOffice" class="alert alert-warning py-2 small mb-2">يتطلب اعتماد الباك أوفيس.</div>
+                    <div v-if="lineActionModal.trmRequiresBackOffice" class="mb-0">
+                        <label class="form-label small fw-semibold">وثيقة / قرار <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onTerminationIdentityFileChange" :disabled="lineActionModal.busy" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitTermination">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ lineActionModal.trmRequiresBackOffice ? 'إرسال للباك أوفيس' : 'تأكيد الإنهاء' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360ChangeNumberModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تغيير رقم الخط (CNR)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">الرقم الحالي: {{ lineActionModal.sub?.msisdn }}</p>
+                    <div v-if="lineActionModal.cnPoolBusy" class="text-muted small py-2"><span class="spinner-border spinner-border-sm me-1"></span>جاري تحميل المخزون…</div>
+                    <template v-else>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">الرقم الجديد <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" v-model="lineActionModal.cnTargetMsisdnAssetId" v-on:change="onChangeNumberTargetPickedList" :disabled="lineActionModal.busy">
+                                <option value="">— اختر —</option>
+                                <option v-for="a in lineActionModal.cnPoolNumbers" :key="a.id || a.Id" :value="a.id || a.Id">
+                                    {{ a.msisdn || a.Msisdn }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">سبب التغيير <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" v-model="lineActionModal.cnNumberChangeReason" :disabled="lineActionModal.busy">
+                                <option value="">—</option>
+                                <option value="CustomerRequest">طلب عميل</option>
+                                <option value="Damaged">رقم تالف</option>
+                                <option value="PremiumUpgrade">ترقية لرقم مميز</option>
+                                <option value="Other">سبب آخر</option>
+                            </select>
+                        </div>
+                        <div v-if="lineActionModal.cnRequiresBackOffice" class="alert alert-warning py-2 small mb-2">الرقم مميز — يتطلب اعتماد الباك أوفيس.</div>
+                        <div v-if="lineActionModal.cnRequiresBackOffice" class="mb-2">
+                            <label class="form-label small">رسوم الرقم المميز (ل.س)</label>
+                            <input type="number" min="0" step="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.cnPremiumFeeAmount" :disabled="lineActionModal.busy" />
+                            <label class="form-label small fw-semibold">إيصال الدفع <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onChangeNumberPaymentFileChange" :disabled="lineActionModal.busy" />
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitChangeNumber">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ lineActionModal.cnRequiresBackOffice ? 'إرسال للباك أوفيس' : 'تأكيد تغيير الرقم' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="C360SimSwapModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -586,13 +681,32 @@
                 </div>
                 <div class="modal-body">
                     <p class="small text-muted mb-2" dir="ltr">{{ lineActionModal.sub?.msisdn }} · ICCID حالي: {{ lineActionModal.sub?.iccid || '—' }}</p>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">سبب التبديل <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" v-model="lineActionModal.simReplacementReason" :disabled="lineActionModal.busy">
+                            <option value="">— اختر —</option>
+                            <option value="Damaged">تالف / تالفة</option>
+                            <option value="Upgrade5G">ترقية (5G)</option>
+                            <option value="Other">سبب آخر</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="simLostStolenList" v-model="lineActionModal.simLostOrStolen" :disabled="lineActionModal.busy" />
+                        <label class="form-check-label small" for="simLostStolenList">بلاغ مفقودة / مسروقة</label>
+                    </div>
+                    <p v-if="lineActionModal.simLostOrStolen" class="small text-warning mb-2">يتطلب هوية واعتماد الباك أوفيس — لن يُنفَّذ التبديل فوراً من هنا.</p>
+                    <div v-if="lineActionModal.simLostOrStolen" class="mb-2">
+                        <label class="form-label small fw-semibold">إقرار / هوية <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onSimSwapIdentityFileChange" :disabled="lineActionModal.busy" />
+                    </div>
                     <label class="form-label small">ICCID الجديد (19 رقم)</label>
                     <input type="text" class="form-control font-monospace" dir="ltr" maxlength="19" v-model="lineActionModal.simIccid" :disabled="lineActionModal.busy" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
                     <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitSimSwap">
-                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>تأكيد التبديل
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ lineActionModal.simLostOrStolen ? 'إرسال للباك أوفيس' : 'تأكيد التبديل' }}
                     </button>
                 </div>
             </div>
@@ -624,6 +738,21 @@
                             {{ c.name }} · {{ c.phoneNumber || '—' }}
                         </li>
                     </ul>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">سبب النقل <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" v-model="lineActionModal.takeoverTransferReason" maxlength="256" placeholder="بيع، وراثة…" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">سياسة التأمين</label>
+                            <select class="form-select form-select-sm" v-model.number="lineActionModal.takeoverDepositPolicy">
+                                <option :value="1">ينتقل للمالك الجديد</option>
+                                <option :value="0">يبقى لدى المالك السابق</option>
+                                <option :value="2">مصادرة</option>
+                                <option :value="3">استرداد</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="mb-2">
                         <label class="form-label small fw-semibold">هوية المالك الجديد <span class="text-danger">*</span></label>
                         <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp"

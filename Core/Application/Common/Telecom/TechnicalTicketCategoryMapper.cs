@@ -11,6 +11,7 @@ public static class TechnicalTicketCategoryMapper
         TelecomOperationKind.TakeOver => TechnicalTicketCategory.OwnershipTransfer,
         TelecomOperationKind.NewActivation => TechnicalTicketCategory.LineActivation,
         TelecomOperationKind.ServiceModification => TechnicalTicketCategory.VasActivation,
+        TelecomOperationKind.ChangeGsmType => TechnicalTicketCategory.ChangeGsmType,
         _ => TechnicalTicketCategory.Complaint,
     };
 
@@ -21,6 +22,7 @@ public static class TechnicalTicketCategoryMapper
         TechnicalTicketCategory.OwnershipTransfer => TechnicalTicketIssueType.Provisioning,
         TechnicalTicketCategory.LineActivation => TechnicalTicketIssueType.Provisioning,
         TechnicalTicketCategory.VasActivation => TechnicalTicketIssueType.Provisioning,
+        TechnicalTicketCategory.FraudPayment => TechnicalTicketIssueType.Billing,
         _ => TechnicalTicketIssueType.Network,
     };
 
@@ -28,6 +30,7 @@ public static class TechnicalTicketCategoryMapper
     {
         TechnicalTicketCategory.SimSwap => TechnicalTicketPriority.High,
         TechnicalTicketCategory.LineActivation => TechnicalTicketPriority.High,
+        TechnicalTicketCategory.FraudPayment => TechnicalTicketPriority.Critical,
         TechnicalTicketCategory.OwnershipTransfer => TechnicalTicketPriority.Medium,
         _ => TechnicalTicketPriority.Medium,
     };
@@ -39,6 +42,7 @@ public static class TechnicalTicketCategoryMapper
         TechnicalTicketCategory.OwnershipTransfer => "نقل ملكية",
         TechnicalTicketCategory.LineActivation => "تفعيل خط",
         TechnicalTicketCategory.VasActivation => "إضافة خدمة / VAS",
+        TechnicalTicketCategory.FraudPayment => "احتيال شحن / دفع",
         _ => "شكوى",
     };
 }

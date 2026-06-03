@@ -18,6 +18,12 @@ public class TelecomOperationAuditLogConfiguration : BaseEntityConfiguration<Tel
         builder.Property(x => x.ActorUserId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.Note).HasMaxLength(DescriptionConsts.MaxLength);
         builder.Property(x => x.OccurredAtUtc).IsRequired();
+        builder.Property(x => x.ActivationChannel).HasConversion<int>().IsRequired(false);
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
+        builder.Property(x => x.DealerCode).HasMaxLength(64).IsRequired(false);
+        builder.Property(x => x.OverrideReasonCode).HasMaxLength(64).IsRequired(false);
+        builder.Property(x => x.CorrelationId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
+        builder.Property(x => x.FieldChangesJson).IsRequired(false);
 
         builder.HasIndex(x => x.TelecomOperationRequestId);
         builder.HasIndex(x => x.OccurredAtUtc);

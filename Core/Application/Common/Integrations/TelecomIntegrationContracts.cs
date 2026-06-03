@@ -17,7 +17,9 @@ public sealed record BillingProvisionRequest(
     string? SubscriptionTypeCode = null,
     string? Imsi = null,
     string? Iccid = null,
-    TelecomBillingProvisionPhase Phase = TelecomBillingProvisionPhase.Provision);
+    TelecomBillingProvisionPhase Phase = TelecomBillingProvisionPhase.Provision,
+    string? PriorIccid = null,
+    string? PriorMsisdn = null);
 
 public sealed record BillingProvisionResult(
     bool Success,
@@ -26,10 +28,31 @@ public sealed record BillingProvisionResult(
     bool IdempotentReplay = false);
 
 /// <summary>Huawei CBS / external billing bridge (implemented in Infrastructure).</summary>
+public sealed record BillingRechargeRequest(
+    string PaymentTransactionId,
+    string PaymentNumber,
+    string Msisdn,
+    decimal Amount,
+    string? CorrelationId);
+
+public sealed record BillingRechargeResult(
+    bool Success,
+    string Message,
+    decimal? NewBalance = null);
+
+public sealed record BillingReverseRechargeRequest(
+    string PaymentTransactionId,
+    string PaymentNumber,
+    string Msisdn,
+    decimal Amount,
+    string? CorrelationId);
+
 public interface IBillingSystemIntegration
 {
     Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default);
     Task<BillingProvisionResult> ReverseProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default);
+    Task<BillingRechargeResult> RechargeAsync(BillingRechargeRequest request, CancellationToken cancellationToken = default);
+    Task<BillingRechargeResult> ReverseRechargeAsync(BillingReverseRechargeRequest request, CancellationToken cancellationToken = default);
     Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default);
 }
 

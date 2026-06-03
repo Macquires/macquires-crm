@@ -832,11 +832,381 @@
         }
     }
 
+    function canReversePayment() {
+        const roles = StorageManager.getUserRoles?.() || [];
+        return roles.some((r) => ['TelecomManagement', 'TelecomBackOffice', 'TelecomAdmin'].includes(r));
+    }
+
+    const paymentStatusLabel = (s) => {
+        const map = { 0: 'مسودة', 1: 'بوابة', 2: 'مكتمل', 3: 'فاشل', 4: 'معكوس' };
+        return map[s] ?? String(s);
+    };
+
+    async function loadPaymentServicesPanel() {
+        const tbody = document.getElementById('boPaymentTxBody');
+        try {
+            const kpiRes = await AxiosManager.get('/Telecom/GetPaymentServicesKpis', {});
+            const k = kpiRes?.data?.content ?? kpiRes?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('payKpiAmount', `${(pick(k, 'totalRechargedAmountToday', 'TotalRechargedAmountToday') ?? 0).toLocaleString('ar-SY')} ل.س`);
+            set('payKpiCompleted', pick(k, 'completedCountToday', 'CompletedCountToday'));
+            set('payKpiFailed', pick(k, 'failedCountToday', 'FailedCountToday'));
+            set('payKpiFailRate', `${pick(k, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('payKpiSla', `${pick(k, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('payKpiReversed', pick(k, 'reversedCountToday', 'ReversedCountToday'));
+            const refreshEl = document.getElementById('boPaymentKpiRefresh');
+            if (refreshEl) refreshEl.textContent = new Date().toLocaleString('ar-SY');
+
+            const listRes = await AxiosManager.get('/Telecom/GetPaymentTransactionList?take=25', {});
+            const items = listRes?.data?.content?.items ?? listRes?.data?.Content?.Items ?? [];
+            if (!tbody) return;
+            if (!items.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">لا معاملات</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items
+                .map((row) => {
+                    const id = row.id ?? row.Id;
+                    const canRev = row.canReverse ?? row.CanReverse;
+                    const btn =
+                        canRev && canReversePayment()
+                            ? `<button type="button" class="btn btn-outline-danger btn-sm py-0 btn-pay-reverse" data-id="${id}">عكس</button>`
+                            : '';
+                    return `<tr>
+                        <td class="font-monospace small">${row.number ?? row.Number}</td>
+                        <td dir="ltr" class="small">${row.msisdn ?? row.Msisdn ?? '—'}</td>
+                        <td>${(row.amount ?? row.Amount ?? 0).toLocaleString('ar-SY')}</td>
+                        <td>${paymentStatusLabel(row.status ?? row.Status)}</td>
+                        <td>${btn}</td>
+                    </tr>`;
+                })
+                .join('');
+            tbody.querySelectorAll('.btn-pay-reverse').forEach((btn) => {
+                btn.addEventListener('click', () => reversePayment(btn.getAttribute('data-id')));
+            });
+        } catch (e) {
+            console.warn('Payment services panel', e);
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">تعذّر التحميل</td></tr>';
+        }
+    }
+
+    async function reversePayment(paymentId) {
+        if (!paymentId) return;
+        const { value: reason } = await Swal.fire({
+            title: 'عكس العملية المالية',
+            input: 'text',
+            inputPlaceholder: 'سبب العكس (مثال: خطأ موظف)',
+            showCancelButton: true,
+            confirmButtonText: 'تأكيد العكس',
+            confirmButtonColor: '#c8102e',
+            inputValidator: (v) => (!v || !String(v).trim() ? 'السبب مطلوب' : undefined),
+        });
+        if (!reason) return;
+        try {
+            const res = await AxiosManager.post('/Telecom/ReversePaymentTransaction', {
+                paymentId,
+                reasonCode: String(reason).trim(),
+                reversedById: StorageManager.getUserId(),
+            });
+            const body = res?.data?.content ?? res?.data?.Content;
+            await loadPaymentServicesPanel();
+            Swal.fire({ icon: 'success', title: body?.messageAr || body?.MessageAr || 'تم العكس' });
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: e?.response?.data?.message || e?.message || 'تعذّر العكس' });
+        }
+    }
+
+    async function loadRefundKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetRefundKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('rfdKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('rfdKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('rfdKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('rfdKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            const amt = pick(c, 'settledAmountToday', 'SettledAmountToday');
+            set('rfdKpiSettledAmount', amt != null && amt !== '' ? `${amt} ل.س` : '—');
+            set('rfdKpiDual', pick(c, 'dualApprovalToday', 'DualApprovalToday'));
+            set('rfdKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('rfdKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const rejections = c.rejectionReasons ?? c.RejectionReasons ?? [];
+            set(
+                'rfdKpiRejections',
+                rejections.length
+                    ? rejections.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
+                    : '—'
+            );
+        } catch (e) {
+            console.warn('Refund KPIs', e);
+        }
+    }
+
+    async function loadSuspensionKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetSuspensionKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('susKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('susKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('susKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('susKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            set('susKpiFraud', pick(c, 'fraudToday', 'FraudToday'));
+            set('susKpiAuto', pick(c, 'autoReconnectEnabledToday', 'AutoReconnectEnabledToday'));
+            set('susKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('susKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            set(
+                'susKpiReasons',
+                reasons.length
+                    ? reasons.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
+                    : '—'
+            );
+        } catch (e) {
+            console.warn('Suspension KPIs', e);
+        }
+    }
+
+    async function loadReconnectKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetReconnectKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('rcnKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('rcnKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('rcnKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('rcnKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            set('rcnKpiPayment', pick(c, 'paymentClearedToday', 'PaymentClearedToday'));
+            set('rcnKpiFraud', pick(c, 'fraudClearanceToday', 'FraudClearanceToday'));
+            set('rcnKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('rcnKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            set(
+                'rcnKpiReasons',
+                reasons.length
+                    ? reasons.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
+                    : '—'
+            );
+        } catch (e) {
+            console.warn('Reconnect KPIs', e);
+        }
+    }
+
+    async function loadTerminationKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetTerminationKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('trmKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('trmKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('trmKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('trmKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            set('trmKpiVoluntary', pick(c, 'voluntaryToday', 'VoluntaryToday'));
+            const bills = pick(c, 'finalBillTotalToday', 'FinalBillTotalToday');
+            set('trmKpiFinalBills', bills != null && bills !== '' ? bills : '—');
+            set('trmKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('trmKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            const txt = reasons.length
+                ? reasons
+                      .map((r) => {
+                          const bo = r.backOfficeCount ?? r.BackOfficeCount ?? 0;
+                          const suffix = bo > 0 ? ` · ${bo} BO` : '';
+                          return `${r.reason ?? r.Reason} (${r.count ?? r.Count})${suffix}`;
+                      })
+                      .join(' · ')
+                : '—';
+            set('trmKpiReasons', txt);
+        } catch (e) {
+            console.warn('Termination KPIs', e);
+        }
+    }
+
+    async function loadOfferSubscriptionKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetOfferSubscriptionKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('osKpiMgrTotal', pick(c, 'migrationTotalToday', 'MigrationTotalToday'));
+            set('osKpiMgrCompleted', pick(c, 'migrationCompletedToday', 'MigrationCompletedToday'));
+            set('osKpiMgrFailed', pick(c, 'migrationFailedToday', 'MigrationFailedToday'));
+            set('osKpiVasActivate', pick(c, 'vasActivateToday', 'VasActivateToday'));
+            set('osKpiVasDeactivate', pick(c, 'vasDeactivateToday', 'VasDeactivateToday'));
+            set('osKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('osKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const top = c.topMigratedOffers ?? c.TopMigratedOffers ?? [];
+            const txt = top.length
+                ? top.map((r) => `${r.label ?? r.Label} (${r.count ?? r.Count})`).join(' · ')
+                : '—';
+            set('osKpiTopOffers', txt);
+        } catch (e) {
+            console.warn('Offer subscription KPIs', e);
+        }
+    }
+
+    async function loadChangeNumberKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetChangeNumberKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('cnrKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('cnrKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('cnrKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('cnrKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            set('cnrKpiPremium', pick(c, 'premiumToday', 'PremiumToday'));
+            const fees = pick(c, 'premiumFeeTotalToday', 'PremiumFeeTotalToday');
+            set('cnrKpiPremiumFees', fees != null && fees !== '' ? fees : '—');
+            set('cnrKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('cnrKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            const txt = reasons.length
+                ? reasons
+                      .map((r) => {
+                          const prem = r.premiumCount ?? r.PremiumCount ?? 0;
+                          const suffix = prem > 0 ? ` · ${prem} مميز` : '';
+                          return `${r.reason ?? r.Reason} (${r.count ?? r.Count})${suffix}`;
+                      })
+                      .join(' · ')
+                : '—';
+            set('cnrKpiReasons', txt);
+        } catch (e) {
+            console.warn('ChangeNumber KPIs', e);
+        }
+    }
+
+    async function loadSimSwapKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetSimSwapKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('simKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('simKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('simKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('simKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            set('simKpiLost', pick(c, 'lostOrStolenToday', 'LostOrStolenToday'));
+            set('simKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('simKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            const txt = reasons.length
+                ? reasons
+                      .map((r) => {
+                          const lost = r.lostOrStolenCount ?? r.LostOrStolenCount ?? 0;
+                          const suffix = lost > 0 ? ` · ${lost} سرقة/ضياع` : '';
+                          return `${r.reason ?? r.Reason} (${r.count ?? r.Count})${suffix}`;
+                      })
+                      .join(' · ')
+                : '—';
+            set('simKpiReasons', txt);
+        } catch (e) {
+            console.warn('SimSwap KPIs', e);
+        }
+    }
+
+    async function loadTakeOverKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetTakeOverOwnershipKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('tkoKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('tkoKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('tkoKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('tkoKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            set('tkoKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('tkoKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            const txt = reasons.length
+                ? reasons.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
+                : '—';
+            set('tkoKpiReasons', txt);
+        } catch (e) {
+            console.warn('TakeOver KPIs', e);
+        }
+    }
+
+    async function loadChangeGsmKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetChangeGsmTypeKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('cgtKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('cgtKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('cgtKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('cgtKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            const reasons = c.topReasons ?? c.TopReasons ?? [];
+            const txt = reasons.length
+                ? reasons.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
+                : '—';
+            set('cgtKpiReasons', txt);
+        } catch (e) {
+            console.warn('ChangeGsm KPIs', e);
+        }
+    }
+
+    async function loadSellingLineKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetSellingLineActivationKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('slKpiVolume', pick(c, 'totalVolume', 'TotalVolume'));
+            set('slKpiCompletion', `${pick(c, 'completionRatePercent', 'CompletionRatePercent') ?? 0}%`);
+            set('slKpiFallout', `${pick(c, 'falloutRatePercent', 'FalloutRatePercent') ?? 0}%`);
+            set('slKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('slKpiAht', pick(c, 'avgHandlingTimeMinutes', 'AvgHandlingTimeMinutes'));
+            set('slKpiOverride', pick(c, 'manualOverrideCount', 'ManualOverrideCount'));
+        } catch (e) {
+            console.warn('Selling line KPIs', e);
+        }
+    }
+
     async function loadDashboardData(showLoader = true) {
         if (showLoader) setLoading(true);
         document.getElementById('bo-boot-error')?.classList.add('d-none');
 
         try {
+            loadChangeGsmKpis();
+            loadChangeNumberKpis();
+            loadOfferSubscriptionKpis();
+            loadTerminationKpis();
+            loadRefundKpis();
+            loadSuspensionKpis();
+            loadReconnectKpis();
+            loadSimSwapKpis();
+            loadTakeOverKpis();
+            loadSellingLineKpis();
+            loadPaymentServicesPanel();
             const ticketsPromise = loadTickets().catch((e) => {
                 tickets = [];
                 ticketPreview = [];

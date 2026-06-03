@@ -134,6 +134,218 @@
         </div>
     </div>
 
+    <div class="telecom-bento-card mb-4" id="boPaymentServicesPanel">
+        <div class="card-header bg-white border-0 py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-cash-coin me-2"></i>الأداء المالي (Payment Services)</h2>
+            <span class="small text-muted" id="boPaymentKpiRefresh">—</span>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small mb-3" id="boPaymentKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">مشحون اليوم</span><strong id="payKpiAmount">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">مكتمل</span><strong id="payKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فشل</span><strong id="payKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="payKpiFailRate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤2د</span><strong id="payKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">معكوس</span><strong id="payKpiReversed">—</strong></div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>PAY-</th>
+                            <th>الخط</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="boPaymentTxBody">
+                        <tr><td colspan="5" class="text-muted text-center py-3">جاري التحميل…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boChangeGsmKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-shuffle me-2"></i>أداء تحويل تقنيات الخطوط (CGT)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boChangeGsmKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="cgtKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="cgtKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="cgtKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="cgtKpiFailRate">—</strong></div>
+                <div class="col-md-4"><span class="text-muted d-block">أكثر الأسباب</span><strong id="cgtKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boChangeNumberKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-telephone-forward me-2"></i>تغيير رقم الخط (CNR)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boChangeNumberKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="cnrKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="cnrKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="cnrKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="cnrKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">مميز اليوم</span><strong id="cnrKpiPremium">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">رسوم مميز</span><strong id="cnrKpiPremiumFees">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤20د</span><strong id="cnrKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="cnrKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب التغيير</span><strong id="cnrKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boOfferSubscriptionKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-box-seam me-2"></i>تحليلات العروض والاشتراكات (MGR / VAS)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boOfferSubscriptionKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">ترحيل اليوم</span><strong id="osKpiMgrTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">MGR منجز</span><strong id="osKpiMgrCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">MGR فاشل</span><strong id="osKpiMgrFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">VAS تفعيل</span><strong id="osKpiVasActivate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">VAS إلغاء</span><strong id="osKpiVasDeactivate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="osKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل MGR</span><strong id="osKpiFailRate">—</strong></div>
+                <div class="col-md-10"><span class="text-muted d-block">أكثر الباقات ترحيلاً</span><strong id="osKpiTopOffers" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boTerminationKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-phone-vibrate me-2"></i>إنهاء الخط (TRM)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boTerminationKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="trmKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="trmKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="trmKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="trmKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">طوعي</span><strong id="trmKpiVoluntary">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فواتير نهائية</span><strong id="trmKpiFinalBills">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="trmKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="trmKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب الإنهاء</span><strong id="trmKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boSuspensionKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-slash-circle me-2"></i>حظر مؤقت (SUS)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="susKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="susKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="susKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="susKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">احتيال</span><strong id="susKpiFraud">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">إعادة تلقائية</span><strong id="susKpiAuto">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="susKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="susKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب الحظر</span><strong id="susKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boRefundKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-cash-coin me-2"></i>استرداد الأموال والتأمينات (RFD)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="rfdKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="rfdKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="rfdKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="rfdKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">مبالغ مستردة</span><strong id="rfdKpiSettledAmount">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">اعتماد مزدوج</span><strong id="rfdKpiDual">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤45د</span><strong id="rfdKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="rfdKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block">أسباب الرفض</span><strong id="rfdKpiRejections" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boReconnectKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-reception-4 me-2"></i>إعادة تفعيل (RCN)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="rcnKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="rcnKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="rcnKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="rcnKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">تسوية مالية</span><strong id="rcnKpiPayment">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">تسوية احتيال</span><strong id="rcnKpiFraud">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="rcnKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="rcnKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب إعادة التفعيل</span><strong id="rcnKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boSimSwapKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-sim me-2"></i>تحليلات وأداء تبديل الشرائح (SIM Swap)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boSimSwapKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="simKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="simKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="simKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="simKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">مفقودة/مسروقة</span><strong id="simKpiLost">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤20د</span><strong id="simKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="simKpiFailRate">—</strong></div>
+                <div class="col-md-10"><span class="text-muted d-block">أكثر أسباب التبديل</span><strong id="simKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boTakeOverKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-person-lines-fill me-2"></i>نقل الملكية (TKO)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boTakeOverKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="tkoKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="tkoKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="tkoKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="tkoKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="tkoKpiFailRate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="tkoKpiSla">—</strong></div>
+                <div class="col-12"><span class="text-muted d-block">أكثر أسباب النقل</span><strong id="tkoKpiReasons" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boSellingLineKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-phone-vibrate me-2"></i>مؤشرات تفعيل الخط (Selling Line)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small" id="boSellingLineKpiBody">
+                <div class="col-md-2"><span class="text-muted d-block">الحجم</span><strong id="slKpiVolume">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الإنجاز</span><strong id="slKpiCompletion">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">Fallout</span><strong id="slKpiFallout">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">SLA ≤5د</span><strong id="slKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">متوسط المعالجة (د)</span><strong id="slKpiAht">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">استثناءات يدوية</span><strong id="slKpiOverride">—</strong></div>
+            </div>
+        </div>
+    </div>
+
     <div class="telecom-bento-card mb-4">
         <div class="card-header bg-white border-0 py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>

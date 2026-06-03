@@ -496,6 +496,18 @@
                         <i class="bi bi-arrow-up-circle c360-action-icon" style="color:var(--sys-text-main)"></i>
                         <span class="small fw-semibold d-block">ترحيل باقة MGR</span>
                     </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.changeGsm }" :disabled="!can.changeGsm || state.isProvisioningInFlight" @@click="openProvisioningWizard('changeGsm')">
+                        <i class="bi bi-shuffle c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">تحويل نوع الخط CGT</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.changeNumber }" :disabled="!can.changeNumber || state.isProvisioningInFlight" @@click="openProvisioningWizard('changeNumber')">
+                        <i class="bi bi-telephone-forward c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">تغيير رقم الخط CNR</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.termination || selectedLineTerminated }" :disabled="!can.termination || selectedLineTerminated || state.isProvisioningInFlight" @@click="openProvisioningWizard('termination')">
+                        <i class="bi bi-phone-vibrate c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">إنهاء خط TRM</span>
+                    </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('activate')">
                         <i class="bi bi-reception-4 c360-action-icon" style="color:var(--sys-text-muted)"></i>
                         <span class="small fw-semibold d-block">تفعيل خط جديد</span>
@@ -792,6 +804,21 @@
                                 </li>
                             </ul>
                             <p v-if="state.wizard.takeoverTargetLabel" class="small text-success mb-0 mt-2">{{ state.wizard.takeoverTargetLabel }}</p>
+                            <div class="row g-2 mt-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">سبب النقل <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverTransferReason" maxlength="256" placeholder="بيع، وراثة، حكم قضائي…" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">سياسة التأمين / الإيداع</label>
+                                    <select class="form-select form-select-sm" v-model.number="state.wizard.takeoverDepositPolicy">
+                                        <option :value="1">ينتقل للمالك الجديد</option>
+                                        <option :value="0">يبقى لدى المالك السابق</option>
+                                        <option :value="2">مصادرة</option>
+                                        <option :value="3">استرداد للمالك السابق</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="mt-3">
                                 <label class="form-label small fw-semibold">هوية المالك الجديد <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -806,6 +833,79 @@
                                 <option v-for="o in state.wizard.migrationOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
                             </select>
                         </div>
+                        <div v-if="state.wizard.kind === 'termination'" class="mb-3">
+                            <p class="small text-muted mb-2">الخط: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
+                            <label class="form-label small fw-semibold">نوع الإنهاء <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.trmTerminationType" @@change="onTerminationTypeChange">
+                                <option value="Voluntary">طوعي</option>
+                                <option value="Collections">تحصيل</option>
+                                <option value="Regulatory">تنظيمي</option>
+                                <option value="Fraud">احتيال</option>
+                            </select>
+                            <label class="form-label small fw-semibold">سبب الإنهاء <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.trmTerminationReason" maxlength="256" placeholder="طلب عميل، قرار إداري…" />
+                            <div v-if="state.wizard.trmTerminationType === 'Voluntary'">
+                                <label class="form-label small fw-semibold">نتيجة عرض الاحتفاظ <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.trmRetentionOfferOutcome">
+                                    <option value="Accepted">قبل العرض</option>
+                                    <option value="Declined">رفض العرض</option>
+                                    <option value="NotOffered">لم يُعرض</option>
+                                </select>
+                            </div>
+                            <div v-if="state.wizard.trmRequiresBackOffice" class="alert alert-warning py-2 small mb-2">يتطلب اعتماد الباك أوفيس.</div>
+                            <div v-if="state.wizard.trmRequiresBackOffice" class="mb-0">
+                                <label class="form-label small">وثيقة / قرار <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
+                            </div>
+                        </div>
+                        <div v-if="state.wizard.kind === 'changeNumber'" class="mb-3">
+                            <p class="small text-muted mb-2">الرقم الحالي: <strong class="font-monospace" dir="ltr">{{ state.wizard.cnCurrentMsisdn || state.wizard.primaryLabel }}</strong></p>
+                            <div v-if="state.wizard.cnPoolBusy" class="c360-skel" style="height:3rem;"></div>
+                            <template v-else>
+                                <label class="form-label small fw-semibold">الرقم الجديد <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnTargetMsisdnAssetId" @@change="onChangeNumberTargetPicked">
+                                    <option value="">— اختر —</option>
+                                    <option v-for="a in state.wizard.cnPoolNumbers" :key="a.id || a.Id" :value="a.id || a.Id">
+                                        {{ a.msisdn || a.Msisdn }}
+                                        <template v-if="a.category !== undefined && [1,2,3].includes(Number(a.category))"> ★</template>
+                                    </option>
+                                </select>
+                                <label class="form-label small fw-semibold">سبب التغيير <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnNumberChangeReason">
+                                    <option value="">—</option>
+                                    <option value="CustomerRequest">طلب عميل</option>
+                                    <option value="Damaged">رقم تالف</option>
+                                    <option value="PremiumUpgrade">ترقية لرقم مميز</option>
+                                    <option value="Other">سبب آخر</option>
+                                </select>
+                                <div v-if="state.wizard.cnRequiresBackOffice" class="alert alert-warning py-2 small mb-2">الرقم مميز — يتطلب اعتماد الباك أوفيس.</div>
+                                <label v-if="state.wizard.cnRequiresBackOffice" class="form-label small">رسوم الرقم المميز (ل.س)</label>
+                                <input v-if="state.wizard.cnRequiresBackOffice" type="number" min="0" step="1" class="form-control form-control-sm mb-2" v-model="state.wizard.cnPremiumFeeAmount" />
+                                <div v-if="state.wizard.cnRequiresBackOffice" class="mb-2">
+                                    <label class="form-label small">إيصال الدفع / موافقة <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
+                                </div>
+                            </template>
+                        </div>
+                        <div v-if="state.wizard.kind === 'changeGsm'" class="mb-3">
+                            <p v-if="state.wizard.cgtCurrentTypeLabel" class="small text-muted">نوع الخط الحالي: <strong>{{ state.wizard.cgtCurrentTypeLabel }}</strong></p>
+                            <div v-if="state.wizard.cgtTargetsBusy" class="c360-skel" style="height:3rem;"></div>
+                            <template v-else>
+                                <label class="form-label small fw-semibold">نوع الخط الجديد <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cgtTargetTypeId" @@change="onCgtTargetTypeChanged">
+                                    <option value="">— اختر النوع —</option>
+                                    <option v-for="t in state.wizard.cgtTargets" :key="t.id" :value="t.id">{{ t.nameAr }} ({{ t.code }})</option>
+                                </select>
+                                <label class="form-label small fw-semibold">سبب التحويل <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.cgtMigrationReason" maxlength="256" placeholder="طلب عميل، ترقية، إلخ" />
+                                <label class="form-label small text-muted">باقة متوافقة (اختياري)</label>
+                                <div v-if="state.wizard.cgtOffersBusy" class="c360-skel" style="height:2.5rem;"></div>
+                                <select v-else class="form-select form-select-sm" v-model="state.wizard.selectedOfferingId">
+                                    <option value="">— بدون تغيير باقة —</option>
+                                    <option v-for="o in state.wizard.cgtOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
+                                </select>
+                            </template>
+                        </div>
                         <div v-if="state.wizard.kind === 'addpackage'" class="mb-3">
                             <div v-if="state.wizard.catalogBusy" class="c360-skel mb-2" style="height:4rem;"></div>
                             <select v-else class="form-select" v-model="state.wizard.selectedVasCode">
@@ -814,6 +914,22 @@
                             </select>
                         </div>
                         <div v-if="state.wizard.kind === 'simswap'" class="mb-3">
+                            <label class="form-label small fw-semibold">سبب التبديل <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.simReplacementReason">
+                                <option value="">— اختر —</option>
+                                <option value="Damaged">تالف / تالفة</option>
+                                <option value="Upgrade5G">ترقية (5G)</option>
+                                <option value="Other">سبب آخر</option>
+                            </select>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="wizSimLost" v-model="state.wizard.simLostOrStolen" />
+                                <label class="form-check-label small" for="wizSimLost">بلاغ مفقودة / مسروقة</label>
+                            </div>
+                            <p v-if="state.wizard.simLostOrStolen" class="small text-warning">يتطلب هوية واعتماد الباك أوفيس.</p>
+                            <div v-if="state.wizard.simLostOrStolen" class="mb-2">
+                                <label class="form-label small">إقرار / هوية *</label>
+                                <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
+                            </div>
                             <label class="form-label small">ICCID الجديد (19 رقم)</label>
                             <input class="form-control font-monospace" v-model="state.wizard.simIccid" dir="ltr" maxlength="19" />
                         </div>
@@ -841,14 +957,28 @@
                                 <label class="form-label small">ICCID</label>
                                 <input class="form-control font-monospace form-control-sm" v-model="state.wizard.simIccid" dir="ltr" maxlength="19" />
                             </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small">قناة التفعيل</label>
+                                    <select class="form-select form-select-sm" v-model.number="state.wizard.activationChannel">
+                                        <option :value="0">معرض</option>
+                                        <option :value="1">موزع</option>
+                                        <option :value="2">رقمي</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6" v-show="state.wizard.activationChannel === 1">
+                                    <label class="form-label small">كود الموزع</label>
+                                    <input class="form-control form-control-sm" v-model="state.wizard.dealerCode" maxlength="64" />
+                                </div>
+                            </div>
                         </div>
                         <div class="mb-0">
                             <label class="form-label small">ملاحظات</label>
                             <textarea class="form-control form-control-sm" rows="2" v-model="state.wizard.notes" maxlength="500"></textarea>
                         </div>
                     </div>
-                    <div v-show="state.wizard.step === 2">
-                        <p class="small text-muted mb-3">مسودة الطلب ثم تسجيل الوثيقة ثم تأكيد CBS.</p>
+                    <div v-show="state.wizard.step === 2 && state.wizard.kind !== 'addpackage'">
+                        <p class="small text-muted mb-3">مسودة الطلب ثم تسجيل الوثيقة ثم تأكيد CBS/HLR.</p>
                         <div v-if="!state.wizard.createdOperationId" class="d-grid">
                             <button type="button" class="btn btn-danger" :disabled="state.wizard.submitBusy" @@click="submitWizardCreateDraft">
                                 <span v-if="state.wizard.submitBusy" class="spinner-border spinner-border-sm me-1"></span>إنشاء مسودة الطلب
@@ -860,10 +990,33 @@
                                 <span v-if="state.wizard.uploadBusy" class="spinner-border spinner-border-sm me-1"></span>تسجيل رفع الوثيقة
                             </button>
                             <p v-else class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>تم تسجيل الوثيقة.</p>
-                            <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover'" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy" @@click="submitWizardConfirmCbs">
+                            <div v-if="state.wizard.kind === 'activate' && state.wizard.documentMarkedUploaded && !state.wizard.paymentRecorded" class="border rounded p-2 mb-2 bg-white">
+                                <p class="small fw-semibold mb-2">تثبيت الدفع والتحقق</p>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <select class="form-select form-select-sm" v-model.number="state.wizard.paymentChannel">
+                                            <option :value="0">نقد</option>
+                                            <option :value="1">محفظة</option>
+                                            <option :value="2">قسيمة</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input class="form-control form-control-sm" v-model="state.wizard.paymentAmount" type="number" min="1" step="1" placeholder="المبلغ" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input class="form-control form-control-sm" v-model="state.wizard.paymentReference" placeholder="مرجع الدفع" />
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm mt-2" :disabled="state.wizard.paymentBusy" @@click="submitWizardRecordPayment">
+                                    <span v-if="state.wizard.paymentBusy" class="spinner-border spinner-border-sm me-1"></span>تثبيت الدفع
+                                </button>
+                            </div>
+                            <p v-if="state.wizard.kind === 'activate' && state.wizard.paymentRecorded" class="small text-success mb-2">تم تثبيت الدفع.</p>
+                            <p v-if="state.wizard.operationCorrelationId" class="small text-muted font-monospace mb-2" dir="ltr">Correlation: {{ state.wizard.operationCorrelationId }}</p>
+                            <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover' && !(state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) && !(state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) && !(state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy || (state.wizard.kind === 'activate' && activateRequiredDeposit > 0 && !state.wizard.paymentRecorded)" @@click="submitWizardConfirmCbs">
                                 <span v-if="state.wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>تأكيد CBS
                             </button>
-                            <p v-if="state.wizard.kind === 'takeover' && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
+                            <p v-if="(state.wizard.kind === 'takeover' || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)) && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
                                 بانتظار اعتماد الباك أوفيس من مركز Telecom Hub.
                             </p>
                             <p v-if="state.wizard.confirmed" class="small text-success mb-0">{{ state.wizard.confirmStatusHint || 'تم التأكيد والتنفيذ.' }}</p>
@@ -875,7 +1028,7 @@
                     </div>
                     <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
                         <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="state.wizard.step === 1 || (state.wizard.step === 2 && state.wizard.createdOperationId)" @@click="wizardStepPrev">السابق</button>
-                        <button v-if="state.wizard.step === 1" type="button" class="btn btn-danger btn-sm" @@click="wizardStepNext">التالي: التسجيل</button>
+                        <button v-if="state.wizard.step === 1" type="button" class="btn btn-danger btn-sm" :disabled="state.wizard.submitBusy" @@click="wizardStepNext">{{ state.wizard.kind === 'addpackage' ? 'تفعيل VAS' : 'التالي: التسجيل' }}</button>
                         <button v-if="state.wizard.step === 2" type="button" class="btn btn-danger btn-sm" :disabled="!canWizardFinishStep2" @@click="wizardStepNext">التالي: الخلاصة</button>
                         <button v-if="state.wizard.step === 3" type="button" class="btn btn-primary btn-sm" @@click="finishProvisioningWizard">إغلاق</button>
                     </div>

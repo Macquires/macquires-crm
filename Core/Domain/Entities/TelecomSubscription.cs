@@ -14,6 +14,10 @@ public class TelecomSubscription : BaseEntity
     public string? ProductId { get; set; }
     public Product? Product { get; set; }
 
+    /// <summary>Commercial TM Forum offering bound to this line (catalog price, components, SOC).</summary>
+    public string? ProductOfferingId { get; set; }
+    public ProductOffering? ProductOffering { get; set; }
+
     public string SubscriptionTypeId { get; set; } = TelecomSubscriptionTypeWellKnownIds.Prepaid;
 
     public TelecomSubscriptionTypeLookup? SubscriptionTypeLookup { get; set; }

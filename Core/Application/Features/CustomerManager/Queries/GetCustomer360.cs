@@ -13,7 +13,12 @@ public record Customer360OperationDto(
     string Id,
     string Number,
     TelecomOperationKind Kind,
+    string? KindLabelAr,
     TelecomOperationStatus Status,
+    string? StatusLabelAr,
+    string? TransferReason,
+    string? Msisdn,
+    string? CounterpartyNameAr,
     string? CorrelationId,
     DateTime? CreatedAtUtc);
 
@@ -203,6 +208,8 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             .Where(s => profileIds.Contains(s.SubscriberProfileId))
             .Include(s => s.MsisdnAsset)
             .Include(s => s.Product)
+            .Include(s => s.ProductOffering!)
+                .ThenInclude(o => o.Components)
             .Include(s => s.SubscriptionTypeLookup)
             .OrderByDescending(s => s.IsPrimaryLine)
             .ThenBy(s => s.CreatedAtUtc)
@@ -214,6 +221,12 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             .Distinct()
             .ToList();
 
+        var offeringIds = subscriptions
+            .Select(s => s.ProductOfferingId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Distinct()
+            .ToList();
+
         var offeringsByProductId = productIds.Count == 0
             ? new Dictionary<string, ProductOffering>()
             : await _query.ProductOffering.AsNoTracking()
@@ -221,6 +234,13 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                 .Include(o => o.Components)
                 .GroupBy(o => o.ProductId!)
                 .ToDictionaryAsync(g => g.Key, g => g.OrderBy(x => x.SortOrder).First(), cancellationToken);
+
+        var offeringsById = offeringIds.Count == 0
+            ? new Dictionary<string, ProductOffering>()
+            : await _query.ProductOffering.AsNoTracking()
+                .Where(o => !o.IsDeleted && offeringIds.Contains(o.Id))
+                .Include(o => o.Components)
+                .ToDictionaryAsync(o => o.Id, cancellationToken);
 
         var msisdnAssetIds = subscriptions
             .Select(s => s.MsisdnAssetId)
@@ -277,7 +297,19 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
         var subscriptionDtos = subscriptions.Select(s =>
         {
             ProductOffering? offering = null;
-            if (!string.IsNullOrEmpty(s.ProductId))
+            if (!string.IsNullOrEmpty(s.ProductOfferingId))
+            {
+                if (s.ProductOffering != null && !s.ProductOffering.IsDeleted)
+                {
+                    offering = s.ProductOffering;
+                }
+                else if (offeringsById.TryGetValue(s.ProductOfferingId, out var direct))
+                {
+                    offering = direct;
+                }
+            }
+
+            if (offering == null && !string.IsNullOrEmpty(s.ProductId))
             {
                 offeringsByProductId.TryGetValue(s.ProductId, out offering);
             }
@@ -375,18 +407,39 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                 packageComponents);
         }).ToList();
 
-        var operations = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
-            .Where(o => profileIds.Contains(o.SubscriberProfileId))
+        var operationRows = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .Where(o => profileIds.Contains(o.SubscriberProfileId)
+                        || (o.SecondarySubscriberProfileId != null
+                            && profileIds.Contains(o.SecondarySubscriberProfileId)))
+            .Include(o => o.MsisdnAsset)
+            .Include(o => o.SubscriberProfile!).ThenInclude(p => p!.Customer)
+            .Include(o => o.SecondarySubscriberProfile!).ThenInclude(p => p!.Customer)
             .OrderByDescending(o => o.CreatedAtUtc)
-            .Take(10)
-            .Select(o => new Customer360OperationDto(
+            .Take(15)
+            .ToListAsync(cancellationToken);
+
+        var operations = operationRows.Select(o =>
+        {
+            var isIncomingTakeOver = o.Kind == TelecomOperationKind.TakeOver
+                && o.SecondarySubscriberProfileId != null
+                && profileIds.Contains(o.SecondarySubscriberProfileId);
+            var counterparty = isIncomingTakeOver
+                ? o.SubscriberProfile?.Customer?.DisplayName
+                : o.SecondarySubscriberProfile?.Customer?.DisplayName;
+
+            return new Customer360OperationDto(
                 o.Id,
                 o.Number,
                 o.Kind,
+                TelecomOperationLabels.KindLabelAr(o.Kind),
                 o.Status,
+                TelecomOperationLabels.StatusLabelAr(o.Status),
+                o.TransferReason,
+                o.MsisdnAsset?.Msisdn,
+                counterparty,
                 o.CorrelationId,
-                o.CreatedAtUtc))
-            .ToListAsync(cancellationToken);
+                o.CreatedAtUtc);
+        }).ToList();
 
         var primaryMsisdn = subscriptionDtos
             .OrderByDescending(s => s.IsPrimaryLine)

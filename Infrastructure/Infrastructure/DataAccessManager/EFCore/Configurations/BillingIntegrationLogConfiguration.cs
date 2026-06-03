@@ -12,7 +12,8 @@ public class BillingIntegrationLogConfiguration : BaseEntityConfiguration<Billin
     {
         base.Configure(builder);
 
-        builder.Property(x => x.TelecomOperationRequestId).HasMaxLength(IdConsts.MaxLength).IsRequired();
+        builder.Property(x => x.TelecomOperationRequestId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.TelecomPaymentTransactionId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.Message).HasMaxLength(DescriptionConsts.MaxLength).IsRequired();
         builder.Property(x => x.IntegrationTarget).HasMaxLength(NameConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.CorrelationId).HasMaxLength(IdConsts.MaxLength);
@@ -24,8 +25,17 @@ public class BillingIntegrationLogConfiguration : BaseEntityConfiguration<Billin
         builder.HasOne(x => x.TelecomOperationRequest)
             .WithMany()
             .HasForeignKey(x => x.TelecomOperationRequestId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.TelecomOperationRequestId, x.AttemptNumber });
+        builder.HasOne(x => x.TelecomPaymentTransaction)
+            .WithMany()
+            .HasForeignKey(x => x.TelecomPaymentTransactionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => x.TelecomPaymentTransactionId)
+            .HasFilter("[TelecomPaymentTransactionId] IS NOT NULL");
+
+        builder.HasIndex(x => new { x.TelecomOperationRequestId, x.AttemptNumber })
+            .HasFilter("[TelecomOperationRequestId] IS NOT NULL");
     }
 }

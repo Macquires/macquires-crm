@@ -36,6 +36,8 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
     public DbSet<InventoryBulkImportJob> InventoryBulkImportJob { get; set; }
     public DbSet<InventoryBulkImportError> InventoryBulkImportError { get; set; }
     public DbSet<BillingIntegrationLog> BillingIntegrationLog { get; set; }
+    public DbSet<TelecomPaymentTransaction> TelecomPaymentTransaction { get; set; }
+    public DbSet<TelecomPaymentAuditLog> TelecomPaymentAuditLog { get; set; }
     public DbSet<TelecomIntegrationLog> TelecomIntegrationLog { get; set; }
     public DbSet<TelecomMsisdnChangeLog> TelecomMsisdnChangeLog { get; set; }
     public DbSet<ProductOffering> ProductOffering { get; set; }
@@ -49,6 +51,10 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
     public DbSet<TelecomTechnicalTicket> TelecomTechnicalTicket { get; set; }
     public DbSet<TelecomValueAddedService> TelecomValueAddedService { get; set; }
     public DbSet<SubscriberActiveService> SubscriberActiveService { get; set; }
+    public DbSet<DeviceInventory> DeviceInventory { get; set; }
+    public DbSet<InstallmentPlan> InstallmentPlan { get; set; }
+    public DbSet<DeviceInstallmentContract> DeviceInstallmentContract { get; set; }
+    public DbSet<DeviceInstallmentScheduleLine> DeviceInstallmentScheduleLine { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,6 +86,8 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
         modelBuilder.ApplyConfiguration(new InventoryBulkImportJobConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryBulkImportErrorConfiguration());
         modelBuilder.ApplyConfiguration(new BillingIntegrationLogConfiguration());
+        modelBuilder.ApplyConfiguration(new TelecomPaymentTransactionConfiguration());
+        modelBuilder.ApplyConfiguration(new TelecomPaymentAuditLogConfiguration());
         modelBuilder.ApplyConfiguration(new TelecomIntegrationLogConfiguration());
         modelBuilder.ApplyConfiguration(new TelecomMsisdnChangeLogConfiguration());
         modelBuilder.ApplyConfiguration(new ProductOfferingConfiguration());
@@ -93,6 +101,10 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
         modelBuilder.ApplyConfiguration(new TelecomTechnicalTicketConfiguration());
         modelBuilder.ApplyConfiguration(new TelecomValueAddedServiceConfiguration());
         modelBuilder.ApplyConfiguration(new SubscriberActiveServiceConfiguration());
+        modelBuilder.ApplyConfiguration(new DeviceInventoryConfiguration());
+        modelBuilder.ApplyConfiguration(new InstallmentPlanConfiguration());
+        modelBuilder.ApplyConfiguration(new DeviceInstallmentContractConfiguration());
+        modelBuilder.ApplyConfiguration(new DeviceInstallmentScheduleLineConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

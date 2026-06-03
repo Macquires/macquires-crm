@@ -26,6 +26,7 @@ public static class NavigationPermissionRules
               PermissionCatalog.CustomerView,
               PermissionCatalog.TelecomLineActivate,
               PermissionCatalog.TelecomLineSimSwap,
+              PermissionCatalog.TelecomLineSimSwapRequest,
               PermissionCatalog.TelecomLineMigrate,
           ],
           ["/Telecom/BillingIntegration"] =
@@ -33,6 +34,7 @@ public static class NavigationPermissionRules
               PermissionCatalog.CustomerView,
               PermissionCatalog.TelecomLineActivate,
               PermissionCatalog.TelecomLineSimSwap,
+              PermissionCatalog.TelecomLineSimSwapRequest,
               PermissionCatalog.TelecomLineMigrate,
               PermissionCatalog.TelecomReportsMis,
           ],
@@ -43,6 +45,7 @@ public static class NavigationPermissionRules
               PermissionCatalog.BulkImportUpload,
           ],
           ["/Telecom/MsisdnInventory"] = [PermissionCatalog.TelecomAssetManage],
+          ["/Telecom/DeviceInventory"] = [PermissionCatalog.TelecomDeviceInventoryManage],
           ["/Telecom/TechnicalTicketList"] =
           [
               PermissionCatalog.CustomerView,
@@ -59,6 +62,7 @@ public static class NavigationPermissionRules
               PermissionCatalog.CustomerView,
               PermissionCatalog.TelecomLineActivate,
               PermissionCatalog.TelecomLineSimSwap,
+              PermissionCatalog.TelecomLineSimSwapRequest,
               PermissionCatalog.TelecomLineMigrate,
           ],
           ["/Telecom/Customer360Profile"] =
@@ -66,6 +70,7 @@ public static class NavigationPermissionRules
               PermissionCatalog.CustomerView,
               PermissionCatalog.TelecomLineActivate,
               PermissionCatalog.TelecomLineSimSwap,
+              PermissionCatalog.TelecomLineSimSwapRequest,
               PermissionCatalog.TelecomLineMigrate,
           ],
           ["/Customers/CustomerList"] = [PermissionCatalog.CustomerView],

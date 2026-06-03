@@ -96,6 +96,77 @@ public class ProductController : BaseApiController
             Content = response
         });
     }
+
+    [Authorize]
+    [HttpGet("GetChangeGsmEligibleTargets")]
+    public async Task<ActionResult<ApiSuccessResult<GetChangeGsmEligibleTargetsResult>>> GetChangeGsmEligibleTargetsAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string subscriberProfileId = "",
+        [FromQuery] string? msisdnAssetId = null)
+    {
+        var response = await _sender.Send(
+            new GetChangeGsmEligibleTargetsRequest
+            {
+                SubscriberProfileId = subscriberProfileId,
+                MsisdnAssetId = msisdnAssetId,
+            },
+            cancellationToken);
+
+        return Ok(new ApiSuccessResult<GetChangeGsmEligibleTargetsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetChangeGsmEligibleTargetsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetEligibleVasOfferings")]
+    public async Task<ActionResult<ApiSuccessResult<GetEligibleVasOfferingsResult>>> GetEligibleVasOfferingsAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string subscriberProfileId = "",
+        [FromQuery] string? msisdnAssetId = null)
+    {
+        var response = await _sender.Send(
+            new GetEligibleVasOfferingsRequest
+            {
+                SubscriberProfileId = subscriberProfileId,
+                MsisdnAssetId = msisdnAssetId,
+            },
+            cancellationToken);
+
+        return Ok(new ApiSuccessResult<GetEligibleVasOfferingsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetEligibleVasOfferingsAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetChangeGsmEligibleProducts")]
+    public async Task<ActionResult<ApiSuccessResult<GetChangeGsmEligibleProductsResult>>> GetChangeGsmEligibleProductsAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string subscriberProfileId = "",
+        [FromQuery] string targetSubscriptionTypeId = "",
+        [FromQuery] string? msisdnAssetId = null)
+    {
+        var response = await _sender.Send(
+            new GetChangeGsmEligibleProductsRequest
+            {
+                SubscriberProfileId = subscriberProfileId,
+                TargetSubscriptionTypeId = targetSubscriptionTypeId,
+                MsisdnAssetId = msisdnAssetId,
+            },
+            cancellationToken);
+
+        return Ok(new ApiSuccessResult<GetChangeGsmEligibleProductsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetChangeGsmEligibleProductsAsync),
+            Content = response,
+        });
+    }
 }
 
 

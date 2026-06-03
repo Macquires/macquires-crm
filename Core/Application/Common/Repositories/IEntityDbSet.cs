@@ -28,6 +28,8 @@ public interface IEntityDbSet
     DbSet<InventoryBulkImportJob> InventoryBulkImportJob { get; set; }
     DbSet<InventoryBulkImportError> InventoryBulkImportError { get; set; }
     DbSet<BillingIntegrationLog> BillingIntegrationLog { get; set; }
+    DbSet<TelecomPaymentTransaction> TelecomPaymentTransaction { get; set; }
+    DbSet<TelecomPaymentAuditLog> TelecomPaymentAuditLog { get; set; }
     DbSet<TelecomIntegrationLog> TelecomIntegrationLog { get; set; }
     DbSet<TelecomMsisdnChangeLog> TelecomMsisdnChangeLog { get; set; }
     DbSet<ProductOffering> ProductOffering { get; set; }
@@ -42,4 +44,8 @@ public interface IEntityDbSet
     DbSet<TelecomTechnicalTicket> TelecomTechnicalTicket { get; set; }
     DbSet<TelecomValueAddedService> TelecomValueAddedService { get; set; }
     DbSet<SubscriberActiveService> SubscriberActiveService { get; set; }
+    DbSet<DeviceInventory> DeviceInventory { get; set; }
+    DbSet<InstallmentPlan> InstallmentPlan { get; set; }
+    DbSet<DeviceInstallmentContract> DeviceInstallmentContract { get; set; }
+    DbSet<DeviceInstallmentScheduleLine> DeviceInstallmentScheduleLine { get; set; }
 }

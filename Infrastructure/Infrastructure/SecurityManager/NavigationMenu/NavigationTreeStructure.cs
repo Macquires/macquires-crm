@@ -52,6 +52,7 @@ public static partial class NavigationTreeStructure
                 { "URL": "/Telecom/TechnicalTicketList", "Name": "إدارة التذاكر الفنية", "IsModule": false, "Personas": ["CallCenter","BackOffice","SysAdmin"], "Icon": "bi-ticket-detailed", "SortOrder": 3, "BadgeKey": "openTechnicalTickets" },
                 { "URL": "/Telecom/BulkImportMonitor", "Name": "مراقبة الاستيراد الضخم", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-cloud-upload", "SortOrder": 4, "BadgeKey": "bulkImportActive" },
                 { "URL": "/Telecom/MsisdnInventory", "Name": "مستودع الأرقام والشرائح", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-boxes", "SortOrder": 5 },
+                { "URL": "/Telecom/DeviceInventory", "Name": "مخزون الأجهزة (IMEI)", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-phone", "SortOrder": 6 },
                 { "URL": "/Telecom/BillingIntegration", "Name": "التكامل مع نظام الفوترة", "IsModule": false, "Personas": ["Executive","BackOffice","SysAdmin"], "Icon": "bi-receipt-cutoff", "SortOrder": 6 }
             ]
         },

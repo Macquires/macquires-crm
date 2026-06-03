@@ -143,7 +143,13 @@ const PortalNavigation = (function () {
         if (StorageManager.hasAnyPermission(perms, ['telecom.reports.mis'])) {
             return PERSONA_LABELS.Executive;
         }
-        if (StorageManager.hasAnyPermission(perms, ['telecom.line.activate', 'telecom.line.simswap'])) {
+        if (
+            StorageManager.hasAnyPermission(perms, [
+                'telecom.line.activate',
+                'telecom.line.simswap',
+                'telecom.line.simswap_request',
+            ])
+        ) {
             return PERSONA_LABELS.Retail;
         }
         if (StorageManager.hasAnyPermission(perms, ['customer.view'])) {

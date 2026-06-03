@@ -39,6 +39,16 @@
         "title": "SIM swap",
         "sub": "SIM Swap"
       },
+      "changeNumber": {
+        "aria": "Open change number wizard",
+        "title": "Change number",
+        "sub": "CNR"
+      },
+      "termination": {
+        "aria": "Open line termination wizard",
+        "title": "Terminate line",
+        "sub": "TRM"
+      },
       "addpackage": {
         "aria": "Open add package wizard",
         "title": "Add package",
@@ -95,6 +105,7 @@
       "opNumber": "Request #:",
       "opId": "Internal reference:",
       "uploadBtn": "Confirm document on file",
+      "uploadBtnTakeOver": "Upload ID and send for review",
       "uploaded": "Document recorded. You can follow the request in the table until review and confirmation are finished.",
       "step3a": "The request was saved as",
       "step3b": "successfully.",
@@ -109,6 +120,8 @@
         "takeover": "Transfer line ownership",
         "support": "Support or service change",
         "simswap": "SIM swap",
+        "changeNumber": "Change MSISDN (CNR)",
+        "termination": "Line termination (TRM)",
         "addpackage": "Add package or service"
       }
     },
@@ -142,6 +155,10 @@
       "refresh": "Refresh",
       "cbs": "Confirm execution (first ready request)",
       "approveTakeOver": "Review & approve",
+      "approveSimSwap": "Approve SIM swap",
+      "approveChangeNumber": "Approve CNR change number",
+      "approveTermination": "Approve TRM termination",
+      "approveSecureOp": "Review & approve",
       "thNumber": "#",
       "thKind": "Type",
       "thSub": "Subscriber",
@@ -223,6 +240,13 @@
       "mis": "MIS reports",
       "sales": "Sales orders",
       "billing": "Billing integration"
+    },
+    "simSwapModal": {
+      "title": "SIM swap approval",
+      "subscriber": "Subscriber",
+      "priorIccid": "Previous ICCID",
+      "newIccid": "New ICCID",
+      "approve": "Approve swap on CBS/HLR"
     },
     "takeOverModal": {
       "title": "Ownership transfer approval",
@@ -499,6 +523,93 @@
       "toggleOff": "Deactivated",
       "loading": "Loading…",
       "emptyCatalog": "No VAS services in catalog."
+    },
+    "changeGsm": {
+      "val0601": "VAL-06-01: This line-type transition is not allowed.",
+      "val0603": "VAL-06-03: Outstanding debt blocks the conversion.",
+      "draftHint": "CGT draft ready; CBS/HLR confirmation in a later step."
+    },
+    "simSwap": {
+      "replacementReason": "Replacement reason",
+      "reasonDamaged": "Damaged SIM",
+      "reasonUpgrade": "Upgrade (e.g. 5G)",
+      "reasonOther": "Other",
+      "lostOrStolen": "Lost / stolen report",
+      "lostOrStolenHint": "Requires ID and Back Office approval — not executed immediately from showroom.",
+      "identityRequired": "Subscriber ID / declaration",
+      "pendingBackOffice": "Awaiting supervisor approval — no network provisioning from showroom.",
+      "confirmStandard": "Confirm SIM swap",
+      "confirmPending": "Submit to Back Office",
+      "val0401": "VAL-04-01: SIM or line is not eligible for swap.",
+      "val0402": "VAL-04-02: Customer blocked or outstanding debt prevents swap.",
+      "draftHint": "SIM- draft — upload documents then await Back Office approval."
+    },
+    "changeNumber": {
+      "currentMsisdn": "Current MSISDN",
+      "targetMsisdn": "New number from pool",
+      "changeReason": "Change reason",
+      "reasonCustomer": "Customer request",
+      "reasonDamaged": "Unused / damaged number",
+      "reasonPremium": "Upgrade to premium number",
+      "reasonOther": "Other",
+      "premiumFee": "Premium fee (SYP)",
+      "premiumHint": "Premium number — fee or Back Office approval required before activation.",
+      "pendingBackOffice": "Awaiting financial Back Office approval — not executed immediately from showroom.",
+      "paymentDocHint": "Upload payment receipt or supervisor approval.",
+      "draftHint": "CNR- draft — pick number then complete documents and confirm."
+    },
+    "offerSubscription": {
+      "incompatibleLine": "VAL-11: Offer is not compatible with the current line type",
+      "migrationRequiresOffering": "Package migration requires a catalog offering selection",
+      "mgrCompletedSms": "Your package was migrated successfully",
+      "vasBlocked": "Cannot activate service — eligibility check failed (VAL-11)"
+    },
+    "termination": {
+      "currentMsisdn": "Line to terminate",
+      "terminationType": "Termination type",
+      "typeVoluntary": "Voluntary",
+      "typeCollections": "Collections",
+      "typeRegulatory": "Regulatory",
+      "typeFraud": "Fraud",
+      "terminationReason": "Reason",
+      "reasonPh": "e.g. customer request, regulatory order…",
+      "retentionOutcome": "Retention offer outcome",
+      "retentionAccepted": "Accepted offer",
+      "retentionDeclined": "Declined offer",
+      "retentionNotOffered": "Not offered",
+      "boHint": "Requires back-office approval and documents before execution.",
+      "identityRequired": "Document / admin decision",
+      "pendingBackOffice": "Pending back-office approval.",
+      "draftHint": "TRM draft — complete documents then confirm."
+    },
+    "terminationModal": {
+      "title": "Approve line termination (TRM)",
+      "approve": "Approve & terminate",
+      "type": "Type",
+      "reason": "Reason",
+      "finalBill": "Final bill"
+    },
+    "changeNumberModal": {
+      "title": "Approve change number (CNR)",
+      "approve": "Approve and provision",
+      "priorMsisdn": "Previous MSISDN",
+      "targetMsisdn": "New MSISDN",
+      "premiumFee": "Premium fee"
+    },
+    "takeOver": {
+      "transferReason": "Transfer reason",
+      "transferReasonPh": "Sale, inheritance, court order…",
+      "depositPolicy": "Deposit / guarantee policy",
+      "depositRetain": "Retain with previous owner",
+      "depositTransfer": "Transfer to new owner",
+      "depositForfeit": "Forfeit",
+      "depositRefund": "Refund previous owner",
+      "identityRequired": "New owner ID document",
+      "pendingBackOffice": "Awaiting Back Office approval — showroom cannot provision on network.",
+      "val0702": "VAL-07-02: Outstanding debt blocks transfer.",
+      "val0705": "VAL-07-05: Party is blacklisted.",
+      "val0703": "VAL-07-03: Another open transfer exists on this line.",
+      "draftHint": "TKO draft — upload ID then wait for Back Office."
     }
   }
 }

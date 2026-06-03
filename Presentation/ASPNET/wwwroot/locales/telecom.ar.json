@@ -29,6 +29,11 @@
         "title": "تحويل",
         "sub": "MGR"
       },
+      "changeGsm": {
+        "aria": "فتح معالج تحويل نوع الخط CGT",
+        "title": "نوع الخط",
+        "sub": "CGT"
+      },
       "takeover": {
         "aria": "فتح معالج نقل الملكية",
         "title": "نقل ملكية",
@@ -38,6 +43,31 @@
         "aria": "فتح معالج تبديل الشريحة",
         "title": "تبديل شريحة",
         "sub": "SIM Swap"
+      },
+      "changeNumber": {
+        "aria": "فتح معالج تغيير الرقم",
+        "title": "تغيير رقم",
+        "sub": "CNR"
+      },
+      "termination": {
+        "aria": "فتح معالج إنهاء الخط",
+        "title": "إنهاء خط",
+        "sub": "TRM"
+      },
+      "suspension": {
+        "aria": "فتح معالج الحظر المؤقت",
+        "title": "حظر مؤقت",
+        "sub": "SUS"
+      },
+      "reconnect": {
+        "aria": "فتح معالج إعادة التفعيل",
+        "title": "إعادة تفعيل",
+        "sub": "RCN"
+      },
+      "refund": {
+        "aria": "فتح معالج استرداد التأمين والمحفظة",
+        "title": "استرداد مالي",
+        "sub": "RFD"
       },
       "addpackage": {
         "aria": "فتح معالج إضافة باقة",
@@ -95,6 +125,7 @@
       "opNumber": "رقم الطلب:",
       "opId": "مرجع داخلي:",
       "uploadBtn": "تأكيد استلام الوثيقة في الملف",
+      "uploadBtnTakeOver": "رفع الهوية وإرسال للتدقيق",
       "uploaded": "تم تسجيل الوثيقة. يمكنك متابعة الطلب من الجدول أدناه حتى تكتمل المراجعة والتأكيد.",
       "step3a": "تم حفظ الطلب برقم",
       "step3b": "بنجاح.",
@@ -106,9 +137,16 @@
       "titles": {
         "activate": "تفعيل خط جديد",
         "migrate": "تحويل أو تغيير الباقة",
+        "changeGsm": "تحويل نوع الخط (مسبق/فاتورة/هجين)",
         "takeover": "نقل ملكية الخط",
         "support": "دعم فني أو تعديل خدمة",
         "simswap": "تبديل الشريحة (SIM)",
+        "changeNumber": "تغيير رقم الخط (CNR)",
+        "termination": "إنهاء خط (TRM)",
+        "suspension": "حظر خط مؤقت (SUS)",
+        "reconnect": "إعادة تفعيل خط (RCN)",
+        "refund": "استرداد تأمين / محفظة (RFD)",
+        "deviceSale": "بيع جهاز (DEV)",
         "addpackage": "إضافة باقة أو خدمة"
       }
     },
@@ -142,6 +180,11 @@
       "refresh": "تحديث",
       "cbs": "تأكيد التنفيذ (أول طلب جاهز)",
       "approveTakeOver": "مراجعة واعتماد",
+      "approveSimSwap": "اعتماد SIM Swap",
+      "approveChangeNumber": "اعتماد تغيير رقم CNR",
+      "approveTermination": "اعتماد إنهاء TRM",
+      "approveRefund": "اعتماد استرداد RFD",
+      "approveSecureOp": "مراجعة واعتماد",
       "thNumber": "الرقم",
       "thKind": "النوع",
       "thSub": "المشترك",
@@ -223,6 +266,13 @@
       "mis": "تقارير MIS",
       "sales": "طلبات المبيعات",
       "billing": "تكامل الفوترة"
+    },
+    "simSwapModal": {
+      "title": "اعتماد تبديل الشريحة",
+      "subscriber": "المشترك",
+      "priorIccid": "ICCID السابق",
+      "newIccid": "ICCID الجديد",
+      "approve": "اعتماد التبديل على CBS/HLR"
     },
     "takeOverModal": {
       "title": "موافقة نقل الملكية",
@@ -499,6 +549,148 @@
       "toggleOff": "تم التعطيل",
       "loading": "جاري التحميل…",
       "emptyCatalog": "لا توجد خدمات مضافة في الكتالوج."
+    },
+    "changeGsm": {
+      "val0601": "VAL-06-01: هذا الانتقال بين أنواع الخط غير مسموح.",
+      "val0603": "VAL-06-03: لا يمكن التحويل — ذمم مالية معلقة على الخط.",
+      "draftHint": "مسودة CGT- جاهزة؛ التأكيد على CBS/HLR في المرحلة التالية."
+    },
+    "changeNumber": {
+      "currentMsisdn": "الرقم الحالي",
+      "targetMsisdn": "الرقم الجديد من المخزون",
+      "changeReason": "سبب التغيير",
+      "reasonCustomer": "طلب عميل",
+      "reasonDamaged": "رقم تالف / غير مستخدم",
+      "reasonPremium": "ترقية لرقم مميز",
+      "reasonOther": "سبب آخر",
+      "premiumFee": "رسوم الرقم المميز (ل.س)",
+      "premiumHint": "الرقم مميز — يتطلب رسوماً أو اعتماد الباك أوفيس قبل التفعيل.",
+      "pendingBackOffice": "بانتظار اعتماد مالي من الباك أوفيس — لا يُنفَّذ فوراً من المعرض.",
+      "paymentDocHint": "ارفع إيصال الدفع أو موافقة المشرف.",
+      "draftHint": "مسودة CNR- — اختر الرقم ثم أكمل الوثائق والتأكيد."
+    },
+    "offerSubscription": {
+      "incompatibleLine": "VAL-11: العرض غير متوافق مع نوع الخط الحالي",
+      "migrationRequiresOffering": "ترحيل الباقة يتطلب اختيار عرض تجاري من الكتالوج",
+      "mgrCompletedSms": "تم ترحيل باقتك بنجاح",
+      "vasBlocked": "تعذّر تفعيل الخدمة — تحقق من الأهلية (VAL-11)"
+    },
+    "termination": {
+      "currentMsisdn": "الخط المراد إنهاؤه",
+      "terminationType": "نوع الإنهاء",
+      "typeVoluntary": "طوعي",
+      "typeCollections": "تحصيل",
+      "typeRegulatory": "تنظيمي",
+      "typeFraud": "احتيال",
+      "terminationReason": "سبب الإنهاء",
+      "reasonPh": "مثال: طلب العميل، قرار إداري…",
+      "retentionOutcome": "نتيجة عرض الاحتفاظ",
+      "retentionAccepted": "قبل العرض",
+      "retentionDeclined": "رفض العرض",
+      "retentionNotOffered": "لم يُعرض",
+      "boHint": "يتطلب اعتماد الباك أوفيس والوثائق قبل التنفيذ.",
+      "identityRequired": "وثيقة / قرار إداري",
+      "pendingBackOffice": "بانتظار اعتماد الباك أوفيس.",
+      "draftHint": "مسودة TRM- — أكمل الوثائق ثم التأكيد."
+    },
+    "suspension": {
+      "currentMsisdn": "الخط المراد حظره",
+      "suspensionType": "نوع الحظر",
+      "typeCustomer": "طلب عميل",
+      "typeBilling": "فواتير / تحصيل",
+      "typeFraud": "احتيال",
+      "typeRegulatory": "تنظيمي",
+      "typeOperational": "تشغيلي",
+      "barringLevel": "مستوى الحظر",
+      "barringFull": "حظر كامل",
+      "barringInbound": "وارد فقط",
+      "barringOutbound": "صادر فقط",
+      "suspensionReason": "سبب الحظر",
+      "autoReconnect": "إعادة تفعيل تلقائية عند انتهاء المدة",
+      "endDateRequired": "تاريخ انتهاء الحظر مطلوب",
+      "boHint": "VAL-08-02/03: يتطلب اعتماد الباك أوفيس قبل التنفيذ."
+    },
+    "refund": {
+      "currentMsisdn": "الخط المرتبط بالاسترداد",
+      "refundType": "نوع الاسترداد",
+      "typeDeposit": "تأمين خط",
+      "typeWallet": "رصيد محفظة",
+      "typeOverpayment": "دفع زائد",
+      "typeSyriatelCash": "كاش سيريتل",
+      "refundMethod": "طريقة التسوية",
+      "methodCreditNote": "إشعار دائن CBS",
+      "methodWallet": "إيداع محفظة",
+      "methodBank": "تحويل بنكي",
+      "methodCash": "نقدي",
+      "refundAmount": "مبلغ الاسترداد (ل.س)",
+      "refundReason": "سبب الاسترداد",
+      "depositSnapshot": "لقطة تأمين CBS",
+      "walletSnapshot": "لقطة محفظة",
+      "boHint": "VAL-15-04: المعاملة تتطلب موافقة مالية عليا — ارفع الوثيقة ثم اعتماد الباك أوفيس.",
+      "val1502": "VAL-15-02: المبلغ يتجاوز الرصيد المتاح في اللقطة المالية."
+    },
+    "reconnect": {
+      "currentMsisdn": "الخط الموقوف",
+      "clearanceType": "نوع التسوية",
+      "clearanceCustomer": "طلب عميل",
+      "clearancePayment": "تسوية مالية",
+      "clearanceFraud": "إزالة حظر احتيال",
+      "clearanceRegulatory": "تنظيمي",
+      "reconnectReason": "سبب إعادة التفعيل",
+      "paymentReference": "مرجع الدفع",
+      "fraudClearance": "تأكيد تسوية الاحتيال (مشرف)",
+      "boHint": "VAL-09-03: يتطلب اعتماد الباك أوفيس."
+    },
+    "refundModal": {
+      "title": "اعتماد استرداد مالي (RFD)",
+      "approve": "اعتماد مالي وتنفيذ",
+      "amount": "المبلغ",
+      "type": "النوع",
+      "method": "الطريقة"
+    },
+    "terminationModal": {
+      "title": "اعتماد إنهاء خط (TRM)",
+      "approve": "اعتماد وإنهاء",
+      "type": "النوع",
+      "reason": "السبب",
+      "finalBill": "الفاتورة النهائية"
+    },
+    "changeNumberModal": {
+      "title": "اعتماد تغيير رقم (CNR)",
+      "approve": "اعتماد وتفعيل",
+      "priorMsisdn": "الرقم السابق",
+      "targetMsisdn": "الرقم الجديد",
+      "premiumFee": "رسوم التميز"
+    },
+    "simSwap": {
+      "replacementReason": "سبب التبديل",
+      "reasonDamaged": "تالف / تالفة",
+      "reasonUpgrade": "ترقية (مثلاً 5G)",
+      "reasonOther": "سبب آخر",
+      "lostOrStolen": "بلاغ مفقودة / مسروقة",
+      "lostOrStolenHint": "يتطلب هوية واعتماد الباك أوفيس — لا يُنفَّذ فوراً من المعرض.",
+      "identityRequired": "إقرار / هوية المشترك",
+      "pendingBackOffice": "بانتظار اعتماد المشرف — لا يُبث على الشبكة من المعرض.",
+      "confirmStandard": "تأكيد التبديل",
+      "confirmPending": "إرسال للباك أوفيس",
+      "val0401": "VAL-04-01: الشريحة أو الخط غير صالح للتبديل.",
+      "val0402": "VAL-04-02: العميل محظور أو عليه ذمم تمنع التبديل.",
+      "draftHint": "مسودة SIM- — ارفع الوثائق ثم انتظر اعتماد الباك أوفيس."
+    },
+    "takeOver": {
+      "transferReason": "سبب نقل الملكية",
+      "transferReasonPh": "بيع، وراثة، حكم قضائي…",
+      "depositPolicy": "سياسة التأمين / الإيداع",
+      "depositRetain": "يبقى لدى المالك السابق",
+      "depositTransfer": "ينتقل للمالك الجديد",
+      "depositForfeit": "مصادرة",
+      "depositRefund": "استرداد للمالك السابق",
+      "identityRequired": "هوية المالك الجديد",
+      "pendingBackOffice": "بانتظار اعتماد الباك أوفيس — لا يُنفَّذ على الشبكة من المعرض.",
+      "val0702": "VAL-07-02: ذمم مالية معلقة تمنع نقل الملكية.",
+      "val0705": "VAL-07-05: أحد الأطراف على القائمة السوداء.",
+      "val0703": "VAL-07-03: يوجد طلب نقل ملكية مفتوح على نفس الخط.",
+      "draftHint": "مسودة TKO- — ارفع الهوية ثم انتظر اعتماد الباك أوفيس."
     }
   }
 }

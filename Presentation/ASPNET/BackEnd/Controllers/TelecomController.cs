@@ -129,6 +129,410 @@ public class TelecomController : BaseApiController
         });
     }
 
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("RecordSellingLinePayment")]
+    public async Task<ActionResult<ApiSuccessResult<RecordSellingLinePaymentResult>>> RecordSellingLinePaymentAsync(
+        RecordSellingLinePaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<RecordSellingLinePaymentResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(RecordSellingLinePaymentAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetDeviceInventoryList")]
+    public async Task<ActionResult<ApiSuccessResult<GetDeviceInventoryListResult>>> GetDeviceInventoryListAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string? status = null,
+        [FromQuery] string? branchId = null,
+        [FromQuery] string? imeiContains = null)
+    {
+        var response = await _sender.Send(
+            new GetDeviceInventoryListRequest { Status = status, BranchId = branchId, ImeiContains = imeiContains },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetDeviceInventoryListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetDeviceInventoryListAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetInstallmentPlanList")]
+    public async Task<ActionResult<ApiSuccessResult<GetInstallmentPlanListResult>>> GetInstallmentPlanListAsync(
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetInstallmentPlanListRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetInstallmentPlanListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetInstallmentPlanListAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("CreateDeviceInventory")]
+    public async Task<ActionResult<ApiSuccessResult<CreateDeviceInventoryResult>>> CreateDeviceInventoryAsync(
+        CreateDeviceInventoryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<CreateDeviceInventoryResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(CreateDeviceInventoryAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("RecordDeviceDownPayment")]
+    public async Task<ActionResult<ApiSuccessResult<RecordDeviceDownPaymentResult>>> RecordDeviceDownPaymentAsync(
+        RecordDeviceDownPaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<RecordDeviceDownPaymentResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(RecordDeviceDownPaymentAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesConfirmOperation)]
+    [HttpPost("ApproveDeviceInstallment")]
+    public async Task<ActionResult<ApiSuccessResult<ApproveDeviceInstallmentResult>>> ApproveDeviceInstallmentAsync(
+        ApproveDeviceInstallmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ApproveDeviceInstallmentResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ApproveDeviceInstallmentAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetDeviceSaleKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetDeviceSaleKpisResult>>> GetDeviceSaleKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetDeviceSaleKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetDeviceSaleKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetDeviceSaleKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("ValidateVoucher")]
+    public async Task<ActionResult<ApiSuccessResult<ValidateVoucherResult>>> ValidateVoucherAsync(
+        ValidateVoucherRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ValidateVoucherResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ValidateVoucherAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("CreatePaymentTransaction")]
+    public async Task<ActionResult<ApiSuccessResult<CreatePaymentTransactionResult>>> CreatePaymentTransactionAsync(
+        CreatePaymentTransactionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<CreatePaymentTransactionResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(CreatePaymentTransactionAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("ConfirmPaymentTransaction")]
+    public async Task<ActionResult<ApiSuccessResult<ConfirmPaymentTransactionResult>>> ConfirmPaymentTransactionAsync(
+        ConfirmPaymentTransactionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ConfirmPaymentTransactionResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ConfirmPaymentTransactionAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReversePayment)]
+    [HttpPost("ReversePaymentTransaction")]
+    public async Task<ActionResult<ApiSuccessResult<ReversePaymentTransactionResult>>> ReversePaymentTransactionAsync(
+        ReversePaymentTransactionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ReversePaymentTransactionResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ReversePaymentTransactionAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetPaymentTransactionList")]
+    public async Task<ActionResult<ApiSuccessResult<GetPaymentTransactionListResult>>> GetPaymentTransactionListAsync(
+        [FromQuery] int take = 30,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _sender.Send(new GetPaymentTransactionListRequest { Take = take }, cancellationToken);
+        return Ok(new ApiSuccessResult<GetPaymentTransactionListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetPaymentTransactionListAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetPaymentServicesKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetPaymentServicesKpisResult>>> GetPaymentServicesKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetPaymentServicesKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetPaymentServicesKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetPaymentServicesKpisAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetPaymentTransactionDetail")]
+    public async Task<ActionResult<ApiSuccessResult<GetPaymentTransactionDetailResult>>> GetPaymentTransactionDetailAsync(
+        [FromQuery] string id,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetPaymentTransactionDetailRequest { Id = id ?? "" }, cancellationToken);
+        if (response is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new ApiSuccessResult<GetPaymentTransactionDetailResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetPaymentTransactionDetailAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetSellingLineActivationKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetSellingLineActivationKpisResult>>> GetSellingLineActivationKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null,
+        [FromQuery] string? branchId = null)
+    {
+        var response = await _sender.Send(
+            new GetSellingLineActivationKpisRequest { FromUtc = fromUtc, ToUtc = toUtc, BranchId = branchId },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetSellingLineActivationKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetSellingLineActivationKpisAsync),
+            Content = response
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetChangeGsmTypeKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetChangeGsmTypeKpisResult>>> GetChangeGsmTypeKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetChangeGsmTypeKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetChangeGsmTypeKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetChangeGsmTypeKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetSuspensionKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetSuspensionKpisResult>>> GetSuspensionKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetSuspensionKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetSuspensionKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetSuspensionKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetReconnectKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetReconnectKpisResult>>> GetReconnectKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetReconnectKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetReconnectKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetReconnectKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetRefundKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetRefundKpisResult>>> GetRefundKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetRefundKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetRefundKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetRefundKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetTerminationKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetTerminationKpisResult>>> GetTerminationKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetTerminationKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetTerminationKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetTerminationKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetOfferSubscriptionKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetOfferSubscriptionKpisResult>>> GetOfferSubscriptionKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetOfferSubscriptionKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetOfferSubscriptionKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetOfferSubscriptionKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetChangeNumberKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetChangeNumberKpisResult>>> GetChangeNumberKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetChangeNumberKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetChangeNumberKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetChangeNumberKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetSimSwapKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetSimSwapKpisResult>>> GetSimSwapKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetSimSwapKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetSimSwapKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetSimSwapKpisAsync),
+            Content = response,
+        });
+    }
+
+    [HttpGet("GetTakeOverOwnershipKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetTakeOverOwnershipKpisResult>>> GetTakeOverOwnershipKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetTakeOverOwnershipKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetTakeOverOwnershipKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetTakeOverOwnershipKpisAsync),
+            Content = response,
+        });
+    }
+
     [Authorize(Roles = TelecomRoles.RolesImportSim)]
     [HttpPost("EnqueueInventoryBulkImport")]
     public async Task<ActionResult<ApiSuccessResult<EnqueueInventoryBulkImportResult>>> EnqueueInventoryBulkImportAsync(

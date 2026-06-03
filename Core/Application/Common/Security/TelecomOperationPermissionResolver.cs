@@ -9,8 +9,14 @@ public static class TelecomOperationPermissionResolver
         TelecomOperationKind.Migration => PermissionCatalog.TelecomLineMigrate,
         TelecomOperationKind.SimSwap => PermissionCatalog.TelecomLineSimSwap,
         TelecomOperationKind.NewActivation => PermissionCatalog.TelecomLineActivate,
-        TelecomOperationKind.TakeOver => PermissionCatalog.TelecomLineActivate,
-        TelecomOperationKind.NumberPortability => PermissionCatalog.TelecomLineActivate,
+        TelecomOperationKind.TakeOver => PermissionCatalog.TelecomLineTransferOwnership,
+        TelecomOperationKind.NumberPortability => PermissionCatalog.TelecomLineChangeNumber,
+        TelecomOperationKind.ChangeGsmType => PermissionCatalog.TelecomLineChangeGsm,
+        TelecomOperationKind.Termination => PermissionCatalog.TelecomLineTermination,
+        TelecomOperationKind.TemporarySuspension => PermissionCatalog.TelecomLineSuspension,
+        TelecomOperationKind.Reconnect => PermissionCatalog.TelecomLineReconnect,
+        TelecomOperationKind.DeviceSale => PermissionCatalog.TelecomDeviceSell,
+        TelecomOperationKind.DepositRefundSettlement => PermissionCatalog.TelecomLineRefund,
         _ => PermissionCatalog.TelecomLineActivate,
     };
 }

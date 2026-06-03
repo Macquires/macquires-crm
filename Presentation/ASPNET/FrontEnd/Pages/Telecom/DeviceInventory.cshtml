@@ -1,0 +1,39 @@
+@page "/Telecom/DeviceInventory"
+@{
+    ViewData["Title"] = "مخزون الأجهزة";
+}
+<link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+<div id="app" v-cloak class="telecom-premium-page">
+    <div class="container-fluid py-3">
+        <h1 class="h4 mb-3"><i class="fas fa-mobile-alt me-2 text-syriatel-red"></i>مخزون الأجهزة (IMEI)</h1>
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3"><label class="form-label small">IMEI</label><input class="form-control form-control-sm" v-model="form.imei" /></div>
+                    <div class="col-md-3"><label class="form-label small">الموديل</label><input class="form-control form-control-sm" v-model="form.model" /></div>
+                    <div class="col-md-2"><label class="form-label small">السعر</label><input type="number" class="form-control form-control-sm" v-model.number="form.listPrice" /></div>
+                    <div class="col-md-2"><label class="form-label small">الفرع</label><input class="form-control form-control-sm" v-model="form.branchId" /></div>
+                    <div class="col-md-2"><button class="btn btn-telecom-primary btn-sm w-100" @@click="createDevice" :disabled="busy">إضافة</button></div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <span>القائمة</span>
+                <button class="btn btn-outline-secondary btn-sm" @@click="load" :disabled="loading"><i class="fas fa-sync" :class="{'fa-spin':loading}"></i></button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>IMEI</th><th>الموديل</th><th>السعر</th><th>الحالة</th><th>الفرع</th></tr></thead>
+                    <tbody>
+                        <tr v-for="r in rows" :key="r.id"><td dir="ltr">{{ r.imei }}</td><td>{{ r.model }}</td><td>{{ r.listPrice }}</td><td>{{ r.status }}</td><td>{{ r.branchId || '—' }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <a href="/Telecom/TelecomHub" class="btn btn-link btn-sm mt-2">مركز العمليات</a>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/FrontEnd/Pages/Telecom/DeviceInventory.cshtml.js" asp-append-version="true"></script>
+}

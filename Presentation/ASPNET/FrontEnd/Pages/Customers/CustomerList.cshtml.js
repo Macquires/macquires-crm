@@ -1236,7 +1236,16 @@ const App = {
                 StorageManager.hasAnyPermission?.(perms, ['telecom.line.migrate']) ||
                 roles.some((r) => ['TelecomAdmin', 'TelecomBackOffice'].includes(r));
             const canSimSwapLine =
-                StorageManager.hasAnyPermission?.(perms, ['telecom.line.simswap']) ||
+                StorageManager.hasAnyPermission?.(perms, [
+                    'telecom.line.simswap_request',
+                    'telecom.line.simswap',
+                ]) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canChangeNumberLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.change_number_request']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canTerminateLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.termination_request']) ||
                 roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
             const canTakeOverLine =
                 StorageManager.hasAnyPermission?.(perms, ['telecom.line.activate']) ||
@@ -1254,6 +1263,8 @@ const App = {
                 canActivateLine,
                 canMigrateLine,
                 canSimSwapLine,
+                canChangeNumberLine,
+                canTerminateLine,
                 canTakeOverLine,
                 canRechargeLine,
             };
@@ -2048,13 +2059,40 @@ const App = {
             takeoverResults: [],
             takeoverTargetCustomerId: '',
             takeoverTargetProfileId: '',
+            takeoverTransferReason: '',
+            takeoverDepositPolicy: 1,
             takeoverIdentityFile: null,
+            simReplacementReason: '',
+            simLostOrStolen: false,
+            simIdentityFile: null,
+            cnTargetMsisdnAssetId: '',
+            cnNumberChangeReason: '',
+            cnPremiumFeeAmount: '',
+            cnPoolNumbers: [],
+            cnPoolBusy: false,
+            cnRequiresBackOffice: false,
+            cnPaymentFile: null,
+            trmTerminationType: 'Voluntary',
+            trmTerminationReason: '',
+            trmRetentionOfferOutcome: 'Declined',
+            trmRequiresBackOffice: false,
+            trmIdentityFile: null,
         });
 
         const isLineProcessing = (key) => !!lineProcessing[key || ''];
 
         const hasAnyLineAction = () =>
-            gridAccess.canMigrateLine || gridAccess.canSimSwapLine || gridAccess.canTakeOverLine;
+            gridAccess.canMigrateLine
+            || gridAccess.canSimSwapLine
+            || gridAccess.canChangeNumberLine
+            || gridAccess.canTerminateLine
+            || gridAccess.canTakeOverLine;
+
+        const isLineTerminated = (sub) =>
+            String(sub?.profileOperationalStatus || sub?.ProfileOperationalStatus || '')
+                .toLowerCase() === 'terminated';
+
+        const isPremiumMsisdnCategory = (cat) => [1, 2, 3, 'Silver', 'Gold', 'Platinum'].includes(cat);
 
         const showBsModal = (id) => {
             const el = document.getElementById(id);
@@ -2094,11 +2132,73 @@ const App = {
             lineActionModal.takeoverResults = [];
             lineActionModal.takeoverTargetCustomerId = '';
             lineActionModal.takeoverTargetProfileId = '';
+            lineActionModal.takeoverTransferReason = '';
+            lineActionModal.takeoverDepositPolicy = 1;
             lineActionModal.takeoverIdentityFile = null;
+            lineActionModal.simReplacementReason = '';
+            lineActionModal.simLostOrStolen = false;
+            lineActionModal.simIdentityFile = null;
+            lineActionModal.cnTargetMsisdnAssetId = '';
+            lineActionModal.cnNumberChangeReason = '';
+            lineActionModal.cnPremiumFeeAmount = '';
+            lineActionModal.cnPoolNumbers = [];
+            lineActionModal.cnPoolBusy = false;
+            lineActionModal.cnRequiresBackOffice = false;
+            lineActionModal.cnPaymentFile = null;
+            lineActionModal.trmTerminationType = 'Voluntary';
+            lineActionModal.trmTerminationReason = '';
+            lineActionModal.trmRetentionOfferOutcome = 'Declined';
+            lineActionModal.trmRequiresBackOffice = false;
+            lineActionModal.trmIdentityFile = null;
+        };
+
+        const onTerminationTypeChangeList = () => {
+            const ty = (lineActionModal.trmTerminationType || '').trim();
+            lineActionModal.trmRequiresBackOffice =
+                ty === 'Fraud' || ty === 'Regulatory' || ty === 'Collections';
+        };
+
+        const onTerminationIdentityFileChange = (ev) => {
+            lineActionModal.trmIdentityFile = ev?.target?.files?.[0] || null;
         };
 
         const onTakeoverIdentityFileChange = (ev) => {
             lineActionModal.takeoverIdentityFile = ev?.target?.files?.[0] || null;
+        };
+
+        const onSimSwapIdentityFileChange = (ev) => {
+            lineActionModal.simIdentityFile = ev?.target?.files?.[0] || null;
+        };
+
+        const onChangeNumberPaymentFileChange = (ev) => {
+            lineActionModal.cnPaymentFile = ev?.target?.files?.[0] || null;
+        };
+
+        const loadChangeNumberPoolForModal = async (excludeAssetId) => {
+            lineActionModal.cnPoolBusy = true;
+            try {
+                const res = await AxiosManager.get('/Telecom/GetMsisdnAssetPoolList?status=Available', {});
+                const rows = parseMsisdnPoolRows(res).filter(isAvailableMsisdnPoolRow);
+                const ex = (excludeAssetId || '').trim();
+                lineActionModal.cnPoolNumbers = rows.filter((r) => {
+                    const id = r.id ?? r.Id;
+                    return !ex || String(id) !== ex;
+                });
+            } catch {
+                lineActionModal.cnPoolNumbers = [];
+            } finally {
+                lineActionModal.cnPoolBusy = false;
+            }
+        };
+
+        const onChangeNumberTargetPickedList = () => {
+            const id = (lineActionModal.cnTargetMsisdnAssetId || '').trim();
+            const row = (lineActionModal.cnPoolNumbers || []).find((r) => String(r.id ?? r.Id) === id);
+            const cat = row?.category ?? row?.Category;
+            lineActionModal.cnRequiresBackOffice = isPremiumMsisdnCategory(cat);
+            if (!lineActionModal.cnRequiresBackOffice) {
+                lineActionModal.cnPremiumFeeAmount = '';
+            }
         };
 
         const primarySubscriberProfileId = () => {
@@ -2221,6 +2321,22 @@ const App = {
             showBsModal('C360SimSwapModal');
         };
 
+        const openChangeNumberModal = async (sub) => {
+            if (!gridAccess.canChangeNumberLine || !sub) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            await loadChangeNumberPoolForModal(sub.msisdnAssetId);
+            showBsModal('C360ChangeNumberModal');
+        };
+
+        const openTerminationModal = (sub) => {
+            if (!gridAccess.canTerminateLine || !sub || isLineTerminated(sub)) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            onTerminationTypeChangeList();
+            showBsModal('C360TerminationModal');
+        };
+
         const openTakeOverModal = (sub) => {
             if (!gridAccess.canTakeOverLine || !sub) return;
             resetLineActionModal();
@@ -2335,8 +2451,67 @@ const App = {
         const submitSimSwap = async () => {
             const sub = lineActionModal.sub;
             const iccid = (lineActionModal.simIccid || '').trim();
-            if (!sub || iccid.length < 19) {
+            const reason = (lineActionModal.simReplacementReason || '').trim();
+            if (!sub || !reason) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر سبب التبديل' });
+                return;
+            }
+            if (iccid.length < 19) {
                 if (window.Swal) Swal.fire({ icon: 'warning', title: 'أدخل ICCID الجديد (19 رقم)' });
+                return;
+            }
+            if (lineActionModal.simLostOrStolen && !lineActionModal.simIdentityFile) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع إقرار / هوية المشترك' });
+                return;
+            }
+            if (lineActionModal.simLostOrStolen) {
+                const key = sub.id || '__line__';
+                if (lineProcessing[key]) return;
+                lineProcessing[key] = true;
+                lineActionModal.busy = true;
+                const uid = StorageManager.getUserId();
+                try {
+                    const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', {
+                        kind: 3,
+                        subscriberProfileId: sub.subscriberProfileId,
+                        msisdnAssetId: sub.msisdnAssetId || null,
+                        simIccid: iccid,
+                        replacementReason: reason,
+                        isLostOrStolenReport: true,
+                        notes: `Customer360|SimSwap|${sub.msisdn || '—'}`,
+                        createdById: uid,
+                    });
+                    if (createRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), {
+                            response: createRes,
+                        });
+                    }
+                    const opId = createRes?.data?.content?.data?.id;
+                    if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                    const form = new FormData();
+                    form.append('id', opId);
+                    form.append('updatedById', uid || '');
+                    form.append('file', lineActionModal.simIdentityFile);
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد المشرف (SIM-).',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                    await loadCustomer360(state.id);
+                    hideBsModal('C360SimSwapModal');
+                } catch (e) {
+                    showLineActionError(e);
+                } finally {
+                    lineProcessing[key] = false;
+                    lineActionModal.busy = false;
+                }
                 return;
             }
             lineActionModal.busy = true;
@@ -2349,10 +2524,184 @@ const App = {
                     subscriberProfileId: sub.subscriberProfileId,
                     msisdnAssetId: sub.msisdnAssetId || null,
                     simIccid: iccid,
+                    replacementReason: reason,
+                    isLostOrStolenReport: false,
                 }),
             });
             lineActionModal.busy = false;
             if (ok) hideBsModal('C360SimSwapModal');
+        };
+
+        const submitTermination = async () => {
+            const sub = lineActionModal.sub;
+            const reason = (lineActionModal.trmTerminationReason || '').trim();
+            const type = (lineActionModal.trmTerminationType || '').trim();
+            if (!sub || !reason || !type) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أكمل نوع وسبب الإنهاء' });
+                return;
+            }
+            if (type === 'Voluntary' && !(lineActionModal.trmRetentionOfferOutcome || '').trim()) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'نتيجة عرض الاحتفاظ مطلوبة' });
+                return;
+            }
+            if (lineActionModal.trmRequiresBackOffice && !lineActionModal.trmIdentityFile) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع الوثيقة / القرار الإداري' });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const body = {
+                    kind: 7,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    terminationType: type,
+                    terminationReason: reason,
+                    retentionOfferOutcome:
+                        type === 'Voluntary' ? (lineActionModal.trmRetentionOfferOutcome || '').trim() : null,
+                    notes: `CustomerList|Termination|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                };
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), {
+                        response: createRes,
+                    });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                const entity = createRes?.data?.content?.data;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                lineActionModal.trmRequiresBackOffice =
+                    String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                    || lineActionModal.trmRequiresBackOffice;
+                if (lineActionModal.trmRequiresBackOffice) {
+                    const form = new FormData();
+                    form.append('id', opId);
+                    form.append('updatedById', uid || '');
+                    form.append('file', lineActionModal.trmIdentityFile);
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد الإنهاء (TRM-).',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: opId,
+                        updatedById: uid,
+                    });
+                    if (confirmRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                            response: confirmRes,
+                        });
+                    }
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'success', title: 'تم إنهاء الخط', timer: 1800, showConfirmButton: false });
+                    }
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360TerminationModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
+        };
+
+        const submitChangeNumber = async () => {
+            const sub = lineActionModal.sub;
+            const targetId = (lineActionModal.cnTargetMsisdnAssetId || '').trim();
+            const reason = (lineActionModal.cnNumberChangeReason || '').trim();
+            if (!sub || !targetId || !reason) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر الرقم الجديد وسبب التغيير' });
+                return;
+            }
+            if (lineActionModal.cnRequiresBackOffice && !lineActionModal.cnPaymentFile) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع إيصال الدفع أو موافقة المشرف' });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                await AxiosManager.post('/Telecom/ReserveMsisdnForCustomer', {
+                    msisdnAssetId: targetId,
+                    customerId: state.id,
+                    reservedByUserId: uid,
+                });
+                const body = {
+                    kind: 5,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    targetMsisdnAssetId: targetId,
+                    numberChangeReason: reason,
+                    notes: `Customer360|ChangeNumber|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                };
+                if (lineActionModal.cnPremiumFeeAmount) {
+                    body.premiumFeeAmount = Number(lineActionModal.cnPremiumFeeAmount);
+                }
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), {
+                        response: createRes,
+                    });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (lineActionModal.cnRequiresBackOffice) {
+                    const form = new FormData();
+                    form.append('id', opId);
+                    form.append('updatedById', uid || '');
+                    form.append('file', lineActionModal.cnPaymentFile);
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد تغيير الرقم (CNR-).',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: opId,
+                        updatedById: uid,
+                    });
+                    if (confirmRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                            response: confirmRes,
+                        });
+                    }
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'success', title: 'تم تغيير الرقم', timer: 1800, showConfirmButton: false });
+                    }
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360ChangeNumberModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
         };
 
         const submitTakeOver = async () => {
@@ -2360,6 +2709,10 @@ const App = {
             const secondary = (lineActionModal.takeoverTargetProfileId || '').trim();
             if (!sub || !secondary) {
                 if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر المالك الجديد' });
+                return;
+            }
+            if (!(lineActionModal.takeoverTransferReason || '').trim()) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'سبب نقل الملكية مطلوب' });
                 return;
             }
             if (!lineActionModal.takeoverIdentityFile) {
@@ -2377,6 +2730,8 @@ const App = {
                     subscriberProfileId: sub.subscriberProfileId,
                     secondarySubscriberProfileId: secondary,
                     msisdnAssetId: sub.msisdnAssetId || null,
+                    transferReason: (lineActionModal.takeoverTransferReason || '').trim(),
+                    depositTransferPolicy: Number(lineActionModal.takeoverDepositPolicy) || 1,
                     notes: `Customer360|TakeOver|${sub.msisdn || '—'}`,
                     createdById: uid,
                 });
@@ -2491,6 +2846,117 @@ const App = {
             }
         };
 
+        const pollPaymentDetailList = async (paymentId, maxAttempts = 12) => {
+            for (let i = 0; i < maxAttempts; i++) {
+                const res = await AxiosManager.get(
+                    '/Telecom/GetPaymentTransactionDetail?id=' + encodeURIComponent(paymentId),
+                    {}
+                );
+                const detail = res?.data?.content ?? res?.data?.Content;
+                const status = detail?.status ?? detail?.Status;
+                if (status === 2 || status === 'Completed') return detail;
+                if (status === 3 || status === 'Failed') {
+                    throw new Error(detail?.failureReason || detail?.FailureReason || 'فشلت معاملة الدفع');
+                }
+                await new Promise((r) => setTimeout(r, 500));
+            }
+            return null;
+        };
+
+        const executeListPaymentFlow = async (customerId, subscriptionId, busyKey) => {
+            const { value: method } = await Swal.fire({
+                title: 'طريقة الشحن',
+                input: 'radio',
+                inputOptions: { wallet: 'محفظة / نقد', voucher: 'قسيمة' },
+                inputValue: 'wallet',
+                showCancelButton: true,
+                confirmButtonText: 'متابعة',
+            });
+            if (!method) return;
+
+            let createBody;
+            let gatewayRef;
+            if (method === 'voucher') {
+                const { value: voucherCode } = await Swal.fire({
+                    title: 'رمز القسيمة',
+                    input: 'text',
+                    showCancelButton: true,
+                    inputValidator: (v) => (!v || !String(v).trim() ? 'أدخل الرمز' : undefined),
+                });
+                if (!voucherCode) return;
+                const valRes = await AxiosManager.post('/Telecom/ValidateVoucher', {
+                    voucherCode: String(voucherCode).trim(),
+                });
+                const val = valRes?.data?.content ?? valRes?.data?.Content;
+                if (!(val?.valid ?? val?.Valid)) {
+                    Swal.fire({ icon: 'error', title: val?.messageAr || val?.MessageAr || 'قسيمة غير صالحة' });
+                    return;
+                }
+                createBody = {
+                    type: 1,
+                    customerId,
+                    subscriptionId,
+                    amount: val?.faceValue ?? val?.FaceValue ?? 0,
+                    paymentChannel: 2,
+                    voucherCode: String(voucherCode).trim(),
+                    createdById: StorageManager.getUserId(),
+                };
+                gatewayRef = `VCHR-${String(voucherCode).trim()}`;
+            } else {
+                const { value: amountStr } = await Swal.fire({
+                    title: 'مبلغ الشحن',
+                    input: 'number',
+                    showCancelButton: true,
+                    confirmButtonText: 'التالي',
+                    inputValidator: (v) => {
+                        const n = parseFloat(v);
+                        if (!v || Number.isNaN(n) || n <= 0) return 'مبلغ غير صالح';
+                    },
+                });
+                if (!amountStr) return;
+                const { value: gw } = await Swal.fire({
+                    title: 'مرجع الدفع',
+                    input: 'text',
+                    showCancelButton: true,
+                    confirmButtonText: 'تأكيد',
+                    inputValidator: (v) => (!v || !String(v).trim() ? 'مرجع مطلوب' : undefined),
+                });
+                if (!gw) return;
+                createBody = {
+                    type: 0,
+                    customerId,
+                    subscriptionId,
+                    amount: parseFloat(amountStr),
+                    paymentChannel: 1,
+                    createdById: StorageManager.getUserId(),
+                };
+                gatewayRef = String(gw).trim();
+            }
+
+            state.rechargeBusy = busyKey;
+            try {
+                const createRes = await AxiosManager.post('/Telecom/CreatePaymentTransaction', createBody);
+                const draft = createRes?.data?.content ?? createRes?.data?.Content;
+                const paymentId = draft?.paymentId ?? draft?.PaymentId;
+                const confirmRes = await AxiosManager.post('/Telecom/ConfirmPaymentTransaction', {
+                    paymentId,
+                    gatewayReference: gatewayRef,
+                    confirmedById: StorageManager.getUserId(),
+                });
+                const confirm = confirmRes?.data?.content ?? confirmRes?.data?.Content;
+                if (!(confirm?.success ?? confirm?.Success)) {
+                    throw new Error(confirm?.messageAr || confirm?.MessageAr || 'فشل التأكيد');
+                }
+                await pollPaymentDetailList(paymentId);
+                await loadCustomer360(state.id);
+                Swal.fire({ icon: 'success', title: 'تم الشحن', text: confirm?.messageAr || confirm?.MessageAr });
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: e?.message || 'تعذّر الشحن' });
+            } finally {
+                state.rechargeBusy = '';
+            }
+        };
+
         const openRechargeLineModal = async (sub) => {
             if (!state.id || !sub?.id) return;
             const wallet = lineWalletForSub(sub.id);
@@ -2499,43 +2965,7 @@ const App = {
                 Swal.fire({ icon: 'warning', title: 'لا يوجد رقم خط للشحن' });
                 return;
             }
-            const { value: amountStr } = await Swal.fire({
-                title: 'شحن رصيد الخط',
-                html: `<p class="small" dir="ltr">${msisdn}</p><p class="small">الرصيد: <strong>${formatWalletAmount(wallet?.balance)}</strong> ل.س</p>`,
-                input: 'number',
-                inputPlaceholder: 'المبلغ بالليرة السورية',
-                showCancelButton: true,
-                confirmButtonText: 'شحن',
-                cancelButtonText: 'إلغاء',
-                confirmButtonColor: '#c8102e',
-                inputValidator: (v) => {
-                    const n = parseFloat(v);
-                    if (!v || Number.isNaN(n) || n <= 0) return 'أدخل مبلغاً صحيحاً';
-                },
-            });
-            if (!amountStr) return;
-            state.rechargeBusy = sub.id;
-            try {
-                const res = await AxiosManager.post('/Customer/RechargeCustomer360Line', {
-                    customerId: state.id,
-                    subscriptionId: sub.id,
-                    amount: parseFloat(amountStr),
-                });
-                const body = res?.data?.content ?? res?.data?.Content;
-                await loadCustomer360(state.id);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'تم الشحن',
-                    text: body?.message || body?.Message || 'تم تحديث الرصيد',
-                    timer: 2800,
-                    showConfirmButton: false,
-                });
-            } catch (e) {
-                const msg = e?.response?.data?.message || e?.message || 'تعذّر الشحن';
-                Swal.fire({ icon: 'error', title: msg });
-            } finally {
-                state.rechargeBusy = '';
-            }
+            await executeListPaymentFlow(state.id, sub.id, sub.id);
         };
 
         const revealNationalId = async () => {
@@ -2670,12 +3100,22 @@ const App = {
             openNewLineModal,
             openMigrateModal,
             openSimSwapModal,
+            openChangeNumberModal,
+            openTerminationModal,
             openTakeOverModal,
             submitNewLineActivation,
             submitMigrate,
             submitSimSwap,
+            submitChangeNumber,
+            submitTermination,
             submitTakeOver,
             onTakeoverIdentityFileChange,
+            onSimSwapIdentityFileChange,
+            onChangeNumberPaymentFileChange,
+            onChangeNumberTargetPickedList,
+            onTerminationTypeChangeList,
+            onTerminationIdentityFileChange,
+            isLineTerminated,
             searchTakeoverTarget,
             selectTakeoverTarget,
             openSupportTicketModal: async () => {

@@ -86,8 +86,12 @@ public static class DependencyInjection
         services.AddScoped<ITelecomDirectorySync, TelecomDirectoryMockSyncIntegration>();
         services.AddScoped<IChargingSystemIntegration, ChargingSystemMockIntegration>();
         services.AddScoped<ISmsGatewayIntegration, SmsGatewayMockIntegration>();
+        services.AddScoped<IPaymentGatewayIntegration, PaymentGatewayMockIntegration>();
+        services.AddScoped<IDeviceInventoryIntegration, DeviceInventoryMockIntegration>();
+        services.AddHostedService<DeviceInstallmentDelinquencyHostedService>();
         services.AddSingleton<Application.Common.Services.ProductCatalog.IActiveProductCatalogCache, Services.ProductCatalog.ActiveProductCatalogCache>();
         services.AddHostedService<MsisdnReservationCleanupService>();
+        services.AddHostedService<SuspensionAutoReconnectHostedService>();
 
         return services;
     }

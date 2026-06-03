@@ -6,6 +6,7 @@ using Application.Common.Integrations;
 using Application.Common.Repositories;
 using Application.Common.Security;
 using Application.Common.Telecom;
+using Application.Common.Telecom.OfferSubscription;
 using Application.Features.NumberSequenceManager;
 using Application.Features.TelecomManager.Commands;
 using Domain.Entities;
@@ -53,6 +54,8 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
     private readonly VasMsisdnLock _msisdnLock;
     private readonly IUserAuditService _audit;
     private readonly NumberSequenceService _numberSequenceService;
+    private readonly IOfferSubscriptionEligibilityChecker _offerEligibility;
+    private readonly IVasCompletionService _vasCompletion;
 
     public ToggleSubscriberVasServiceHandler(
         IQueryContext query,
@@ -62,7 +65,9 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         IVasProvisioningService vasProvisioning,
         VasMsisdnLock msisdnLock,
         IUserAuditService audit,
-        NumberSequenceService numberSequenceService)
+        NumberSequenceService numberSequenceService,
+        IOfferSubscriptionEligibilityChecker offerEligibility,
+        IVasCompletionService vasCompletion)
     {
         _query = query;
         _activeRepository = activeRepository;
@@ -72,6 +77,8 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         _msisdnLock = msisdnLock;
         _audit = audit;
         _numberSequenceService = numberSequenceService;
+        _offerEligibility = offerEligibility;
+        _vasCompletion = vasCompletion;
     }
 
     public Task<ToggleSubscriberVasServiceResult> Handle(
@@ -109,6 +116,16 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
             ?? throw new InvalidOperationException($"VAS service '{serviceCode}' not found or inactive.");
 
         var activate = request.Action == VasToggleAction.Activate;
+
+        var eligibility = await _offerEligibility.ValidateForVasToggleAsync(
+            msisdn,
+            serviceCode,
+            activate,
+            cancellationToken);
+        if (!eligibility.Allowed)
+        {
+            throw new BusinessRuleViolationException(eligibility.MessageAr);
+        }
 
         if (activate)
         {
@@ -165,6 +182,21 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         if (!provision.Success)
         {
             throw new BusinessRuleViolationException(provision.Message);
+        }
+
+        var opEntity = await _operationRepository.GetAsync(operationId, cancellationToken);
+        if (opEntity != null)
+        {
+            opEntity.Status = TelecomOperationStatus.Completed;
+            opEntity.ProvisioningResult = "Completed";
+            _operationRepository.Update(opEntity);
+            await _vasCompletion.WriteAuditAsync(
+                operationId,
+                serviceCode,
+                activate,
+                msisdn,
+                request.ActorUserId,
+                cancellationToken);
         }
 
         if (activate)

@@ -12,4 +12,11 @@ public interface ITechnicalTicketQueueIngestionService
         TelecomOperationRequest operation,
         string? actorUserId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>VAL-02-05 — fallout ticket after CBS/HLR failure (correlation id in payload).</summary>
+    Task<TelecomTechnicalTicket?> EnqueueProvisioningFalloutAsync(
+        TelecomOperationRequest operation,
+        string failureMessage,
+        string? actorUserId,
+        CancellationToken cancellationToken = default);
 }

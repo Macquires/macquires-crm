@@ -15,7 +15,8 @@ public sealed record NetworkProvisionRequest(
     TelecomOperationKind Kind,
     string? Imsi = null,
     string? ProductServiceCode = null,
-    string? SubscriptionTypeCode = null);
+    string? SubscriptionTypeCode = null,
+    string? PriorMsisdn = null);
 
 public sealed record NetworkProvisionResult(
     bool Success,

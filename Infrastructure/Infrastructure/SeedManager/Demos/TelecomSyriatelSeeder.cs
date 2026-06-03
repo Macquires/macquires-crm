@@ -133,6 +133,133 @@ public class TelecomSyriatelSeeder
         await _unitOfWork.SaveAsync();
     }
 
+    /// <summary>
+    /// Idempotent backfill for existing demo DBs: hero line bound to MIX_500 + completed MGR/VAS for KPIs.
+    /// </summary>
+    public async Task EnsureHeroOfferSubscriptionDemoAsync()
+    {
+        var mixOffering = await _query.ProductOffering.AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Code == "MIX_500")
+            .Select(o => new { o.Id, o.ProductId, o.Name })
+            .FirstOrDefaultAsync();
+
+        var yaHalaOffering = await _query.ProductOffering.AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Code == "YA_HALA_30")
+            .Select(o => new { o.Id, o.ProductId })
+            .FirstOrDefaultAsync();
+
+        if (mixOffering == null)
+        {
+            return;
+        }
+
+        var heroAsset = await _query.MsisdnAsset.AsNoTracking()
+            .FirstOrDefaultAsync(m => !m.IsDeleted && m.Msisdn == TelecomDemoMsisdn.Hero);
+
+        if (heroAsset == null || string.IsNullOrEmpty(heroAsset.SubscriberProfileId))
+        {
+            return;
+        }
+
+        var subscription = await _query.TelecomSubscription.IsDeletedEqualTo()
+            .Where(s => s.MsisdnAssetId == heroAsset.Id)
+            .OrderByDescending(s => s.IsPrimaryLine)
+            .ThenBy(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+
+        if (subscription != null
+            && (subscription.ProductOfferingId != mixOffering.Id
+                || (mixOffering.ProductId != null && subscription.ProductId != mixOffering.ProductId)))
+        {
+            var tracked = await _subscriptionRepository.GetAsync(subscription.Id, CancellationToken.None);
+            if (tracked != null)
+            {
+                tracked.ProductOfferingId = mixOffering.Id;
+                if (mixOffering.ProductId != null)
+                {
+                    tracked.ProductId = mixOffering.ProductId;
+                }
+
+                _subscriptionRepository.Update(tracked);
+                await _unitOfWork.SaveAsync();
+            }
+        }
+
+        var demoNow = DateTime.UtcNow;
+        var mgr = await _query.TelecomOperationRequest.IsDeletedEqualTo()
+            .Where(o => o.Kind == TelecomOperationKind.Migration
+                        && o.SubscriberProfileId == heroAsset.SubscriberProfileId
+                        && (o.MsisdnAssetId == null || o.MsisdnAssetId == heroAsset.Id))
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+
+        if (mgr != null && mgr.Status != TelecomOperationStatus.Completed)
+        {
+            var trackedMgr = await _operationRepository.GetAsync(mgr.Id, CancellationToken.None);
+            if (trackedMgr != null)
+            {
+                trackedMgr.Status = TelecomOperationStatus.Completed;
+                trackedMgr.DocumentStatus = TelecomDocumentStatus.Verified;
+                trackedMgr.ProductOfferingId = mixOffering.Id;
+                trackedMgr.ProductId = mixOffering.ProductId;
+                trackedMgr.PriorProductOfferingId = yaHalaOffering?.Id;
+                trackedMgr.PriorProductId = yaHalaOffering?.ProductId;
+                trackedMgr.TargetOfferName = mixOffering.Name;
+                trackedMgr.ConfirmedAtUtc ??= demoNow.AddMinutes(8);
+                trackedMgr.CreatedAtUtc ??= demoNow.AddMinutes(-12);
+                trackedMgr.Notes = "ديمو MGR مكتمل: يا هلا → سيريتل ميكس 500 — KPIs وعرض 360.";
+                _operationRepository.Update(trackedMgr);
+                await _unitOfWork.SaveAsync();
+            }
+        }
+        else if (mgr == null)
+        {
+            var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.Migration);
+            var op = new TelecomOperationRequest
+            {
+                Kind = TelecomOperationKind.Migration,
+                Number = _numberSequenceService.GenerateNumber(entityName, prefix, "", useDate: false),
+                Status = TelecomOperationStatus.Completed,
+                DocumentStatus = TelecomDocumentStatus.Verified,
+                SubscriberProfileId = heroAsset.SubscriberProfileId,
+                MsisdnAssetId = heroAsset.Id,
+                ProductOfferingId = mixOffering.Id,
+                ProductId = mixOffering.ProductId,
+                PriorProductOfferingId = yaHalaOffering?.Id,
+                PriorProductId = yaHalaOffering?.ProductId,
+                TargetOfferName = mixOffering.Name,
+                ConfirmedAtUtc = demoNow.AddMinutes(8),
+                CreatedAtUtc = demoNow.AddMinutes(-12),
+                Notes = "ديمو MGR مكتمل: يا هلا → سيريتل ميكس 500 — KPIs وعرض 360.",
+            };
+            await _operationRepository.CreateAsync(op);
+            await _unitOfWork.SaveAsync();
+        }
+
+        var hasVasDemo = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo(false)
+            .AnyAsync(o => o.Kind == TelecomOperationKind.ServiceModification
+                           && o.SubscriberProfileId == heroAsset.SubscriberProfileId
+                           && o.Notes != null
+                           && o.Notes.Contains("Activate VAS VAS_CALLER_ID"));
+
+        if (!hasVasDemo)
+        {
+            var (vasEntity, vasPrefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.ServiceModification);
+            await _operationRepository.CreateAsync(new TelecomOperationRequest
+            {
+                Kind = TelecomOperationKind.ServiceModification,
+                Number = _numberSequenceService.GenerateNumber(vasEntity, vasPrefix, "", useDate: false),
+                Status = TelecomOperationStatus.Completed,
+                DocumentStatus = TelecomDocumentStatus.Verified,
+                SubscriberProfileId = heroAsset.SubscriberProfileId,
+                MsisdnAssetId = heroAsset.Id,
+                CreatedAtUtc = demoNow.AddMinutes(-5),
+                Notes = "Activate VAS VAS_CALLER_ID — ديمو كاشف الأرقام.",
+            });
+            await _unitOfWork.SaveAsync();
+        }
+    }
+
     private async Task PairMsisdnKitAsync(string msisdnAssetId, string iccid, string? imsi)
     {
         var tracked = await _msisdnRepository.GetAsync(msisdnAssetId, CancellationToken.None);
@@ -333,7 +460,18 @@ public class TelecomSyriatelSeeder
 
         SubscriberProfile? heroProfile = null;
         string? heroMsisdnAssetId = null;
+        TelecomSubscription? heroSubscription = null;
         SubscriberProfile? demoTakeoverNewOwnerProfile = null;
+
+        var mixOffering = await _query.ProductOffering.AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Code == "MIX_500")
+            .Select(o => new { o.Id, o.ProductId, o.Name })
+            .FirstOrDefaultAsync();
+
+        var yaHalaOffering = await _query.ProductOffering.AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Code == "YA_HALA_30")
+            .Select(o => new { o.Id, o.ProductId })
+            .FirstOrDefaultAsync();
 
         var multiProfileCountByPartyName = multiProfileParties.ToDictionary(
             p => p.Name,
@@ -415,12 +553,6 @@ public class TelecomSyriatelSeeder
                 };
                 await _msisdnRepository.CreateAsync(asset);
 
-                if (isHero && profileIndex == 0)
-                {
-                    heroProfile = profile;
-                    heroMsisdnAssetId = asset.Id;
-                }
-
                 if (demoTakeoverNewOwnerProfile == null
                     && profileIndex == 0
                     && string.Equals(cust.DisplayName, DemoSyrianSubscriberCatalog.GetName(0), StringComparison.Ordinal))
@@ -433,7 +565,10 @@ public class TelecomSyriatelSeeder
                 {
                     SubscriberProfileId = profile.Id,
                     MsisdnAssetId = asset.Id,
-                    ProductId = asset.ProductId,
+                    ProductId = isHero && mixOffering?.ProductId != null
+                        ? mixOffering.ProductId
+                        : asset.ProductId,
+                    ProductOfferingId = isHero && profileIndex == 0 ? mixOffering?.Id : null,
                     SubscriptionTypeId = isHero
                         ? TelecomSubscriptionTypeWellKnownIds.Hybrid
                         : profileCount > 1
@@ -454,6 +589,13 @@ public class TelecomSyriatelSeeder
                 };
                 await _subscriptionRepository.CreateAsync(sub);
 
+                if (isHero && profileIndex == 0)
+                {
+                    heroProfile = profile;
+                    heroMsisdnAssetId = asset.Id;
+                    heroSubscription = sub;
+                }
+
                 if (!string.IsNullOrWhiteSpace(kitIccid))
                 {
                     var sim = SimInventory.Create(kitIccid, imsi: kitImsi);
@@ -468,38 +610,51 @@ public class TelecomSyriatelSeeder
 
         if (heroProfile != null && !string.IsNullOrEmpty(heroMsisdnAssetId))
         {
+            var demoNow = DateTime.UtcNow;
             var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.Migration);
             var op = new TelecomOperationRequest
             {
                 Kind = TelecomOperationKind.Migration,
                 Number = _numberSequenceService.GenerateNumber(entityName, prefix, "", useDate: false),
-                Status = TelecomOperationStatus.Draft,
-                DocumentStatus = TelecomDocumentStatus.Uploaded,
+                Status = TelecomOperationStatus.Completed,
+                DocumentStatus = TelecomDocumentStatus.Verified,
                 SubscriberProfileId = heroProfile.Id,
                 MsisdnAssetId = heroMsisdnAssetId,
-                Notes = "ديمو: تحويل من شحن إلى فاتورة + طلب راوتر 5G لمشروع دمر — جاهز للتأكيد وعرض Polly/CBS."
+                ProductOfferingId = mixOffering?.Id,
+                ProductId = mixOffering?.ProductId ?? heroSubscription?.ProductId,
+                PriorProductOfferingId = yaHalaOffering?.Id,
+                PriorProductId = yaHalaOffering?.ProductId,
+                TargetOfferName = mixOffering?.Name ?? "سيريتل ميكس 500",
+                ConfirmedAtUtc = demoNow.AddMinutes(8),
+                CreatedAtUtc = demoNow.AddMinutes(-12),
+                Notes = "ديمو MGR مكتمل: يا هلا → سيريتل ميكس 500 — KPIs وعرض 360."
             };
             await _operationRepository.CreateAsync(op);
             await _unitOfWork.SaveAsync();
 
-            var log1 = new BillingIntegrationLog
+            await _logRepository.CreateAsync(new BillingIntegrationLog
             {
                 TelecomOperationRequestId = op.Id,
                 AttemptNumber = 1,
-                Success = false,
-                Message = "CBS-ERR-408: Huawei CBS timeout during pre-check balance query.",
-                IntegrationTarget = "Huawei CBS API v2.1"
-            };
-            var log2 = new BillingIntegrationLog
-            {
-                TelecomOperationRequestId = op.Id,
-                AttemptNumber = 2,
                 Success = true,
-                Message = "CBS-OK-200: Successfully verified subscriber credit limit and roaming flags.",
-                IntegrationTarget = "Huawei CBS API v2.1"
+                Message = "CBS-OK-200: ChangePrimaryOffer MIX_500 applied.",
+                IntegrationTarget = "Huawei CBS API v2.1",
+            });
+            await _unitOfWork.SaveAsync();
+
+            var (vasEntity, vasPrefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.ServiceModification);
+            var vasOp = new TelecomOperationRequest
+            {
+                Kind = TelecomOperationKind.ServiceModification,
+                Number = _numberSequenceService.GenerateNumber(vasEntity, vasPrefix, "", useDate: false),
+                Status = TelecomOperationStatus.Completed,
+                DocumentStatus = TelecomDocumentStatus.Verified,
+                SubscriberProfileId = heroProfile.Id,
+                MsisdnAssetId = heroMsisdnAssetId,
+                CreatedAtUtc = demoNow.AddMinutes(-5),
+                Notes = "Activate VAS VAS_CALLER_ID — ديمو كاشف الأرقام.",
             };
-            await _logRepository.CreateAsync(log1);
-            await _logRepository.CreateAsync(log2);
+            await _operationRepository.CreateAsync(vasOp);
             await _unitOfWork.SaveAsync();
         }
 

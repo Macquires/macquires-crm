@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Telecom;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
@@ -23,6 +24,10 @@ public record GetTelecomOperationListDto
     public string? Msisdn { get; init; }
     public bool HasIdentityDocument { get; init; }
     public string? TargetOfferName { get; init; }
+    public string? TransferReason { get; init; }
+    public string? ReplacementReason { get; init; }
+    public bool IsLostOrStolenReport { get; init; }
+    public string? ApprovalLevelRequired { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
 }
 
@@ -80,9 +85,22 @@ public class GetTelecomOperationListHandler : IRequestHandler<GetTelecomOperatio
             .OrderByDescending(x => x.CreatedAtUtc);
 
         var list = await query.ToListAsync(cancellationToken);
-        return new GetTelecomOperationListResult
+        var mapped = _mapper.Map<List<GetTelecomOperationListDto>>(list);
+        var data = mapped.Select(d =>
         {
-            Data = _mapper.Map<List<GetTelecomOperationListDto>>(list)
-        };
+            var src = list.First(x => x.Id == d.Id);
+            return d with
+            {
+                KindName = TelecomOperationLabels.KindLabelAr(src.Kind),
+                StatusName = TelecomOperationLabels.StatusLabelAr(src.Status),
+                DocumentStatusName = src.DocumentStatus.ToString(),
+                TransferReason = src.TransferReason,
+                ReplacementReason = src.ReplacementReason,
+                IsLostOrStolenReport = src.IsLostOrStolenReport,
+                ApprovalLevelRequired = src.ApprovalLevelRequired,
+            };
+        }).ToList();
+
+        return new GetTelecomOperationListResult { Data = data };
     }
 }

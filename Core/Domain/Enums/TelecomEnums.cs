@@ -24,7 +24,15 @@ public enum TelecomOperationKind
     TakeOver = 2,
     SimSwap = 3,
     ServiceModification = 4,
-    NumberPortability = 5
+    NumberPortability = 5,
+    ChangeGsmType = 6,
+    Termination = 7,
+    TemporarySuspension = 8,
+    Reconnect = 9,
+    /// <summary>§14 Device sales &amp; installment (DEV-).</summary>
+    DeviceSale = 10,
+    /// <summary>§15 Deposit / wallet refund settlement (RFD-).</summary>
+    DepositRefundSettlement = 11
 }
 
 public enum TelecomOperationStatus
@@ -46,4 +54,13 @@ public enum SubscriberType
 {
     Individual = 0,
     Corporate = 1
+}
+
+/// <summary>§7 Transfer of ownership — deposit / guarantee handling policy.</summary>
+public enum DepositTransferPolicy
+{
+    RetainWithOldOwner = 0,
+    TransferToNewOwner = 1,
+    Forfeit = 2,
+    RefundOldOwner = 3
 }

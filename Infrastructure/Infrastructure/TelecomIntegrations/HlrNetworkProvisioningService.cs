@@ -199,6 +199,11 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
         TelecomOperationKind.Migration => "Migration_OfferChange",
         TelecomOperationKind.NewActivation => TelecomBssOperations.HlrCreateSubscriber,
         TelecomOperationKind.TakeOver => "TakeOver_OwnershipTransfer",
+        TelecomOperationKind.ChangeGsmType => TelecomBssOperations.HlrChangeGsmType,
+        TelecomOperationKind.NumberPortability => TelecomBssOperations.HlrMsisdnUpdate,
+        TelecomOperationKind.Termination => TelecomBssOperations.HlrDeactivateSubscriber,
+        TelecomOperationKind.TemporarySuspension => TelecomBssOperations.HlrSuspendSubscriber,
+        TelecomOperationKind.Reconnect => TelecomBssOperations.HlrReactivateSubscriber,
         _ => $"ActivateLine_{kind}"
     };
 }

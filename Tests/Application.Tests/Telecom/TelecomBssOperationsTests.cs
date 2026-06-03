@@ -51,5 +51,9 @@ public class TelecomBssOperationsTests
     {
         Assert.Equal("CbsCreateAccountProfile", TelecomBssOperations.CbsCreateAccountProfile);
         Assert.Equal("HlrCreateSubscriber", TelecomBssOperations.HlrCreateSubscriber);
+        Assert.Equal("CbsTransferOwnership", TelecomBssOperations.CbsTransferOwnership);
+        Assert.Equal("CbsSimProfileUpdate", TelecomBssOperations.CbsSimProfileUpdate);
+        Assert.Equal("CbsGenerateFinalBill", TelecomBssOperations.CbsGenerateFinalBill);
+        Assert.Equal("HlrDeactivateSubscriber", TelecomBssOperations.HlrDeactivateSubscriber);
     }
 }

@@ -50,4 +50,7 @@ public static class TelecomRoles
     public const string RolesManageTechnicalTickets = $"{CallCenter},{BackOffice},{Admin}";
 
     public const string RolesResolveTechnicalTickets = $"{BackOffice},{Admin}";
+
+    /// <summary>عكس معاملات الدفع (Finance / Management tier).</summary>
+    public const string RolesReversePayment = $"{Management},{BackOffice},{Admin}";
 }

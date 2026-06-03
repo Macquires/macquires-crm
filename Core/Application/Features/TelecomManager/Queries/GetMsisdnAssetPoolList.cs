@@ -22,6 +22,7 @@ public record GetMsisdnAssetPoolListDto
     public string? SubscriberProfileId { get; init; }
     public string? SubscriberName { get; init; }
     public string? ProductName { get; init; }
+    public MsisdnCategory Category { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
 }
 

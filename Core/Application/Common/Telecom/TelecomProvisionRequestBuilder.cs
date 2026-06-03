@@ -12,7 +12,11 @@ public sealed record TelecomLineProvisionContext(
     string? Imsi,
     string? ProductServiceCode,
     string? SubscriptionTypeCode,
-    decimal? InitialDeposit);
+    decimal? InitialDeposit,
+    string? SourceSubscriptionTypeCode = null,
+    string? TargetSubscriptionTypeCode = null,
+    string? PriorIccid = null,
+    string? PriorMsisdn = null);
 
 /// <summary>Builds CBS/HLR requests from operation + pool/inventory context.</summary>
 public static class TelecomProvisionRequestBuilder
@@ -26,7 +30,29 @@ public static class TelecomProvisionRequestBuilder
         string? imsi = null;
         string? pairedIccid = null;
 
-        if (!string.IsNullOrEmpty(operation.MsisdnAssetId))
+        string? priorMsisdn = null;
+
+        if (operation.Kind == TelecomOperationKind.NumberPortability)
+        {
+            if (!string.IsNullOrEmpty(operation.TargetMsisdnAssetId))
+            {
+                var target = await query.MsisdnAsset.AsNoTracking()
+                    .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == operation.TargetMsisdnAssetId, cancellationToken);
+                msisdn = target?.Msisdn;
+                imsi = target?.PairedImsi;
+                pairedIccid = target?.PairedIccid;
+            }
+
+            var priorId = operation.PriorMsisdnAssetId ?? operation.MsisdnAssetId;
+            if (!string.IsNullOrEmpty(priorId))
+            {
+                priorMsisdn = await query.MsisdnAsset.AsNoTracking()
+                    .Where(m => !m.IsDeleted && m.Id == priorId)
+                    .Select(m => m.Msisdn)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+        }
+        else if (!string.IsNullOrEmpty(operation.MsisdnAssetId))
         {
             var asset = await query.MsisdnAsset.AsNoTracking()
                 .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == operation.MsisdnAssetId, cancellationToken);
@@ -46,6 +72,15 @@ public static class TelecomProvisionRequestBuilder
 
         var iccid = simIccid ?? pairedIccid;
 
+        string? priorIccid = null;
+        if (!string.IsNullOrEmpty(operation.PriorSimInventoryId))
+        {
+            priorIccid = await query.SimInventory.AsNoTracking()
+                .Where(s => !s.IsDeleted && s.Id == operation.PriorSimInventoryId)
+                .Select(s => s.Iccid)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         string? serviceCode = null;
         decimal? initialDeposit = null;
         string? subscriptionTypeCode = null;
@@ -61,15 +96,35 @@ public static class TelecomProvisionRequestBuilder
             }
         }
 
-        if (!string.IsNullOrEmpty(operation.SubscriberProfileId))
+        string? sourceSubscriptionTypeCode = null;
+        string? targetSubscriptionTypeCode = null;
+
+        if (operation.Kind == TelecomOperationKind.ChangeGsmType)
         {
-            subscriptionTypeCode = await (
-                from s in query.TelecomSubscription.AsNoTracking()
-                join t in query.TelecomSubscriptionTypeLookup.AsNoTracking() on s.SubscriptionTypeId equals t.Id
-                where !s.IsDeleted && s.SubscriberProfileId == operation.SubscriberProfileId
-                orderby s.IsPrimaryLine descending
-                select t.Code
-            ).FirstOrDefaultAsync(cancellationToken);
+            if (!string.IsNullOrEmpty(operation.SourceSubscriptionTypeId))
+            {
+                sourceSubscriptionTypeCode = await query.TelecomSubscriptionTypeLookup.AsNoTracking()
+                    .Where(t => !t.IsDeleted && t.Id == operation.SourceSubscriptionTypeId)
+                    .Select(t => t.Code)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
+            if (!string.IsNullOrEmpty(operation.TargetSubscriptionTypeId))
+            {
+                targetSubscriptionTypeCode = await query.TelecomSubscriptionTypeLookup.AsNoTracking()
+                    .Where(t => !t.IsDeleted && t.Id == operation.TargetSubscriptionTypeId)
+                    .Select(t => t.Code)
+                    .FirstOrDefaultAsync(cancellationToken);
+                subscriptionTypeCode = targetSubscriptionTypeCode;
+            }
+        }
+        else if (!string.IsNullOrEmpty(operation.SubscriberProfileId))
+        {
+            subscriptionTypeCode = await ResolveSubscriptionTypeCodeAsync(
+                query,
+                operation.SubscriberProfileId,
+                operation.MsisdnAssetId,
+                cancellationToken);
         }
 
         return new TelecomLineProvisionContext(
@@ -78,7 +133,11 @@ public static class TelecomProvisionRequestBuilder
             imsi,
             serviceCode,
             subscriptionTypeCode,
-            initialDeposit);
+            initialDeposit,
+            sourceSubscriptionTypeCode,
+            targetSubscriptionTypeCode,
+            priorIccid,
+            priorMsisdn);
     }
 
     public static BillingProvisionRequest ToBillingRequest(
@@ -96,7 +155,9 @@ public static class TelecomProvisionRequestBuilder
             line.SubscriptionTypeCode,
             line.Imsi,
             line.Iccid,
-            phase);
+            phase,
+            line.PriorIccid,
+            line.PriorMsisdn);
 
     public static NetworkProvisionRequest ToNetworkRequest(
         TelecomOperationRequest operation,
@@ -110,5 +171,28 @@ public static class TelecomProvisionRequestBuilder
             operation.Kind,
             line.Imsi,
             line.ProductServiceCode,
-            line.SubscriptionTypeCode);
+            line.SubscriptionTypeCode,
+            line.PriorMsisdn);
+
+    private static async Task<string?> ResolveSubscriptionTypeCodeAsync(
+        IQueryContext query,
+        string subscriberProfileId,
+        string? msisdnAssetId,
+        CancellationToken cancellationToken)
+    {
+        var subs = query.TelecomSubscription.AsNoTracking()
+            .Where(s => !s.IsDeleted && s.SubscriberProfileId == subscriberProfileId);
+
+        if (!string.IsNullOrEmpty(msisdnAssetId))
+        {
+            subs = subs.Where(s => s.MsisdnAssetId == msisdnAssetId);
+        }
+
+        return await (
+            from s in subs
+            join t in query.TelecomSubscriptionTypeLookup.AsNoTracking() on s.SubscriptionTypeId equals t.Id
+            orderby s.IsPrimaryLine descending
+            select t.Code
+        ).FirstOrDefaultAsync(cancellationToken);
+    }
 }

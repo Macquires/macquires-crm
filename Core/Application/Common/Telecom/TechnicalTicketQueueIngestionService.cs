@@ -136,4 +136,60 @@ public sealed class TechnicalTicketQueueIngestionService : ITechnicalTicketQueue
 
         return TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(fromSub ?? "");
     }
+
+    public async Task<TelecomTechnicalTicket?> EnqueueProvisioningFalloutAsync(
+        TelecomOperationRequest operation,
+        string failureMessage,
+        string? actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var msisdn = await ResolveMsisdnAsync(operation, cancellationToken);
+        if (string.IsNullOrEmpty(msisdn))
+        {
+            return null;
+        }
+
+        var category = TechnicalTicketCategoryMapper.FromTelecomOperationKind(operation.Kind);
+        var customerId = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
+            .Where(p => p.Id == operation.SubscriberProfileId)
+            .Select(p => p.CustomerId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            fallout = true,
+            telecomOperationRequestId = operation.Id,
+            operationNumber = operation.Number,
+            correlationId = operation.CorrelationId,
+            failureMessage,
+            operationKind = operation.Kind.ToString(),
+        });
+
+        var actor = string.IsNullOrWhiteSpace(actorUserId) ? operation.CreatedById : actorUserId.Trim();
+        if (string.IsNullOrEmpty(actor))
+        {
+            actor = "system-provisioning";
+        }
+
+        var entity = new TelecomTechnicalTicket
+        {
+            CreatedById = actor,
+            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            Msisdn = msisdn,
+            CustomerId = customerId,
+            SubscriberProfileId = operation.SubscriberProfileId,
+            TicketCategory = category,
+            IssueType = TechnicalTicketIssueType.Provisioning,
+            Priority = TechnicalTicketPriority.High,
+            Status = TechnicalTicketStatus.Open,
+            Notes = $"Fallout تفعيل — {operation.Number} | Correlation: {operation.CorrelationId} | {failureMessage}",
+            PayloadJson = payload,
+            OpenedByUserId = actor,
+            CreatedByChannel = TechnicalTicketCreatedByChannel.ShowroomAgent,
+        };
+
+        await _ticketRepository.CreateAsync(entity, cancellationToken);
+        await _unitOfWork.SaveAsync(cancellationToken);
+        return entity;
+    }
 }

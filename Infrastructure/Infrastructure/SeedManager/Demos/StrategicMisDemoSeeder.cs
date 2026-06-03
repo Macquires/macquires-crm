@@ -36,6 +36,7 @@ public sealed class StrategicMisDemoSeeder
         await AssignOrgUnitsToCustomersAsync();
         await EnsureBranchCustomersAsync();
         await EnsureMsisdnTierMixAsync();
+        await EnsureChangeNumberPremiumPoolAsync();
         await EnsureResolvedTicketsForSlaAsync();
     }
 
@@ -182,6 +183,32 @@ public sealed class StrategicMisDemoSeeder
         for (var i = 0; i < assets.Count; i++)
         {
             assets[i].Category = tiers[i % tiers.Length];
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>Tags a slice of available pool MSISDNs as Silver/Gold/Platinum for CNR premium / BO demo.</summary>
+    private async Task EnsureChangeNumberPremiumPoolAsync()
+    {
+        var available = await _context.MsisdnAsset
+            .Where(m => !m.IsDeleted && m.PoolStatus == MsisdnPoolStatus.Available)
+            .OrderBy(m => m.Msisdn)
+            .Take(12)
+            .ToListAsync();
+
+        if (available.Count == 0)
+        {
+            return;
+        }
+
+        var tiers = new[] { MsisdnCategory.Silver, MsisdnCategory.Gold, MsisdnCategory.Platinum };
+        for (var i = 0; i < available.Count; i++)
+        {
+            if (available[i].Category == MsisdnCategory.Normal)
+            {
+                available[i].Category = tiers[i % tiers.Length];
+            }
         }
 
         await _context.SaveChangesAsync();

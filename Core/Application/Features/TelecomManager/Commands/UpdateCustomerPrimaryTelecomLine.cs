@@ -230,11 +230,10 @@ public class UpdateCustomerPrimaryTelecomLineHandler
             _msisdnRepository.Update(asset);
         }
 
-        if (typeChanging && newLookup != null)
+        if (typeChanging)
         {
-            subscription.SubscriptionTypeId = newLookup.Id;
-            subscription.UpdatedById = request.UpdatedById;
-            _subscriptionRepository.Update(subscription);
+            throw new BusinessRuleViolationException(
+                "تغيير نوع الخط (مسبق الدفع / فاتورة / هجين) محظور من هنا. استخدم معالج «تحويل نوع الخط» (CGT-) من Customer 360 أو Telecom Hub.");
         }
 
         if (primaryChanging)

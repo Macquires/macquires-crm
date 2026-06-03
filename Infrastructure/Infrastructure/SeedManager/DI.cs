@@ -90,6 +90,7 @@ public static class DI
         }
 
         serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureDemoSimKitsAsync().Wait();
+        serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureHeroOfferSubscriptionDemoAsync().Wait();
         serviceProvider.GetRequiredService<TelecomCustomer360EnrichmentSeeder>().EnsureEnrichedAsync().Wait();
 
         serviceProvider.GetRequiredService<ProductCatalogSeeder>().GenerateDataAsync().Wait();

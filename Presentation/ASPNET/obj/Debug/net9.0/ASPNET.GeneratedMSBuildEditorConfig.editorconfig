@@ -190,6 +190,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxDdXN0b21lcjM2MFByb2ZpbGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/DeviceInventory.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxEZXZpY2VJbnZlbnRvcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxJbnRlZ3JhdGlvbk1vbml0b3IuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
