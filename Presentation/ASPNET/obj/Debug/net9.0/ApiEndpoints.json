@@ -1150,6 +1150,104 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.ProductController",
+    "Method": "GetChangeGsmEligibleProductsAsync",
+    "RelativePath": "api/Product/GetChangeGsmEligibleProducts",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "targetSubscriptionTypeId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.ProductManager.Queries.GetChangeGsmEligibleProductsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.ProductController",
+    "Method": "GetChangeGsmEligibleTargetsAsync",
+    "RelativePath": "api/Product/GetChangeGsmEligibleTargets",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.ProductManager.Queries.GetChangeGsmEligibleTargetsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.ProductController",
+    "Method": "GetEligibleVasOfferingsAsync",
+    "RelativePath": "api/Product/GetEligibleVasOfferings",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.ProductManager.Queries.GetEligibleVasOfferingsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.ProductController",
     "Method": "GetMigrationEligibleProductsAsync",
     "RelativePath": "api/Product/GetMigrationEligibleProducts",
     "HttpMethod": "GET",
@@ -2275,6 +2373,58 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "ApproveDeviceInstallmentAsync",
+    "RelativePath": "api/Telecom/ApproveDeviceInstallment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.ApproveDeviceInstallmentRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.ApproveDeviceInstallmentResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "ConfirmPaymentTransactionAsync",
+    "RelativePath": "api/Telecom/ConfirmPaymentTransaction",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.ConfirmPaymentTransactionRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.ConfirmPaymentTransactionResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "ConfirmTelecomOperationAsync",
     "RelativePath": "api/Telecom/ConfirmTelecomOperation",
     "HttpMethod": "POST",
@@ -2290,6 +2440,58 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.ConfirmTelecomOperationRequestResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "CreateDeviceInventoryAsync",
+    "RelativePath": "api/Telecom/CreateDeviceInventory",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.CreateDeviceInventoryRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.CreateDeviceInventoryResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "CreatePaymentTransactionAsync",
+    "RelativePath": "api/Telecom/CreatePaymentTransaction",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.CreatePaymentTransactionRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.CreatePaymentTransactionResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -2441,6 +2643,155 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetBillingIntegrationLogListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetChangeGsmTypeKpisAsync",
+    "RelativePath": "api/Telecom/GetChangeGsmTypeKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetChangeGsmTypeKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetChangeNumberKpisAsync",
+    "RelativePath": "api/Telecom/GetChangeNumberKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetChangeNumberKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetDeviceInventoryListAsync",
+    "RelativePath": "api/Telecom/GetDeviceInventoryList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "status",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "imeiContains",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetDeviceInventoryListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetDeviceSaleKpisAsync",
+    "RelativePath": "api/Telecom/GetDeviceSaleKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetDeviceSaleKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetInstallmentPlanListAsync",
+    "RelativePath": "api/Telecom/GetInstallmentPlanList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetInstallmentPlanListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -2662,6 +3013,249 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetOfferSubscriptionKpisAsync",
+    "RelativePath": "api/Telecom/GetOfferSubscriptionKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetOfferSubscriptionKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetPaymentServicesKpisAsync",
+    "RelativePath": "api/Telecom/GetPaymentServicesKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetPaymentServicesKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetPaymentTransactionDetailAsync",
+    "RelativePath": "api/Telecom/GetPaymentTransactionDetail",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetPaymentTransactionDetailResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetPaymentTransactionListAsync",
+    "RelativePath": "api/Telecom/GetPaymentTransactionList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "take",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetPaymentTransactionListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetReconnectKpisAsync",
+    "RelativePath": "api/Telecom/GetReconnectKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetReconnectKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetRefundKpisAsync",
+    "RelativePath": "api/Telecom/GetRefundKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetRefundKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetSellingLineActivationKpisAsync",
+    "RelativePath": "api/Telecom/GetSellingLineActivationKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetSellingLineActivationKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetSimSwapKpisAsync",
+    "RelativePath": "api/Telecom/GetSimSwapKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetSimSwapKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "GetStrategicMetricsAsync",
     "RelativePath": "api/Telecom/GetStrategicMetrics",
     "HttpMethod": "GET",
@@ -2682,6 +3276,68 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetStrategicMetricsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetSuspensionKpisAsync",
+    "RelativePath": "api/Telecom/GetSuspensionKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetSuspensionKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetTakeOverOwnershipKpisAsync",
+    "RelativePath": "api/Telecom/GetTakeOverOwnershipKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetTakeOverOwnershipKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -2827,6 +3483,37 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetTerminationKpisAsync",
+    "RelativePath": "api/Telecom/GetTerminationKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetTerminationKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "ImportSimInventoryBatchAsync",
     "RelativePath": "api/Telecom/ImportSimInventoryBatch",
     "HttpMethod": "POST",
@@ -2868,6 +3555,58 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Common.Integrations.HlrLiveStatusResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "RecordDeviceDownPaymentAsync",
+    "RelativePath": "api/Telecom/RecordDeviceDownPayment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.RecordDeviceDownPaymentRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.RecordDeviceDownPaymentResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "RecordSellingLinePaymentAsync",
+    "RelativePath": "api/Telecom/RecordSellingLinePayment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.RecordSellingLinePaymentRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.RecordSellingLinePaymentResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -2946,6 +3685,32 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Common.Integrations.HlrResyncResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "ReversePaymentTransactionAsync",
+    "RelativePath": "api/Telecom/ReversePaymentTransaction",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.ReversePaymentTransactionRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.ReversePaymentTransactionResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -3153,6 +3918,32 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.UploadTelecomOperationIdentityDocumentResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "ValidateVoucherAsync",
+    "RelativePath": "api/Telecom/ValidateVoucher",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Queries.ValidateVoucherRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.ValidateVoucherResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",

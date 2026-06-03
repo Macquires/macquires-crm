@@ -92,7 +92,7 @@ public class GetSellingLineActivationKpisHandler
 
         var manualOverrides = ops.Count(o => !string.IsNullOrWhiteSpace(o.OverrideReasonCode));
 
-        var rejectionRows = await _context.TelecomOperationAuditLog.AsNoTracking()
+        var rejectionNotes = await _context.TelecomOperationAuditLog.AsNoTracking()
             .Where(a => !a.IsDeleted
                         && a.ToStatus == TelecomOperationStatus.Failed
                         && a.OccurredAtUtc >= from
@@ -104,11 +104,14 @@ public class GetSellingLineActivationKpisHandler
                 o => o.Id,
                 (a, o) => a.Note)
             .Where(n => n != null)
+            .ToListAsync(cancellationToken);
+
+        var rejectionRows = rejectionNotes
             .GroupBy(n => n!)
             .Select(g => new SellingLineRejectionReasonDto(g.Key, g.Count()))
             .OrderByDescending(x => x.Count)
             .Take(10)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return new GetSellingLineActivationKpisResult
         {

@@ -397,11 +397,26 @@ body.syr-tel-portal .form-card.telecom-premium-page {
 .telecom-premium-page .tile-vas,
 .telecom-premium-page .tile-package,
 .telecom-premium-page .tile-support,
+.telecom-premium-page .tile-termination,
+.telecom-premium-page .tile-suspension,
+.telecom-premium-page .tile-reconnect,
+.telecom-premium-page .tile-device-sale,
 .telecom-premium-page .telecom-dash-tile.tile-migrate,
 .telecom-premium-page .telecom-dash-tile.tile-takeover,
 .telecom-premium-page .telecom-dash-tile.tile-support {
     background: linear-gradient(145deg, var(--sys-text-main), color-mix(in srgb, var(--sys-text-main) 85%, black)) !important;
     color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .tile-refund {
+    background: linear-gradient(145deg, #0f766e 0%, #059669 100%) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+.telecom-premium-page .big-tile:disabled,
+.telecom-premium-page .big-tile.opacity-50 {
+    opacity: 0.55 !important;
+    filter: grayscale(0.15);
 }
 
 .telecom-premium-page .telecom-search-group .form-control {

@@ -2091,6 +2091,152 @@
         }
       }
     },
+    "/api/Product/GetChangeGsmEligibleTargets": {
+      "get": {
+        "tags": [
+          "Product"
+        ],
+        "parameters": [
+          {
+            "name": "subscriberProfileId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "msisdnAssetId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmEligibleTargetsResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmEligibleTargetsResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmEligibleTargetsResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Product/GetEligibleVasOfferings": {
+      "get": {
+        "tags": [
+          "Product"
+        ],
+        "parameters": [
+          {
+            "name": "subscriberProfileId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "msisdnAssetId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEligibleVasOfferingsResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEligibleVasOfferingsResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetEligibleVasOfferingsResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Product/GetChangeGsmEligibleProducts": {
+      "get": {
+        "tags": [
+          "Product"
+        ],
+        "parameters": [
+          {
+            "name": "subscriberProfileId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "targetSubscriptionTypeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "msisdnAssetId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmEligibleProductsResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmEligibleProductsResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmEligibleProductsResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ProductOffering/CreateProductOffering": {
       "post": {
         "tags": [
@@ -4093,6 +4239,1120 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConfirmTelecomOperationRequestResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/RecordSellingLinePayment": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordSellingLinePaymentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordSellingLinePaymentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordSellingLinePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordSellingLinePaymentResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordSellingLinePaymentResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordSellingLinePaymentResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetDeviceInventoryList": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imeiContains",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeviceInventoryListResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeviceInventoryListResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeviceInventoryListResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetInstallmentPlanList": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInstallmentPlanListResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInstallmentPlanListResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInstallmentPlanListResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/CreateDeviceInventory": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceInventoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceInventoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceInventoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDeviceInventoryResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDeviceInventoryResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDeviceInventoryResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/RecordDeviceDownPayment": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordDeviceDownPaymentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordDeviceDownPaymentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordDeviceDownPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordDeviceDownPaymentResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordDeviceDownPaymentResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordDeviceDownPaymentResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/ApproveDeviceInstallment": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDeviceInstallmentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDeviceInstallmentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDeviceInstallmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveDeviceInstallmentResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveDeviceInstallmentResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveDeviceInstallmentResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetDeviceSaleKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeviceSaleKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeviceSaleKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeviceSaleKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/ValidateVoucher": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateVoucherRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateVoucherRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateVoucherRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateVoucherResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateVoucherResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateVoucherResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/CreatePaymentTransaction": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentTransactionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentTransactionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePaymentTransactionResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePaymentTransactionResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePaymentTransactionResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/ConfirmPaymentTransaction": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPaymentTransactionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPaymentTransactionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPaymentTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmPaymentTransactionResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmPaymentTransactionResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmPaymentTransactionResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/ReversePaymentTransaction": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePaymentTransactionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePaymentTransactionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePaymentTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReversePaymentTransactionResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReversePaymentTransactionResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReversePaymentTransactionResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetPaymentTransactionList": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentTransactionListResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentTransactionListResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentTransactionListResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetPaymentServicesKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentServicesKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentServicesKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentServicesKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetPaymentTransactionDetail": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentTransactionDetailResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentTransactionDetailResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPaymentTransactionDetailResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetSellingLineActivationKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSellingLineActivationKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSellingLineActivationKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSellingLineActivationKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetChangeGsmTypeKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmTypeKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmTypeKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeGsmTypeKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetSuspensionKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSuspensionKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSuspensionKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSuspensionKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetReconnectKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetReconnectKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetReconnectKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetReconnectKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetRefundKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetRefundKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetRefundKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetRefundKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetTerminationKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTerminationKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTerminationKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTerminationKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetOfferSubscriptionKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOfferSubscriptionKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOfferSubscriptionKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOfferSubscriptionKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetChangeNumberKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeNumberKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeNumberKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChangeNumberKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetSimSwapKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSimSwapKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSimSwapKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSimSwapKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetTakeOverOwnershipKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTakeOverOwnershipKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTakeOverOwnershipKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTakeOverOwnershipKpisResultApiSuccessResult"
                 }
               }
             }
@@ -6411,6 +7671,63 @@
   },
   "components": {
     "schemas": {
+      "ActivationChannel": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "ApproveDeviceInstallmentRequest": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "comments": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApproveDeviceInstallmentResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelecomOperationRequest"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApproveDeviceInstallmentResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ApproveDeviceInstallmentResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "BackOfficeAuditSummaryDto": {
         "type": "object",
         "properties": {
@@ -6450,6 +7767,9 @@
             "nullable": true
           },
           "queuedForSync": {
+            "type": "boolean"
+          },
+          "idempotentReplay": {
             "type": "boolean"
           }
         },
@@ -6507,6 +7827,38 @@
           "eid": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeGsmReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeNumberReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "premiumCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -6685,6 +8037,75 @@
         },
         "additionalProperties": false
       },
+      "ConfirmPaymentTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "gatewayReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConfirmPaymentTransactionResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentTransactionStatus"
+          },
+          "receiptNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "newBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentNumber": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConfirmPaymentTransactionResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ConfirmPaymentTransactionResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "ConfirmTelecomOperationRequest": {
         "type": "object",
         "properties": {
@@ -6712,6 +8133,13 @@
             "$ref": "#/components/schemas/NetworkProvisionResult"
           },
           "idempotentReplay": {
+            "type": "boolean"
+          },
+          "statusHintAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "hlrCompletesAsynchronously": {
             "type": "boolean"
           }
         },
@@ -7114,6 +8542,63 @@
         },
         "additionalProperties": false
       },
+      "CreateDeviceInventoryRequest": {
+        "type": "object",
+        "properties": {
+          "imei": {
+            "type": "string",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "listPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDeviceInventoryResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeviceInventory"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDeviceInventoryResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/CreateDeviceInventoryResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateDocumentResult": {
         "type": "object",
         "properties": {
@@ -7192,6 +8677,80 @@
           },
           "content": {
             "$ref": "#/components/schemas/CreateOrgUnitResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePaymentTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PaymentTransactionType"
+          },
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "subscriptionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "paymentChannel": {
+            "$ref": "#/components/schemas/PaymentChannel"
+          },
+          "serviceChannel": {
+            "$ref": "#/components/schemas/PaymentServiceChannel"
+          },
+          "voucherCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePaymentTransactionResult": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentTransactionStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePaymentTransactionResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/CreatePaymentTransactionResult"
           }
         },
         "additionalProperties": false
@@ -7572,6 +9131,162 @@
             "nullable": true
           },
           "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "activationChannel": {
+            "$ref": "#/components/schemas/ActivationChannel"
+          },
+          "dealerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "gsmMigrationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "gsmEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "changeGsmProductOfferingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "transferReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "depositTransferPolicy": {
+            "$ref": "#/components/schemas/DepositTransferPolicy"
+          },
+          "takeOverEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "takeOverObligationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "replacementReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLostOrStolenReport": {
+            "type": "boolean"
+          },
+          "targetMsisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "numberChangeReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "premiumFeeAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "terminationType": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "retentionOfferOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionStartDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "suspensionEndDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "barringLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "autoReconnectEnabled": {
+            "type": "boolean"
+          },
+          "notificationSuppressed": {
+            "type": "boolean"
+          },
+          "reconnectReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearanceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSuspensionOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fraudClearanceConfirmed": {
+            "type": "boolean"
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceInventoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceSaleType": {
+            "$ref": "#/components/schemas/DeviceSaleType"
+          },
+          "deviceInstallmentPlanId": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundType": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "refundMethod": {
             "type": "string",
             "nullable": true
           }
@@ -8103,8 +9818,28 @@
           "kind": {
             "$ref": "#/components/schemas/TelecomOperationKind"
           },
+          "kindLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "$ref": "#/components/schemas/TelecomOperationStatus"
+          },
+          "statusLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "transferReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "counterpartyNameAr": {
+            "type": "string",
+            "nullable": true
           },
           "correlationId": {
             "type": "string",
@@ -9189,6 +10924,274 @@
         },
         "additionalProperties": false
       },
+      "DepositTransferPolicy": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "DeviceFinancingDecision": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "DeviceInstallmentContract": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "telecomOperationRequestId": {
+            "type": "string",
+            "nullable": true
+          },
+          "telecomOperationRequest": {
+            "$ref": "#/components/schemas/TelecomOperationRequest"
+          },
+          "contractNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/InstallmentContractStatus"
+          },
+          "downPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "monthlyAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "creditScoreSnapshot": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "delinquencyStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "cbsContractId": {
+            "type": "string",
+            "nullable": true
+          },
+          "warrantyStartsAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "installmentPlanId": {
+            "type": "string",
+            "nullable": true
+          },
+          "installmentPlan": {
+            "$ref": "#/components/schemas/InstallmentPlan"
+          },
+          "scheduleLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceInstallmentScheduleLine"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceInstallmentScheduleLine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceInstallmentContractId": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceInstallmentContract": {
+            "$ref": "#/components/schemas/DeviceInstallmentContract"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueDateUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InstallmentScheduleLineStatus"
+          },
+          "paidAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceInventory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "imei": {
+            "type": "string",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "listPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeviceInventoryStatus"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reservedByOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "soldAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceInventoryStatus": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "DeviceSaleRejectionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceSaleType": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
       "EnqueueInventoryBulkImportRequest": {
         "type": "object",
         "properties": {
@@ -9748,6 +11751,220 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetBillingIntegrationLogListResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmEligibleProductsResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetMigrationEligibleProductDto"
+            },
+            "nullable": true
+          },
+          "targetSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetSubscriptionTypeLabel": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmEligibleProductsResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetChangeGsmEligibleProductsResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmEligibleTargetDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmEligibleTargetsResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetChangeGsmEligibleTargetDto"
+            },
+            "nullable": true
+          },
+          "currentSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentSubscriptionTypeLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentMsisdn": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmEligibleTargetsResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetChangeGsmEligibleTargetsResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmTypeKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeGsmReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeGsmTypeKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetChangeGsmTypeKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeNumberKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "premiumToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "premiumFeeTotalToday": {
+            "type": "number",
+            "format": "double"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeNumberReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetChangeNumberKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetChangeNumberKpisResult"
           }
         },
         "additionalProperties": false
@@ -10918,6 +13135,224 @@
         },
         "additionalProperties": false
       },
+      "GetDeviceInventoryListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "imei": {
+            "type": "string",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "listPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reservedByOperationId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetDeviceInventoryListResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetDeviceInventoryListDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetDeviceInventoryListResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetDeviceInventoryListResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetDeviceSaleKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalVolume": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completionRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "falloutRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgHandlingTimeMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "manualOverrideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "installmentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cashCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejectionReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceSaleRejectionDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetDeviceSaleKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetDeviceSaleKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetEligibleVasOfferingDto": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "monthlyFee": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "productOfferingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "catalogComponentLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "source": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetEligibleVasOfferingsResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetEligibleVasOfferingDto"
+            },
+            "nullable": true
+          },
+          "resolvedSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentProductOfferingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentProductOfferingName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetEligibleVasOfferingsResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetEligibleVasOfferingsResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetGlobalSettingsResult": {
         "type": "object",
         "properties": {
@@ -10941,6 +13376,71 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetGlobalSettingsResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetInstallmentPlanListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minDownPaymentPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "interestRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "minCreditScore": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetInstallmentPlanListResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetInstallmentPlanListDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetInstallmentPlanListResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetInstallmentPlanListResult"
           }
         },
         "additionalProperties": false
@@ -11253,6 +13753,9 @@
             "type": "string",
             "nullable": true
           },
+          "category": {
+            "$ref": "#/components/schemas/MsisdnCategory"
+          },
           "createdAtUtc": {
             "type": "string",
             "format": "date-time",
@@ -11442,6 +13945,65 @@
         },
         "additionalProperties": false
       },
+      "GetOfferSubscriptionKpisResult": {
+        "type": "object",
+        "properties": {
+          "migrationTotalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "migrationCompletedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "migrationFailedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vasActivateToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vasDeactivateToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topMigratedOffers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopOfferingCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetOfferSubscriptionKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetOfferSubscriptionKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetOperatorSessionResult": {
         "type": "object",
         "properties": {
@@ -11567,6 +14129,165 @@
           "staffCount": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPaymentServicesKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalRechargedAmountToday": {
+            "type": "number",
+            "format": "double"
+          },
+          "completedCountToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCountToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "reversedCountToday": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPaymentServicesKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetPaymentServicesKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPaymentTransactionDetailResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "transactionType": {
+            "$ref": "#/components/schemas/PaymentTransactionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentTransactionStatus"
+          },
+          "paymentChannel": {
+            "$ref": "#/components/schemas/PaymentChannel"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "gatewayReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiptNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "balanceBefore": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "balanceAfter": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPaymentTransactionDetailResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetPaymentTransactionDetailResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPaymentTransactionListResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentTransactionListItemDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPaymentTransactionListResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetPaymentTransactionListResult"
           }
         },
         "additionalProperties": false
@@ -12025,6 +14746,132 @@
         },
         "additionalProperties": false
       },
+      "GetReconnectKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentClearedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fraudClearanceToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReconnectReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetReconnectKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetReconnectKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetRefundKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "settledAmountToday": {
+            "type": "number",
+            "format": "double"
+          },
+          "dualApprovalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "rejectionReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundRejectionDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetRefundKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetRefundKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetRegisteredDashboardProvidersResult": {
         "type": "object",
         "properties": {
@@ -12132,6 +14979,132 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetRolePermissionsResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSellingLineActivationKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalVolume": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingExternalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completionRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "falloutRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgHandlingTimeMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "manualOverrideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejectionReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SellingLineRejectionReasonDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSellingLineActivationKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetSellingLineActivationKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSimSwapKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lostOrStolenToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimSwapReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSimSwapKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetSimSwapKpisResult"
           }
         },
         "additionalProperties": false
@@ -12277,6 +15250,124 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetSubscriberVasPanelResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSuspensionKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fraudToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "autoReconnectEnabledToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SuspensionReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSuspensionKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetSuspensionKpisResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTakeOverOwnershipKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TakeOverReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTakeOverOwnershipKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetTakeOverOwnershipKpisResult"
           }
         },
         "additionalProperties": false
@@ -12519,6 +15610,160 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "activationChannel": {
+            "$ref": "#/components/schemas/ActivationChannel"
+          },
+          "activationChannelLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "dealerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialDepositAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "overrideReasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "kycVerifiedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "provisioningStatusLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "offerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "imsi": {
+            "type": "string",
+            "nullable": true
+          },
+          "iccid": {
+            "type": "string",
+            "nullable": true
+          },
+          "auditTrail": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TelecomOperationAuditTrailItemDto"
+            },
+            "nullable": true
+          },
+          "sourceSubscriptionTypeLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetSubscriptionTypeLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "gsmMigrationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "transferReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "takeOverObligationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "depositTransferPolicy": {
+            "$ref": "#/components/schemas/DepositTransferPolicy"
+          },
+          "depositTransferPolicyLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvalLevelRequired": {
+            "type": "string",
+            "nullable": true
+          },
+          "takeOverEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "replacementReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLostOrStolenReport": {
+            "type": "boolean"
+          },
+          "priorSimIccid": {
+            "type": "string",
+            "nullable": true
+          },
+          "newSimIccid": {
+            "type": "string",
+            "nullable": true
+          },
+          "numberChangeReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorMsisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetMsisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "premiumFeeAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "terminationType": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "finalBillAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "retentionOfferOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "deprovisionStatus": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -12598,6 +15843,21 @@
             "type": "boolean"
           },
           "targetOfferName": {
+            "type": "string",
+            "nullable": true
+          },
+          "transferReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "replacementReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLostOrStolenReport": {
+            "type": "boolean"
+          },
+          "approvalLevelRequired": {
             "type": "string",
             "nullable": true
           },
@@ -12870,6 +16130,69 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetTelecomUniversalSearchResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTerminationKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "voluntaryToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "finalBillTotalToday": {
+            "type": "number",
+            "format": "double"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "slaCompliancePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "topReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerminationReasonCountDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTerminationKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetTerminationKpisResult"
           }
         },
         "additionalProperties": false
@@ -13393,6 +16716,84 @@
           }
         },
         "additionalProperties": false
+      },
+      "InstallmentContractStatus": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "InstallmentPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minDownPaymentPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "interestRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "minCreditScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InstallmentScheduleLineStatus": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "IntegrationHealthItemDto": {
         "type": "object",
@@ -14154,6 +17555,107 @@
         "type": "integer",
         "format": "int32"
       },
+      "PaymentCaptureResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "gatewayTransactionId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PaymentChannel": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "PaymentServiceChannel": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "PaymentTransactionListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "transactionType": {
+            "$ref": "#/components/schemas/PaymentTransactionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentTransactionStatus"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "gatewayReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiptNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "canReverse": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PaymentTransactionStatus": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "PaymentTransactionType": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
       "PaymentType": {
         "enum": [
           0,
@@ -14704,6 +18206,13 @@
           "amount": {
             "type": "number",
             "format": "double"
+          },
+          "gatewayReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentChannel": {
+            "$ref": "#/components/schemas/PaymentChannel"
           }
         },
         "additionalProperties": false
@@ -14731,6 +18240,22 @@
             "nullable": true
           },
           "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiptNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "correlationId": {
             "type": "string",
             "nullable": true
           }
@@ -14765,6 +18290,134 @@
           "amount": {
             "type": "number",
             "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReconnectReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "backOfficeCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordDeviceDownPaymentRequest": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountPaid": {
+            "type": "number",
+            "format": "double"
+          },
+          "paymentChannel": {
+            "$ref": "#/components/schemas/PaymentChannel"
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordDeviceDownPaymentResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelecomOperationRequest"
+          },
+          "gatewayResult": {
+            "$ref": "#/components/schemas/PaymentCaptureResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordDeviceDownPaymentResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/RecordDeviceDownPaymentResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordSellingLinePaymentRequest": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountPaid": {
+            "type": "number",
+            "format": "double"
+          },
+          "paymentChannel": {
+            "$ref": "#/components/schemas/PaymentChannel"
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordSellingLinePaymentResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelecomOperationRequest"
+          },
+          "gatewayResult": {
+            "$ref": "#/components/schemas/PaymentCaptureResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordSellingLinePaymentResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/RecordSellingLinePaymentResult"
           }
         },
         "additionalProperties": false
@@ -14869,6 +18522,20 @@
               "type": "string"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RefundRejectionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -15266,6 +18933,78 @@
         },
         "additionalProperties": false
       },
+      "ReversePaymentTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "reversedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReversePaymentTransactionResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "newBalance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "paymentNumber": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReversePaymentTransactionResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ReversePaymentTransactionResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SellingLineRejectionReasonDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ServiceComponentType": {
         "enum": [
           0,
@@ -15419,6 +19158,24 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "SimSwapReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lostOrStolenCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
       },
       "SimType": {
         "enum": [
@@ -15831,6 +19588,38 @@
         "type": "integer",
         "format": "int32"
       },
+      "SuspensionReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "backOfficeCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TakeOverReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "TechnicalTicketCategory": {
         "enum": [
           0,
@@ -15838,7 +19627,11 @@
           2,
           3,
           4,
-          5
+          5,
+          6,
+          7,
+          8,
+          9
         ],
         "type": "integer",
         "format": "int32"
@@ -16004,6 +19797,53 @@
           "occurredAtUtc": {
             "type": "string",
             "format": "date-time"
+          },
+          "activationChannel": {
+            "$ref": "#/components/schemas/ActivationChannel"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "dealerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "overrideReasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fieldChangesJson": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomOperationAuditTrailItemDto": {
+        "type": "object",
+        "properties": {
+          "fromStatus": {
+            "$ref": "#/components/schemas/TelecomOperationStatus"
+          },
+          "toStatus": {
+            "$ref": "#/components/schemas/TelecomOperationStatus"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16015,7 +19855,13 @@
           2,
           3,
           4,
-          5
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
         ],
         "type": "integer",
         "format": "int32"
@@ -16107,6 +19953,14 @@
           "productOffering": {
             "$ref": "#/components/schemas/ProductOffering"
           },
+          "priorProductId": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorProductOfferingId": {
+            "type": "string",
+            "nullable": true
+          },
           "notes": {
             "type": "string",
             "nullable": true
@@ -16123,6 +19977,320 @@
           "identityDocumentStorageKey": {
             "type": "string",
             "nullable": true
+          },
+          "activationChannel": {
+            "$ref": "#/components/schemas/ActivationChannel"
+          },
+          "dealerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialDepositAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "overrideReasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "kycVerifiedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "sourceSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "gsmMigrationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "gsmEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "gsmCompatibilityStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "transferReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "takeOverObligationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "depositTransferPolicy": {
+            "$ref": "#/components/schemas/DepositTransferPolicy"
+          },
+          "approvalLevelRequired": {
+            "type": "string",
+            "nullable": true
+          },
+          "takeOverEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "oldCustomerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "newCustomerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorSubscriberProfileId": {
+            "type": "string",
+            "nullable": true
+          },
+          "replacementReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLostOrStolenReport": {
+            "type": "boolean"
+          },
+          "priorSimInventoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorMsisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetMsisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "numberChangeReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "premiumFeeAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "numberChangeMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationType": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "terminationEffectiveDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "finalBillAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "depositSettlementAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "depositSettlementStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "retentionOfferOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "deprovisionStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionStartDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "suspensionEndDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "barringLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "autoReconnectEnabled": {
+            "type": "boolean"
+          },
+          "notificationSuppressed": {
+            "type": "boolean"
+          },
+          "barStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorOperationalStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "reconnectReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearanceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSuspensionOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fraudClearanceConfirmed": {
+            "type": "boolean"
+          },
+          "fraudClearanceByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reactivationAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "provisioningResult": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceInventoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceInventory": {
+            "$ref": "#/components/schemas/DeviceInventory"
+          },
+          "deviceSaleType": {
+            "$ref": "#/components/schemas/DeviceSaleType"
+          },
+          "installmentPlanId": {
+            "type": "string",
+            "nullable": true
+          },
+          "installmentPlan": {
+            "$ref": "#/components/schemas/InstallmentPlan"
+          },
+          "deviceDownPaymentAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "deviceMonthlyInstallmentAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "deviceCreditScoreSnapshot": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "deviceInstallmentContractId": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceInstallmentContract": {
+            "$ref": "#/components/schemas/DeviceInstallmentContract"
+          },
+          "deviceFinancingDecision": {
+            "$ref": "#/components/schemas/DeviceFinancingDecision"
+          },
+          "deviceOverrideReasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceApprovalLevelRequired": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceFinancingNoteAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceWarrantyStartsAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "refundType": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "refundMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "depositBalanceSnapshot": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "walletBalanceSnapshot": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "refundSettlementStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundCbsReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundGatewayReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "requiresDualApproval": {
+            "type": "boolean"
           },
           "auditLogs": {
             "type": "array",
@@ -16195,6 +20363,13 @@
           },
           "product": {
             "$ref": "#/components/schemas/Product"
+          },
+          "productOfferingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "productOffering": {
+            "$ref": "#/components/schemas/ProductOffering"
           },
           "subscriptionTypeId": {
             "type": "string",
@@ -16574,6 +20749,24 @@
         },
         "additionalProperties": false
       },
+      "TerminationReasonCountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "backOfficeCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ToggleProductOfferingActiveRequest": {
         "type": "object",
         "properties": {
@@ -16680,6 +20873,20 @@
           },
           "content": {
             "$ref": "#/components/schemas/ToggleSubscriberVasServiceResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TopOfferingCountDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -18343,6 +22550,57 @@
           },
           "content": {
             "$ref": "#/components/schemas/ValidateTokenResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidateVoucherRequest": {
+        "type": "object",
+        "properties": {
+          "voucherCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidateVoucherResult": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "faceValue": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidateVoucherResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ValidateVoucherResult"
           }
         },
         "additionalProperties": false
