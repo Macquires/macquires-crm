@@ -87,10 +87,11 @@ public static class ReconnectEligibilityMatrix
 
         if (requiresBo && !input.FraudClearanceConfirmed)
         {
-            return Deny(
-                "VAL-09-03: إزالة حظر الاحتيال/التنظيمي تتطلب اعتماد الباك أوفيس وتأكيد التسوية.",
-                "FraudClearanceRequired",
-                requiresBackOffice: true);
+            return new ReconnectEligibilityMatrixResult(
+                true,
+                "VAL-09-03: إعادة التفعيل مسموحة — بانتظار اعتماد الباك أوفيس وتأكيد التسوية.",
+                "BackOfficePending",
+                true);
         }
 
         return new ReconnectEligibilityMatrixResult(

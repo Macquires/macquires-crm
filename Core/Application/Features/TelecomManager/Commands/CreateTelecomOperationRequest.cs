@@ -683,7 +683,11 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             ActivationChannel = channel,
             DealerCode = dealerCode,
             BranchId = branchId,
-            CreatedById = request.CreatedById
+            CreatedById = request.CreatedById,
+            IsLostOrStolenReport = request.IsLostOrStolenReport,
+            FraudClearanceConfirmed = false,
+            AutoReconnectEnabled = false,
+            NotificationSuppressed = false,
         };
 
         if (request.Kind == TelecomOperationKind.ChangeGsmType && changeGsmEligibility != null)
@@ -834,6 +838,9 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             entity.SourceSuspensionOperationId = reconnectEligibility.SourceSuspensionOperationId;
             entity.FraudClearanceConfirmed = request.FraudClearanceConfirmed;
             entity.FraudClearanceByUserId = request.FraudClearanceConfirmed ? request.CreatedById : null;
+            entity.IsLostOrStolenReport = false;
+            entity.AutoReconnectEnabled = false;
+            entity.NotificationSuppressed = false;
             if (reconnectEligibility.RequiresBackOfficeApproval)
             {
                 entity.ApprovalLevelRequired = "BackOffice";

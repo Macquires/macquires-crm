@@ -52,3 +52,12 @@ BEGIN
         WHERE Kind = 9 AND IsDeleted = 0;
 END
 GO
+
+UPDATE dbo.TelecomOperationRequest SET IsLostOrStolenReport = 0 WHERE IsLostOrStolenReport IS NULL;
+GO
+UPDATE dbo.TelecomOperationRequest SET FraudClearanceConfirmed = 0 WHERE FraudClearanceConfirmed IS NULL;
+GO
+UPDATE dbo.TelecomOperationRequest SET AutoReconnectEnabled = 0 WHERE AutoReconnectEnabled IS NULL;
+GO
+UPDATE dbo.TelecomOperationRequest SET NotificationSuppressed = 0 WHERE NotificationSuppressed IS NULL;
+GO

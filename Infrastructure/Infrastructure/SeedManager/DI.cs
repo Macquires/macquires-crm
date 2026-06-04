@@ -91,13 +91,14 @@ public static class DI
 
         serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureDemoSimKitsAsync().Wait();
         serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureHeroOfferSubscriptionDemoAsync().Wait();
-        serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureHeroReconnectDemoAsync().Wait();
         serviceProvider.GetRequiredService<TelecomCustomer360EnrichmentSeeder>().EnsureEnrichedAsync().Wait();
 
         serviceProvider.GetRequiredService<ProductCatalogSeeder>().GenerateDataAsync().Wait();
         serviceProvider.GetRequiredService<TelecomTechnicalTicketSeeder>().EnsureDemoTicketsAsync().Wait();
         serviceProvider.GetRequiredService<VasCatalogSeeder>().EnsureCatalogAsync().Wait();
         serviceProvider.GetRequiredService<TelecomCustomer360EnrichmentSeeder>().EnsureEnrichedAsync().Wait();
+
+        serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureHeroReconnectDemoAsync().Wait();
 
         serviceProvider.GetRequiredService<OrgUnitSeeder>().GenerateDataAsync().Wait();
         serviceProvider.GetRequiredService<StrategicMisDemoSeeder>().GenerateDataAsync().Wait();

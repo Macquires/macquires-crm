@@ -771,26 +771,7 @@ public class TelecomSyriatelSeeder
             profileId = assetRow.SubscriberProfileId!;
             assetId = assetRow.Id;
 
-            var profile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
-            if (profile != null
-                && profile.OperationalStatus is not (
-                    SubscriberOperationalStatus.Suspended
-                    or SubscriberOperationalStatus.SuspendedInbound
-                    or SubscriberOperationalStatus.SuspendedOutbound
-                    or SubscriberOperationalStatus.Terminated))
-            {
-                profile.Suspend();
-                _profileRepository.Update(profile);
-            }
-
-            var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
-            if (asset != null && asset.PoolStatus == MsisdnPoolStatus.Active)
-            {
-                asset.TransitionTo(MsisdnPoolStatus.Suspended);
-                _msisdnRepository.Update(asset);
-            }
-
-            await _unitOfWork.SaveAsync();
+            await ApplyDemoReconnectSuspendedStateAsync(profileId, assetId);
         }
 
         var hasCompletedSus = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
@@ -801,6 +782,7 @@ public class TelecomSyriatelSeeder
 
         if (hasCompletedSus)
         {
+            await ApplyDemoReconnectSuspendedStateAsync(profileId, assetId);
             return;
         }
 
@@ -834,6 +816,30 @@ public class TelecomSyriatelSeeder
         }
 
         await _operationRepository.CreateAsync(sus);
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task ApplyDemoReconnectSuspendedStateAsync(string profileId, string assetId)
+    {
+        var profile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
+        if (profile != null
+            && profile.OperationalStatus is not (
+                SubscriberOperationalStatus.Suspended
+                or SubscriberOperationalStatus.SuspendedInbound
+                or SubscriberOperationalStatus.SuspendedOutbound
+                or SubscriberOperationalStatus.Terminated))
+        {
+            profile.Suspend();
+            _profileRepository.Update(profile);
+        }
+
+        var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
+        if (asset != null && asset.PoolStatus == MsisdnPoolStatus.Active)
+        {
+            asset.TransitionTo(MsisdnPoolStatus.Suspended);
+            _msisdnRepository.Update(asset);
+        }
+
         await _unitOfWork.SaveAsync();
     }
 

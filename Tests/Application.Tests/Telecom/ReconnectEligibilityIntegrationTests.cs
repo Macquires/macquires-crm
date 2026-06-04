@@ -57,9 +57,9 @@ public class ReconnectEligibilityIntegrationTests
             false,
             null);
 
-        Assert.False(pending.Allowed);
+        Assert.True(pending.Allowed);
         Assert.True(pending.RequiresBackOfficeApproval);
-        Assert.Equal("FraudClearanceRequired", pending.ValidationCode);
+        Assert.Equal("BackOfficePending", pending.ValidationCode);
 
         var cleared = await checker.ValidateForCreateAsync(
             profileId,
@@ -140,9 +140,9 @@ public class ReconnectEligibilityIntegrationTests
             0m,
             false));
 
-        Assert.False(matrix.Allowed);
+        Assert.True(matrix.Allowed);
         Assert.True(matrix.RequiresBackOfficeApproval);
-        Assert.Equal("FraudClearanceRequired", matrix.ValidationCode);
+        Assert.Equal("BackOfficePending", matrix.ValidationCode);
     }
 
     private static QueryContext CreateContext()
