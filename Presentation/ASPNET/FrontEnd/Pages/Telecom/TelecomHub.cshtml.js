@@ -86,6 +86,11 @@ function createTelecomApp() {
         setup() {
             const { t, locale } = useI18n();
 
+            const secureOpKindKey = (kind) =>
+                ({ 3: 'simSwap', 5: 'changeNumber', 7: 'termination' }[kind] || 'takeover');
+            const secureOpTitle = (kind, phase) =>
+                t(`telecom.swal.secureOp.${secureOpKindKey(kind)}.${phase}`);
+
             const hubPermissions = Vue.computed(() => {
                 const roles = StorageManager.getUserRoles() || [];
                 const perms = StorageManager.getPermissions?.() || [];
@@ -230,6 +235,13 @@ function createTelecomApp() {
 
             const contentDir = Vue.computed(() => (locale.value === 'ar' ? 'rtl' : 'ltr'));
             const contentLang = Vue.computed(() => (locale.value === 'ar' ? 'ar' : 'en'));
+
+            const productDisplayName = (p) => {
+                if (!p) return '';
+                const ar = (p.name || '').trim();
+                const en = (p.nameEn || '').trim();
+                return contentLang.value === 'ar' ? ar || en : en || ar;
+            };
 
             const kindToApiEnum = () => {
                 const k = state.wizard.kind;
@@ -400,32 +412,32 @@ function createTelecomApp() {
             const operationConfirmable = (o) =>
                 Number(o?.documentStatus) >= 1 && [0, 2, 5].includes(Number(o?.status));
 
-            const kindLabelAr = (kind) => {
-                const k = Number(kind);
-                if (k === 2) return 'نقل ملكية';
-                if (k === 1) return 'تحويل';
-                if (k === 0) return 'تفعيل';
-                if (k === 3) return 'تبديل شريحة';
-                if (k === 6) return 'تحويل نوع الخط CGT';
-                if (k === 5) return 'تغيير رقم CNR';
-                if (k === 7) return 'إنهاء خط TRM';
-                if (k === 8) return 'حظر مؤقت SUS';
-                if (k === 9) return 'إعادة تفعيل RCN';
-                if (k === 10) return 'بيع جهاز DEV';
-                if (k === 11) return 'استرداد مالي RFD';
-                if (k === 12) return 'تحصيل ديون BDR';
-                return String(kind ?? '—');
+            const kindLabel = (kind) => {
+                const n = Number(kind);
+                if (n === 4) return t('telecom.ops.kindLabels.serviceModification');
+                const map = {
+                    0: 'activate',
+                    1: 'migrate',
+                    2: 'takeover',
+                    3: 'simswap',
+                    5: 'changeNumber',
+                    6: 'changeGsm',
+                    7: 'termination',
+                    8: 'suspension',
+                    9: 'reconnect',
+                    10: 'deviceSale',
+                    11: 'refund',
+                    12: 'badDebt',
+                };
+                const id = map[n];
+                return id ? t('telecom.ops.kindLabels.' + id) : String(kind ?? '—');
             };
 
-            const statusLabelAr = (status) => {
+            const statusLabel = (status) => {
                 const s = Number(status);
-                if (s === 5) return 'قيد التدقيق القانوني';
-                if (s === 6) return 'تجهيز الشبكة';
-                if (s === 3) return 'منجز';
-                if (s === 4) return 'فشل';
-                if (s === 1) return 'مؤكد';
-                if (s === 0) return 'مسودة';
-                return String(status ?? '—');
+                const key = 'telecom.ops.statusLabels.' + s;
+                const lbl = t(key);
+                return lbl !== key ? lbl : String(status ?? '—');
             };
 
             const isTakeOverPendingReview = (o) => Number(o?.kind) === 2 && Number(o?.status) === 5;
@@ -472,6 +484,20 @@ function createTelecomApp() {
                 || isReconnectBoPending(o)
                 || isRefundBoPending(o)
                 || isBadDebtBoPending(o);
+
+            const operationKpis = Vue.computed(() => {
+                const ops = state.operations || [];
+                let pending = 0;
+                let completed = 0;
+                let failed = 0;
+                for (const o of ops) {
+                    const s = Number(o.status ?? o.Status ?? -1);
+                    if (s === 3 || s === 1) completed++;
+                    else if (s === 4) failed++;
+                    else if ([0, 2, 5, 6].includes(s)) pending++;
+                }
+                return { pending, completed, failed };
+            });
 
             const pendingTakeOverCount = Vue.computed(
                 () => (state.operations || []).filter((o) => isTakeOverPendingReview(o)).length
@@ -640,10 +666,20 @@ function createTelecomApp() {
                 const s = Number(status);
                 const failed = s === 4;
                 return [
-                    { label: 'مسودة', done: s !== 4, active: s === 0, failed },
-                    { label: 'وثائق', done: s >= 5 || s === 6 || s === 3 || s === 1, active: s === 5, failed },
-                    { label: 'تجهيز', done: s === 3 || s === 1, active: s === 6, failed },
-                    { label: 'منجز', done: s === 3, active: false, failed },
+                    { label: t('telecom.ops.pipeline.draft'), done: s !== 4, active: s === 0, failed },
+                    {
+                        label: t('telecom.ops.pipeline.docs'),
+                        done: s >= 5 || s === 6 || s === 3 || s === 1,
+                        active: s === 5,
+                        failed,
+                    },
+                    {
+                        label: t('telecom.ops.pipeline.provisioning'),
+                        done: s === 3 || s === 1,
+                        active: s === 6,
+                        failed,
+                    },
+                    { label: t('telecom.ops.pipeline.done'), done: s === 3, active: false, failed },
                 ];
             };
 
@@ -1060,16 +1096,15 @@ function createTelecomApp() {
                                 const prodCompatId = product.compatibleSubscriptionTypeId;
                                 if (prodCompatId && prodCompatId !== resolvedTypeId) {
                                     // Incompatible! Show Smart Alert
+                                    const planLabel = productDisplayName(product);
                                     const confirm = await Swal.fire({
-                                        title: state.contentLang === 'ar' ? 'تنبيه عدم التوافق' : 'Incompatibility Warning',
-                                        html: state.contentLang === 'ar'
-                                            ? `نوع اشتراك المشترك الحالي لا يتوافق مع متطلبات باقة <strong>(${product.name})</strong>.<br/><br/>هل ترغب في <strong>تحويل نوع اشتراك المشترك</strong> تلقائياً للمتابعة؟`
-                                            : `The subscriber's line type is not compatible with the plan <strong>(${product.nameEn})</strong>.<br/><br/>Do you want to <strong>migrate the subscription type</strong> to proceed?`,
+                                        title: t('telecom.swal.incompatTitle'),
+                                        html: t('telecom.swal.incompatHtml', { plan: planLabel }),
                                         icon: 'warning',
                                         showCancelButton: true,
                                         confirmButtonColor: '#c8102e',
-                                        confirmButtonText: state.contentLang === 'ar' ? 'نعم، تحويل ومتابعة' : 'Yes, Migrate',
-                                        cancelButtonText: state.contentLang === 'ar' ? 'إلغاء' : 'Cancel'
+                                        confirmButtonText: t('telecom.swal.incompatConfirm'),
+                                        cancelButtonText: t('telecom.wizard.cancel'),
                                     });
 
                                     if (confirm.isConfirmed) {
@@ -1077,15 +1112,16 @@ function createTelecomApp() {
                                         if (!state.migrationEligibleProducts.some(p => p.id === product.id)) {
                                             state.migrationEligibleProducts.push({
                                                 id: product.id,
-                                                name: state.contentLang === 'ar' ? product.name : product.nameEn,
+                                                name: product.name,
+                                                nameEn: product.nameEn,
                                                 serviceCode: product.code,
                                                 compatibleSubscriptionTypeId: prodCompatId
                                             });
                                         }
                                         state.wizard.migrationTargetProductId = product.id;
-                                        state.wizard.notes = state.contentLang === 'ar'
-                                            ? `تحويل تلقائي لنوع الاشتراك وتفعيل باقة ${product.name}`
-                                            : `Automated subscription migration to activate ${product.nameEn}`;
+                                        state.wizard.notes = t('telecom.swal.autoMigrateNote', {
+                                            plan: productDisplayName(product),
+                                        });
                                     } else {
                                         state.wizard.migrationTargetProductId = '';
                                     }
@@ -1094,7 +1130,8 @@ function createTelecomApp() {
                                     if (!state.migrationEligibleProducts.some(p => p.id === product.id)) {
                                         state.migrationEligibleProducts.push({
                                             id: product.id,
-                                            name: state.contentLang === 'ar' ? product.name : product.nameEn,
+                                            name: product.name,
+                                            nameEn: product.nameEn,
                                             serviceCode: product.code,
                                             compatibleSubscriptionTypeId: prodCompatId
                                         });
@@ -1263,8 +1300,8 @@ function createTelecomApp() {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'warning',
-                            title: state.contentLang === 'ar' ? 'تعذّر حجز الرقم' : 'Reservation failed',
-                            text: msg || (state.contentLang === 'ar' ? 'تأكد أن الرقم متاح.' : 'Ensure the number is available.'),
+                            title: t('telecom.swal.reserveFailedTitle'),
+                            text: msg || t('telecom.swal.reserveFailedText'),
                         });
                     }
                 }
@@ -1330,7 +1367,12 @@ function createTelecomApp() {
                 if (!state.wizard.createdOperationId) return;
                 const amount = Number(state.wizard.devDownPayment);
                 if (!amount || !state.wizard.devPaymentReference?.trim()) {
-                    if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: 'أدخل مبلغ الدفع ومرجع الدفع.' });
+                    if (window.Swal)
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.swal.incompleteTitle'),
+                            text: t('telecom.swal.paymentDownRequired'),
+                        });
                     return;
                 }
                 await AxiosManager.post('/Telecom/RecordDeviceDownPayment', {
@@ -1341,7 +1383,13 @@ function createTelecomApp() {
                     updatedById: StorageManager.getUserId(),
                 });
                 state.wizard.documentMarkedUploaded = true;
-                if (window.Swal) Swal.fire({ icon: 'success', title: 'تم تسجيل الدفع', timer: 1200, showConfirmButton: false });
+                if (window.Swal)
+                    Swal.fire({
+                        icon: 'success',
+                        title: t('telecom.swal.paymentRecordedOk'),
+                        timer: 1200,
+                        showConfirmButton: false,
+                    });
             };
 
             const loadWizardVasCatalog = async () => {
@@ -1413,7 +1461,11 @@ function createTelecomApp() {
                 if (secondaryRequired.value) {
                     if (state.wizard.kind === 'activate' && !state.wizard.secondaryMsisdnAssetId) {
                         if (window.Swal) {
-                            Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: state.contentLang === 'ar' ? 'يجب اختيار الرقم المطلوب (المتاح) من نتائج البحث قبل المتابعة.' : 'Select an available number from the search results to proceed.' });
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.wizard.activateMsisdnRequired'),
+                            });
                         }
                         return false;
                     }
@@ -1422,7 +1474,7 @@ function createTelecomApp() {
                             Swal.fire({
                                 icon: 'warning',
                                 title: t('telecom.swal.incompleteTitle'),
-                                text: state.contentLang === 'ar' ? 'أدخل ICCID الشريحة للتفعيل الثلاثي.' : 'Enter SIM ICCID for triple binding.',
+                                text: t('telecom.wizard.iccidRequired'),
                             });
                         }
                         return false;
@@ -1442,11 +1494,21 @@ function createTelecomApp() {
                 }
                 if (state.wizard.kind === 'deviceSale') {
                     if (!(state.wizard.devInventoryId || '').trim()) {
-                        if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: 'اختر جهازاً (IMEI) من المخزون.' });
+                        if (window.Swal)
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.swal.deviceImeiRequired'),
+                            });
                         return false;
                     }
                     if (state.wizard.devSaleType === 'Installment' && !(state.wizard.devInstallmentPlanId || '').trim()) {
-                        if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: 'اختر خطة التقسيط.' });
+                        if (window.Swal)
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.swal.installmentPlanRequired'),
+                            });
                         return false;
                     }
                 }
@@ -1459,7 +1521,11 @@ function createTelecomApp() {
                     }
                     if ((state.wizard.simIccid || '').trim().length < 19) {
                         if (window.Swal) {
-                            Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: 'ICCID (19 رقم)' });
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.wizard.iccidInvalid'),
+                            });
                         }
                         return false;
                     }
@@ -1468,7 +1534,11 @@ function createTelecomApp() {
                 const notes = (state.wizard.notes || '').trim();
                 if (notes && notes.length > 500) {
                     if (window.Swal) {
-                        Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الملاحظات يجب ألا تتجاوز 500 حرف.' });
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.swal.notesMaxTitle'),
+                            text: t('telecom.swal.notesMaxText'),
+                        });
                     }
                     return false;
                 }
@@ -1595,13 +1665,21 @@ function createTelecomApp() {
                 if (state.wizard.kind === 'changeGsm') {
                     if (!(state.wizard.cgtTargetTypeId || '').trim()) {
                         if (window.Swal) {
-                            Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: 'اختر نوع الخط الجديد.' });
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.swal.changeGsmTargetTypeRequired'),
+                            });
                         }
                         return false;
                     }
                     if (!(state.wizard.cgtMigrationReason || '').trim()) {
                         if (window.Swal) {
-                            Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: 'سبب التحويل مطلوب.' });
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.swal.changeGsmReasonRequired'),
+                            });
                         }
                         return false;
                     }
@@ -1622,7 +1700,7 @@ function createTelecomApp() {
                             Swal.fire({
                                 icon: 'warning',
                                 title: t('telecom.swal.incompleteTitle'),
-                                text: state.contentLang === 'ar' ? 'اختر مشتركاً من نتائج البحث (رقم خط).' : 'Select a subscriber with an MSISDN from search.',
+                                text: t('telecom.swal.selectSubscriberMsisdn'),
                             });
                         }
                         return false;
@@ -1998,15 +2076,15 @@ function createTelecomApp() {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'وثيقة مطلوبة',
+                            title: t('telecom.swal.docRequiredTitle'),
                             text:
                                 state.wizard.kind === 'termination'
                                     ? t('telecom.termination.identityRequired')
                                     : state.wizard.kind === 'changeNumber'
                                     ? t('telecom.changeNumber.paymentDocHint')
                                     : state.wizard.kind === 'simswap'
-                                        ? 'ارفع إقرار / هوية المشترك قبل الإرسال.'
-                                        : 'ارفع صورة أو PDF لهوية المالك الجديد قبل الإرسال.',
+                                        ? t('telecom.swal.docRequiredSubscriberIdentity')
+                                        : t('telecom.swal.docRequiredNewOwnerIdentity'),
                         });
                     }
                     return;
@@ -2023,7 +2101,7 @@ function createTelecomApp() {
                                 || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
                                 || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
                                 || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
-                                    ? 'تم الإرسال للباك أوفيس'
+                                    ? t('telecom.swal.sentToBackOffice')
                                     : t('telecom.swal.docOkTitle');
                             Swal.fire({ icon: 'success', title, timer: 1600, showConfirmButton: false });
                         }
@@ -2076,7 +2154,7 @@ function createTelecomApp() {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'error',
-                            title: 'تعذّر تحميل الطلب',
+                            title: t('telecom.swal.loadOpDetailFailed'),
                             text: pickHttpErrorMessage(e),
                         });
                     }
@@ -2118,7 +2196,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد SIM Swap (telecom.line.simswap_approve) مطلوبة.',
+                            text: t('telecom.swal.permSimSwapApprove'),
                         });
                     }
                     return;
@@ -2128,7 +2206,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد تغيير الرقم (telecom.line.change_number_approve) مطلوبة.',
+                            text: t('telecom.swal.permChangeNumberApprove'),
                         });
                     }
                     return;
@@ -2138,7 +2216,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد الإنهاء (telecom.line.termination_approve) مطلوبة.',
+                            text: t('telecom.swal.permTerminationApprove'),
                         });
                     }
                     return;
@@ -2148,7 +2226,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد الحظر (telecom.line.suspension_approve) مطلوبة.',
+                            text: t('telecom.swal.permSuspensionApprove'),
                         });
                     }
                     return;
@@ -2158,7 +2236,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد إعادة التفعيل (telecom.line.reconnect_approve) مطلوبة.',
+                            text: t('telecom.swal.permReconnectApprove'),
                         });
                     }
                     return;
@@ -2168,7 +2246,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد الاسترداد (telecom.line.refund_approve) مطلوبة.',
+                            text: t('telecom.swal.permRefundApprove'),
                         });
                     }
                     return;
@@ -2178,7 +2256,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد التحصيل (telecom.line.collection_approve) مطلوبة.',
+                            text: t('telecom.swal.permCollectionApprove'),
                         });
                     }
                     return;
@@ -2188,7 +2266,7 @@ function createTelecomApp() {
                         Swal.fire({
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
-                            text: 'صلاحية اعتماد نقل الملكية (telecom.line.transfer_ownership) مطلوبة.',
+                            text: t('telecom.swal.permTakeoverApprove'),
                         });
                     }
                     return;
@@ -2206,31 +2284,10 @@ function createTelecomApp() {
                         const hint =
                             content?.statusHintAr ??
                             content?.StatusHintAr ??
-                            'تم تأكيد CBS؛ جاري تزويد الشبكة…';
-                        const doneTitle =
-                            kind === 3
-                                ? 'اكتمل تبديل الشريحة'
-                                : kind === 5
-                                    ? 'اكتمل تغيير الرقم'
-                                    : kind === 7
-                                        ? 'اكتمل إنهاء الخط'
-                                        : 'اكتمل نقل الملكية';
-                        const failTitle =
-                            kind === 3
-                                ? 'فشل تبديل الشريحة'
-                                : kind === 5
-                                    ? 'فشل تغيير الرقم'
-                                    : kind === 7
-                                        ? 'فشل إنهاء الخط'
-                                        : 'فشل أو تعذّر الإكمال';
-                        const okTitle =
-                            kind === 3
-                                ? 'تم تبديل الشريحة'
-                                : kind === 5
-                                    ? 'تم تغيير الرقم'
-                                    : kind === 7
-                                        ? 'تم إنهاء الخط'
-                                        : 'تم نقل الملكية';
+                            t('telecom.swal.cbsConfirmHint');
+                        const doneTitle = secureOpTitle(kind, 'done');
+                        const failTitle = secureOpTitle(kind, 'fail');
+                        const okTitle = secureOpTitle(kind, 'ok');
                         if (content?.hlrCompletesAsynchronously ?? content?.HlrCompletesAsynchronously) {
                             const polled = await pollTakeOverAfterApprove(opId);
                             if (polled.done) {
@@ -2244,7 +2301,7 @@ function createTelecomApp() {
                                     });
                                 }
                             } else if (window.Swal) {
-                                Swal.fire({ icon: 'info', title: 'قيد التزويد', text: hint });
+                                Swal.fire({ icon: 'info', title: t('telecom.swal.provisioningPending'), text: hint });
                             }
                         } else if (window.Swal) {
                             Swal.fire({
@@ -2260,13 +2317,13 @@ function createTelecomApp() {
                     } else if (window.Swal) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'لم يكتمل التزويد',
+                            title: t('telecom.swal.provisioningIncomplete'),
                             text: br?.message || res?.data?.message || '',
                         });
                     }
                 } catch (e) {
                     if (window.Swal) {
-                        Swal.fire({ icon: 'error', title: 'فشل الاعتماد', text: pickHttpErrorMessage(e) });
+                        Swal.fire({ icon: 'error', title: t('telecom.swal.approvalFailed'), text: pickHttpErrorMessage(e) });
                     }
                 } finally {
                     state.takeOverApproval.approveBusy = false;
@@ -2305,8 +2362,8 @@ function createTelecomApp() {
                         if (window.Swal) {
                             Swal.fire({
                                 icon: 'info',
-                                title: state.contentLang === 'ar' ? 'معالج مسبقاً' : 'Already processed',
-                                text: state.contentLang === 'ar' ? 'الطلب معالج مسبقاً.' : 'This operation was already processed.',
+                                title: t('telecom.swal.alreadyProcessedTitle'),
+                                text: t('telecom.swal.alreadyProcessedText'),
                                 timer: 2200,
                                 showConfirmButton: false,
                             });
@@ -2421,44 +2478,40 @@ function createTelecomApp() {
                 const msisdn = state.huaweiCbsData.msisdn;
                 const customerId = state.subscriberDetail?.customerId;
                 const subscriptionId = state.detailTelecomSubscriptionId;
-                const ar = state.contentLang === 'ar';
                 if (!customerId || !subscriptionId) {
                     Swal.fire({
                         icon: 'warning',
-                        title: ar ? 'بيانات غير كافية' : 'Missing context',
-                        text: ar
-                            ? 'افتح ملف المشترك واختر خطاً نشطاً قبل الشحن عبر المحرك الموحد.'
-                            : 'Open subscriber detail and select an active line first.',
+                        title: t('telecom.swal.rechargeMissingContextTitle'),
+                        text: t('telecom.swal.rechargeMissingContextText'),
                     });
                     return;
                 }
 
                 const { value: amountStr } = await Swal.fire({
-                    title: ar ? 'شحن — المحرك المالي الموحد' : 'Recharge — Unified Payment',
-                    text: ar
-                        ? `CBS + PAY- للرقم ${msisdn}`
-                        : `CBS + PAY- for ${msisdn}`,
+                    title: t('telecom.swal.rechargeTitle'),
+                    text: t('telecom.swal.rechargeText', { msisdn }),
                     input: 'number',
-                    inputPlaceholder: ar ? '15000' : '15000',
+                    inputPlaceholder: '15000',
                     showCancelButton: true,
-                    confirmButtonText: ar ? 'التالي' : 'Next',
+                    confirmButtonText: t('telecom.swal.rechargeNext'),
                     confirmButtonColor: '#c8102e',
                     inputValidator: (v) => {
                         const n = parseFloat(v);
                         if (!v || Number.isNaN(n) || n <= 0) {
-                            return ar ? 'مبلغ غير صالح' : 'Invalid amount';
+                            return t('telecom.swal.rechargeInvalidAmount');
                         }
                     },
                 });
                 if (!amountStr) return;
 
                 const { value: gatewayRef } = await Swal.fire({
-                    title: ar ? 'مرجع الدفع' : 'Payment reference',
+                    title: t('telecom.swal.rechargePaymentRefTitle'),
                     input: 'text',
                     showCancelButton: true,
-                    confirmButtonText: ar ? 'شحن الآن' : 'Recharge now',
+                    confirmButtonText: t('telecom.swal.rechargeNow'),
                     confirmButtonColor: '#c8102e',
-                    inputValidator: (v) => (!v || !String(v).trim() ? (ar ? 'مرجع مطلوب' : 'Required') : undefined),
+                    inputValidator: (v) =>
+                        !v || !String(v).trim() ? t('telecom.swal.rechargeRefRequired') : undefined,
                 });
                 if (!gatewayRef) return;
 
@@ -2492,14 +2545,14 @@ function createTelecomApp() {
                     }
                     Swal.fire({
                         icon: 'success',
-                        title: ar ? 'تم الشحن!' : 'Recharged',
+                        title: t('telecom.swal.rechargeOk'),
                         text: confirm?.messageAr || confirm?.MessageAr || '',
                         confirmButtonColor: '#c8102e',
                     });
                 } catch (err) {
                     Swal.fire({
                         icon: 'error',
-                        title: ar ? 'فشل الشحن' : 'Failed',
+                        title: t('telecom.swal.rechargeFail'),
                         text: err?.message || 'Error',
                     });
                 } finally {
@@ -2539,7 +2592,7 @@ function createTelecomApp() {
                         if (window.Swal) {
                             Swal.fire({
                                 icon: 'success',
-                                title: locale.value === 'ar' ? 'تمت المزامنة' : 'Synced',
+                                title: t('telecom.swal.hlrSyncedTitle'),
                                 text: body.message || '',
                                 timer: 1800,
                                 showConfirmButton: false,
@@ -2555,7 +2608,7 @@ function createTelecomApp() {
                     } else if (window.Swal) {
                         Swal.fire({
                             icon: 'warning',
-                            title: locale.value === 'ar' ? 'فشل المزامنة' : 'Sync failed',
+                            title: t('telecom.swal.syncFailed'),
                             text: body?.message || res?.data?.message || '',
                         });
                     }
@@ -2584,6 +2637,14 @@ function createTelecomApp() {
                 document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
                 try {
                     const params = new URLSearchParams(window.location.search);
+                    if (params.get('entry') === 'subscriber') {
+                        const q = params.get('q') || params.get('term') || '';
+                        const target = q
+                            ? '/Telecom/UnifiedSearch?q=' + encodeURIComponent(q)
+                            : '/Telecom/UnifiedSearch';
+                        window.location.replace(target);
+                        return;
+                    }
                     if (params.get('openPool') === '1') {
                         window.location.replace('/Telecom/MsisdnInventory');
                         return;
@@ -2620,19 +2681,18 @@ function createTelecomApp() {
                         }
                     }
 
-                    if (params.get('entry') === 'subscriber') {
-                        const input = document.getElementById('telecomSearchInput');
-                        if (input) {
-                            input.focus();
-                        }
-                    }
-
                     window.addEventListener('message', async (event) => {
                         if (event.data?.action === 'syriatel-customer-saved') {
                             closeRegistryModal();
                             await refreshAll();
                             if (window.Swal) {
-                                Swal.fire({ icon: 'success', title: 'تم الحفظ', text: 'تم حفظ بيانات المشترك بنجاح.', timer: 2000, showConfirmButton: false });
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: t('telecom.swal.savedOk'),
+                                    text: t('telecom.swal.savedSubscriberText'),
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                });
                             }
                         } else if (event.data?.action === 'syriatel-customer-saved-activate') {
                             closeRegistryModal();
@@ -2663,6 +2723,7 @@ function createTelecomApp() {
                 wizardUploadBusy,
                 contentDir,
                 contentLang,
+                productDisplayName,
                 needsSecondaryParty,
                 secondaryRequired,
                 migrateNeedsOtherText,
@@ -2701,9 +2762,12 @@ function createTelecomApp() {
                 submitMarkDocumentUploaded,
                 finishWizard,
                 confirmFirstReadyDraft,
-                kindLabelAr,
-                statusLabelAr,
+                kindLabel,
+                statusLabel,
+                kindLabelAr: kindLabel,
+                statusLabelAr: statusLabel,
                 isTakeOverPendingReview,
+                operationKpis,
                 pendingTakeOverCount,
                 pendingSimSwapCount,
                 pendingChangeNumberCount,
@@ -2765,7 +2829,7 @@ async function bootstrapTelecomHub() {
     const i18n = VueI18n.createI18n({
         legacy: false,
         locale: initialLang,
-        fallbackLocale: 'ar',
+        fallbackLocale: 'en',
         messages: { ar, en },
         missingWarn: false,
         fallbackWarn: false,

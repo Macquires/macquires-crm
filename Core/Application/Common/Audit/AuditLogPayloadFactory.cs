@@ -141,7 +141,7 @@ public static class AuditLogPayloadFactory
     {
         "CustomerRegistry" => "سجل المشتركين",
         "TelecomHub" => "مركز العمليات (Telecom Hub)",
-        "BillingIntegration" => "التكامل مع نظام الفوترة",
+        "BillingIntegration" => "Billing integration",
         "OmniSearch" => "البحث السريع (Ctrl+K)",
         "UnifiedSearch" => "البحث الموحّد",
         _ => channel,

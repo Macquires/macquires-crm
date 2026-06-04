@@ -4,6 +4,8 @@ This file is the **canonical prompt and discipline guide** for evolving the solu
 
 **Arabic strategic prompt + project-alignment annex:** [CRM_MASTER_PROMPT_AR.md](./CRM_MASTER_PROMPT_AR.md) (same repo; do not duplicate SQL-level detail there — keep mapping in separate migration docs).
 
+**Telecom UI terminology (mandatory for front-end copy):** [TELECOM_UI_GLOSSARY.md](./TELECOM_UI_GLOSSARY.md)
+
 **Product name (Syriatel / contract):** **Syriatel Macquires CRM** — the white-label build is referred to internally as **Macquires Telecom** until a full nuclear cut (Track B) or solution rename completes.
 
 ---

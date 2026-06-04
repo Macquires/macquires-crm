@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Macquires CRM — Data Migration Methodology &amp; Tooling | Syriatel</title>
+  <style>
+    :root {
+      --macquires-orange: #e85d04;
+      --macquires-orange-dark: #c44d03;
+      --syriatel-red: #c8102e;
+      --text: #1a1d22;
+      --muted: #5c6370;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 2rem 1.25rem 3rem;
+      max-width: 960px;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.65rem; color: var(--syriatel-red); margin: 0 0 0.35rem; }
+    h2 { font-size: 1.15rem; margin: 1.75rem 0 0.6rem; color: var(--text); }
+    h3 { font-size: 1.02rem; margin: 1.35rem 0 0.45rem; color: var(--macquires-orange-dark); }
+    .doc-meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 1.75rem; }
+    .section-bar {
+      background: linear-gradient(90deg, var(--macquires-orange) 0%, var(--macquires-orange-dark) 100%);
+      color: #fff;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      font-size: 1.08rem;
+      border-radius: 4px;
+      margin: 2.25rem 0 1rem;
+    }
+    .proposal-ready {
+      background: var(--card);
+      border-left: 4px solid var(--macquires-orange);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0 1.25rem;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .proposal-ready p { margin: 0 0 0.85rem; }
+    .proposal-ready p:last-child { margin-bottom: 0; }
+    .rfp-label {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--syriatel-red);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      font-size: 0.88rem;
+      margin: 0.75rem 0 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #fff7ed; color: var(--macquires-orange-dark); }
+    ul, ol { margin: 0.4rem 0 1rem 1.2rem; }
+    li { margin: 0.3rem 0; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #fff;
+      margin: 1rem 0;
+    }
+    .mermaid-wrap {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 1rem 0 1.25rem;
+      overflow-x: auto;
+    }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    code { font-size: 0.84em; background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 3px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
+</head>
+<body>
+
+<header>
+  <h1>Macquires CRM for Syriatel</h1>
+  <p class="doc-meta">Scope of Services — <strong>Data Migration Methodology &amp; Tooling</strong> (RFP Section 3)</p>
+</header>
+
+<!-- ==================== SECTION INTRO (Scope of Services tone) ==================== -->
+
+<div class="section-bar">Data Migration Methodology &amp; Tooling</div>
+
+<div class="proposal-ready">
+  <p>Macquires will migrate Syriatel’s existing subscriber population into the new CRM using a defined <strong>Extract → Transform → Load (ETL)</strong> methodology. Migration is treated as a telecom delivery workstream—not an afterthought—so that showroom and back-office users inherit accurate customers, lines, SIM inventory, and package assignments before go-live.</p>
+  <p><strong>Macquires will provide</strong> the database strategy for the target CRM schema, the tooling to execute bulk loads with row-level accountability, and a readiness checklist of what Syriatel must supply before each wave runs. Loads are rehearsed in a staging environment; production cutover proceeds only after agreed reconciliation and error-rate thresholds are met.</p>
+</div>
+
+<!-- ==================== RFP POINT 1 ==================== -->
+
+<div class="section-bar">Migration tools &amp; database strategy</div>
+
+<p class="rfp-label">RFP requirement — specify tools, scripts, and ETL frameworks</p>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will deploy</strong> a combination of schema-deployment tooling on Microsoft SQL Server and an embedded CSV bulk-import ETL framework that is already part of the Syriatel CRM build. Legacy BSS/OSS data is extracted by Syriatel (or jointly scripted), transformed to Macquires-approved templates, and loaded into the CRM subscriber data model through audited background jobs supervised from the Bulk Import Monitor.</p>
+  <p>Macquires does not propose a separate proprietary warehouse for subscriber migration. The production CRM database is the system of record once a wave is signed off; optional staging databases use the same schema for dress rehearsal only.</p>
+</div>
+
+<h2>Database strategy</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will prepare</strong> the target database in two steps: first structural readiness (tables, indexes, encryption for national ID), then phased data loads. Subscriber-related data lands in the telecom domain tables below—aligned to how the CRM runs activations, SIM operations, and package changes after cutover.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>CRM target</th><th>Migration content</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>Customer</code> (individual / corporate)</td><td>Legacy account identity, national ID or commercial registry reference</td></tr>
+    <tr><td><code>SubscriberProfile</code></td><td>Subscriber file linked to customer (multi-profile supported)</td></tr>
+    <tr><td><code>TelecomSubscription</code></td><td>Line, primary flag, subscription type, product/offering</td></tr>
+    <tr><td><code>MsisdnAsset</code> / <code>SimInventory</code></td><td>Number pool and SIM stock (ICCID, IMSI, PUK)</td></tr>
+    <tr><td><code>Product</code> / <code>ProductOffering</code></td><td>Catalog codes used in package migration loads</td></tr>
+    <tr><td><code>InventoryBulkImportJob</code> / errors</td><td>Job audit trail and per-row failure detail</td></tr>
+  </tbody>
+</table>
+
+<h3>Schema deployment (before any data load)</h3>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will apply</strong> Entity Framework Core migrations with the application release, supplemented by idempotent manual SQL scripts documented in the telecom migration runbook (including enterprise bulk-import tables and subscriber-profile indexes). This ensures the CRM database structure is identical in staging and production before Syriatel files are uploaded.</p>
+</div>
+
+<h2>ETL tools and frameworks (exact components)</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will use</strong> the following implemented components as the primary migration toolchain. Syriatel may additionally run extract jobs on the legacy side; the load boundary is always the approved CSV template or the documented upload APIs.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Tool / framework</th><th>Function</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Approved CSV templates</td><td>Contract for Extract output: <code>Template_CustomerProfiles.csv</code>, <code>Template_MsisdnAsset.csv</code>, <code>Template_PackageMigration.csv</code> (via <code>DownloadBulkImportTemplate</code>)</td></tr>
+    <tr><td><code>BulkImportCsvParser</code></td><td>UTF-8 parse; comma, semicolon, or tab; header normalization</td></tr>
+    <tr><td><code>BulkImportHeaderValidator</code></td><td>Reject files with wrong columns before row processing</td></tr>
+    <tr><td>Processors: CustomerProfiles, MsisdnAsset, PackageMigration</td><td>Transform + load into SQL Server (batch size 1,000; max 100,000 rows/job)</td></tr>
+    <tr><td><code>InventoryBulkImportBackgroundService</code></td><td>Queued async execution and stale-job recovery</td></tr>
+    <tr><td><code>IBulkImportFileStore</code></td><td>Secured upload storage (configurable path; max 50 MB/file)</td></tr>
+    <tr><td><code>BulkImportErrorSanitizer</code></td><td>PII-safe error export (masks PUK/PIN/national ID in operator views)</td></tr>
+    <tr><td>Bulk Import Monitor UI</td><td>Supervisor job status, error review, error file export</td></tr>
+    <tr><td>REST APIs</td><td><code>UploadInventoryBulkImport</code>, <code>EnqueueInventoryBulkImport</code>, job status/list/errors, <code>ExportInventoryBulkImportErrors</code></td></tr>
+    <tr><td><code>ImportSimInventoryBatch</code></td><td>Synchronous load up to 500 lines; larger sets auto-queued</td></tr>
+    <tr><td>Transform rules</td><td><code>TelecomPhoneNormalizer</code> (MSISDN), <code>IccidValidator</code> (Luhn), national ID hash/encryption, duplicate checks</td></tr>
+    <tr><td><code>RegisterSubscriberProfileForCustomer</code></td><td>API to bind customer, MSISDN, and subscription after master-data waves</td></tr>
+  </tbody>
+</table>
+
+<h3>Three bulk-import contracts (native ETL)</h3>
+
+<table>
+  <thead>
+    <tr><th>Job type</th><th>CSV columns</th><th>Load result</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>CustomerProfiles</td>
+      <td>CustomerCode, FullNameAr, FullNameEn, NationalId, CustomerType</td>
+      <td>Individual (10-digit national ID, unique) or corporate customer; duplicate codes rejected</td>
+    </tr>
+    <tr>
+      <td>MsisdnAsset</td>
+      <td>MSISDN, IMSI, ICCID, Pin1, Puk1</td>
+      <td>Number pool + SIM rows; MSISDN and ICCID validated</td>
+    </tr>
+    <tr>
+      <td>PackageMigration</td>
+      <td>MSISDN, CurrentOfferCode, NewOfferCode</td>
+      <td>Package update on existing subscription; catalog code must exist</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="proposal-ready">
+  <p><strong>Macquires may deliver</strong>, as part of the migration program (after mapping workshop), supplementary Syriatel-side or Macquires-side extract scripts—SQL on legacy BSS, SSIS, Azure Data Factory, or <code>BCP</code>/<code>sqlcmd</code> into optional <code>stg_*</code> staging tables—provided outputs conform to the three templates above or to agreed API enqueue flows. Reconciliation SQL comparing legacy counts to CRM job totals is included in the migration runbook for each wave sign-off.</p>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart TB
+  subgraph Extract["Extract — Syriatel legacy BSS/OSS"]
+    LEG[(Legacy subscriber stores)]
+    OUT[Export to CSV / staging tables]
+    LEG --> OUT
+  end
+  subgraph Transform["Transform — Macquires standards"]
+    CLN[Cleansing &amp; mapping sign-off]
+    TPL[Approved CSV templates]
+    OUT --> CLN --> TPL
+  end
+  subgraph Load["Load — Macquires CRM ETL"]
+    API[Upload / Enqueue APIs]
+    WRK[Background batch worker]
+    DB[(SQL Server CRM)]
+    TPL --> API --> WRK --> DB
+  end
+  subgraph Verify["Verify &amp; sign-off"]
+    MON[Bulk Import Monitor]
+    REC[Reconciliation counts]
+    DB --> MON --> REC
+  end
+</pre>
+</div>
+
+<h2>Phased migration methodology</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will execute</strong> migration in dependency order so reference data and inventories exist before subscriber bindings. Each phase ends with a formal gate: error export reviewed, reconciliation signed by Syriatel, then authorization for the next wave.</p>
+</div>
+
+<ol>
+  <li><strong>Schema and environment</strong> — Staging and production CRM databases; bulk-import configuration and encryption keys.</li>
+  <li><strong>Telecom reference data</strong> — Customer groups/categories, subscription types, product catalog and offering codes (required for package migration).</li>
+  <li><strong>Wave A — Customers</strong> — CustomerProfiles bulk load; remediate row errors.</li>
+  <li><strong>Wave B — Numbers and SIMs</strong> — MsisdnAsset bulk load and/or ImportSimInventoryBatch for smaller deltas.</li>
+  <li><strong>Wave C — Subscriber binding</strong> — Link customer, profile, MSISDN, and subscription via API/scripts per signed mapping.</li>
+  <li><strong>Wave D — Packages</strong> — PackageMigration bulk load to align active lines to CRM offerings.</li>
+  <li><strong>Wave E — Cutover</strong> — Final delta, production load, joint sign-off.</li>
+</ol>
+
+<div class="proposal-ready">
+  <p>Operational safeguards are built in: duplicate national IDs, customer codes, MSISDN, and ICCID are rejected with bilingual row errors; header mismatch fails the file before data rows run; jobs support up to 100,000 rows with batch commits and restart-safe queue processing.</p>
+</div>
+
+<!-- ==================== RFP POINT 2 ==================== -->
+
+<div class="section-bar">Technical prerequisites</div>
+
+<p class="rfp-label">RFP requirement — formats, cleansing, and staging before execution</p>
+
+<div class="proposal-ready">
+  <p><strong>Macquires requires</strong> Syriatel to complete the prerequisites below before migration execution begins. These items are documented in a Data Migration Readiness Checklist issued at design phase; Macquires will not run production loads until mandatory rows are signed off by Syriatel’s data owner.</p>
+</div>
+
+<h2>Database formats and extract deliverables</h2>
+
+<div class="proposal-ready">
+  <p>Syriatel must supply subscriber extracts in <strong>UTF-8 CSV</strong> matching Macquires templates exactly (header names are flexible for spacing/case; extra or missing columns cause rejection). Full production files are delivered per wave; anonymized samples of at least 1,000 rows per job type are required for staging rehearsal first.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Syriatel deliverable</th><th>Requirement</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Legacy data dictionary</td><td>Source tables/fields for customer, MSISDN, ICCID, IMSI, offer codes, status</td></tr>
+    <tr><td>Signed field-mapping matrix</td><td>Legacy field → template column → CRM entity</td></tr>
+    <tr><td>Template-conformant CSV files</td><td>Per wave: customers, MSISDN/SIM, packages</td></tr>
+    <tr><td>Offer code cross-reference</td><td>Legacy plan codes mapped to <code>ProductOffering.Code</code> in CRM</td></tr>
+    <tr><td>CustomerType convention</td><td>Corporate: corporate / company / 2; individual: all other values</td></tr>
+    <tr><td>Optional legacy DB access</td><td>Read-only for joint extract scripts; data still loads only through transform rules</td></tr>
+  </tbody>
+</table>
+
+<h2>Data cleaning standards</h2>
+
+<div class="proposal-ready">
+  <p>Cleansing is performed <strong>before upload</strong> to Macquires loaders. The CRM enforces quality at load time; failing rows are recorded in <code>InventoryBulkImportError</code> and exported for correction—never silently skipped without audit.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Field</th><th>Standard enforced at load</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>MSISDN</td><td>Canonical <code>09xxxxxxxx</code>; Arabic-Indic digits normalized; +963/963 accepted in extract</td></tr>
+    <tr><td>National ID (individual)</td><td>Exactly 10 digits; unique; encrypted with search hash</td></tr>
+    <tr><td>ICCID</td><td>19–20 digits; Luhn on 20-digit; no duplicate SIM</td></tr>
+    <tr><td>Customer code</td><td>Unique; required Arabic name; non-empty mandatory columns</td></tr>
+    <tr><td>Package migration</td><td>MSISDN must exist with subscription; NewOfferCode must be active in catalog</td></tr>
+    <tr><td>Terminated / ported lines</td><td>Excluded in extract per mapping rules; not loaded as active</td></tr>
+  </tbody>
+</table>
+
+<h2>Staging environments and infrastructure</h2>
+
+<div class="proposal-ready">
+  <p><strong>Syriatel must provide</strong> a staging CRM environment (same schema as production) for full-volume rehearsal, plus the production target for cutover. Macquires will configure the bulk-import file area on the application server (or use authenticated HTTPS upload only). A service account with bulk-import permissions, VPN/private connectivity, field-encryption keys for national ID, agreed maintenance windows, and named BSS/DBA contacts for extract and count validation are mandatory.</p>
+  <p>At least one customer group and category must exist in CRM before customer load; catalog must be loaded before package migration. Privacy approval for transferring national ID and subscriber PII into CRM is required before any non-anonymized file is handled.</p>
+</div>
+
+<h2>Migration gates and sign-off</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will commence</strong> each production wave only when staging has met the agreed error-rate target (with documented waivers for known legacy exceptions), reconciliation counts are signed by Syriatel, the Bulk Import Monitor shows completed status, and sampled subscribers validate correctly in Customer 360. Each upload retains job ID, success/error totals, and auditable operator identity.</p>
+</div>
+
+<p class="note"><strong>Scope clarity:</strong> The current CRM build includes the three bulk-import job types and APIs above. A single combined “full subscriber snapshot” file (customer + subscription in one row) is delivered in the migration program via Wave C binding and/or Macquires-authored extensions after mapping workshop—not as a separate product module. Historical billing ledger detail and CDR archives remain in legacy systems unless Syriatel scopes additional extract work.</p>
+
+<div class="section-bar">Summary</div>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will provide</strong> a SQL Server–aligned database strategy, an embedded CSV ETL framework with three approved load contracts, background processing and supervisor monitoring, phased waves with reconciliation, and optional joint extract scripting from legacy BSS. <strong>Syriatel will provide</strong> template-conformant cleansed extracts, mapping sign-off, telecom reference data, staging and production environments, security and privacy approvals, and formal sign-off between waves—before migration execution proceeds.</p>
+</div>
+
+<footer>
+  <p>Macquires CRM — Syriatel proposal, Scope of Services: Data Migration Methodology &amp; Tooling only.</p>
+</footer>
+
+</body>
+</html>

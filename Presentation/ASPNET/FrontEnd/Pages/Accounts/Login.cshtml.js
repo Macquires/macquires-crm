@@ -95,8 +95,7 @@ function resolveLangFromHints() {
     } catch (_) {
         /* ignore */
     }
-    const nav = (navigator.language || 'ar').toLowerCase();
-    return nav.indexOf('en') === 0 ? 'en' : 'ar';
+    return 'en';
 }
 
 async function persistCulture(lang) {

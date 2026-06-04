@@ -447,12 +447,59 @@
         }
     }
 
+    /** Every Syncfusion grid: resizable columns (grid + each column). */
+    function ensureGridColumnResizing(options) {
+        if (!options || typeof options !== 'object') return;
+        options.allowResizing = true;
+        if (!options.resizeSettings || typeof options.resizeSettings !== 'object') {
+            options.resizeSettings = { mode: 'Normal' };
+        } else if (!options.resizeSettings.mode) {
+            options.resizeSettings.mode = 'Normal';
+        }
+        if (Array.isArray(options.columns)) {
+            for (var ci = 0; ci < options.columns.length; ci++) {
+                var col = options.columns[ci];
+                if (col && typeof col === 'object') {
+                    col.allowResizing = true;
+                }
+            }
+        }
+    }
+
+    function ensureGridInstanceResizing(inst) {
+        if (!inst || inst.isDestroyed === true) return;
+        try {
+            if (typeof inst.setProperties === 'function') {
+                inst.setProperties({
+                    allowResizing: true,
+                    resizeSettings: { mode: 'Normal' },
+                });
+            } else {
+                inst.allowResizing = true;
+            }
+        } catch (ignoreRes) { /* empty */ }
+        try {
+            if (Array.isArray(inst.columns)) {
+                for (var i = 0; i < inst.columns.length; i++) {
+                    var c = inst.columns[i];
+                    if (c && typeof c === 'object') {
+                        c.allowResizing = true;
+                    }
+                }
+                if (typeof inst.refreshColumns === 'function') {
+                    inst.refreshColumns();
+                }
+            }
+        } catch (ignoreCols) { /* empty */ }
+    }
+
     function patchGridConstructorOptions(options) {
         if (!options || typeof options !== 'object') return options;
         if (options.selectionSettings && options.selectionSettings.persistSelection === true) {
             options.syriatelRestorePersistSelection = true;
             options.selectionSettings = Object.assign({}, options.selectionSettings, { persistSelection: false });
         }
+        ensureGridColumnResizing(options);
         applyEj2LocaleAndCulture();
         var lang = getUiLang();
         var rtl = isRtl();
@@ -494,11 +541,15 @@
                             scheduleRestorePersistSelection(inst);
                         }
                     } catch (ignorePre) { /* empty */ }
-                    return app0.apply(this, arguments);
+                    var ret = app0.apply(this, arguments);
+                    ensureGridInstanceResizing(inst);
+                    return ret;
                 };
                 proto.appendTo.__syriatelGridAppendPatched = true;
+                proto.appendTo.__syriatelResizePatched = true;
             }
         }
+        patchGridAppendToForResizing(Original);
     }
 
     function installGridWrapper() {
@@ -563,8 +614,23 @@
         }
         if (!assigned) {
             installGridReadOnlyFallback(Original);
+        } else {
+            patchGridAppendToForResizing(Original);
         }
         return true;
+    }
+
+    function patchGridAppendToForResizing(Original) {
+        if (!Original || !Original.prototype) return;
+        var proto = Original.prototype;
+        if (typeof proto.appendTo !== 'function' || proto.appendTo.__syriatelResizePatched) return;
+        var app0 = proto.appendTo;
+        proto.appendTo = function () {
+            var ret = app0.apply(this, arguments);
+            ensureGridInstanceResizing(this);
+            return ret;
+        };
+        proto.appendTo.__syriatelResizePatched = true;
     }
 
     function applyEj2LocaleAndCulture() {
@@ -605,6 +671,7 @@
 
     function refreshOneGrid(inst, wave) {
         if (!inst || !inst.columns) return;
+        ensureGridInstanceResizing(inst);
         if (wave != null) {
             try {
                 if (inst.__syriatelI18nWave === wave) {

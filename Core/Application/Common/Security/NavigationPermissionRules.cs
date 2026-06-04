@@ -111,12 +111,6 @@ public static class NavigationPermissionRules
             return true;
         }
 
-        if (IsSubscriberSearchNavUrl(raw, path)
-            && Rules.TryGetValue(path, out var subscriberRequired))
-        {
-            return subscriberRequired.Any(userPermissions.Contains);
-        }
-
         if (!Rules.TryGetValue(path, out var required) || required.Length == 0)
         {
             return true;
@@ -124,8 +118,4 @@ public static class NavigationPermissionRules
 
         return required.Any(userPermissions.Contains);
     }
-
-    private static bool IsSubscriberSearchNavUrl(string raw, string path) =>
-        string.Equals(path, "/Telecom/TelecomHub", StringComparison.OrdinalIgnoreCase)
-        && raw.Contains("entry=subscriber", StringComparison.OrdinalIgnoreCase);
 }

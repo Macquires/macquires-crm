@@ -10,6 +10,15 @@
 - [ ] Logout / Login بعد تحديث `PermissionCatalog` أو seed
 - [ ] مستخدم Showroom + مستخدم BackOffice بصلاحيات telecom
 
+## Telecom Hub (`/Telecom/TelecomHub`)
+- [ ] KPIs: معلّقة / مكتملة / فاشلة (من العمليات، ليس ARPU demo)
+- [ ] Swal: CGT، وثائق، صلاحيات اعتماد، شحن CBS — باللغة المختارة
+
+## Product catalog (`/Telecom/ProductCatalog`)
+- [ ] تبديل اللغة من الشريط العام يحدّث العناوين، الفلاتر، والـ Swal
+- [ ] فتح تفاصيل باقة + مسارات التشغيل السريعة (Hub wizard)
+- [ ] مودال إضافة/تعديل باقة: كل التسميات والقوائم (أهلية، فوترة، ضريبة، خنق) بدون عربي ثابت في CSHTML
+
 ## Customer 360 (`/Telecom/Customer360Profile`)
 
 | # | السيناريو | الخطوات | متوقع |
@@ -20,7 +29,26 @@
 | 4 | BDR | تحصيل دفعة على 0939000002 | BDR- + تحديث ذمة |
 | 5 | DEV | بيع جهاز | DEV- + عقد تقسيط |
 
+## Bulk import (`/Telecom/BulkImportMonitor`)
+- [ ] تبديل اللغة: أعمدة الشبكة + حالات المهام + رابط Hub
+
+## Strategic analytics (`/Telecom/StrategicAnalytics`)
+- [ ] بوابة الصلاحية + عنوان الصفحة باللغة المختارة
+
+## Unified search (`/Telecom/UnifiedSearch`)
+- [ ] بحث بالهوية/MSISDN + مودال النتائج باللغة المختارة
+
+## MSISDN inventory (`/Telecom/MsisdnInventory`)
+- [ ] شبكة + KPI + فلتر الحالة + placeholder البحث
+
+## Back-office audit (`/Telecom/BackOfficeAuditList`)
+- [ ] أنواع العمليات وأعمدة الشبكة من locale
+
+## Integration monitor (`/Telecom/IntegrationMonitor`)
+- [ ] تبديل اللغة يحدّث الفلاتر، الشبكة، وSwal التفاصيل
+
 ## Customer List — مودالات inline
+- [ ] مودالات C360 (SUS/TRM/SIM…): Swal باللغة المختارة
 
 | # | إجراء القائمة | متوقع |
 |---|---------------|--------|

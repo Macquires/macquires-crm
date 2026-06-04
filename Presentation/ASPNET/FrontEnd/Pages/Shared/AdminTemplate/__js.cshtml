@@ -14,6 +14,7 @@
 <script src="~/lib/indotalent/date-format-manager.js"></script>
 <script src="~/lib/indotalent/syncfusion-grid-i18n.js"></script>
 <script src="~/lib/indotalent/telecom-ui-badges.js" asp-append-version="true"></script>
+<script src="~/lib/indotalent/telecom-i18n.js" asp-append-version="true"></script>
 <script src="~/lib/jspdf/html2canvas.min.js"></script>
 <script src="~/lib/jspdf/jspdf.umd.min.js"></script>
 
@@ -146,34 +147,7 @@
 
 </script>
 
-<script>
-    // for maintaining sidebar scroll position
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var sidebar = document.getElementById('navbarnav');
-        if (sidebar) {
-            var scrollPosition = sessionStorage.getItem('sidebarScrollPosition');
-            if (scrollPosition !== null) {
-                setTimeout(() => {
-                    sidebar.scrollTop = parseInt(scrollPosition);
-                    sessionStorage.removeItem('sidebarScrollPosition');
-                }, 0);
-            }
-
-            sidebar.addEventListener('scroll', function () {
-                sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
-            });
-        }
-    });
-
-    window.addEventListener('beforeunload', () => {
-        var sidebar = document.getElementById('navbarnav');
-        if (sidebar) {
-            sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
-        }
-    });
-
-</script>
+<!-- Sidebar scroll: portal-navigation.js (#sidebar + post-render restore) -->
 
 <script>
     function showStatusMessage(statusMessage) {

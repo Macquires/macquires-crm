@@ -5,6 +5,15 @@
 const MisReportsPanel = (function () {
     const MIS_PERMISSION = 'telecom.reports.mis';
 
+    function t(key) {
+        const hit = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t('defaultDashboard.mis.' + key) : null;
+        return hit || key;
+    }
+
+    function numberLocale() {
+        return typeof TelecomI18n !== 'undefined' && TelecomI18n.getLang?.() === 'en' ? 'en-US' : 'ar-SY';
+    }
+
     function hasPermission() {
         const perms =
             typeof StorageManager !== 'undefined' && StorageManager.getPermissions
@@ -40,18 +49,25 @@ const MisReportsPanel = (function () {
             kpis: { arpuDemo: 0, churnPercentDemo: 0, branchHeat: [] },
             loading: false,
         });
+        const localeVersion = Vue.ref(0);
 
         const formatMoney = (n) => {
             if (n == null || isNaN(n)) return '—';
-            return new Intl.NumberFormat('ar-SY', { maximumFractionDigits: 0 }).format(n);
+            return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 0 }).format(n);
         };
 
         const formatWorkload = (n) => {
+            void localeVersion.value;
             if (n == null || isNaN(n)) return '—';
             const v = Math.round(Number(n));
-            if (v >= 80) return 'مرتفع';
-            if (v >= 40) return 'متوسط';
-            return 'منخفض';
+            if (v >= 80) return t('workloadHigh');
+            if (v >= 40) return t('workloadMedium');
+            return t('workloadLow');
+        };
+
+        const tBound = (key) => {
+            void localeVersion.value;
+            return t(key);
         };
 
         const loadKpis = async () => {
@@ -76,10 +92,14 @@ const MisReportsPanel = (function () {
             setup() {
                 Vue.onMounted(() => {
                     loadKpis().then(scrollToPanel);
+                    document.documentElement.addEventListener('syriatel-locale-changed', () => {
+                        localeVersion.value++;
+                    });
                 });
 
                 return {
                     ...Vue.toRefs(state),
+                    t: tBound,
                     formatMoney,
                     formatWorkload,
                 };

@@ -113,7 +113,7 @@
                 var saved = localStorage.getItem(LANG_KEY);
                 if (saved === 'en' || saved === 'ar') return saved;
             } catch (_) { /* ignore */ }
-            var nav = (navigator.language || 'ar').toLowerCase();
+            const nav = (navigator.language || 'en').toLowerCase();
             return nav.indexOf('en') === 0 ? 'en' : 'ar';
         }
 

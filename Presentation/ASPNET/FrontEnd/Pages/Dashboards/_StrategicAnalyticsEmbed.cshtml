@@ -1,10 +1,10 @@
 <header class="strategic-exec-hero mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
         <div>
-            <p class="strategic-exec-kicker mb-1">Executive MIS</p>
-            <h2 class="h5 mb-1 fw-bold text-syriatel-red">التحليلات الاستراتيجية</h2>
+            <p class="strategic-exec-kicker mb-1">{{ t('kicker') }}</p>
+            <h2 class="h5 mb-1 fw-bold text-syriatel-red">{{ t('title') }}</h2>
             <p class="strategic-exec-sub mb-0">
-                نطاق العرض: <strong>{{ metrics?.scopeLabelAr || '—' }}</strong>
+                {{ t('scopePrefix') }} <strong>{{ metrics?.scopeLabelAr || '—' }}</strong>
                 <span v-if="loading" class="ms-2 spinner-border spinner-border-sm text-danger" role="status"></span>
             </p>
         </div>
@@ -17,22 +17,22 @@
 <section v-if="metrics?.canUseFilters" class="strategic-filter-bar mb-4 p-3 rounded-3">
     <div class="row g-3 align-items-end">
         <div class="col-md-5">
-            <label class="form-label strategic-label">المنطقة (Region)</label>
+            <label class="form-label strategic-label">{{ t('region') }}</label>
             <select class="form-select strategic-select" v-model="filters.regionId" @@change="onRegionChange">
-                <option :value="null">كل سوريا</option>
+                <option :value="null">{{ t('allSyria') }}</option>
                 <option v-for="r in metrics.regions" :key="r.id" :value="r.id">{{ r.nameAr }}</option>
             </select>
         </div>
         <div class="col-md-5">
-            <label class="form-label strategic-label">الفرع (Branch)</label>
+            <label class="form-label strategic-label">{{ t('branch') }}</label>
             <select class="form-select strategic-select" v-model="filters.branchId" @@change="loadExecutiveMetrics">
-                <option :value="null">كل الفروع في النطاق</option>
+                <option :value="null">{{ t('allBranchesInScope') }}</option>
                 <option v-for="b in branchOptions" :key="b.id" :value="b.id">{{ b.nameAr }}</option>
             </select>
         </div>
         <div class="col-md-2">
             <button type="button" class="btn btn-strategic-gold w-100" @@click="loadExecutiveMetrics" :disabled="loading">
-                تحديث
+                {{ t('refresh') }}
             </button>
         </div>
     </div>
@@ -41,9 +41,9 @@
 <section class="row g-3 mb-4 strategic-bento">
     <div class="col-lg-4">
         <div class="strategic-bento-card h-100">
-            <h3 class="strategic-card-title">مركز الإيرادات</h3>
+            <h3 class="strategic-card-title">{{ t('revenueCenter') }}</h3>
             <p class="strategic-metric-xl text-danger mb-0">{{ formatMoney(metrics?.revenueIndex) }}</p>
-            <p class="strategic-metric-sub mb-2">ARPU <span class="text-syriatel-red">(تقدير تشغيلي)</span>: {{ formatMoney(metrics?.arpu) }}</p>
+            <p class="strategic-metric-sub mb-2">ARPU <span class="text-syriatel-red">{{ t('arpuHint') }}</span>: {{ formatMoney(metrics?.arpu) }}</p>
             <span class="strategic-delta" :class="deltaClass(metrics?.revenueChangePercent)">
                 {{ formatPercent(metrics?.revenueChangePercent) }}
             </span>
@@ -51,17 +51,17 @@
     </div>
     <div class="col-lg-4">
         <div class="strategic-bento-card h-100">
-            <h3 class="strategic-card-title">كفاءة العمليات</h3>
-            <p class="strategic-metric-lg mb-1">{{ metrics?.ticketsHandled ?? '—' }} <span class="strategic-metric-unit">تذكرة</span></p>
-            <p class="strategic-metric-sub mb-0">SLA: <strong class="text-syriatel-red">{{ formatPercent(metrics?.slaCompliancePercent) }}</strong> التزام</p>
+            <h3 class="strategic-card-title">{{ t('opsEfficiency') }}</h3>
+            <p class="strategic-metric-lg mb-1">{{ metrics?.ticketsHandled ?? '—' }} <span class="strategic-metric-unit">{{ t('ticketUnit') }}</span></p>
+            <p class="strategic-metric-sub mb-0">{{ t('slaPrefix') }} <strong class="text-syriatel-red">{{ formatPercent(metrics?.slaCompliancePercent) }}</strong> {{ t('slaSuffix') }}</p>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="strategic-bento-card h-100">
-            <h3 class="strategic-card-title">صدارة الفروع</h3>
+            <h3 class="strategic-card-title">{{ t('branchLeadership') }}</h3>
             <p class="strategic-metric-lg mb-1" v-if="metrics?.topBranchName">{{ metrics.topBranchName }}</p>
             <p class="strategic-metric-lg mb-1 text-muted" v-else>—</p>
-            <p class="strategic-metric-sub mb-0">الترتيب #{{ metrics?.topBranchRank || '—' }} في النطاق الحالي</p>
+            <p class="strategic-metric-sub mb-0">{{ rankLabel }}</p>
         </div>
     </div>
 </section>
@@ -69,19 +69,19 @@
 <section class="row g-3 mb-4">
     <div class="col-lg-8">
         <div class="strategic-panel h-100 p-3">
-            <h3 class="strategic-panel-title">مسار الإيرادات</h3>
+            <h3 class="strategic-panel-title">{{ t('revenuePath') }}</h3>
             <div id="revenueTrendChart" style="height: 280px;"></div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="strategic-panel h-100 p-3">
-            <h3 class="strategic-panel-title">شرائح المشتركين</h3>
+            <h3 class="strategic-panel-title">{{ t('subscriberSegments') }}</h3>
             <div id="subscriberSegmentChart" style="height: 280px;"></div>
         </div>
     </div>
 </section>
 
 <section class="strategic-panel p-3 mb-4">
-    <h3 class="strategic-panel-title mb-3">مصفوفة أداء الفروع</h3>
+    <h3 class="strategic-panel-title mb-3">{{ t('branchMatrix') }}</h3>
     <div id="ExecutiveLeaderboardGrid"></div>
 </section>

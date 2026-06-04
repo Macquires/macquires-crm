@@ -1,39 +1,153 @@
 @page "/Telecom/DeviceInventory"
 @{
-    ViewData["Title"] = "مخزون الأجهزة";
+    ViewData["Title"] = "Device inventory";
 }
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+
 <div id="app" v-cloak class="telecom-premium-page">
-    <div class="container-fluid py-3">
-        <h1 class="h4 mb-3"><i class="fas fa-mobile-alt me-2 text-syriatel-red"></i>مخزون الأجهزة (IMEI)</h1>
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3"><label class="form-label small">IMEI</label><input class="form-control form-control-sm" v-model="form.imei" /></div>
-                    <div class="col-md-3"><label class="form-label small">الموديل</label><input class="form-control form-control-sm" v-model="form.model" /></div>
-                    <div class="col-md-2"><label class="form-label small">السعر</label><input type="number" class="form-control form-control-sm" v-model.number="form.listPrice" /></div>
-                    <div class="col-md-2"><label class="form-label small">الفرع</label><input class="form-control form-control-sm" v-model="form.branchId" /></div>
-                    <div class="col-md-2"><button class="btn btn-telecom-primary btn-sm w-100" @@click="createDevice" :disabled="busy">إضافة</button></div>
+    <div id="device-inventory-page" class="container-fluid py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-1">
+                    <i class="fas fa-mobile-alt me-2 text-syriatel-red"></i>
+                    <span data-telecom-i18n="deviceInventory.title">Device inventory (IMEI)</span>
+                </h1>
+                <p class="text-muted small mb-0" data-telecom-i18n="deviceInventory.subtitle">
+                    Manage showroom devices and routers.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/Telecom/TelecomHub" class="btn btn-outline-telecom btn-sm">
+                    <i class="bi bi-broadcast me-1"></i>
+                    <span data-telecom-i18n="deviceInventory.hubLink">Operations hub</span>
+                </a>
+                <button type="button" class="btn btn-telecom-primary btn-sm" v-on:click="handler.refresh" :disabled="state.loading">
+                    <i class="fas fa-sync-alt" :class="{ 'fa-spin': state.loading }"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="telecom-bento-grid mb-3">
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="deviceInventory.kpi.total">Total devices</div>
+                        <div class="telecom-bento-kpi-value" v-text="state.kpis.total"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="deviceInventory.kpi.available">Available</div>
+                        <div class="telecom-bento-kpi-value" v-html="kpiBadge('Available', state.kpis.available)"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="deviceInventory.kpi.reserved">Reserved</div>
+                        <div class="telecom-bento-kpi-value" v-html="kpiBadge('Reserved', state.kpis.reserved)"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="deviceInventory.kpi.sold">Sold</div>
+                        <div class="telecom-bento-kpi-value" v-html="kpiBadge('Sold', state.kpis.sold)"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header d-flex justify-content-between">
-                <span>القائمة</span>
-                <button class="btn btn-outline-secondary btn-sm" @@click="load" :disabled="loading"><i class="fas fa-sync" :class="{'fa-spin':loading}"></i></button>
+
+        <div class="telecom-bento-card mb-3">
+            <div class="card-header bg-white py-2 border-bottom">
+                <span class="fw-semibold small" data-telecom-i18n="deviceInventory.addTitle">Add device</span>
             </div>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                    <thead><tr><th>IMEI</th><th>الموديل</th><th>السعر</th><th>الحالة</th><th>الفرع</th></tr></thead>
-                    <tbody>
-                        <tr v-for="r in rows" :key="r.id"><td dir="ltr">{{ r.imei }}</td><td>{{ r.model }}</td><td>{{ r.listPrice }}</td><td>{{ r.status }}</td><td>{{ r.branchId || '—' }}</td></tr>
-                    </tbody>
-                </table>
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small" for="devImei" data-telecom-i18n="deviceInventory.form.imei">IMEI</label>
+                        <input id="devImei" class="form-control form-control-sm" v-model="state.form.imei" dir="ltr" autocomplete="off" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small" for="devModel" data-telecom-i18n="deviceInventory.form.model">Model</label>
+                        <input id="devModel" class="form-control form-control-sm" v-model="state.form.model" autocomplete="off" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small" for="devPrice" data-telecom-i18n="deviceInventory.form.listPrice">List price</label>
+                        <input id="devPrice" type="number" min="0" step="1" class="form-control form-control-sm" v-model.number="state.form.listPrice" dir="ltr" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small" for="devBranch" data-telecom-i18n="deviceInventory.form.branchId">Branch ID</label>
+                        <input id="devBranch" class="form-control form-control-sm" v-model="state.form.branchId" dir="ltr" autocomplete="off" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-telecom-primary btn-sm w-100" v-on:click="handler.createDevice" :disabled="state.busy">
+                            <span data-telecom-i18n="deviceInventory.form.add">Add</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-        <a href="/Telecom/TelecomHub" class="btn btn-link btn-sm mt-2">مركز العمليات</a>
+
+        <div class="telecom-bento-card telecom-grid-panel dev-grid-panel">
+            <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap align-items-center gap-3 settings-section-header">
+                <span class="fw-semibold"><i class="fas fa-list-ul me-2"></i><span data-telecom-i18n="deviceInventory.gridTitle">Device list</span></span>
+                <div class="input-group input-group-sm" style="max-width: 140px;">
+                    <label class="input-group-text" for="devPageSize"><i class="fas fa-th-list"></i></label>
+                    <select id="devPageSize" class="form-select" v-model.number="state.pageSize" v-on:change="handler.changePageSize">
+                        <option :value="25">25</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                        <option :value="200">200</option>
+                    </select>
+                </div>
+                <div class="input-group input-group-sm" style="max-width: 280px;">
+                    <label class="input-group-text" for="devStatusFilter"><i class="fas fa-filter"></i></label>
+                    <select id="devStatusFilter" class="form-select" v-model="state.statusFilter" v-on:change="handler.applyFilter">
+                        <option value="" data-telecom-i18n="deviceInventory.filter.all">All</option>
+                        <option value="Available" data-telecom-i18n="deviceInventory.filter.available">Available</option>
+                        <option value="Reserved" data-telecom-i18n="deviceInventory.filter.reserved">Reserved</option>
+                        <option value="Sold" data-telecom-i18n="deviceInventory.filter.sold">Sold</option>
+                        <option value="Quarantined" data-telecom-i18n="deviceInventory.filter.quarantined">Quarantined</option>
+                    </select>
+                </div>
+                <input type="search" class="form-control form-control-sm" style="max-width: 220px;" v-model="state.quickSearch" v-on:input="handler.applyFilter" :placeholder="state.searchPlaceholder" dir="ltr" />
+            </div>
+            <div class="card-body p-0 position-relative">
+                <div v-if="state.loading" class="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center bg-white bg-opacity-75" style="z-index:3;">
+                    <span class="spinner-border spinner-border-sm text-danger me-2"></span>
+                    <span data-telecom-i18n="deviceInventory.loading">Loading inventory…</span>
+                </div>
+                <div class="grid-container">
+                    <div ref="mainGridRef"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .telecom-premium-page .dev-grid-panel.telecom-grid-panel .grid-container {
+        height: calc(100vh - 26rem);
+        min-height: 320px;
+        max-height: calc(100vh - 22rem);
+    }
+    .telecom-premium-page .dev-grid-panel .e-gridpager {
+        position: relative;
+        z-index: 4;
+        pointer-events: auto !important;
+    }
+    .telecom-premium-page .dev-grid-panel .e-gridpager .e-pagerdropdown,
+    .telecom-premium-page .dev-grid-panel .e-gridpager .e-numericcontainer a,
+    .telecom-premium-page .dev-grid-panel .e-gridpager .e-pagercontainer {
+        pointer-events: auto !important;
+    }
+</style>
+
 @section Scripts {
     <script src="~/FrontEnd/Pages/Telecom/DeviceInventory.cshtml.js" asp-append-version="true"></script>
 }

@@ -550,6 +550,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 SubscriberProfileId = line.SubscriberProfileId,
                 MsisdnAssetId = line.MsisdnAssetId,
                 Notes = $"عملية ديمو مكتملة — {customer.DisplayName}",
+                IsLostOrStolenReport = false,
+                FraudClearanceConfirmed = false,
+                AutoReconnectEnabled = false,
+                NotificationSuppressed = false,
+                RequiresDualApproval = false,
             };
             await _operationRepository.CreateAsync(op);
             await _unitOfWork.SaveAsync();

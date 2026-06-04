@@ -1,7 +1,7 @@
 @page
 @inject IHtmlLocalizer<SharedResources> L
 @{
-    ViewData["Title"] = "كتالوج باقات وعروض سيريتل | Product Catalog";
+    ViewData["Title"] = "Product catalog";
 }
 
 <div id="app" v-cloak>
@@ -105,7 +105,7 @@
 
                                 <!-- Offering Title -->
                                 <h3 class="h5 fw-semibold mb-2 offering-title">
-                                    {{ contentLang === 'ar' ? offer.name : offer.nameEn }}
+                                    {{ offerDisplayName(offer) }}
                                 </h3>
 
                                 <!-- Description -->
@@ -177,7 +177,7 @@
                             <i class="fas fa-box-open fa-lg text-syriatel-red"></i>
                             <div>
                                 <h2 class="h5 mb-0 fw-semibold">
-                                    {{ contentLang === 'ar' ? currentOffer.name : currentOffer.nameEn }}
+                                    {{ offerDisplayName(currentOffer) }}
                                 </h2>
                                 <span class="small font-monospace opacity-75">{{ currentOffer.code }}</span>
                             </div>
@@ -334,7 +334,7 @@
                                 <span class="small font-monospace opacity-75">{{ t('upsertOfferingTitle') }}</span>
                             </div>
                         </div>
-                        <button type="button" class="btn-close btn-close-white shadow-none" @@click="closeUpsert" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white shadow-none" @@click="closeUpsert" :aria-label="t('closeAria')"></button>
                     </div>
 
                                       <div class="telecom-search-modal-body flex-grow-1 overflow-auto p-4 bg-light min-h-0">
@@ -342,15 +342,15 @@
                             <!-- Basic specs -->
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-bold text-muted">{{ t('offeringNameAr') }} *</label>
-                                <input type="text" class="form-control" v-model="upsertForm.name" :placeholder="contentLang === 'ar' ? 'مثال: باقة ياشباب بلس 50' : 'e.g. Ya Shabab Plus 50'" required />
+                                <input type="text" class="form-control" v-model="upsertForm.name" :placeholder="t('namePh')" required />
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-bold text-muted">{{ t('offeringNameEn') }} *</label>
-                                <input type="text" class="form-control" v-model="upsertForm.nameEn" :placeholder="contentLang === 'ar' ? 'مثال: Ya Shabab Plus 50' : 'e.g. Ya Shabab Plus 50'" required />
+                                <input type="text" class="form-control" v-model="upsertForm.nameEn" :placeholder="t('nameEnPh')" required />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label small fw-bold text-muted">{{ t('offeringCode') }} *</label>
-                                <input type="text" class="form-control font-monospace text-uppercase" v-model="upsertForm.code" :placeholder="contentLang === 'ar' ? 'مثال: YA_SHABAB_50' : 'e.g. YA_SHABAB_50'" :disabled="isEditMode" required />
+                                <input type="text" class="form-control font-monospace text-uppercase" v-model="upsertForm.code" :placeholder="t('codePh')" :disabled="isEditMode" required />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label small fw-bold text-muted">{{ t('compatibleLineType') }}</label>
@@ -369,92 +369,92 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-6" v-if="isAdmin">
-                                <label class="form-label small fw-bold text-muted">{{ contentLang === 'ar' ? 'المنتج التقني (CBS) — للويزارد والتفعيل' : 'Technical product (CBS) — wizard / provisioning' }}</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('technicalProduct') }}</label>
                                 <select class="form-select" v-model="upsertForm.productId">
-                                    <option value="">{{ contentLang === 'ar' ? '— بدون ربط —' : '— None —' }}</option>
+                                    <option value="">{{ t('noneLink') }}</option>
                                     <option v-for="p in technicalProducts" :key="p.id" :value="p.id">{{ p.name }} ({{ p.serviceCode }})</option>
                                 </select>
                             </div>
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted">{{ t('offeringDescription') }}</label>
-                                <textarea class="form-control" rows="3" v-model="upsertForm.description" :placeholder="contentLang === 'ar' ? 'اكتب التفاصيل التجارية والبنود والمميزات الخاصة بالعرض...' : 'Provide commercial details, benefits, and special terms of the offering...'"></textarea>
+                                <textarea class="form-control" rows="3" v-model="upsertForm.description" :placeholder="t('descriptionPh')"></textarea>
                             </div>
 
                             <!-- Smart Product Catalog Architect Properties -->
                             <div class="col-12"><hr class="my-2 border-secondary opacity-25"></div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold text-muted">قواعد الأهلية (Eligibility Rules)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('eligibilityRules') }}</label>
                                 <select class="form-select" v-model="upsertForm.eligibilityRules">
-                                    <option value="Prepaid">مسبق الدفع (Prepaid)</option>
-                                    <option value="Postpaid">لاحق الدفع (Postpaid)</option>
-                                    <option value="Hybrid">مختلط / هجين (Hybrid)</option>
+                                    <option value="Prepaid">{{ t('eligibilityPrepaid') }}</option>
+                                    <option value="Postpaid">{{ t('eligibilityPostpaid') }}</option>
+                                    <option value="Hybrid">{{ t('eligibilityHybrid') }}</option>
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold text-muted">توافق الأصول (Asset Compatibility)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('assetCompatibility') }}</label>
                                 <select class="form-select" v-model="upsertForm.assetCompatibility">
-                                    <option value="Voice">خط خلوي (صوت)</option>
-                                    <option value="Data">شريحة بيانات (إنترنت)</option>
-                                    <option value="Fiber">فايبر / ضوئي</option>
+                                    <option value="Voice">{{ t('assetVoice') }}</option>
+                                    <option value="Data">{{ t('assetData') }}</option>
+                                    <option value="Fiber">{{ t('assetFiber') }}</option>
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold text-muted">دورة الفوترة (Billing Cycle)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('billingCycle') }}</label>
                                 <select class="form-select" v-model="upsertForm.billingCycle">
-                                    <option value="Monthly">شهري (Monthly)</option>
-                                    <option value="Weekly">أسبوعي (Weekly)</option>
-                                    <option value="Daily">يومي (Daily)</option>
-                                    <option value="OneTime">لمرة واحدة (One-Time)</option>
+                                    <option value="Monthly">{{ t('cycleMonthly') }}</option>
+                                    <option value="Weekly">{{ t('cycleWeekly') }}</option>
+                                    <option value="Daily">{{ t('cycleDaily') }}</option>
+                                    <option value="OneTime">{{ t('cycleOneTime') }}</option>
                                 </select>
                             </div>
 
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold text-muted">التصنيف الضريبي (Tax Category)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('taxCategory') }}</label>
                                 <select class="form-select" v-model="upsertForm.taxCategory">
-                                    <option value="StandardVAT">ضريبة قياسية (VAT)</option>
-                                    <option value="TelecomTax">ضريبة اتصالات</option>
-                                    <option value="Exempt">معفى (Exempt)</option>
+                                    <option value="StandardVAT">{{ t('taxStandardVat') }}</option>
+                                    <option value="TelecomTax">{{ t('taxTelecom') }}</option>
+                                    <option value="Exempt">{{ t('taxExempt') }}</option>
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold text-muted">رمز التفعيل (SOC Code)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('socCode') }}</label>
                                 <input type="text" class="form-control font-monospace" v-model="upsertForm.serviceIdSocCode" placeholder="HW_MIX_500" />
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold text-muted">سياسة الخنق (Throttling Policy)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('throttlingPolicy') }}</label>
                                 <select class="form-select" v-model="upsertForm.throttlingPolicy">
-                                    <option value="Cutoff">فصل الخدمة (Cutoff)</option>
-                                    <option value="Throttle128K">خنق السرعة 128Kbps</option>
-                                    <option value="PayAsYouGo">محاسبة على الاستهلاك</option>
+                                    <option value="Cutoff">{{ t('throttleCutoff') }}</option>
+                                    <option value="Throttle128K">{{ t('throttle128') }}</option>
+                                    <option value="PayAsYouGo">{{ t('throttlePayg') }}</option>
                                 </select>
                             </div>
 
                             <div class="col-12 col-md-6">
-                                <label class="form-label small fw-bold text-muted">حصة الإنترنت (Speed Quota GB)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('speedQuotaGb') }}</label>
                                 <input type="number" step="0.1" class="form-control" v-model="upsertForm.speedQuotaLimitGb" placeholder="50.0" />
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label small fw-bold text-muted">حصة الدقائق (Voice Minutes)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('voiceMinutes') }}</label>
                                 <input type="number" class="form-control" v-model="upsertForm.voiceMinutesLimit" placeholder="500" />
                             </div>
 
                             <div class="col-12 col-md-6">
-                                <label class="form-label small fw-bold text-muted">أيقونة العرض (Icon Class)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('iconClass') }}</label>
                                 <input type="text" class="form-control" v-model="upsertForm.iconClass" placeholder="fas fa-mobile-alt" />
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label small fw-bold text-muted">لون الشارة (Badge Color)</label>
+                                <label class="form-label small fw-bold text-muted">{{ t('badgeColor') }}</label>
                                 <select class="form-select" v-model="upsertForm.badgeColor">
-                                    <option value="primary">أزرق (Primary)</option>
-                                    <option value="success">أخضر (Success)</option>
-                                    <option value="warning">ذهبي (Warning)</option>
-                                    <option value="danger">أحمر (Danger)</option>
+                                    <option value="primary">{{ t('badgePrimary') }}</option>
+                                    <option value="success">{{ t('badgeSuccess') }}</option>
+                                    <option value="warning">{{ t('badgeWarning') }}</option>
+                                    <option value="danger">{{ t('badgeDanger') }}</option>
                                 </select>
                             </div>
 
                             <div class="col-12">
-                                <label class="form-label small fw-bold text-muted">وصف تسويقي مختصر (Short Description)</label>
-                                <input type="text" class="form-control" v-model="upsertForm.shortDescription" placeholder="باقة اقتصادية متكاملة لرجال الأعمال والموظفين..." />
+                                <label class="form-label small fw-bold text-muted">{{ t('shortDescription') }}</label>
+                                <input type="text" class="form-control" v-model="upsertForm.shortDescription" :placeholder="t('shortDescriptionPh')" />
                             </div>
                             <div class="col-12"><hr class="my-2 border-secondary opacity-25"></div>
                             
@@ -487,10 +487,10 @@
                                                 </select>
                                             </div>
                                             <div class="col-3">
-                                                <input type="text" class="form-control form-control-sm" :placeholder="contentLang === 'ar' ? 'مثال: 500' : 'e.g. 500'" v-model="comp.quota" />
+                                                <input type="text" class="form-control form-control-sm" :placeholder="t('quotaPh')" v-model="comp.quota" />
                                             </div>
                                             <div class="col-2">
-                                                <input type="text" class="form-control form-control-sm" :placeholder="contentLang === 'ar' ? 'دقيقة/ميجا' : 'Min/MB'" v-model="comp.quotaUnit" />
+                                                <input type="text" class="form-control form-control-sm" :placeholder="t('quotaUnitPh')" v-model="comp.quotaUnit" />
                                             </div>
                                             <div class="col-2 text-center">
                                                 <div class="form-check form-check-inline small">
@@ -522,17 +522,17 @@
                                         <div class="row g-2 align-items-center mb-2 border-bottom pb-2" v-for="(plan, index) in upsertForm.pricePlans" :key="index">
                                             <div class="col-3">
                                                 <select class="form-select form-select-sm" v-model="plan.planType">
-                                                    <option :value="0">Monthly</option>
-                                                    <option :value="1">Daily</option>
-                                                    <option :value="2">Weekly</option>
-                                                    <option :value="4">One-Time</option>
+                                                    <option :value="0">{{ t('planType0') }}</option>
+                                                    <option :value="1">{{ t('planType1') }}</option>
+                                                    <option :value="2">{{ t('planType2') }}</option>
+                                                    <option :value="4">{{ t('planType4') }}</option>
                                                 </select>
                                             </div>
                                             <div class="col-3">
-                                                <input type="number" class="form-control form-control-sm" :placeholder="contentLang === 'ar' ? 'السعر (ل.س)' : 'Price (SYP)'" v-model="plan.price" />
+                                                <input type="number" class="form-control form-control-sm" :placeholder="t('pricePh')" v-model="plan.price" />
                                             </div>
                                             <div class="col-2">
-                                                <input type="number" class="form-control form-control-sm" :placeholder="contentLang === 'ar' ? 'الصلاحية (أيام)' : 'Validity (Days)'" v-model="plan.validityDays" />
+                                                <input type="number" class="form-control form-control-sm" :placeholder="t('validityPh')" v-model="plan.validityDays" />
                                             </div>
                                             <div class="col-3 text-center">
                                                 <div class="form-check form-check-inline small">

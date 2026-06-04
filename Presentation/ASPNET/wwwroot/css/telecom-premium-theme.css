@@ -192,6 +192,23 @@ body.syr-tel-portal .form-card.telecom-premium-page {
     flex-shrink: 0;
 }
 
+.telecom-duotone-badge .bi {
+    font-size: 0.9em;
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.92;
+}
+
+.telecom-duotone-badge__label {
+    line-height: 1.2;
+}
+
+/* Customer list — subscriber type column */
+#app .grid-container .e-grid .e-rowcell[data-colindex] .telecom-duotone-badge,
+.grid-container .e-grid td .telecom-duotone-badge {
+    vertical-align: middle;
+}
+
 .telecom-duotone-badge.duotone-success {
     background: var(--sys-bg);
     color: var(--sys-text-main);
@@ -410,6 +427,12 @@ body.syr-tel-portal .form-card.telecom-premium-page {
 
 .telecom-premium-page .tile-refund {
     background: linear-gradient(145deg, #0f766e 0%, #059669 100%) !important;
+    color: var(--sys-card-bg) !important;
+}
+
+/* BDR — تحصيل ديون معدومة (distinct from refund green / activate red) */
+.telecom-premium-page .tile-bad-debt {
+    background: linear-gradient(145deg, #9a3412 0%, #c2410c 100%) !important;
     color: var(--sys-card-bg) !important;
 }
 

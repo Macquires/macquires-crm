@@ -1,6 +1,6 @@
 @page "/Telecom/Customer360Profile"
 @{
-    ViewData["Title"] = "ملف المشترك 360";
+    ViewData["Title"] = "Subscriber 360 profile";
 }
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 <style>
@@ -277,18 +277,18 @@
             <div class="c360-hero p-4 mb-4 shadow">
                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                     <div>
-                        <p class="small text-white-50 mb-1 text-uppercase letter-spacing-1">Customer 360 Command Center</p>
+                        <p class="small text-white-50 mb-1 text-uppercase letter-spacing-1">{{ ui.heroEyebrow }}</p>
                         <h1 class="h3 fw-bold mb-2">{{ state.profile.core?.displayName || '—' }}</h1>
                         <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                             <span class="badge" style="background:var(--sys-brand-red);color:var(--sys-card-bg)">{{ customerStatusLabel }}</span>
                             <span class="badge" style="background:color-mix(in srgb,var(--sys-text-main) 75%,transparent);color:var(--sys-card-bg)">{{ customerKindLabel }}</span>
-                            <span v-if="activeLinesCount" class="badge" style="background:var(--sys-text-main);color:var(--sys-card-bg)">{{ activeLinesCount }} خط نشط</span>
+                            <span v-if="activeLinesCount" class="badge" style="background:var(--sys-text-main);color:var(--sys-card-bg)">{{ activeLinesLabel }}</span>
                         </div>
                         <p class="small mb-0 opacity-75 font-monospace" dir="ltr">{{ state.profile.core?.nationalIdMasked || state.profile.core?.commercialRegistry || '—' }}</p>
                     </div>
                     <div class="d-flex flex-wrap gap-2 align-items-start">
                         <div class="c360-hero-kpi text-center">
-                            <div class="small text-white-50 d-block">تذاكر</div>
+                            <div class="small text-white-50 d-block">{{ ui.hero.tickets }}</div>
                             <strong class="fs-5">{{ (state.profile.supportTickets || []).length }}</strong>
                         </div>
                         <div class="c360-hero-kpi text-center">
@@ -296,11 +296,11 @@
                             <strong class="fs-5">{{ activeVasCount }}</strong>
                         </div>
                         <button type="button" class="btn btn-purple-glow btn-sm" @@click="openAiWizard">
-                            <i class="bi bi-robot me-1"></i> وكيل الكول سنتر AI
+                            <i class="bi bi-robot me-1"></i> {{ ui.hero.aiAgent }}
                         </button>
-                        <a href="/Telecom/UnifiedSearch" class="btn btn-light btn-sm"><i class="bi bi-search me-1"></i>بحث</a>
-                        <a :href="'/Customers/CustomerList?customerId=' + encodeURIComponent(state.customerId)" class="btn btn-outline-light btn-sm">سجل CRM</a>
-                        <a href="/Telecom/TelecomHub" class="btn btn-outline-light btn-sm">مركز العمليات</a>
+                        <a href="/Telecom/UnifiedSearch" class="btn btn-light btn-sm"><i class="bi bi-search me-1"></i>{{ ui.hero.search }}</a>
+                        <a :href="'/Customers/CustomerList?customerId=' + encodeURIComponent(state.customerId)" class="btn btn-outline-light btn-sm">{{ ui.hero.crmRegistry }}</a>
+                        <a href="/Telecom/TelecomHub" class="btn btn-outline-light btn-sm">{{ ui.hero.opsHub }}</a>
                     </div>
                 </div>
             </div>
@@ -308,47 +308,47 @@
             <!-- قسم 1: معلومات العميل الكاملة -->
             <div class="telecom-bento-card mb-4">
                 <div class="card-body p-4">
-                    <h2 class="h5 fw-bold text-danger mb-4"><i class="bi bi-person-lines-fill me-2"></i>معلومات العميل الكاملة</h2>
+                    <h2 class="h5 fw-bold text-danger mb-4"><i class="bi bi-person-lines-fill me-2"></i>{{ ui.sections.fullInfo }}</h2>
 
-                    <div class="c360-info-section-title">الهوية والحالة</div>
+                    <div class="c360-info-section-title">{{ ui.sections.identity }}</div>
                     <div class="c360-info-grid">
-                        <div class="c360-info-item"><label>الاسم الكامل</label><p>{{ coreField('displayName') }}</p></div>
-                        <div class="c360-info-item"><label>رقم الحساب</label><p class="font-monospace" dir="ltr">{{ coreField('accountNumber') }}</p></div>
-                        <div class="c360-info-item"><label>نوع العميل</label><p>{{ customerKindLabel }}</p></div>
-                        <div class="c360-info-item"><label>الحالة</label><p><span class="badge" :class="statusBadgeClass">{{ customerStatusLabel }}</span></p></div>
-                        <div v-if="coreField('statusReasonCodeLabel')" class="c360-info-item"><label>سبب الحالة</label><p>{{ coreField('statusReasonCodeLabel') }}</p></div>
-                        <div v-if="coreField('statusReasonNote')" class="c360-info-item"><label>ملاحظة الحالة</label><p>{{ coreField('statusReasonNote') }}</p></div>
-                        <div class="c360-info-item"><label>المجموعة</label><p>{{ coreField('customerGroupName') }}</p></div>
-                        <div class="c360-info-item"><label>التصنيف</label><p>{{ coreField('customerCategoryName') }}</p></div>
-                        <div v-if="coreField('description')" class="c360-info-item" style="grid-column:1/-1"><label>الوصف</label><p>{{ coreField('description') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.displayName }}</label><p>{{ coreField('displayName') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.accountNumber }}</label><p class="font-monospace" dir="ltr">{{ coreField('accountNumber') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.customerKind }}</label><p>{{ customerKindLabel }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.status }}</label><p><span class="badge" :class="statusBadgeClass">{{ customerStatusLabel }}</span></p></div>
+                        <div v-if="coreField('statusReasonCodeLabel')" class="c360-info-item"><label>{{ ui.fields.statusReason }}</label><p>{{ coreField('statusReasonCodeLabel') }}</p></div>
+                        <div v-if="coreField('statusReasonNote')" class="c360-info-item"><label>{{ ui.fields.statusNote }}</label><p>{{ coreField('statusReasonNote') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.group }}</label><p>{{ coreField('customerGroupName') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.category }}</label><p>{{ coreField('customerCategoryName') }}</p></div>
+                        <div v-if="coreField('description')" class="c360-info-item" style="grid-column:1/-1"><label>{{ ui.fields.description }}</label><p>{{ coreField('description') }}</p></div>
                     </div>
 
-                    <div v-if="isIndividual" class="c360-info-section-title">بيانات الفرد</div>
+                    <div v-if="isIndividual" class="c360-info-section-title">{{ ui.sections.individual }}</div>
                     <div v-if="isIndividual" class="c360-info-grid">
-                        <div class="c360-info-item"><label>الرقم الوطني</label><p class="font-monospace" dir="ltr">{{ coreField('nationalIdMasked') }}</p></div>
-                        <div class="c360-info-item"><label>تاريخ الميلاد</label><p>{{ formatDateOnly(coreField('dateOfBirth')) }}</p></div>
-                        <div class="c360-info-item"><label>الجنسية</label><p>{{ coreField('nationality') }}</p></div>
-                        <div class="c360-info-item"><label>الجنس</label><p>{{ coreField('genderLabel') }}</p></div>
-                        <div class="c360-info-item"><label>المهنة</label><p>{{ coreField('occupation') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.nationalId }}</label><p class="font-monospace" dir="ltr">{{ coreField('nationalIdMasked') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.dob }}</label><p>{{ formatDateOnly(coreField('dateOfBirth')) }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.nationality }}</label><p>{{ coreField('nationality') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.gender }}</label><p>{{ coreField('genderLabel') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.occupation }}</label><p>{{ coreField('occupation') }}</p></div>
                     </div>
 
-                    <div v-if="isCorporate" class="c360-info-section-title">بيانات الشركة</div>
+                    <div v-if="isCorporate" class="c360-info-section-title">{{ ui.sections.corporate }}</div>
                     <div v-if="isCorporate" class="c360-info-grid">
-                        <div class="c360-info-item"><label>السجل التجاري</label><p class="font-monospace" dir="ltr">{{ coreField('commercialRegistry') }}</p></div>
-                        <div class="c360-info-item"><label>الرقم الضريبي</label><p class="font-monospace" dir="ltr">{{ coreField('taxNumber') }}</p></div>
-                        <div class="c360-info-item"><label>المفوّض بالتوقيع</label><p>{{ coreField('authorizedSignatoryName') }}</p></div>
-                        <div class="c360-info-item"><label>الكيان القانوني</label><p>{{ coreField('legalStatusLabel') }}</p></div>
-                        <div class="c360-info-item"><label>وضع الفوترة</label><p>{{ coreField('billingConsolidationModeLabel') }}</p></div>
-                        <div v-if="coreField('parentCustomerDisplayName')" class="c360-info-item"><label>الشركة الأم</label><p>{{ coreField('parentCustomerDisplayName') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.commercialRegistry }}</label><p class="font-monospace" dir="ltr">{{ coreField('commercialRegistry') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.taxNumber }}</label><p class="font-monospace" dir="ltr">{{ coreField('taxNumber') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.authorizedSignatory }}</label><p>{{ coreField('authorizedSignatoryName') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.legalStatus }}</label><p>{{ coreField('legalStatusLabel') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.billingMode }}</label><p>{{ coreField('billingConsolidationModeLabel') }}</p></div>
+                        <div v-if="coreField('parentCustomerDisplayName')" class="c360-info-item"><label>{{ ui.fields.parentCompany }}</label><p>{{ coreField('parentCustomerDisplayName') }}</p></div>
                     </div>
 
-                    <div class="c360-info-section-title">التواصل</div>
+                    <div class="c360-info-section-title">{{ ui.sections.contact }}</div>
                     <div class="c360-info-grid">
-                        <div class="c360-info-item"><label>الهاتف الأساسي</label><p class="font-monospace" dir="ltr">{{ coreField('primaryPhone') }}</p></div>
-                        <div class="c360-info-item"><label>البريد الإلكتروني</label><p class="font-monospace" dir="ltr">{{ coreField('contactEmail') }}</p></div>
-                        <div class="c360-info-item"><label>فاكس</label><p class="font-monospace" dir="ltr">{{ coreField('faxNumber') }}</p></div>
-                        <div class="c360-info-item"><label>الموقع</label><p><a v-if="coreField('website')" :href="coreField('website')" target="_blank" rel="noopener">{{ coreField('website') }}</a><span v-else>—</span></p></div>
-                        <div class="c360-info-item"><label>واتساب</label><p class="font-monospace" dir="ltr">{{ coreField('whatsApp') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.primaryPhone }}</label><p class="font-monospace" dir="ltr">{{ coreField('primaryPhone') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.email }}</label><p class="font-monospace" dir="ltr">{{ coreField('contactEmail') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.fax }}</label><p class="font-monospace" dir="ltr">{{ coreField('faxNumber') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.website }}</label><p><a v-if="coreField('website')" :href="coreField('website')" target="_blank" rel="noopener">{{ coreField('website') }}</a><span v-else>—</span></p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.whatsApp }}</label><p class="font-monospace" dir="ltr">{{ coreField('whatsApp') }}</p></div>
                         <div class="c360-info-item"><label>LinkedIn</label><p>{{ coreField('linkedIn') }}</p></div>
                         <div class="c360-info-item"><label>Facebook</label><p>{{ coreField('facebook') }}</p></div>
                         <div class="c360-info-item"><label>Instagram</label><p>{{ coreField('instagram') }}</p></div>
@@ -356,19 +356,19 @@
                         <div class="c360-info-item"><label>TikTok</label><p>{{ coreField('tikTok') }}</p></div>
                     </div>
 
-                    <div class="c360-info-section-title">العنوان</div>
+                    <div class="c360-info-section-title">{{ ui.sections.address }}</div>
                     <div class="c360-info-grid">
-                        <div class="c360-info-item"><label>الشارع</label><p>{{ coreField('street') }}</p></div>
-                        <div class="c360-info-item"><label>المدينة</label><p>{{ coreField('city') }}</p></div>
-                        <div class="c360-info-item"><label>المحافظة</label><p>{{ coreField('state') }}</p></div>
-                        <div class="c360-info-item"><label>الرمز البريدي</label><p>{{ coreField('zipCode') }}</p></div>
-                        <div class="c360-info-item"><label>الدولة</label><p>{{ coreField('country') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.street }}</label><p>{{ coreField('street') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.city }}</label><p>{{ coreField('city') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.state }}</label><p>{{ coreField('state') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.zip }}</label><p>{{ coreField('zipCode') }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.country }}</label><p>{{ coreField('country') }}</p></div>
                     </div>
 
-                    <div v-if="(state.profile.core?.contacts || []).length" class="c360-info-section-title">جهات الاتصال</div>
+                    <div v-if="(state.profile.core?.contacts || []).length" class="c360-info-section-title">{{ ui.sections.contactsTable }}</div>
                     <div v-if="(state.profile.core?.contacts || []).length" class="table-responsive">
                         <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>الاسم</th><th>المسمى</th><th>الهاتف</th><th>البريد</th><th>ملاحظات</th></tr></thead>
+                            <thead class="table-light"><tr><th>{{ ui.fields.contactName }}</th><th>{{ ui.fields.contactTitle }}</th><th>{{ ui.fields.contactPhone }}</th><th>{{ ui.fields.contactEmail }}</th><th>{{ ui.fields.contactNotes }}</th></tr></thead>
                             <tbody>
                                 <tr v-for="c in (state.profile.core?.contacts || [])" :key="c.id">
                                     <td>{{ c.name || '—' }}</td>
@@ -381,11 +381,11 @@
                         </table>
                     </div>
 
-                    <div class="c360-info-section-title">سجل النظام</div>
+                    <div class="c360-info-section-title">{{ ui.sections.audit }}</div>
                     <div class="c360-info-grid">
-                        <div class="c360-info-item"><label>تاريخ الإنشاء</label><p>{{ formatDt(coreField('createdAtUtc', true)) }}</p></div>
-                        <div class="c360-info-item"><label>آخر تحديث</label><p>{{ formatDt(coreField('updatedAtUtc', true)) }}</p></div>
-                        <div class="c360-info-item"><label>معرّف العميل</label><p class="font-monospace small" dir="ltr">{{ state.customerId }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.createdAt }}</label><p>{{ formatDt(coreField('createdAtUtc', true)) }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.updatedAt }}</label><p>{{ formatDt(coreField('updatedAtUtc', true)) }}</p></div>
+                        <div class="c360-info-item"><label>{{ ui.fields.customerId }}</label><p class="font-monospace small" dir="ltr">{{ state.customerId }}</p></div>
                     </div>
                 </div>
             </div>
@@ -394,30 +394,30 @@
             <div class="telecom-bento-card mb-4">
                 <div class="card-body p-4">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                        <h2 class="h5 fw-bold text-danger mb-0"><i class="bi bi-reception-4 me-2"></i>جميع الاشتراكات</h2>
-                        <span class="badge bg-dark">{{ allSubscriptions.length }} اشتراك</span>
+                        <h2 class="h5 fw-bold text-danger mb-0"><i class="bi bi-reception-4 me-2"></i>{{ ui.sections.allSubscriptions }}</h2>
+                        <span class="badge bg-dark">{{ subscriptionBadgeText }}</span>
                     </div>
                     <div v-if="!allSubscriptions.length" class="text-center text-muted py-4">
                         <i class="bi bi-sim display-6 d-block mb-2 opacity-50"></i>
-                        لا توجد اشتراكات مسجّلة لهذا العميل.
+                        {{ telecomT('customerList.c360.noSubscriptions', 'No subscriptions.') }}
                     </div>
                     <div v-else class="table-responsive">
                         <table class="table table-hover align-middle mb-0 c360-sub-table">
                             <thead class="table-light">
                                 <tr>
                                     <th>MSISDN</th>
-                                    <th>الباقة / المنتج</th>
-                                    <th>نوع الاشتراك</th>
-                                    <th>الحالة</th>
-                                    <th>نوع الخط</th>
+                                    <th>{{ ui.grid.product }}</th>
+                                    <th>{{ ui.grid.subscriptionType }}</th>
+                                    <th>{{ ui.grid.status }}</th>
+                                    <th>{{ ui.grid.lineType }}</th>
                                     <th>ICCID</th>
                                     <th>IMSI</th>
-                                    <th>نوع الشريحة</th>
-                                    <th>حالة الشريحة</th>
-                                    <th>الوثائق</th>
-                                    <th>الرصيد / الحد</th>
-                                    <th>الولاء</th>
-                                    <th>التفعيل</th>
+                                    <th>{{ ui.grid.simType }}</th>
+                                    <th>{{ ui.grid.simStatus }}</th>
+                                    <th>{{ ui.grid.documents }}</th>
+                                    <th>{{ ui.grid.balanceLimit }}</th>
+                                    <th>{{ ui.grid.loyalty }}</th>
+                                    <th>{{ ui.grid.activation }}</th>
                                     <th>HLR</th>
                                 </tr>
                             </thead>
@@ -425,7 +425,7 @@
                                 <tr v-for="sub in allSubscriptions" :key="sub.id">
                                     <td>
                                         <span class="font-monospace fw-bold" dir="ltr">{{ sub.msisdn || '—' }}</span>
-                                        <span v-if="sub.isPrimaryLine" class="badge ms-1" style="background:var(--sys-brand-red);color:var(--sys-card-bg);font-size:0.65rem">أساسي</span>
+                                        <span v-if="sub.isPrimaryLine" class="badge ms-1" style="background:var(--sys-brand-red);color:var(--sys-card-bg);font-size:0.65rem">{{ telecomT('lineActions.primaryBadge', 'Primary') }}</span>
                                     </td>
                                     <td>
                                         <strong>{{ sub.productOfferingName || sub.productName || '—' }}</strong>
@@ -440,13 +440,13 @@
                                     <td>{{ sub.simStatus || '—' }}</td>
                                     <td>{{ sub.documentStatusLabel || '—' }}</td>
                                     <td class="small">
-                                        <span v-if="sub.prepaidBalance != null">رصيد: {{ sub.prepaidBalance }}</span>
-                                        <span v-if="sub.postpaidCreditLimit != null"><br />حد: {{ sub.postpaidCreditLimit }}</span>
+                                        <span v-if="sub.prepaidBalance != null">{{ ui.balancePrefix }} {{ sub.prepaidBalance }}</span>
+                                        <span v-if="sub.postpaidCreditLimit != null"><br />{{ ui.limitPrefix }} {{ sub.postpaidCreditLimit }}</span>
                                         <span v-if="sub.prepaidBalance == null && sub.postpaidCreditLimit == null">—</span>
                                     </td>
                                     <td class="small">
                                         <span v-if="sub.loyaltyTier">{{ sub.loyaltyTier }}</span>
-                                        <span v-if="sub.loyaltyPoints"> ({{ sub.loyaltyPoints }} نقطة)</span>
+                                        <span v-if="sub.loyaltyPoints"> ({{ sub.loyaltyPoints }} {{ ui.loyaltyPoints }})</span>
                                         <span v-if="!sub.loyaltyTier && !sub.loyaltyPoints">—</span>
                                     </td>
                                     <td class="small text-muted">{{ formatDt(sub.activationDateUtc) }}</td>
@@ -473,67 +473,67 @@
             </ul>
 
             <div class="mb-4 position-relative" :class="{ 'c360-actions-lock': state.isProvisioningInFlight }">
-                <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>مركز التشغيل والتفعيل (Provisioning Hub)</h2>
+                <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>{{ ui.actions.provisioningHub }}</h2>
                 <div class="c360-actions-grid">
                     <button type="button" class="c360-action-card border-0" @@click="openAiWizard">
                         <i class="bi bi-headset c360-action-icon" style="color:var(--sys-text-main)"></i>
-                        <span class="small fw-semibold d-block">الدعم الفني</span>
-                        <span class="text-muted" style="font-size:0.7rem;">AI Voice Wizard</span>
+                        <span class="small fw-semibold d-block">{{ ui.actions.techSupport }}</span>
+                        <span class="text-muted" style="font-size:0.7rem;">{{ ui.actions.techSupportSub }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.provisioning }" :disabled="!can.provisioning || state.isProvisioningInFlight" @@click="openProvisioningWizard('addpackage')">
                         <i class="bi bi-stars c360-action-icon" style="color:var(--sys-text-muted)"></i>
-                        <span class="small fw-semibold d-block">إضافة باقة / VAS</span>
+                        <span class="small fw-semibold d-block">{{ ui.actions.addPackage }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('simswap')">
                         <i class="bi bi-sim c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">تبديل شريحة</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.simSwap', 'SIM swap') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.takeover }" :disabled="!can.takeover || state.isProvisioningInFlight" @@click="openProvisioningWizard('takeover')">
                         <i class="bi bi-arrow-left-right c360-action-icon" style="color:var(--sys-text-muted)"></i>
-                        <span class="small fw-semibold d-block">نقل ملكية</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.takeOver', 'Transfer') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.provisioning }" :disabled="!can.provisioning || state.isProvisioningInFlight" @@click="openProvisioningWizard('migrate')">
                         <i class="bi bi-arrow-up-circle c360-action-icon" style="color:var(--sys-text-main)"></i>
-                        <span class="small fw-semibold d-block">ترحيل باقة MGR</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.migrate', 'Migrate') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.changeGsm }" :disabled="!can.changeGsm || state.isProvisioningInFlight" @@click="openProvisioningWizard('changeGsm')">
                         <i class="bi bi-shuffle c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">تحويل نوع الخط CGT</span>
+                        <span class="small fw-semibold d-block">{{ ui.actions.changeGsm }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.changeNumber }" :disabled="!can.changeNumber || state.isProvisioningInFlight" @@click="openProvisioningWizard('changeNumber')">
                         <i class="bi bi-telephone-forward c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">تغيير رقم الخط CNR</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.changeNumber', 'CNR') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.termination || selectedLineTerminated }" :disabled="!can.termination || selectedLineTerminated || state.isProvisioningInFlight" @@click="openProvisioningWizard('termination')">
                         <i class="bi bi-phone-vibrate c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">إنهاء خط TRM</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.terminate', 'TRM') }}</span>
                     </button>
                     <button v-if="selectedLineActive" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.suspension }" :disabled="!can.suspension || state.isProvisioningInFlight" @@click="openProvisioningWizard('suspension')">
                         <i class="bi bi-slash-circle c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">حظر مؤقت SUS</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.suspension', 'SUS') }}</span>
                     </button>
                     <button v-if="selectedLineSuspended" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.reconnect }" :disabled="!can.reconnect || state.isProvisioningInFlight" @@click="openProvisioningWizard('reconnect')">
                         <i class="bi bi-arrow-repeat c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">إعادة تفعيل RCN</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.reconnect', 'RCN') }}</span>
                     </button>
                     <button v-if="selectedLineCollectionEligible" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.collection }" :disabled="!can.collection || state.isProvisioningInFlight" @@click="openProvisioningWizard('badDebt')">
                         <i class="bi bi-cash-coin c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">تحصيل ديون BDR</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.collection', 'BDR') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.refund || selectedLineTerminated }" :disabled="!can.refund || selectedLineTerminated || state.isProvisioningInFlight" @@click="openProvisioningWizard('refund')">
                         <i class="bi bi-wallet2 c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">استرداد RFD</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.refund', 'RFD') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.deviceSale }" :disabled="!can.deviceSale || state.isProvisioningInFlight" @@click="openProvisioningWizard('deviceSale')">
                         <i class="bi bi-phone c360-action-icon" style="color:var(--sys-text-muted)"></i>
-                        <span class="small fw-semibold d-block">بيع جهاز DEV</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.deviceSale', 'DEV') }}</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('activate')">
                         <i class="bi bi-reception-4 c360-action-icon" style="color:var(--sys-text-muted)"></i>
-                        <span class="small fw-semibold d-block">تفعيل خط جديد</span>
+                        <span class="small fw-semibold d-block">{{ telecomT('lineActions.newLine', 'Activate') }}</span>
                     </button>
                 </div>
-                <p v-if="state.isProvisioningInFlight" class="small text-primary mt-2 mb-0"><span class="spinner-border spinner-border-sm me-1"></span>جاري التنفيذ على CBS/HLR…</p>
+                <p v-if="state.isProvisioningInFlight" class="small text-primary mt-2 mb-0"><span class="spinner-border spinner-border-sm me-1"></span>{{ ui.actions.inFlight }}</p>
             </div>
 
             <!-- Tab: Profile & billing -->
@@ -541,12 +541,12 @@
                 <div class="col-lg-5">
                     <div class="telecom-bento-card h-100">
                         <div class="card-body p-4">
-                            <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-person-vcard me-2"></i>البيانات الشخصية والقانونية</h2>
+                            <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-person-vcard me-2"></i>{{ ui.profileTab.legal }}</h2>
                             <div class="row g-3">
-                                <div class="col-12"><label class="small text-muted">الاسم</label><p class="fw-semibold mb-0">{{ state.profile.core?.displayName }}</p></div>
-                                <div class="col-md-6"><label class="small text-muted">نوع العميل</label><p class="mb-0">{{ customerKindLabel }}</p></div>
-                                <div class="col-md-6"><label class="small text-muted">هاتف أساسي</label><p class="mb-0 font-monospace" dir="ltr">{{ state.profile.core?.primaryPhone || '—' }}</p></div>
-                                <div class="col-12"><label class="small text-muted">هوية / سجل تجاري</label><p class="mb-0 font-monospace" dir="ltr">{{ state.profile.core?.nationalIdMasked || state.profile.core?.commercialRegistry || '—' }}</p></div>
+                                <div class="col-12"><label class="small text-muted">{{ ui.fields.displayName }}</label><p class="fw-semibold mb-0">{{ state.profile.core?.displayName }}</p></div>
+                                <div class="col-md-6"><label class="small text-muted">{{ ui.fields.customerKind }}</label><p class="mb-0">{{ customerKindLabel }}</p></div>
+                                <div class="col-md-6"><label class="small text-muted">{{ ui.fields.primaryPhone }}</label><p class="mb-0 font-monospace" dir="ltr">{{ state.profile.core?.primaryPhone || '—' }}</p></div>
+                                <div class="col-12"><label class="small text-muted">{{ ui.fields.nationalId }} / {{ ui.fields.commercialRegistry }}</label><p class="mb-0 font-monospace" dir="ltr">{{ state.profile.core?.nationalIdMasked || state.profile.core?.commercialRegistry || '—' }}</p></div>
                             </div>
                         </div>
                     </div>
@@ -554,24 +554,24 @@
                 <div class="col-lg-7">
                     <div class="telecom-bento-card h-100">
                         <div class="card-body p-4">
-                            <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-wallet2 me-2"></i>الفوترة والرصيد (CBS Mock)</h2>
+                            <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-wallet2 me-2"></i>{{ ui.profileTab.billing }}</h2>
                             <div v-if="state.cbsBusy" class="c360-skel mb-3" style="height:3rem;"></div>
                             <div v-else-if="state.cbsData" class="alert alert-success border-0 mb-3">
                                 <strong>{{ state.cbsData.msisdn }}</strong> —
                                 <span class="fw-bold">{{ state.cbsData.balance }} {{ state.cbsData.currency || 'SYP' }}</span>
                             </div>
-                            <p v-else class="small text-muted">لا يوجد MSISDN لاستعلام الرصيد.</p>
-                            <h3 class="small fw-semibold text-muted mb-2">سجل تكامل الفوترة</h3>
+                            <p v-else class="small text-muted">{{ ui.profileTab.noMsisdn }}</p>
+                            <h3 class="small fw-semibold text-muted mb-2">{{ ui.profileTab.billingLog }}</h3>
                             <div class="table-responsive" style="max-height:220px;">
                                 <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light sticky-top"><tr><th>العملية</th><th>النتيجة</th><th>الوقت</th></tr></thead>
+                                    <thead class="table-light sticky-top"><tr><th>{{ ui.profileTab.operation }}</th><th>{{ ui.profileTab.result }}</th><th>{{ ui.profileTab.time }}</th></tr></thead>
                                     <tbody>
                                         <tr v-for="l in (state.profile.billingLogs || []).slice(0,8)" :key="l.id">
                                             <td class="small">{{ l.operationNumber }}</td>
                                             <td><span class="badge" :style="l.success ? 'background:var(--sys-text-main);color:var(--sys-card-bg)' : 'background:var(--sys-border);color:var(--sys-text-main)'">{{ l.success ? 'OK' : 'Retry' }}</span></td>
                                             <td class="small text-muted">{{ formatDt(l.createdAtUtc) }}</td>
                                         </tr>
-                                        <tr v-if="!(state.profile.billingLogs || []).length"><td colspan="3" class="text-muted text-center small">لا سجلات.</td></tr>
+                                        <tr v-if="!(state.profile.billingLogs || []).length"><td colspan="3" class="text-muted text-center small">{{ ui.profileTab.noLogs }}</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -584,14 +584,14 @@
             <div v-show="state.activeTab === 'services'" class="mb-4">
                 <div class="telecom-bento-card mb-3">
                     <div class="card-body p-4">
-                        <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-reception-4 me-2"></i>الباقات والخطوط المفعّلة</h2>
-                        <div v-if="!(state.profile.core?.activeSubscriptions || []).length" class="text-muted small">لا اشتراكات مسجّلة.</div>
+                        <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-reception-4 me-2"></i>{{ ui.servicesTab.activePlans }}</h2>
+                        <div v-if="!(state.profile.core?.activeSubscriptions || []).length" class="text-muted small">{{ ui.servicesTab.noSubs }}</div>
                         <div class="row g-3">
                             <div v-for="sub in (state.profile.core?.activeSubscriptions || [])" :key="sub.id" class="col-lg-6">
                                 <div class="c360-sub-card p-3 h-100 bg-white">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <strong class="font-monospace fs-5" dir="ltr">{{ sub.msisdn || '—' }}</strong>
-                                        <span v-if="sub.isPrimaryLine" class="badge" style="background:var(--sys-brand-red);color:var(--sys-card-bg)">أساسي</span>
+                                        <span v-if="sub.isPrimaryLine" class="badge" style="background:var(--sys-brand-red);color:var(--sys-card-bg)">{{ telecomT('lineActions.primaryBadge', 'Primary') }}</span>
                                     </div>
                                     <p class="mb-1 fw-semibold">{{ sub.productOfferingName || sub.productName || '—' }}</p>
                                     <p class="small text-muted mb-2">{{ sub.subscriptionTypeName }} · {{ sub.simType || 'SIM' }}</p>
@@ -599,22 +599,22 @@
                                     <div v-else-if="lineWallet(sub.id)" class="border rounded p-2 mb-2 bg-light">
                                         <div v-if="lineWallet(sub.id).success" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                             <div>
-                                                <span class="small text-muted d-block">الرصيد الحالي (CBS)</span>
-                                                <span class="fw-bold text-success fs-6">{{ formatAmount(lineWallet(sub.id).balance) }} {{ lineWallet(sub.id).currency || 'ل.س' }}</span>
+                                                <span class="small text-muted d-block">{{ ui.servicesTab.currentBalance }}</span>
+                                                <span class="fw-bold text-success fs-6">{{ formatAmount(lineWallet(sub.id).balance) }} {{ lineWallet(sub.id).currency || telecomT('common.currencySuffix', 'SYP') }}</span>
                                             </div>
                                             <button v-if="canRecharge" type="button" class="btn btn-danger btn-sm" :disabled="state.rechargeBusy === sub.id" @@click="openRechargeModal(sub)">
                                                 <span v-if="state.rechargeBusy === sub.id" class="spinner-border spinner-border-sm"></span>
-                                                <span v-else><i class="bi bi-lightning-charge me-1"></i>شحن رصيد</span>
+                                                <span v-else><i class="bi bi-lightning-charge me-1"></i>{{ telecomT('lineActions.recharge', 'Recharge') }}</span>
                                             </button>
                                         </div>
-                                        <p v-else class="small text-muted mb-2">{{ lineWallet(sub.id).errorMessage || 'تعذّر تحميل الرصيد' }}</p>
-                                        <p class="small fw-semibold text-danger mb-1">حصص الباقة والمتبقي</p>
-                                        <div v-if="!(lineWallet(sub.id).buckets || []).length" class="small text-muted">لا تفاصيل حصص لهذه الباقة.</div>
+                                        <p v-else class="small text-muted mb-2">{{ lineWallet(sub.id).errorMessage || ui.servicesTab.walletLoadFailed }}</p>
+                                        <p class="small fw-semibold text-danger mb-1">{{ ui.servicesTab.quotaTitle }}</p>
+                                        <div v-if="!(lineWallet(sub.id).buckets || []).length" class="small text-muted">{{ ui.servicesTab.noBuckets }}</div>
                                         <div v-for="b in (lineWallet(sub.id).buckets || [])" :key="sub.id + '-' + (b.componentType ?? b.ComponentType)" class="mb-2">
                                             <div class="d-flex justify-content-between small">
                                                 <span>{{ bucketLabel(b) }}</span>
                                                 <span class="fw-semibold" dir="ltr">
-                                                    <template v-if="b.isUnlimited || b.IsUnlimited">غير محدود</template>
+                                                    <template v-if="b.isUnlimited || b.IsUnlimited">{{ ui.servicesTab.unlimited }}</template>
                                                     <template v-else>{{ formatAmount(b.remaining ?? b.Remaining) }} / {{ formatAmount(b.included ?? b.Included) }} {{ b.unit ?? b.Unit ?? '' }}</template>
                                                 </span>
                                             </div>
@@ -626,11 +626,11 @@
                                     <span class="badge" :class="operationalBadgeClass(sub.profileOperationalStatus)">{{ sub.profileOperationalStatus || '—' }}</span>
                                     <div v-if="state.hlrBySub[sub.id]" class="small border-top mt-2 pt-2">
                                         <span style="color:var(--sys-text-main)">HLR:</span> {{ state.hlrBySub[sub.id].hlrSubscriberState }}
-                                        <span v-if="state.hlrBySub[sub.id].differsFromCrm" class="text-warning ms-1">· اختلاف CRM</span>
+                                        <span v-if="state.hlrBySub[sub.id].differsFromCrm" class="text-warning ms-1">· {{ telecomT('lineActions.crmDrift', 'CRM mismatch') }}</span>
                                     </div>
                                     <button type="button" class="btn btn-outline-danger btn-sm mt-2" :disabled="state.hlrBusy === sub.id" @@click="checkHlr(sub)">
                                         <span v-if="state.hlrBusy === sub.id" class="spinner-border spinner-border-sm"></span>
-                                        <span v-else><i class="bi bi-broadcast me-1"></i>فحص HLR</span>
+                                        <span v-else><i class="bi bi-broadcast me-1"></i>{{ telecomT('lineActions.checkHlr', 'HLR') }}</span>
                                     </button>
                                 </div>
                             </div>
@@ -640,34 +640,34 @@
                 <div class="telecom-bento-card">
                     <div class="card-body p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <h2 class="h6 fw-bold text-danger mb-0"><i class="bi bi-stars me-2"></i>الخدمات المضافة (VAS)</h2>
+                            <h2 class="h6 fw-bold text-danger mb-0"><i class="bi bi-stars me-2"></i>{{ ui.servicesTab.vasTitle }}</h2>
                             <button v-if="can.provisioning" type="button" class="btn btn-outline-danger btn-sm" @@click="openProvisioningWizard('addpackage')">
-                                <i class="bi bi-plus-circle me-1"></i>تفعيل خدمة
+                                <i class="bi bi-plus-circle me-1"></i>{{ ui.servicesTab.activateService }}
                             </button>
                         </div>
-                        <div v-if="!(state.profile.activeVasServices || []).length" class="text-muted small">لا خدمات VAS مفعّلة على خطوط هذا المشترك.</div>
+                        <div v-if="!(state.profile.activeVasServices || []).length" class="text-muted small">{{ ui.servicesTab.noVas }}</div>
                         <template v-else>
                             <div class="c360-vas-summary">
-                                <span class="c360-vas-summary-pill"><i class="bi bi-collection"></i> الإجمالي: <strong>{{ vasSummary.total }}</strong></span>
-                                <span class="c360-vas-summary-pill"><i class="bi bi-check-circle"></i> نشطة: <strong>{{ vasSummary.active }}</strong></span>
-                                <span v-if="vasSummary.suspended" class="c360-vas-summary-pill"><i class="bi bi-pause-circle"></i> موقوفة: <strong>{{ vasSummary.suspended }}</strong></span>
-                                <span class="c360-vas-summary-pill"><i class="bi bi-phone"></i> خطوط: <strong>{{ groupedVasByLine.length }}</strong></span>
+                                <span class="c360-vas-summary-pill"><i class="bi bi-collection"></i> {{ ui.servicesTab.vasTotal }} <strong>{{ vasSummary.total }}</strong></span>
+                                <span class="c360-vas-summary-pill"><i class="bi bi-check-circle"></i> {{ ui.servicesTab.vasActive }} <strong>{{ vasSummary.active }}</strong></span>
+                                <span v-if="vasSummary.suspended" class="c360-vas-summary-pill"><i class="bi bi-pause-circle"></i> {{ ui.servicesTab.vasSuspended }} <strong>{{ vasSummary.suspended }}</strong></span>
+                                <span class="c360-vas-summary-pill"><i class="bi bi-phone"></i> {{ ui.servicesTab.vasLines }} <strong>{{ groupedVasByLine.length }}</strong></span>
                             </div>
                             <div v-for="group in groupedVasByLine" :key="group.msisdn" class="c360-vas-line-block">
                                 <div class="c360-vas-line-head">
                                     <i class="bi bi-sim text-muted"></i>
                                     <span class="line-msisdn">{{ group.msisdn }}</span>
-                                    <span class="badge" style="background:var(--sys-text-muted);color:var(--sys-card-bg)">{{ group.items.length }} خدمة</span>
-                                    <span v-if="group.activeCount" class="badge bg-success">{{ group.activeCount }} نشطة</span>
+                                    <span class="badge" style="background:var(--sys-text-muted);color:var(--sys-card-bg)">{{ group.items.length }} {{ ui.servicesTab.vasPerLine }}</span>
+                                    <span v-if="group.activeCount" class="badge bg-success">{{ group.activeCount }} {{ ui.servicesTab.vasActiveBadge }}</span>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table c360-vas-table align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th style="min-width:14rem">الخدمة</th>
-                                                <th>الحالة</th>
-                                                <th>تاريخ التفعيل</th>
-                                                <th>تاريخ الإيقاف</th>
+                                                <th style="min-width:14rem">{{ ui.servicesTab.service }}</th>
+                                                <th>{{ ui.servicesTab.status }}</th>
+                                                <th>{{ ui.servicesTab.activatedAt }}</th>
+                                                <th>{{ ui.servicesTab.deactivatedAt }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -705,12 +705,12 @@
                 <div class="telecom-bento-card">
                     <div class="card-body p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <h2 class="h6 fw-bold text-danger mb-0"><i class="bi bi-ticket-detailed me-2"></i>مركز الشكاوى والدعم الفني</h2>
-                            <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-secondary btn-sm">الأرشيف الكامل</a>
+                            <h2 class="h6 fw-bold text-danger mb-0"><i class="bi bi-ticket-detailed me-2"></i>{{ ui.ticketsTab.title }}</h2>
+                            <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-secondary btn-sm">{{ ui.ticketsTab.archive }}</a>
                         </div>
                         <div v-if="!(state.profile.supportTickets || []).length" class="text-center text-muted py-5">
                             <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
-                            لا تذاكر مرتبطة بهذا المشترك.
+                            {{ ui.ticketsTab.empty }}
                         </div>
                         <div v-for="t in mappedTickets" :key="t.id" class="c360-ticket-row mb-3">
                             <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
@@ -727,22 +727,22 @@
                                 <button v-if="can.cbs" type="button" class="btn btn-outline-warning btn-sm"
                                     :disabled="isTicketBusy(t.id, 'cbs')" @@click="forceCbs(t)">
                                     <span v-if="isTicketBusy(t.id, 'cbs')" class="spinner-border spinner-border-sm"></span>
-                                    <span v-else><i class="bi bi-currency-exchange me-1"></i>ضغط شحنة CBS</span>
+                                    <span v-else><i class="bi bi-currency-exchange me-1"></i>{{ ui.ticketsTab.forceCbs }}</span>
                                 </button>
                                 <button v-if="can.hlr" type="button" class="btn btn-outline-danger btn-sm"
                                     :disabled="isTicketBusy(t.id, 'hlr')" @@click="hlrResync(t)">
                                     <span v-if="isTicketBusy(t.id, 'hlr')" class="spinner-border spinner-border-sm"></span>
-                                    <span v-else><i class="bi bi-broadcast me-1"></i>مزامنة HLR</span>
+                                    <span v-else><i class="bi bi-broadcast me-1"></i>{{ ui.ticketsTab.hlrSync }}</span>
                                 </button>
                                 <button v-if="can.escalate" type="button" class="btn btn-outline-dark btn-sm"
                                     :disabled="isTicketBusy(t.id, 'escalate')" @@click="escalateTicket(t)">
                                     <span v-if="isTicketBusy(t.id, 'escalate')" class="spinner-border spinner-border-sm"></span>
-                                    <span v-else><i class="bi bi-arrow-up-circle me-1"></i>تصعيد Tier-3</span>
+                                    <span v-else><i class="bi bi-arrow-up-circle me-1"></i>{{ ui.ticketsTab.escalate }}</span>
                                 </button>
                             </div>
-                            <p v-else class="small text-muted mb-0"><i class="bi bi-lock me-1"></i>التذكرة مغلقة — لا إجراءات تشغيلية.</p>
+                            <p v-else class="small text-muted mb-0"><i class="bi bi-lock me-1"></i>{{ ui.ticketsTab.closed }}</p>
                             <p v-if="!can.cbs && !can.hlr && !can.escalate && t.canOperate" class="small text-warning mb-0 mt-2">
-                                <i class="bi bi-shield-exclamation me-1"></i>لا توجد صلاحيات RBAC لإجراءات التذاكر على حسابك.
+                                <i class="bi bi-shield-exclamation me-1"></i>{{ ui.ticketsTab.noRbac }}
                             </p>
                         </div>
                     </div>
@@ -756,25 +756,25 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-0" style="background:linear-gradient(135deg,var(--sys-brand-red),var(--sys-brand-red-hover));color:var(--sys-card-bg);">
-                    <h5 class="modal-title"><i class="bi bi-robot me-2"></i>محاكاة مكالمة كول سنتر AI</h5>
+                    <h5 class="modal-title"><i class="bi bi-robot me-2"></i>{{ ui.ai.title }}</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p class="small text-muted mb-3">يُنشئ تذكرة آلية مربوطة بالمشترك الحالي وتظهر فوراً في تبويب الشكاوى.</p>
+                    <p class="small text-muted mb-3">{{ ui.ai.hint }}</p>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">MSISDN</label>
                         <input type="text" class="form-control font-monospace" v-model="state.aiSim.msisdn" dir="ltr" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">نص المكالمة (عامية)</label>
-                        <textarea class="form-control" rows="3" v-model="state.aiSim.transcript" placeholder="أخي شحنت كاش والنت واقف عندي بعد الشحن..."></textarea>
+                        <label class="form-label small fw-semibold">{{ ui.ai.transcript }}</label>
+                        <textarea class="form-control" rows="3" v-model="state.aiSim.transcript" :placeholder="ui.ai.transcriptPh"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ ui.ai.cancel }}</button>
                     <button type="button" class="btn btn-purple-glow" :disabled="state.aiSim.busy" @@click="simulateAiCall">
                         <span v-if="state.aiSim.busy" class="spinner-border spinner-border-sm"></span>
-                        <span v-else><i class="bi bi-mic me-1"></i>تشغيل المحاكاة</span>
+                        <span v-else><i class="bi bi-mic me-1"></i>{{ ui.ai.run }}</span>
                     </button>
                 </div>
             </div>
@@ -786,34 +786,34 @@
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold text-danger">{{ wizardTitle }}</h5>
-                    <button type="button" class="btn-close" aria-label="إغلاق" @@click="closeProvisioningWizard"></button>
+                    <button type="button" class="btn-close" :aria-label="ui.wizardUi.closeAria" @@click="closeProvisioningWizard"></button>
                 </div>
                 <div class="modal-body pt-2">
                     <div class="d-flex gap-2 mb-3 flex-wrap">
                         <span v-for="s in 3" :key="s" class="c360-wiz-step flex-grow-1 text-center small py-2 rounded"
                               :class="state.wizard.step >= s ? 'c360-wiz-step-active' : 'c360-wiz-step-muted'">
-                            {{ s === 1 ? 'بيانات' : s === 2 ? 'تسجيل' : 'تم' }}
+                            {{ s === 1 ? ui.wizardUi.stepData : s === 2 ? ui.wizardUi.stepReg : ui.wizardUi.stepDone }}
                         </span>
                     </div>
                     <div v-show="state.wizard.step === 1">
                         <div class="alert alert-light border small py-2 mb-3">
-                            <span class="text-muted">الخط المرتبط بالعملية:</span>
+                            <span class="text-muted">{{ ui.wizardUi.linkedLine }}</span>
                             <strong class="d-block font-monospace" dir="ltr">{{ state.wizard.primaryLabel || '—' }}</strong>
                         </div>
                         <div v-if="lineOptions.length > 1" class="mb-3">
-                            <label class="form-label small fw-semibold">اختر الاشتراك</label>
+                            <label class="form-label small fw-semibold">{{ ui.wizardUi.pickSubscription }}</label>
                             <select class="form-select form-select-sm" v-model="state.prov.selectedLineKey" @@change="onWizardLineChanged">
                                 <option v-for="ln in lineOptions" :key="ln.key" :value="ln.key">{{ ln.label }}</option>
                             </select>
                         </div>
                         <div v-if="state.wizard.kind === 'takeover'" class="border rounded p-3 mb-3 bg-light">
-                            <label class="form-label small fw-semibold">المالك الجديد <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-semibold">{{ telecomT('wizard.secondaryLabel', 'New owner') }} <span class="text-danger">*</span></label>
                             <div class="row g-2 mb-2">
-                                <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchNationalId" placeholder="رقم وطني" /></div>
-                                <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchPhone" placeholder="جوال" /></div>
+                                <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchNationalId" :placeholder="ui.fields.nationalId" /></div>
+                                <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchPhone" :placeholder="ui.fields.primaryPhone" /></div>
                                 <div class="col-12">
                                     <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.wizard.takeoverBusy" @@click="searchTakeoverTarget">
-                                        <span v-if="state.wizard.takeoverBusy" class="spinner-border spinner-border-sm me-1"></span>بحث المالك الجديد
+                                        <span v-if="state.wizard.takeoverBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.searchNewOwner }}
                                     </button>
                                 </div>
                             </div>
@@ -826,102 +826,102 @@
                             <p v-if="state.wizard.takeoverTargetLabel" class="small text-success mb-0 mt-2">{{ state.wizard.takeoverTargetLabel }}</p>
                             <div class="row g-2 mt-3">
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">سبب النقل <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverTransferReason" maxlength="256" placeholder="بيع، وراثة، حكم قضائي…" />
+                                    <label class="form-label small fw-semibold">{{ telecomT('takeOver.transferReason', 'Reason') }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverTransferReason" maxlength="256" :placeholder="telecomT('takeOver.transferReasonPh', '')" />
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">سياسة التأمين / الإيداع</label>
+                                    <label class="form-label small fw-semibold">{{ telecomT('takeOver.depositPolicy', 'Deposit') }}</label>
                                     <select class="form-select form-select-sm" v-model.number="state.wizard.takeoverDepositPolicy">
-                                        <option :value="1">ينتقل للمالك الجديد</option>
-                                        <option :value="0">يبقى لدى المالك السابق</option>
-                                        <option :value="2">مصادرة</option>
-                                        <option :value="3">استرداد للمالك السابق</option>
+                                        <option :value="1">{{ telecomT('takeOver.depositTransfer', '') }}</option>
+                                        <option :value="0">{{ telecomT('takeOver.depositRetain', '') }}</option>
+                                        <option :value="2">{{ telecomT('takeOver.depositForfeit', '') }}</option>
+                                        <option :value="3">{{ telecomT('takeOver.depositRefund', '') }}</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="mt-3">
-                                <label class="form-label small fw-semibold">هوية المالك الجديد <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-semibold">{{ ui.wizardUi.newOwnerId }} <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp"
                                        @@change="onWizardIdentityFileChange" />
                             </div>
                         </div>
                         <div v-if="state.wizard.kind === 'migrate'" class="mb-3">
-                            <p v-if="state.wizard.mgrCurrentPlan" class="small text-muted">الباقة الحالية: <strong>{{ state.wizard.mgrCurrentPlan }}</strong></p>
+                            <p v-if="state.wizard.mgrCurrentPlan" class="small text-muted">{{ telecomT('wizard.migrationOffers.currentPlan', 'Current') }}: <strong>{{ state.wizard.mgrCurrentPlan }}</strong></p>
                             <div v-if="state.wizard.migrationBusy" class="c360-skel" style="height:3rem;"></div>
                             <select v-else class="form-select" v-model="state.wizard.selectedOfferingId">
-                                <option value="">— الباقة الجديدة —</option>
+                                <option value="">{{ telecomT('wizard.targetOffer', 'New plan') }}</option>
                                 <option v-for="o in state.wizard.migrationOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
                             </select>
                         </div>
                         <div v-if="state.wizard.kind === 'termination'" class="mb-3">
-                            <p class="small text-muted mb-2">الخط: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
-                            <label class="form-label small fw-semibold">نوع الإنهاء <span class="text-danger">*</span></label>
+                            <p class="small text-muted mb-2">{{ telecomT('termination.currentMsisdn', 'Line') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
+                            <label class="form-label small fw-semibold">{{ telecomT('termination.terminationType', 'Type') }} <span class="text-danger">*</span></label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.trmTerminationType" @@change="onTerminationTypeChange">
-                                <option value="Voluntary">طوعي</option>
-                                <option value="Collections">تحصيل</option>
-                                <option value="Regulatory">تنظيمي</option>
-                                <option value="Fraud">احتيال</option>
+                                <option value="Voluntary">{{ telecomT('termination.typeVoluntary', '') }}</option>
+                                <option value="Collections">{{ telecomT('termination.typeCollections', '') }}</option>
+                                <option value="Regulatory">{{ telecomT('termination.typeRegulatory', '') }}</option>
+                                <option value="Fraud">{{ telecomT('termination.typeFraud', '') }}</option>
                             </select>
-                            <label class="form-label small fw-semibold">سبب الإنهاء <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.trmTerminationReason" maxlength="256" placeholder="طلب عميل، قرار إداري…" />
+                            <label class="form-label small fw-semibold">{{ telecomT('termination.terminationReason', 'Reason') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.trmTerminationReason" maxlength="256" :placeholder="telecomT('termination.reasonPh', '')" />
                             <div v-if="state.wizard.trmTerminationType === 'Voluntary'">
-                                <label class="form-label small fw-semibold">نتيجة عرض الاحتفاظ <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-semibold">{{ telecomT('termination.retentionOutcome', 'Retention') }} <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm mb-2" v-model="state.wizard.trmRetentionOfferOutcome">
-                                    <option value="Accepted">قبل العرض</option>
-                                    <option value="Declined">رفض العرض</option>
-                                    <option value="NotOffered">لم يُعرض</option>
+                                    <option value="Accepted">{{ telecomT('termination.retentionAccepted', '') }}</option>
+                                    <option value="Declined">{{ telecomT('termination.retentionDeclined', '') }}</option>
+                                    <option value="NotOffered">{{ telecomT('termination.retentionNotOffered', '') }}</option>
                                 </select>
                             </div>
-                            <div v-if="state.wizard.trmRequiresBackOffice" class="alert alert-warning py-2 small mb-2">يتطلب اعتماد الباك أوفيس.</div>
+                            <div v-if="state.wizard.trmRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('termination.boHint', '') }}</div>
                             <div v-if="state.wizard.trmRequiresBackOffice" class="mb-0">
-                                <label class="form-label small">وثيقة / قرار <span class="text-danger">*</span></label>
+                                <label class="form-label small">{{ telecomT('termination.identityRequired', 'Document') }} <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                             </div>
                         </div>
                         <div v-if="state.wizard.kind === 'changeNumber'" class="mb-3">
-                            <p class="small text-muted mb-2">الرقم الحالي: <strong class="font-monospace" dir="ltr">{{ state.wizard.cnCurrentMsisdn || state.wizard.primaryLabel }}</strong></p>
+                            <p class="small text-muted mb-2">{{ telecomT('changeNumber.currentMsisdn', 'Current') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.cnCurrentMsisdn || state.wizard.primaryLabel }}</strong></p>
                             <div v-if="state.wizard.cnPoolBusy" class="c360-skel" style="height:3rem;"></div>
                             <template v-else>
-                                <label class="form-label small fw-semibold">الرقم الجديد <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-semibold">{{ telecomT('changeNumber.targetMsisdn', 'New') }} <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnTargetMsisdnAssetId" @@change="onChangeNumberTargetPicked">
-                                    <option value="">— اختر —</option>
+                                    <option value="">{{ telecomT('common.selectPlaceholder', '—') }}</option>
                                     <option v-for="a in state.wizard.cnPoolNumbers" :key="a.id || a.Id" :value="a.id || a.Id">
                                         {{ a.msisdn || a.Msisdn }}
                                         <template v-if="a.category !== undefined && [1,2,3].includes(Number(a.category))"> ★</template>
                                     </option>
                                 </select>
-                                <label class="form-label small fw-semibold">سبب التغيير <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-semibold">{{ telecomT('changeNumber.changeReason', 'Reason') }} <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnNumberChangeReason">
                                     <option value="">—</option>
-                                    <option value="CustomerRequest">طلب عميل</option>
-                                    <option value="Damaged">رقم تالف</option>
-                                    <option value="PremiumUpgrade">ترقية لرقم مميز</option>
-                                    <option value="Other">سبب آخر</option>
+                                    <option value="CustomerRequest">{{ telecomT('changeNumber.reasonCustomer', '') }}</option>
+                                    <option value="Damaged">{{ telecomT('changeNumber.reasonDamaged', '') }}</option>
+                                    <option value="PremiumUpgrade">{{ telecomT('changeNumber.reasonPremium', '') }}</option>
+                                    <option value="Other">{{ telecomT('changeNumber.reasonOther', '') }}</option>
                                 </select>
-                                <div v-if="state.wizard.cnRequiresBackOffice" class="alert alert-warning py-2 small mb-2">الرقم مميز — يتطلب اعتماد الباك أوفيس.</div>
-                                <label v-if="state.wizard.cnRequiresBackOffice" class="form-label small">رسوم الرقم المميز (ل.س)</label>
+                                <div v-if="state.wizard.cnRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('changeNumber.premiumHint', '') }}</div>
+                                <label v-if="state.wizard.cnRequiresBackOffice" class="form-label small">{{ telecomT('changeNumber.premiumFee', '') }}</label>
                                 <input v-if="state.wizard.cnRequiresBackOffice" type="number" min="0" step="1" class="form-control form-control-sm mb-2" v-model="state.wizard.cnPremiumFeeAmount" />
                                 <div v-if="state.wizard.cnRequiresBackOffice" class="mb-2">
-                                    <label class="form-label small">إيصال الدفع / موافقة <span class="text-danger">*</span></label>
+                                    <label class="form-label small">{{ telecomT('changeNumber.paymentDocHint', 'Receipt') }} <span class="text-danger">*</span></label>
                                     <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                                 </div>
                             </template>
                         </div>
                         <div v-if="state.wizard.kind === 'changeGsm'" class="mb-3">
-                            <p v-if="state.wizard.cgtCurrentTypeLabel" class="small text-muted">نوع الخط الحالي: <strong>{{ state.wizard.cgtCurrentTypeLabel }}</strong></p>
+                            <p v-if="state.wizard.cgtCurrentTypeLabel" class="small text-muted">{{ telecomT('changeGsm.targetType', 'Type') }}: <strong>{{ state.wizard.cgtCurrentTypeLabel }}</strong></p>
                             <div v-if="state.wizard.cgtTargetsBusy" class="c360-skel" style="height:3rem;"></div>
                             <template v-else>
-                                <label class="form-label small fw-semibold">نوع الخط الجديد <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-semibold">{{ telecomT('changeGsm.targetType', 'New type') }} <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-sm mb-2" v-model="state.wizard.cgtTargetTypeId" @@change="onCgtTargetTypeChanged">
-                                    <option value="">— اختر النوع —</option>
+                                    <option value="">{{ telecomT('common.selectPlaceholder', '—') }}</option>
                                     <option v-for="t in state.wizard.cgtTargets" :key="t.id" :value="t.id">{{ t.nameAr }} ({{ t.code }})</option>
                                 </select>
-                                <label class="form-label small fw-semibold">سبب التحويل <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.cgtMigrationReason" maxlength="256" placeholder="طلب عميل، ترقية، إلخ" />
-                                <label class="form-label small text-muted">باقة متوافقة (اختياري)</label>
+                                <label class="form-label small fw-semibold">{{ telecomT('changeGsm.migrationReason', 'Reason') }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.cgtMigrationReason" maxlength="256" />
+                                <label class="form-label small text-muted">{{ telecomT('wizard.targetOffer', 'Offer') }} ({{ telecomT('wizard.optional', 'optional') }})</label>
                                 <div v-if="state.wizard.cgtOffersBusy" class="c360-skel" style="height:2.5rem;"></div>
                                 <select v-else class="form-select form-select-sm" v-model="state.wizard.selectedOfferingId">
-                                    <option value="">— بدون تغيير باقة —</option>
+                                    <option value="">—</option>
                                     <option v-for="o in state.wizard.cgtOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
                                 </select>
                             </template>
@@ -929,94 +929,94 @@
                         <div v-if="state.wizard.kind === 'addpackage'" class="mb-3">
                             <div v-if="state.wizard.catalogBusy" class="c360-skel mb-2" style="height:4rem;"></div>
                             <select v-else class="form-select" v-model="state.wizard.selectedVasCode">
-                                <option value="">— خدمة VAS —</option>
+                                <option value="">{{ telecomT('wizard.vasPlaceholder', 'VAS') }}</option>
                                 <option v-for="v in state.wizard.vasCatalog" :key="v.serviceCode" :value="v.serviceCode">{{ v.nameAr }} ({{ v.serviceCode }})</option>
                             </select>
                         </div>
                         <div v-if="state.wizard.kind === 'suspension'" class="mb-3">
-                            <p class="small text-muted mb-2">الخط: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
-                            <label class="form-label small fw-semibold">نوع الحظر *</label>
+                            <p class="small text-muted mb-2">{{ telecomT('suspension.currentMsisdn', 'Line') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
+                            <label class="form-label small fw-semibold">{{ telecomT('suspension.suspensionType', 'Type') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.susSuspensionType" @@change="onSusTypeChange">
-                                <option value="CustomerRequest">طلب عميل</option>
-                                <option value="Billing">فواتير</option>
-                                <option value="Fraud">احتيال</option>
-                                <option value="Regulatory">تنظيمي</option>
-                                <option value="Operational">تشغيلي</option>
+                                <option value="CustomerRequest">{{ telecomT('suspension.typeCustomer', '') }}</option>
+                                <option value="Billing">{{ telecomT('suspension.typeBilling', '') }}</option>
+                                <option value="Fraud">{{ telecomT('suspension.typeFraud', '') }}</option>
+                                <option value="Regulatory">{{ telecomT('suspension.typeRegulatory', '') }}</option>
+                                <option value="Operational">{{ telecomT('suspension.typeOperational', '') }}</option>
                             </select>
-                            <label class="form-label small fw-semibold">مستوى الحظر *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('suspension.barringLevel', 'Level') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.susBarringLevel">
-                                <option value="Full">كامل</option>
-                                <option value="InboundOnly">وارد فقط</option>
-                                <option value="OutboundOnly">صادر فقط</option>
+                                <option value="Full">{{ telecomT('suspension.barringFull', '') }}</option>
+                                <option value="InboundOnly">{{ telecomT('suspension.barringInbound', '') }}</option>
+                                <option value="OutboundOnly">{{ telecomT('suspension.barringOutbound', '') }}</option>
                             </select>
-                            <label class="form-label small fw-semibold">سبب الحظر *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('suspension.suspensionReason', 'Reason') }} *</label>
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.susSuspensionReason" />
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="c360SusAuto" v-model="state.wizard.susAutoReconnectEnabled" />
-                                <label class="form-check-label small" for="c360SusAuto">إعادة اتصال تلقائية</label>
+                                <label class="form-check-label small" for="c360SusAuto">{{ telecomT('suspension.autoReconnect', '') }}</label>
                             </div>
                             <input v-if="state.wizard.susAutoReconnectEnabled" type="datetime-local" class="form-control form-control-sm mb-2" v-model="state.wizard.susEndDateLocal" />
-                            <div v-if="state.wizard.susRequiresBackOffice" class="alert alert-warning py-2 small mb-0">يتطلب اعتماد الباك أوفيس.</div>
+                            <div v-if="state.wizard.susRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ telecomT('suspension.boHint', '') }}</div>
                         </div>
                         <div v-if="state.wizard.kind === 'reconnect'" class="mb-3">
-                            <p class="small text-muted mb-2">الخط: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
-                            <label class="form-label small fw-semibold">نوع التسوية *</label>
+                            <p class="small text-muted mb-2">{{ telecomT('reconnect.currentMsisdn', 'Line') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
+                            <label class="form-label small fw-semibold">{{ telecomT('reconnect.clearanceType', 'Clearance') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.rcnClearanceType" @@change="onRcnClearanceChange">
-                                <option value="Customer">عميل</option>
-                                <option value="Payment">دفع</option>
-                                <option value="Fraud">احتيال</option>
-                                <option value="Regulatory">تنظيمي</option>
-                                <option value="Operational">تشغيلي</option>
+                                <option value="Customer">{{ telecomT('reconnect.clearanceCustomer', '') }}</option>
+                                <option value="Payment">{{ telecomT('reconnect.clearancePayment', '') }}</option>
+                                <option value="Fraud">{{ telecomT('reconnect.clearanceFraud', '') }}</option>
+                                <option value="Regulatory">{{ telecomT('reconnect.clearanceRegulatory', '') }}</option>
+                                <option value="Operational">{{ telecomT('reconnect.clearanceOperational', '') }}</option>
                             </select>
-                            <label class="form-label small fw-semibold">سبب إعادة التفعيل *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('reconnect.reconnectReason', 'Reason') }} *</label>
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnReconnectReason" @@blur="onRcnClearanceChange" />
-                            <label v-if="state.wizard.rcnClearanceType === 'Payment'" class="form-label small fw-semibold">مرجع الدفع *</label>
+                            <label v-if="state.wizard.rcnClearanceType === 'Payment'" class="form-label small fw-semibold">{{ telecomT('reconnect.paymentReference', 'Ref') }} *</label>
                             <input v-if="state.wizard.rcnClearanceType === 'Payment'" type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnPaymentReference" @@blur="onRcnClearanceChange" />
-                            <div v-if="state.wizard.rcnEligibilityBusy" class="alert alert-light py-2 small mb-2">جاري فحص الأهلية…</div>
+                            <div v-if="state.wizard.rcnEligibilityBusy" class="alert alert-light py-2 small mb-2">{{ telecomT('reconnect.matrixLoading', '') }}</div>
                             <div v-else-if="state.wizard.rcnEligibility" class="alert py-2 small mb-2" :class="(state.wizard.rcnEligibility.allowed || state.wizard.rcnEligibility.Allowed) ? ((state.wizard.rcnEligibility.requiresBackOfficeApproval || state.wizard.rcnEligibility.RequiresBackOfficeApproval) ? 'alert-warning' : 'alert-success') : 'alert-danger'">
                                 {{ state.wizard.rcnEligibility.messageAr || state.wizard.rcnEligibility.MessageAr }}
                             </div>
                             <div v-if="state.wizard.rcnRequiresBackOffice" class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="c360RcnFraud" v-model="state.wizard.rcnFraudClearanceConfirmed" @@change="onRcnClearanceChange" />
-                                <label class="form-check-label small" for="c360RcnFraud">تأكيد تسوية احتيال (BO)</label>
+                                <label class="form-check-label small" for="c360RcnFraud">{{ telecomT('reconnect.fraudClearance', '') }}</label>
                             </div>
                         </div>
                         <div v-if="state.wizard.kind === 'refund'" class="mb-3">
-                            <label class="form-label small fw-semibold">نوع الاسترداد *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('refund.refundType', 'Type') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.rfdRefundType" @@change="onRefundTypeChange">
-                                <option value="Deposit">تأمين</option>
-                                <option value="WalletBalance">محفظة</option>
-                                <option value="Overpayment">زيادة دفع</option>
-                                <option value="SyriatelCash">Syriatel Cash</option>
+                                <option value="Deposit">{{ telecomT('refund.typeDeposit', '') }}</option>
+                                <option value="WalletBalance">{{ telecomT('refund.typeWallet', '') }}</option>
+                                <option value="Overpayment">{{ telecomT('refund.typeOverpayment', '') }}</option>
+                                <option value="SyriatelCash">{{ telecomT('refund.typeSyriatelCash', '') }}</option>
                             </select>
-                            <label class="form-label small fw-semibold">طريقة التسوية *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('refund.refundMethod', 'Method') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.rfdRefundMethod">
-                                <option value="CreditNote">إشعار دائن</option>
-                                <option value="WalletCredit">محفظة</option>
-                                <option value="BankTransfer">تحويل بنكي</option>
-                                <option value="Cash">نقد</option>
+                                <option value="CreditNote">{{ telecomT('refund.methodCreditNote', '') }}</option>
+                                <option value="WalletCredit">{{ telecomT('refund.methodWallet', '') }}</option>
+                                <option value="BankTransfer">{{ telecomT('refund.methodBank', '') }}</option>
+                                <option value="Cash">{{ telecomT('refund.methodCash', '') }}</option>
                             </select>
-                            <label class="form-label small fw-semibold">المبلغ *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('refund.refundAmount', 'Amount') }} *</label>
                             <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.rfdRefundAmount" />
-                            <label class="form-label small fw-semibold">السبب *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('refund.refundReason', 'Reason') }} *</label>
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rfdRefundReason" />
-                            <div v-if="state.wizard.rfdRequiresBackOffice" class="alert alert-warning py-2 small mb-2">يتطلب اعتماد الباك أوفيس.</div>
+                            <div v-if="state.wizard.rfdRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('refund.boHint', '') }}</div>
                             <div v-if="state.wizard.rfdRequiresBackOffice">
-                                <label class="form-label small">وثيقة *</label>
+                                <label class="form-label small">{{ telecomT('termination.identityRequired', 'Document') }} *</label>
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                             </div>
                         </div>
                         <div v-if="state.wizard.kind === 'badDebt'" class="mb-3">
-                            <label class="form-label small fw-semibold">إجراء التحصيل *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('badDebt.collectionAction', 'Action') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.bdrCollectionAction" @@change="onBdrActionChange">
-                                <option value="PaymentRecorded">تسجيل دفعة</option>
-                                <option value="PaymentPlan">خطة سداد</option>
-                                <option value="DunningEscalation">تصعيد تذكير</option>
-                                <option value="AgencyReferral">إحالة وكالة</option>
-                                <option value="WriteOffPartial">شطب جزئي</option>
-                                <option value="WriteOffFull">شطب كامل</option>
+                                <option value="PaymentRecorded">{{ telecomT('badDebt.actionPayment', '') }}</option>
+                                <option value="PaymentPlan">{{ telecomT('badDebt.actionPaymentPlan', '') }}</option>
+                                <option value="DunningEscalation">{{ telecomT('badDebt.actionDunning', '') }}</option>
+                                <option value="AgencyReferral">{{ telecomT('badDebt.actionAgency', '') }}</option>
+                                <option value="WriteOffPartial">{{ telecomT('badDebt.actionWriteOffPartial', '') }}</option>
+                                <option value="WriteOffFull">{{ telecomT('badDebt.actionWriteOffFull', '') }}</option>
                             </select>
-                            <label class="form-label small">مرحلة التذكير</label>
+                            <label class="form-label small">{{ telecomT('badDebt.dunningStage', 'Stage') }}</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.bdrDunningStage" @@change="onBdrActionChange">
                                 <option value="Reminder1">Reminder1</option>
                                 <option value="Reminder2">Reminder2</option>
@@ -1024,35 +1024,35 @@
                                 <option value="HardBar">HardBar</option>
                             </select>
                             <div v-if="state.wizard.bdrCollectionAction === 'PaymentRecorded'">
-                                <label class="form-label small">مرجع الدفع *</label>
+                                <label class="form-label small">{{ telecomT('badDebt.paymentReference', 'Ref') }} *</label>
                                 <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrPaymentReference" @@blur="onBdrActionChange" />
-                                <label class="form-label small">المبلغ المحصّل *</label>
+                                <label class="form-label small">{{ telecomT('badDebt.collectedAmount', 'Amount') }} *</label>
                                 <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrCollectedAmount" @@blur="onBdrActionChange" />
                             </div>
                             <div v-if="state.wizard.bdrCollectionAction === 'WriteOffPartial' || state.wizard.bdrCollectionAction === 'WriteOffFull'">
-                                <label class="form-label small">مبلغ الشطب *</label>
+                                <label class="form-label small">{{ telecomT('badDebt.writeOffAmount', 'Write-off') }} *</label>
                                 <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrWriteOffAmount" @@blur="onBdrActionChange" />
                             </div>
-                            <div v-if="state.wizard.bdrEligibilityBusy" class="alert alert-light py-2 small mb-2">جاري فحص الأهلية…</div>
+                            <div v-if="state.wizard.bdrEligibilityBusy" class="alert alert-light py-2 small mb-2">{{ telecomT('badDebt.matrixLoading', '') }}</div>
                             <div v-else-if="state.wizard.bdrEligibility" class="alert py-2 small mb-2" :class="(state.wizard.bdrEligibility.allowed || state.wizard.bdrEligibility.Allowed) ? 'alert-success' : 'alert-danger'">
                                 {{ state.wizard.bdrEligibility.messageAr || state.wizard.bdrEligibility.MessageAr }}
                             </div>
                         </div>
                         <div v-if="state.wizard.kind === 'deviceSale'" class="mb-3">
-                            <label class="form-label small fw-semibold">الجهاز *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('deviceSale.deviceImei', 'Device') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInventoryId" @@change="onDevicePicked">
-                                <option value="">— اختر IMEI —</option>
+                                <option value="">{{ telecomT('common.selectPlaceholder', '—') }} IMEI</option>
                                 <option v-for="d in state.wizard.devDevices" :key="d.id || d.Id" :value="d.id || d.Id">
                                     {{ d.imei || d.Imei }} — {{ d.model || d.Model }}
                                 </option>
                             </select>
-                            <label class="form-label small fw-semibold">نوع البيع *</label>
+                            <label class="form-label small fw-semibold">{{ telecomT('deviceSale.saleType', 'Sale') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.devSaleType">
-                                <option value="Cash">نقد</option>
-                                <option value="Installment">تقسيط</option>
+                                <option value="Cash">{{ telecomT('deviceSale.saleCash', '') }}</option>
+                                <option value="Installment">{{ telecomT('deviceSale.saleInstallment', '') }}</option>
                             </select>
                             <div v-if="state.wizard.devSaleType === 'Installment'">
-                                <label class="form-label small">خطة التقسيط *</label>
+                                <label class="form-label small">{{ telecomT('deviceSale.installmentPlan', 'Plan') }} *</label>
                                 <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInstallmentPlanId">
                                     <option value="">—</option>
                                     <option v-for="p in state.wizard.devPlans" :key="p.id || p.Id" :value="p.id || p.Id">{{ p.nameAr || p.NameAr }}</option>
@@ -1061,129 +1061,129 @@
                             <p v-if="state.wizard.devFinancingPreview" class="small text-muted mb-2">{{ state.wizard.devFinancingPreview }}</p>
                         </div>
                         <div v-if="state.wizard.kind === 'simswap'" class="mb-3">
-                            <label class="form-label small fw-semibold">سبب التبديل <span class="text-danger">*</span></label>
+                            <label class="form-label small fw-semibold">{{ telecomT('simSwap.replacementReason', 'Reason') }} <span class="text-danger">*</span></label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.simReplacementReason">
-                                <option value="">— اختر —</option>
-                                <option value="Damaged">تالف / تالفة</option>
-                                <option value="Upgrade5G">ترقية (5G)</option>
-                                <option value="Other">سبب آخر</option>
+                                <option value="">{{ telecomT('common.selectPlaceholder', '—') }}</option>
+                                <option value="Damaged">{{ telecomT('simSwap.reasonDamaged', '') }}</option>
+                                <option value="Upgrade5G">{{ telecomT('simSwap.reasonUpgrade', '') }}</option>
+                                <option value="Other">{{ telecomT('simSwap.reasonOther', '') }}</option>
                             </select>
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="wizSimLost" v-model="state.wizard.simLostOrStolen" />
-                                <label class="form-check-label small" for="wizSimLost">بلاغ مفقودة / مسروقة</label>
+                                <label class="form-check-label small" for="wizSimLost">{{ telecomT('simSwap.lostOrStolen', '') }}</label>
                             </div>
-                            <p v-if="state.wizard.simLostOrStolen" class="small text-warning">يتطلب هوية واعتماد الباك أوفيس.</p>
+                            <p v-if="state.wizard.simLostOrStolen" class="small text-warning">{{ telecomT('simSwap.lostOrStolenHint', '') }}</p>
                             <div v-if="state.wizard.simLostOrStolen" class="mb-2">
-                                <label class="form-label small">إقرار / هوية *</label>
+                                <label class="form-label small">{{ telecomT('simSwap.identityRequired', 'ID') }} *</label>
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                             </div>
-                            <label class="form-label small">ICCID الجديد (19 رقم)</label>
+                            <label class="form-label small">{{ telecomT('wizard.activateIccid', 'ICCID') }}</label>
                             <input class="form-control font-monospace" v-model="state.wizard.simIccid" dir="ltr" maxlength="19" />
                         </div>
                         <div v-if="state.wizard.kind === 'activate'">
-                            <p class="small text-muted">خط إضافي لنفس المشترك.</p>
+                            <p class="small text-muted">{{ ui.wizardUi.additionalLine }}</p>
                             <div class="mb-2">
-                                <label class="form-label small">MSISDN متاح</label>
+                                <label class="form-label small">{{ ui.wizardUi.availableMsisdn }}</label>
                                 <select class="form-select form-select-sm" v-model="state.wizard.msisdnAssetId" :disabled="state.wizard.poolBusy" @@change="onActivateMsisdnChanged">
-                                    <option value="">— اختر —</option>
+                                    <option value="">{{ telecomT('common.selectPlaceholder', '—') }}</option>
                                     <option v-for="a in state.wizard.poolNumbers" :key="a.id" :value="a.id">{{ a.msisdn || a.id }}</option>
                                 </select>
                             </div>
                             <div v-if="state.wizard.selectedPoolImsi" class="mb-2">
-                                <label class="form-label small text-muted">IMSI (من المخزون)</label>
+                                <label class="form-label small text-muted">{{ ui.wizardUi.imsiFromStock }}</label>
                                 <input class="form-control form-control-sm font-monospace bg-light" :value="state.wizard.selectedPoolImsi" dir="ltr" readonly />
                             </div>
                             <div class="mb-2">
-                                <label class="form-label small">الباقة</label>
+                                <label class="form-label small">{{ ui.wizardUi.package }}</label>
                                 <select class="form-select form-select-sm" v-model="state.wizard.selectedOfferingId" :disabled="state.wizard.poolBusy">
-                                    <option value="">— اختر —</option>
+                                    <option value="">{{ telecomT('common.selectPlaceholder', '—') }}</option>
                                     <option v-for="o in state.wizard.offerings" :key="o.id" :value="o.id">{{ o.name || o.nameEn }}</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label small">ICCID</label>
+                                <label class="form-label small">{{ ui.wizardUi.iccid }}</label>
                                 <input class="form-control font-monospace form-control-sm" v-model="state.wizard.simIccid" dir="ltr" maxlength="19" />
                             </div>
                             <div class="row g-2 mb-2">
                                 <div class="col-md-6">
-                                    <label class="form-label small">قناة التفعيل</label>
+                                    <label class="form-label small">{{ ui.wizardUi.activationChannel }}</label>
                                     <select class="form-select form-select-sm" v-model.number="state.wizard.activationChannel">
-                                        <option :value="0">معرض</option>
-                                        <option :value="1">موزع</option>
-                                        <option :value="2">رقمي</option>
+                                        <option :value="0">{{ ui.wizardUi.channelShowroom }}</option>
+                                        <option :value="1">{{ ui.wizardUi.channelDealer }}</option>
+                                        <option :value="2">{{ ui.wizardUi.channelDigital }}</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6" v-show="state.wizard.activationChannel === 1">
-                                    <label class="form-label small">كود الموزع</label>
+                                    <label class="form-label small">{{ ui.wizardUi.dealerCode }}</label>
                                     <input class="form-control form-control-sm" v-model="state.wizard.dealerCode" maxlength="64" />
                                 </div>
                             </div>
                         </div>
                         <div class="mb-0">
-                            <label class="form-label small">ملاحظات</label>
+                            <label class="form-label small">{{ ui.wizardUi.notes }}</label>
                             <textarea class="form-control form-control-sm" rows="2" v-model="state.wizard.notes" maxlength="500"></textarea>
                         </div>
                     </div>
                     <div v-show="state.wizard.step === 2 && state.wizard.kind !== 'addpackage'">
-                        <p class="small text-muted mb-3">مسودة الطلب ثم تسجيل الوثيقة ثم تأكيد CBS/HLR.</p>
+                        <p class="small text-muted mb-3">{{ ui.wizardUi.step2Help }}</p>
                         <div v-if="!state.wizard.createdOperationId" class="d-grid">
                             <button type="button" class="btn btn-danger" :disabled="state.wizard.submitBusy" @@click="submitWizardCreateDraft">
-                                <span v-if="state.wizard.submitBusy" class="spinner-border spinner-border-sm me-1"></span>إنشاء مسودة الطلب
+                                <span v-if="state.wizard.submitBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.createDraft }}
                             </button>
                         </div>
                         <div v-else class="border rounded p-3 bg-light">
-                            <p class="mb-2 small"><strong>رقم الطلب:</strong> {{ state.wizard.createdOperationNumber }}</p>
+                            <p class="mb-2 small"><strong>{{ ui.wizardUi.opNumber }}</strong> {{ state.wizard.createdOperationNumber }}</p>
                             <button v-if="!state.wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="state.wizard.uploadBusy" @@click="submitWizardMarkDocument">
-                                <span v-if="state.wizard.uploadBusy" class="spinner-border spinner-border-sm me-1"></span>تسجيل رفع الوثيقة
+                                <span v-if="state.wizard.uploadBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.markDocument }}
                             </button>
-                            <p v-else class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>تم تسجيل الوثيقة.</p>
+                            <p v-else class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>{{ ui.wizardUi.documentDone }}</p>
                             <div v-if="state.wizard.kind === 'activate' && state.wizard.documentMarkedUploaded && !state.wizard.paymentRecorded" class="border rounded p-2 mb-2 bg-white">
-                                <p class="small fw-semibold mb-2">تثبيت الدفع والتحقق</p>
+                                <p class="small fw-semibold mb-2">{{ ui.wizardUi.paymentBlock }}</p>
                                 <div class="row g-2">
                                     <div class="col-md-4">
                                         <select class="form-select form-select-sm" v-model.number="state.wizard.paymentChannel">
-                                            <option :value="0">نقد</option>
-                                            <option :value="1">محفظة</option>
-                                            <option :value="2">قسيمة</option>
+                                            <option :value="0">{{ telecomT('refund.methodCash', 'Cash') }}</option>
+                                            <option :value="1">{{ telecomT('refund.methodWallet', 'Wallet') }}</option>
+                                            <option :value="2">{{ telecomT('swal.voucher', 'Voucher') }}</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <input class="form-control form-control-sm" v-model="state.wizard.paymentAmount" type="number" min="1" step="1" placeholder="المبلغ" />
+                                        <input class="form-control form-control-sm" v-model="state.wizard.paymentAmount" type="number" min="1" step="1" :placeholder="ui.wizardUi.amountPh" />
                                     </div>
                                     <div class="col-md-4">
-                                        <input class="form-control form-control-sm" v-model="state.wizard.paymentReference" placeholder="مرجع الدفع" />
+                                        <input class="form-control form-control-sm" v-model="state.wizard.paymentReference" :placeholder="ui.wizardUi.paymentRefPh" />
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-outline-danger btn-sm mt-2" :disabled="state.wizard.paymentBusy" @@click="submitWizardRecordPayment">
-                                    <span v-if="state.wizard.paymentBusy" class="spinner-border spinner-border-sm me-1"></span>تثبيت الدفع
+                                    <span v-if="state.wizard.paymentBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.recordPayment }}
                                 </button>
                             </div>
-                            <p v-if="state.wizard.kind === 'activate' && state.wizard.paymentRecorded" class="small text-success mb-2">تم تثبيت الدفع.</p>
+                            <p v-if="state.wizard.kind === 'activate' && state.wizard.paymentRecorded" class="small text-success mb-2">{{ ui.wizardUi.paymentDone }}</p>
                             <p v-if="state.wizard.operationCorrelationId" class="small text-muted font-monospace mb-2" dir="ltr">Correlation: {{ state.wizard.operationCorrelationId }}</p>
                             <div v-if="state.wizard.kind === 'deviceSale' && state.wizard.createdOperationId && state.wizard.devSaleType !== 'Cash' && !state.wizard.documentMarkedUploaded" class="border rounded p-2 mb-2 bg-white">
-                                <label class="form-label small">مقدّم + مرجع دفع</label>
-                                <input type="number" class="form-control form-control-sm mb-1" v-model="state.wizard.devDownPayment" placeholder="المبلغ" />
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.devPaymentReference" placeholder="مرجع الدفع" />
-                                <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.wizard.paymentBusy" @@click="recordDeviceDownPaymentC360">تسجيل الدفع</button>
+                                <label class="form-label small">{{ telecomT('deviceSale.downPayment', 'Down payment') }}</label>
+                                <input type="number" class="form-control form-control-sm mb-1" v-model="state.wizard.devDownPayment" :placeholder="ui.wizardUi.amountPh" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.devPaymentReference" :placeholder="ui.wizardUi.paymentRefPh" />
+                                <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.wizard.paymentBusy" @@click="recordDeviceDownPaymentC360">{{ telecomT('deviceSale.recordPayment', 'Record') }}</button>
                             </div>
                             <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover' && !(state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) && !(state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) && !(state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) && !(state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) && !(state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) && !(state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) && !(state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) && !(state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance)" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy || (state.wizard.kind === 'activate' && activateRequiredDeposit > 0 && !state.wizard.paymentRecorded) || (state.wizard.kind === 'deviceSale' && state.wizard.devSaleType === 'Installment' && !state.wizard.documentMarkedUploaded)" @@click="submitWizardConfirmCbs">
-                                <span v-if="state.wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>تأكيد CBS
+                                <span v-if="state.wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.confirmCbs }}
                             </button>
                             <p v-if="(state.wizard.kind === 'takeover' || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) || (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) || (state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) || (state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) || (state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance)) && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
-                                بانتظار اعتماد الباك أوفيس من مركز Telecom Hub.
+                                {{ ui.wizardUi.awaitBo }}
                             </p>
-                            <p v-if="state.wizard.confirmed" class="small text-success mb-0">{{ state.wizard.confirmStatusHint || 'تم التأكيد والتنفيذ.' }}</p>
+                            <p v-if="state.wizard.confirmed" class="small text-success mb-0">{{ state.wizard.confirmStatusHint || ui.wizardUi.confirmed }}</p>
                         </div>
                     </div>
                     <div v-show="state.wizard.step === 3">
-                        <p class="mb-2">تمت العملية <strong>{{ state.wizard.createdOperationNumber }}</strong>.</p>
-                        <p class="small text-muted mb-0">راجع تبويب الباقات والخدمات.</p>
+                        <p class="mb-2">{{ ui.wizardUi.doneTitle }} <strong>{{ state.wizard.createdOperationNumber }}</strong>.</p>
+                        <p class="small text-muted mb-0">{{ ui.wizardUi.doneHint }}</p>
                     </div>
                     <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="state.wizard.step === 1 || (state.wizard.step === 2 && state.wizard.createdOperationId)" @@click="wizardStepPrev">السابق</button>
-                        <button v-if="state.wizard.step === 1" type="button" class="btn btn-danger btn-sm" :disabled="state.wizard.submitBusy" @@click="wizardStepNext">{{ state.wizard.kind === 'addpackage' ? 'تفعيل VAS' : 'التالي: التسجيل' }}</button>
-                        <button v-if="state.wizard.step === 2" type="button" class="btn btn-danger btn-sm" :disabled="!canWizardFinishStep2" @@click="wizardStepNext">التالي: الخلاصة</button>
-                        <button v-if="state.wizard.step === 3" type="button" class="btn btn-primary btn-sm" @@click="finishProvisioningWizard">إغلاق</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="state.wizard.step === 1 || (state.wizard.step === 2 && state.wizard.createdOperationId)" @@click="wizardStepPrev">{{ ui.wizardUi.prev }}</button>
+                        <button v-if="state.wizard.step === 1" type="button" class="btn btn-danger btn-sm" :disabled="state.wizard.submitBusy" @@click="wizardStepNext">{{ state.wizard.kind === 'addpackage' ? ui.wizardUi.nextVas : ui.wizardUi.nextReg }}</button>
+                        <button v-if="state.wizard.step === 2" type="button" class="btn btn-danger btn-sm" :disabled="!canWizardFinishStep2" @@click="wizardStepNext">{{ ui.wizardUi.nextSummary }}</button>
+                        <button v-if="state.wizard.step === 3" type="button" class="btn btn-primary btn-sm" @@click="finishProvisioningWizard">{{ ui.wizardUi.close }}</button>
                     </div>
                 </div>
             </div>

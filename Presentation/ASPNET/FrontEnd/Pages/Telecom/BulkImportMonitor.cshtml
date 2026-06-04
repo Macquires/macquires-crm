@@ -2,7 +2,7 @@
 
 @{
 
-    ViewData["Title"] = "مراقبة الاستيراد الضخم";
+    ViewData["Title"] = "Bulk import monitor";
 
 }
 
@@ -28,7 +28,7 @@
 
             <div class="d-flex gap-2">
 
-                <a href="/Telecom/TelecomHub" class="btn btn-outline-secondary btn-sm">← مركز العمليات</a>
+                <a href="/Telecom/TelecomHub" class="btn btn-outline-secondary btn-sm" data-telecom-i18n="bulkImport.hubLink">Operations hub</a>
 
                 <button type="button" class="btn btn-danger btn-sm" :disabled="loading" v-on:click="loadJobs">
 
@@ -164,7 +164,7 @@
 
                 <div class="modal-footer">
 
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" data-telecom-i18n="bulkImport.close">Close</button>
 
                     <button type="button" class="btn btn-danger btn-sm" v-on:click="exportErrors" :disabled="!errorJobId">
 

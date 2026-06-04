@@ -5,6 +5,15 @@
 const StrategicAnalyticsPanel = (function () {
     const MIS_PERMISSION = 'telecom.reports.mis';
 
+    function t(key) {
+        const hit = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t('defaultDashboard.strategic.' + key) : null;
+        return hit || key;
+    }
+
+    function numberLocale() {
+        return typeof TelecomI18n !== 'undefined' && TelecomI18n.getLang?.() === 'en' ? 'en-US' : 'ar-SY';
+    }
+
     function hasPermission() {
         const perms = typeof StorageManager !== 'undefined' && StorageManager.getPermissions
             ? StorageManager.getPermissions() || []
@@ -44,6 +53,7 @@ const StrategicAnalyticsPanel = (function () {
             metrics: null,
             loading: false,
         });
+        const localeVersion = Vue.ref(0);
 
         let revenueChart = null;
         let segmentChart = null;
@@ -109,18 +119,30 @@ const StrategicAnalyticsPanel = (function () {
         });
 
         const accessLevelLabel = Vue.computed(() => {
+            void localeVersion.value;
             const level = state.metrics?.accessLevel || '';
             const map = {
-                GeneralManager: 'المدير العام',
-                RegionalDirector: 'مدير إقليم',
-                BranchManager: 'مدير فرع',
+                GeneralManager: t('accessGeneralManager'),
+                RegionalDirector: t('accessRegionalDirector'),
+                BranchManager: t('accessBranchManager'),
             };
             return map[level] || level || '—';
         });
 
+        const rankLabel = Vue.computed(() => {
+            void localeVersion.value;
+            const rank = state.metrics?.topBranchRank || '—';
+            return (t('rankInScope') || '').replace('{rank}', String(rank));
+        });
+
+        const tBound = (key) => {
+            void localeVersion.value;
+            return t(key);
+        };
+
         const formatMoney = (n) => {
             if (n == null || isNaN(n)) return '—';
-            return new Intl.NumberFormat('ar-SY', { maximumFractionDigits: 0 }).format(n);
+            return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 0 }).format(n);
         };
 
         const formatPercent = (n) => {
@@ -153,7 +175,7 @@ const StrategicAnalyticsPanel = (function () {
                     dataSource: trend,
                     xName: 'label',
                     yName: 'value',
-                    name: 'الإيراد',
+                    name: t('revenueSeries'),
                     fill: 'rgba(200, 16, 46, 0.25)',
                     border: { color: '#c8102e', width: 2 },
                 },
@@ -240,25 +262,25 @@ const StrategicAnalyticsPanel = (function () {
 
             const data = rows ?? [];
             const columns = [
-                { field: 'branchName', headerText: 'الفرع', width: 180 },
-                { field: 'activeSubscriptions', headerText: 'اشتراكات نشطة', width: 120, textAlign: 'Right' },
+                { field: 'branchName', headerText: t('colBranch'), width: 180 },
+                { field: 'activeSubscriptions', headerText: t('colActiveSubs'), width: 120, textAlign: 'Right' },
                 {
                     field: 'revenueContribution',
-                    headerText: 'مساهمة الإيراد',
+                    headerText: t('colRevenue'),
                     width: 130,
                     textAlign: 'Right',
                     format: 'N0',
                 },
                 {
                     field: 'avgResolutionHours',
-                    headerText: 'سرعة حل التذاكر (س)',
+                    headerText: t('colResolution'),
                     width: 140,
                     textAlign: 'Right',
                     format: 'N1',
                 },
                 {
                     field: 'managerRating',
-                    headerText: 'تقييم المدير',
+                    headerText: t('colManagerRating'),
                     width: 110,
                     textAlign: 'Right',
                     format: 'N1',
@@ -275,6 +297,8 @@ const StrategicAnalyticsPanel = (function () {
                 {
                     dataSource: data,
                     columns,
+                    allowResizing: true,
+                    resizeSettings: { mode: 'Normal' },
                     allowPaging: data.length > 8,
                     pageSettings: { pageSize: 8 },
                     gridLines: 'Horizontal',
@@ -314,7 +338,7 @@ const StrategicAnalyticsPanel = (function () {
             } catch (err) {
                 console.error('GetStrategicMetrics failed', err);
                 state.metrics = state.metrics ?? {
-                    scopeLabelAr: 'تعذّر التحميل',
+                    scopeLabelAr: t('loadFailedScope'),
                     canUseFilters: false,
                     branchLeaderboard: [],
                 };
@@ -328,16 +352,38 @@ const StrategicAnalyticsPanel = (function () {
             loadExecutiveMetrics();
         };
 
+        const onLocaleChanged = () => {
+            localeVersion.value++;
+            if (!state.metrics) {
+                return;
+            }
+            revenueChart = null;
+            segmentChart = null;
+            leaderboardGrid = null;
+            waitForSyncfusion().then(() => {
+                refreshRevenueChart(state.metrics);
+                refreshSegmentChart(state.metrics);
+                refreshLeaderboardGrid(state.metrics?.branchLeaderboard);
+            });
+        };
+
         const app = Vue.createApp({
             setup() {
                 Vue.onMounted(() => {
                     loadExecutiveMetrics().then(scrollToPanel);
+                    document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
+                });
+
+                Vue.onUnmounted(() => {
+                    document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
                 });
 
                 return {
                     ...Vue.toRefs(state),
+                    t: tBound,
                     branchOptions,
                     accessLevelLabel,
+                    rankLabel,
                     formatMoney,
                     formatPercent,
                     deltaClass,

@@ -1,5 +1,7 @@
 const ProductCatalogApp = {
     setup() {
+        const localeTick = Vue.ref(0);
+
         const state = Vue.reactive({
             loading: true,
             loadError: null,
@@ -33,141 +35,6 @@ const ProductCatalogApp = {
                 description: '',
                 components: [],
                 pricePlans: []
-            },
-            // Dictionary of translations
-            translations: {
-                ar: {
-                    syriatelBss: "كتالوج المنتجات الرسمي — BSS",
-                    catalogTitleAr: "كتالوج عروض ومنتجات سيريتل",
-                    catalogTitleEn: "Product Catalog",
-                    catalogSubtitle: "استعرض الباقات والخدمات المتاحة للمشتركين على شبكة سيريتل، بما في ذلك عروض مسبق الدفع، اللاحق الدفع، الباقات الهجينة، والحلول المخصصة لقطاع الشركات والإنترنت.",
-                    searchPlaceholder: "ابحث عن باقة، عرض، أو رمز خدمة...",
-                    all: "الكل",
-                    prepaid: "مسبق الدفع",
-                    postpaid: "لاحق الدفع (الفاتورة)",
-                    hybrid: "الباقات الهجينة",
-                    dataOnly: "باقات الإنترنت",
-                    corporate: "حلول الشركات (B2B)",
-                    viewFullDetails: "عرض تفاصيل الباقة",
-                    noOfferingsFound: "لا توجد عروض مطابقة للبحث",
-                    noOfferingsSubtitle: "يرجى تعديل خيارات التصفية أو كتابة مصطلح بحث آخر.",
-                    resetFilters: "إعادة تعيين الفلاتر",
-                    loadingDetails: "جاري تحميل تفاصيل الباقة...",
-                    serviceSpecifications: "المواصفات التقنية والخدمات المتضمنة",
-                    offeringDescription: "الوصف التجاري",
-                    bundledComponents: "مكونات الباقة الأساسية",
-                    pricingPlans: "خطط الأسعار وجداول الفوترة",
-                    defaultPlan: "الخطة الافتراضية",
-                    daysValidity: "يوم صلاحية",
-                    activationFee: "رسوم التفعيل لمرة واحدة:",
-                    quickActions: "مسارات التشغيل السريعة",
-                    actionActivate: "تفعيل خط جديد بهذه الباقة",
-                    actionMigrate: "ترقية أو نقل مشترك لهذه الباقة",
-                    close: "إغلاق",
-                    unlimited: "بلا حدود",
-                    noDescription: "لا يوجد وصف متوفر لهذه الباقة حالياً.",
-                    noComponentsInOffering: "لا توجد مكونات تقنية مضافة لهذه الباقة.",
-                    noPricePlansInOffering: "لا توجد خطط تسعير محددة لهذه الباقة.",
-                    retry: "إعادة المحاولة",
-                    voice: "مكالمات وصوت",
-                    data: "باقات إنترنت",
-                    sms: "رسائل نصية",
-                    vas: "خدمات مضافة (VAS)",
-                    equipment: "أجهزة ومعدات",
-                    international: "خدمات دولية",
-                    addOffering: "إضافة باقة جديدة",
-                    editOffering: "تعديل باقة",
-                    deleteOffering: "حذف الباقة",
-                    deleteConfirm: "هل أنت متأكد من حذف هذه الباقة؟",
-                    save: "حفظ ومزامنة",
-                    cancel: "إلغاء",
-                    offeringNameAr: "اسم الباقة باللغة العربية",
-                    offeringNameEn: "اسم الباقة باللغة الإنجليزية",
-                    offeringCode: "كود الباقة (Unique Code)",
-                    compatibleLineType: "نوع الخط المتوافق",
-                    isActive: "نشط وصالح للبيع",
-                    upsertOfferingTitle: "إعداد وإدارة عروض سيريتل",
-                    componentsSection: "مكونات وحصص الشبكة",
-                    pricePlansSection: "تعريفات الأسعار والفوترة",
-                    addComponent: "إضافة مكون جديد",
-                    addPricePlan: "إضافة خطة سعرية",
-                    quota: "الحصة",
-                    unit: "الوحدة",
-                    isUnlimited: "بلا حدود",
-                    price: "السعر",
-                    validityDays: "فترة الصلاحية (بالأيام)",
-                    isDefault: "الافتراضية",
-                    commercialCategory: "التصنيف التجاري للباقة",
-                    cellularPlan: "باقة مكالمات وإنترنت خلوية",
-                    internetPlan: "باقة إنترنت فقط (Data Only)",
-                    corporatePlan: "حلول قطاع الشركات والأعمال (B2B)"
-                },
-                en: {
-                    syriatelBss: "Official Product Catalog — BSS",
-                    catalogTitleAr: "Syriatel Product Catalog",
-                    catalogTitleEn: "Product Catalog",
-                    catalogSubtitle: "Browse the cellular plans, services, and commercial offerings active on the Syriatel network, including prepaid packages, postpaid lines, hybrid mixes, high-speed data, and enterprise-tailored solutions.",
-                    searchPlaceholder: "Search plans, codes, or service types...",
-                    all: "All",
-                    prepaid: "Prepaid",
-                    postpaid: "Postpaid",
-                    hybrid: "Hybrid Mix",
-                    dataOnly: "Data Packages",
-                    corporate: "Business & B2B",
-                    viewFullDetails: "View Offering Details",
-                    noOfferingsFound: "No plans matched your criteria",
-                    noOfferingsSubtitle: "Please modify your search term or selection tabs to find what you need.",
-                    resetFilters: "Reset Filters",
-                    loadingDetails: "Loading offering specifications...",
-                    serviceSpecifications: "Service Specifications & Quotas",
-                    offeringDescription: "Commercial Description",
-                    bundledComponents: "Bundled Core Network Specifications",
-                    pricingPlans: "Price Plans & Recurring Rates",
-                    defaultPlan: "Default Plan",
-                    daysValidity: "days validity",
-                    activationFee: "One-time activation fee:",
-                    quickActions: "Quick Operational Shortcuts",
-                    actionActivate: "Activate New Line on Plan",
-                    actionMigrate: "Migrate Subscriber to Plan",
-                    close: "Close",
-                    unlimited: "Unlimited",
-                    noDescription: "No commercial description is currently available for this offering.",
-                    noComponentsInOffering: "No service components are configured for this offering.",
-                    noPricePlansInOffering: "No price schedules are defined for this offering.",
-                    retry: "Retry",
-                    voice: "Voice Minutes",
-                    data: "Data Quotas",
-                    sms: "SMS Quotas",
-                    vas: "Value-Added Services (VAS)",
-                    equipment: "Equipment Bundles",
-                    international: "International Roaming",
-                    addOffering: "Add New Offering",
-                    editOffering: "Edit Offering",
-                    deleteOffering: "Delete Offering",
-                    deleteConfirm: "Are you sure you want to delete this offering?",
-                    save: "Save & Synchronize",
-                    cancel: "Cancel",
-                    offeringNameAr: "Offering Name (Arabic)",
-                    offeringNameEn: "Offering Name (English)",
-                    offeringCode: "Offering Code",
-                    compatibleLineType: "Compatible Line Type",
-                    isActive: "Is Active & Sellable",
-                    upsertOfferingTitle: "Setup & Configure Syriatel Offerings",
-                    componentsSection: "Network Quotas & Components",
-                    pricePlansSection: "Billing & Pricing Plans",
-                    addComponent: "Add Component",
-                    addPricePlan: "Add Price Plan",
-                    quota: "Quota",
-                    unit: "Unit",
-                    isUnlimited: "Unlimited",
-                    price: "Price",
-                    validityDays: "Validity Period (Days)",
-                    isDefault: "Default Plan",
-                    commercialCategory: "Commercial Category",
-                    cellularPlan: "Standard Cellular Plan",
-                    internetPlan: "Internet / Data Only",
-                    corporatePlan: "Corporate & Business (B2B)"
-                }
             }
         });
 
@@ -181,10 +48,17 @@ const ProductCatalogApp = {
             { value: 'corporate', labelKey: 'corporate', icon: 'fas fa-building' }
         ];
 
-        // Locale translation helper
         const t = (key) => {
-            const lang = state.contentLang;
-            return state.translations[lang]?.[key] || key;
+            localeTick.value;
+            return window.TelecomI18n?.t?.(`productCatalog.${key}`) || key;
+        };
+
+        const offerDisplayName = (offer) => {
+            if (!offer) return '';
+            const ar = (offer.name || '').trim();
+            const en = (offer.nameEn || '').trim();
+            if (state.contentLang === 'ar') return ar || en;
+            return en || ar;
         };
 
         const toggleLanguage = (lang) => {
@@ -192,6 +66,7 @@ const ProductCatalogApp = {
             state.contentDir = lang === 'ar' ? 'rtl' : 'ltr';
             document.documentElement.lang = lang;
             document.documentElement.setAttribute('dir', state.contentDir);
+            localeTick.value++;
         };
 
         // Network call to load product offerings list
@@ -203,7 +78,7 @@ const ProductCatalogApp = {
                 state.offerings = response?.data?.content?.data || [];
             } catch (error) {
                 console.error("Failed to load product catalog list", error);
-                state.loadError = t('refreshFail') || "Failed to load catalog offerings.";
+                state.loadError = t('refreshFail');
             } finally {
                 state.loading = false;
             }
@@ -318,21 +193,21 @@ const ProductCatalogApp = {
                 4: "One-Time Charge"
             };
             // Use nicer localized period terms
-            if (type === 0) return state.contentLang === 'ar' ? "شهري" : "Monthly";
-            if (type === 1) return state.contentLang === 'ar' ? "يومي" : "Daily";
-            if (type === 2) return state.contentLang === 'ar' ? "أسبوعي" : "Weekly";
-            if (type === 3) return state.contentLang === 'ar' ? "حسب الاستهلاك" : "Pay-As-You-Go";
-            if (type === 4) return state.contentLang === 'ar' ? "تفعيل لمرة واحدة" : "One-Time Activation";
-            return "Custom Rate";
+            if (type === 0) return t('planType0');
+            if (type === 1) return t('planType1');
+            if (type === 2) return t('planType2');
+            if (type === 3) return t('planType3');
+            if (type === 4) return t('planType4');
+            return '—';
         };
 
         const getPlanTypePeriod = (type) => {
-            if (type === 0) return state.contentLang === 'ar' ? "شهر" : "mo";
-            if (type === 1) return state.contentLang === 'ar' ? "يوم" : "day";
-            if (type === 2) return state.contentLang === 'ar' ? "أسبوع" : "wk";
-            if (type === 3) return state.contentLang === 'ar' ? "وحدة" : "unit";
-            if (type === 4) return state.contentLang === 'ar' ? "مرة" : "once";
-            return "";
+            if (type === 0) return t('planPeriod0');
+            if (type === 1) return t('planPeriod1');
+            if (type === 2) return t('planPeriod2');
+            if (type === 3) return t('planPeriod3');
+            if (type === 4) return t('planPeriod4');
+            return '';
         };
 
         // Helper to check card feature existence
@@ -344,13 +219,13 @@ const ProductCatalogApp = {
         const getFeatureLabel = (offer, compType) => {
             // Prepaid Ya Hala
             if (offer.code === "MGR-PRE-YAHALA") {
-                if (compType === 0) return state.contentLang === 'ar' ? "150 دقيقة" : "150 Mins";
+                if (compType === 0) return t('featureMins150');
                 if (compType === 1) return "500 MB";
                 if (compType === 2) return "100 SMS";
             }
             // Mix 500
             if (offer.code === "MGR-MIX-500") {
-                if (compType === 0) return state.contentLang === 'ar' ? "500 دقيقة" : "500 Mins";
+                if (compType === 0) return t('featureMins500');
                 if (compType === 1) return "5 GB";
                 if (compType === 2) return "300 SMS";
             }
@@ -368,7 +243,7 @@ const ProductCatalogApp = {
             }
             // Business Plus
             if (offer.code === "MGR-CORP-BUS-PLUS") {
-                if (compType === 0) return state.contentLang === 'ar' ? "3000 دقيقة" : "3000 Mins";
+                if (compType === 0) return t('featureMins3000');
                 if (compType === 1) return "20 GB";
                 if (compType === 2) return t('unlimited');
             }
@@ -419,9 +294,7 @@ const ProductCatalogApp = {
                 Swal.fire({
                     icon: 'success',
                     title: t('syriatelBss'),
-                    text: state.contentLang === 'ar' 
-                        ? `تم تحديد باقة «${state.currentOffer.name}» وجاري الانتقال لمركز العمليات...`
-                        : `Plan "${state.currentOffer.nameEn}" selected. Navigating to Operations Hub...`,
+                    text: t('planSelectedRedirect').replace('{name}', offerDisplayName(state.currentOffer)),
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -458,19 +331,31 @@ const ProductCatalogApp = {
                     // Hybrid subscription ID
                     list = list.filter(o => o.compatibleSubscriptionTypeId === "a0e0e0e0-0000-4000-8000-000000000003");
                 } else if (state.selectedTab === 'dataOnly') {
-                    // Filter those containing Unlimited Net or data specific keywords
-                    list = list.filter(o => (o.code || '').toLowerCase().includes('net') || (o.name || '').toLowerCase().includes('إنترنت'));
+                    list = list.filter((o) => {
+                        const cat = (o.category || '').toLowerCase();
+                        const code = (o.code || '').toLowerCase();
+                        return cat === 'dataonly' || code.includes('net') || code.includes('data');
+                    });
                 } else if (state.selectedTab === 'corporate') {
-                    list = list.filter(o => (o.code || '').toLowerCase().includes('corp') || (o.name || '').toLowerCase().includes('أعمال'));
+                    list = list.filter((o) => {
+                        const cat = (o.category || '').toLowerCase();
+                        const code = (o.code || '').toLowerCase();
+                        return cat === 'corporate' || code.includes('corp') || code.includes('b2b');
+                    });
                 }
             }
 
             return list;
         });
 
-        const onLocaleChanged = () => {
+        const onLocaleChanged = async () => {
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+            } catch (_) { /* ignore */ }
             const lang = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
             toggleLanguage(lang);
+            const title = window.TelecomI18n?.t?.('productCatalog.pageTitle');
+            if (title) document.title = title;
         };
 
         const openCreateModal = () => {
@@ -525,10 +410,10 @@ const ProductCatalogApp = {
             // Determine commercial category based on code, name or components
             let initialCategory = 'cellular';
             const codeLower = (offer.code || '').toLowerCase();
-            const nameLower = (offer.name || '').toLowerCase();
-            if (codeLower.includes('net') || nameLower.includes('إنترنت') || clonedComponents.some(c => c.componentType === 1)) {
+            const catLower = (offer.category || '').toLowerCase();
+            if (catLower === 'dataonly' || codeLower.includes('net') || codeLower.includes('data') || clonedComponents.some((c) => c.componentType === 1)) {
                 initialCategory = 'dataOnly';
-            } else if (codeLower.includes('corp') || nameLower.includes('أعمال') || nameLower.includes('شركات')) {
+            } else if (catLower === 'corporate' || codeLower.includes('corp') || codeLower.includes('b2b')) {
                 initialCategory = 'corporate';
             }
 
@@ -597,8 +482,8 @@ const ProductCatalogApp = {
             if (!state.upsertForm.name || !state.upsertForm.code) {
                 Swal.fire({
                     icon: 'warning',
-                    title: state.contentLang === 'ar' ? 'تنبيه' : 'Warning',
-                    text: state.contentLang === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة (*)' : 'Please fill all required fields (*).'
+                    title: t('swalWarning'),
+                    text: t('requiredFields'),
                 });
                 return;
             }
@@ -649,7 +534,7 @@ const ProductCatalogApp = {
                 if (response?.data?.code === 200) {
                     Swal.fire({
                         icon: 'success',
-                        title: state.contentLang === 'ar' ? 'تم الحفظ بنجاح' : 'Saved Successfully',
+                        title: t('saveOk'),
                         timer: 1500,
                         showConfirmButton: false
                     });
@@ -658,7 +543,7 @@ const ProductCatalogApp = {
                 } else {
                     Swal.fire({
                         icon: 'error',
-                        title: state.contentLang === 'ar' ? 'فشل الحفظ' : 'Save Failed',
+                        title: t('saveFailed'),
                         text: response?.data?.message ?? ''
                     });
                 }
@@ -666,8 +551,8 @@ const ProductCatalogApp = {
                 console.error("Save catalog error", error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: error.response?.data?.message || 'Server error occurred during save.'
+                    title: t('errorTitle'),
+                    text: error.response?.data?.message || t('serverError')
                 });
             }
         };
@@ -679,7 +564,7 @@ const ProductCatalogApp = {
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#c8102e',
-                confirmButtonText: state.contentLang === 'ar' ? 'نعم، احذف' : 'Yes, Delete',
+                confirmButtonText: t('yesDelete'),
                 cancelButtonText: t('cancel')
             });
 
@@ -693,7 +578,7 @@ const ProductCatalogApp = {
                 if (response?.data?.code === 200) {
                     Swal.fire({
                         icon: 'success',
-                        title: state.contentLang === 'ar' ? 'تم الحفظ بنجاح' : 'Deleted Successfully',
+                        title: t('deleteOk'),
                         timer: 1500,
                         showConfirmButton: false
                     });
@@ -702,16 +587,16 @@ const ProductCatalogApp = {
                 } else {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: response?.data?.message ?? 'Delete failed.'
+                        title: t('errorTitle'),
+                        text: response?.data?.message ?? t('deleteFailed')
                     });
                 }
             } catch (error) {
                 console.error("Delete catalog error", error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: error.response?.data?.message || 'Server error during delete.'
+                    title: t('errorTitle'),
+                    text: error.response?.data?.message || t('serverError')
                 });
             }
         };
@@ -720,9 +605,11 @@ const ProductCatalogApp = {
         Vue.onMounted(async () => {
             document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
             try {
-                // Keep initial template dir & lang synced
+                await window.TelecomI18n?.ensureLoaded?.();
                 const layoutLang = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
                 toggleLanguage(layoutLang);
+                const title = window.TelecomI18n?.t?.('productCatalog.pageTitle');
+                if (title) document.title = title;
 
                 // Load database offerings
                 await loadCatalog();
@@ -748,6 +635,7 @@ const ProductCatalogApp = {
             filterTabs,
             filteredOfferings,
             t,
+            offerDisplayName,
             toggleLanguage,
             selectTab,
             resetFilters,

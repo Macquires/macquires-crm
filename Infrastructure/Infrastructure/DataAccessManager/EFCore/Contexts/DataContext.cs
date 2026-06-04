@@ -2,6 +2,7 @@ using Application.Common.Repositories;
 using Domain.Entities;
 using Infrastructure.DataAccessManager.EFCore.Common;
 using Infrastructure.DataAccessManager.EFCore.Configurations;
+using Infrastructure.DataAccessManager.EFCore.Converters;
 using Infrastructure.SecurityManager.AspNetIdentity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,12 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
 {
     public DataContext(DbContextOptions<DataContext> options) : base(options)
     {
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<bool>()
+            .HaveConversion<NullableBitBooleanValueConverter>();
     }
 
     public DbSet<Token> Token { get; set; }

@@ -30,25 +30,17 @@ const App = {
         let errorsModal = null;
         let pollTimer = null;
 
-        const t = (key, fallback) => {
-            try {
-                const parts = key.split('.');
-                let node = window.__telecomLocale?.telecom;
-                for (const p of parts) {
-                    node = node?.[p];
-                }
-                return node || fallback;
-            } catch {
-                return fallback;
-            }
+        const t = (key, fallback = '') => {
+            const hit = window.TelecomI18n?.t?.(`bulkImport.${key}`);
+            return hit || fallback || key;
         };
 
         const statusLabels = () => ({
-            0: t('bulkImport.status.pending', 'قيد الانتظار'),
-            1: t('bulkImport.status.processing', 'قيد المعالجة'),
-            2: t('bulkImport.status.completed', 'مكتمل'),
-            3: t('bulkImport.status.failed', 'فشل'),
-            4: t('bulkImport.status.partial', 'مكتمل جزئياً'),
+            0: t('status.pending'),
+            1: t('status.processing'),
+            2: t('status.completed'),
+            3: t('status.failed'),
+            4: t('status.partial'),
         });
 
         const jobStatusLabel = (st) => statusLabels()[Number(st)] || String(st);
@@ -161,7 +153,7 @@ const App = {
                 a.click();
                 URL.revokeObjectURL(a.href);
             } catch {
-                if (window.Swal) Swal.fire({ icon: 'error', title: 'تعذر تحميل القالب' });
+                if (window.Swal) Swal.fire({ icon: 'error', title: t('templateDownloadFailed') });
             }
         };
 
@@ -181,18 +173,18 @@ const App = {
                 const json = await res.json();
                 if (json?.code === 200) {
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: t('bulkImport.uploadOk', 'تم الرفع'), timer: 2500, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: t('uploadOk'), timer: 2500, showConfirmButton: false });
                     }
                     state.selectedFile = null;
                     if (fileInputRef.value) fileInputRef.value.value = '';
                     await loadJobs();
                 } else {
-                    const msg = json?.message || json?.content?.message || 'فشل الرفع — تحقق من أعمدة القالب';
+                    const msg = json?.message || json?.content?.message || t('uploadFailedColumns');
                     if (window.Swal) Swal.fire({ icon: 'error', title: msg, text: msg });
                     await loadJobs();
                 }
             } catch (err) {
-                const msg = err?.message || 'فشل الرفع';
+                const msg = err?.message || t('uploadFailedGeneric');
                 if (window.Swal) Swal.fire({ icon: 'error', title: msg });
             } finally {
                 state.uploading = false;
@@ -252,7 +244,7 @@ const App = {
                 a.click();
                 URL.revokeObjectURL(a.href);
             } catch {
-                if (window.Swal) Swal.fire({ icon: 'error', title: 'تعذر التصدير' });
+                if (window.Swal) Swal.fire({ icon: 'error', title: t('exportFailed') });
             }
         };
 
@@ -271,35 +263,35 @@ const App = {
                     }
                 },
                 columns: [
-                    { field: 'fileName', headerText: t('bulkImport.columns.job', 'الملف'), width: 180 },
+                    { field: 'fileName', headerText: t('columns.job'), width: 180 },
                     {
                         field: 'jobStatusLabel',
-                        headerText: t('bulkImport.columns.status', 'الحالة'),
+                        headerText: t('columns.status'),
                         width: 130,
                         template: '#bulkJobStatusTemplate',
                     },
                     {
                         field: 'progressPct',
-                        headerText: t('bulkImport.columns.progress', 'التقدّم'),
+                        headerText: t('columns.progress'),
                         width: 160,
                         template: '#bulkProgressTemplate',
                     },
                     {
                         field: 'successCount',
-                        headerText: t('bulkImport.columns.success', 'نجاح'),
+                        headerText: t('columns.success'),
                         width: 90,
                         textAlign: 'Right',
                         template: '#bulkSuccessCountTemplate',
                     },
                     {
                         field: 'errorCount',
-                        headerText: t('bulkImport.columns.errors', 'أخطاء'),
+                        headerText: t('columns.errors'),
                         width: 90,
                         textAlign: 'Right',
                     },
                     {
                         field: 'createdAtDisplay',
-                        headerText: t('bulkImport.columns.created', 'أُنشئ'),
+                        headerText: t('columns.created'),
                         width: 150,
                     },
                 ],
@@ -319,7 +311,7 @@ const App = {
                     { field: 'identifier', headerText: 'ID', width: 120 },
                     {
                         field: 'errorMessageDisplay',
-                        headerText: state.locale === 'en' ? 'Error' : 'خطأ',
+                        headerText: t('gridErrorColumn'),
                     },
                 ],
             });
@@ -327,6 +319,21 @@ const App = {
         };
 
         Vue.onMounted(async () => {
+            await window.TelecomI18n?.ensureLoaded?.();
+            window.TelecomI18n?.applyDom?.();
+            const pageTitle = window.TelecomI18n?.t?.('bulkImport.title');
+            if (pageTitle) document.title = pageTitle;
+            document.documentElement.addEventListener('syriatel-locale-changed', () => {
+                state.locale = document.documentElement.lang?.startsWith('en') ? 'en' : 'ar';
+                window.TelecomI18n?.applyDom?.();
+                if (mainGrid) {
+                    const rows = state.jobs;
+                    mainGrid.destroy();
+                    mainGrid = null;
+                    buildMainGrid();
+                    if (mainGrid) mainGrid.dataSource = rows;
+                }
+            });
             if (typeof SecurityManager !== 'undefined') {
                 await SecurityManager.authorizePage(['TelecomBackOffice', 'TelecomAdmin']);
             }

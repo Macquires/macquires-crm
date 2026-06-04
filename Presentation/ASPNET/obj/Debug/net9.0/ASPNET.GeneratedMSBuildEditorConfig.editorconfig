@@ -11,229 +11,229 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = ASPNET
 build_property.RootNamespace = ASPNET
-build_property.ProjectDir = c:\Users\HP\source\repos\macquires-crm\Presentation\ASPNET\
+build_property.ProjectDir = C:\Users\HP\Source\Repos\macquires-crm\Presentation\ASPNET\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 9.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = true
-build_property.MSBuildProjectDirectory = c:\Users\HP\source\repos\macquires-crm\Presentation\ASPNET
+build_property.MSBuildProjectDirectory = C:\Users\HP\Source\Repos\macquires-crm\Presentation\ASPNET
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/EmailConfirm.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/EmailConfirm.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcRW1haWxDb25maXJtLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/ForgotPassword.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/ForgotPassword.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcRm9yZ290UGFzc3dvcmQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/ForgotPasswordConfirmation.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/ForgotPasswordConfirmation.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcRm9yZ290UGFzc3dvcmRDb25maXJtYXRpb24uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/Login.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcTG9naW4uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/Logout.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/Logout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcTG9nb3V0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/Register.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/Register.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcUmVnaXN0ZXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/_ViewStart.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Accounts/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWNjb3VudHNcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/AuditLogList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/AuditLogList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQXVkaXRMb2dMaXN0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/BranchList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/BranchList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQnJhbmNoTGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/GlobalSettings.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/GlobalSettings.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cR2xvYmFsU2V0dGluZ3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/Index.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/RoleList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/RoleList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cUm9sZUxpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/UserList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/UserList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cVXNlckxpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Companies/MyCompany.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Companies/MyCompany.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ29tcGFuaWVzXE15Q29tcGFueS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/CustomerCategories/CustomerCategoryList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/CustomerCategories/CustomerCategoryList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJDYXRlZ29yaWVzXEN1c3RvbWVyQ2F0ZWdvcnlMaXN0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/CustomerContacts/CustomerContactList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/CustomerContacts/CustomerContactList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJDb250YWN0c1xDdXN0b21lckNvbnRhY3RMaXN0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/CustomerGroups/CustomerGroupList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/CustomerGroups/CustomerGroupList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJHcm91cHNcQ3VzdG9tZXJHcm91cExpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Customers/CustomerList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Customers/CustomerList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQ3VzdG9tZXJzXEN1c3RvbWVyTGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/DashboardWidgetList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/DashboardWidgetList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xEYXNoYm9hcmRXaWRnZXRMaXN0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xEZWZhdWx0RGFzaGJvYXJkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xfTWlzUmVwb3J0c0VtYmVkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xfU3RyYXRlZ2ljQW5hbHl0aWNzRW1iZWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Index.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/NumberSequences/NumberSequenceList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/NumberSequences/NumberSequenceList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcTnVtYmVyU2VxdWVuY2VzXE51bWJlclNlcXVlbmNlTGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Products/ProductList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Products/ProductList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZHVjdHNcUHJvZHVjdExpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Profiles/MyProfile.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Profiles/MyProfile.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcUHJvZmlsZXNcTXlQcm9maWxlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_Layout.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX0xheW91dC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_LayoutEmbed.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_LayoutEmbed.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX0xheW91dEVtYmVkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19jc3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__footer.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__footer.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19mb290ZXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19qcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__navbar.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__navbar.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19uYXZiYXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__sidebar.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__sidebar.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19zaWRlYmFyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__uiModalsBootstrap.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__uiModalsBootstrap.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX191aU1vZGFsc0Jvb3RzdHJhcC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AuthTemplate/_Layout.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AuthTemplate/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEF1dGhUZW1wbGF0ZVxfTGF5b3V0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/_LandingPage.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/_LandingPage.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXF9MYW5kaW5nUGFnZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/TelecomSubscriptionTypes/TelecomSubscriptionTypeList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/TelecomSubscriptionTypes/TelecomSubscriptionTypeList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVN1YnNjcmlwdGlvblR5cGVzXFRlbGVjb21TdWJzY3JpcHRpb25UeXBlTGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BackOfficeAuditList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BackOfficeAuditList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCYWNrT2ZmaWNlQXVkaXRMaXN0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BackOfficeDashboard.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BackOfficeDashboard.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCYWNrT2ZmaWNlRGFzaGJvYXJkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BillingIntegration.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BillingIntegration.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCaWxsaW5nSW50ZWdyYXRpb24uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BulkImportMonitor.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BulkImportMonitor.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCdWxrSW1wb3J0TW9uaXRvci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/Customer360Profile.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/Customer360Profile.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxDdXN0b21lcjM2MFByb2ZpbGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/DeviceInventory.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/DeviceInventory.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxEZXZpY2VJbnZlbnRvcnkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxJbnRlZ3JhdGlvbk1vbml0b3IuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/MsisdnInventory.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/MsisdnInventory.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxNc2lzZG5JbnZlbnRvcnkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/ProductCatalog.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/ProductCatalog.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxQcm9kdWN0Q2F0YWxvZy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/StrategicAnalytics.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/StrategicAnalytics.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxTdHJhdGVnaWNBbmFseXRpY3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/TechnicalTicketList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/TechnicalTicketList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxUZWNobmljYWxUaWNrZXRMaXN0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/TelecomHub.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/TelecomHub.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxUZWxlY29tSHViLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/TelecomMisReports.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/TelecomMisReports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxUZWxlY29tTWlzUmVwb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/UnifiedSearch.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/UnifiedSearch.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxVbmlmaWVkU2VhcmNoLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/VasCatalogList.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/VasCatalogList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxWYXNDYXRhbG9nTGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/_ViewImports.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[c:/Users/HP/source/repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/_ViewStart.cshtml]
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

@@ -4,6 +4,12 @@ const App = {
             SecurityManager.denyPageAccess();
         }
 
+        const localeTick = Vue.ref(0);
+        const ti = (key) => {
+            localeTick.value;
+            return window.TelecomI18n?.t?.(`integrationMonitor.${key}`) || key;
+        };
+
         const state = Vue.reactive({
             rows: [],
             totalCount: 0,
@@ -19,10 +25,14 @@ const App = {
         const mainGridRef = Vue.ref(null);
         const mainGrid = { obj: null };
 
+        const contentLang = () =>
+            document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
+
         const formatDt = (utc) => {
             if (!utc) return '';
             try {
-                return new Date(utc).toLocaleString('ar-SY', { dateStyle: 'short', timeStyle: 'medium' });
+                const loc = contentLang() === 'ar' ? 'ar-SY' : 'en-US';
+                return new Date(utc).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'medium' });
             } catch {
                 return utc;
             }
@@ -75,10 +85,10 @@ const App = {
                 const req = row.requestPayload || '—';
                 const res = row.responsePayload || '—';
                 Swal.fire({
-                    title: row.operationName || 'تفاصيل التكامل',
-                    html: `<div class="text-start small" dir="ltr"><p class="fw-semibold">Request</p><pre class="bg-light border rounded p-2" style="max-height:160px;overflow:auto;white-space:pre-wrap">${escapeHtml(req)}</pre><p class="fw-semibold mt-2">Response</p><pre class="bg-light border rounded p-2" style="max-height:160px;overflow:auto;white-space:pre-wrap">${escapeHtml(res)}</pre></div>`,
+                    title: row.operationName || ti('payloadTitle'),
+                    html: `<div class="text-start small" dir="ltr"><p class="fw-semibold">${escapeHtml(ti('request'))}</p><pre class="bg-light border rounded p-2" style="max-height:160px;overflow:auto;white-space:pre-wrap">${escapeHtml(req)}</pre><p class="fw-semibold mt-2">${escapeHtml(ti('response'))}</p><pre class="bg-light border rounded p-2" style="max-height:160px;overflow:auto;white-space:pre-wrap">${escapeHtml(res)}</pre></div>`,
                     width: 720,
-                    confirmButtonText: 'إغلاق',
+                    confirmButtonText: ti('close'),
                 });
             },
         };
@@ -101,20 +111,20 @@ const App = {
                 columns: [
                     {
                         field: 'occurredAtUtc',
-                        headerText: 'الوقت',
+                        headerText: ti('grid.time'),
                         width: 160,
                         template: (d) => formatDt(d.occurredAtUtc),
                     },
-                    { field: 'integrationSystem', headerText: 'النظام', width: 120 },
-                    { field: 'operationName', headerText: 'العملية', width: 140 },
+                    { field: 'integrationSystem', headerText: ti('grid.system'), width: 120 },
+                    { field: 'operationName', headerText: ti('grid.operation'), width: 140 },
                     { field: 'msisdn', headerText: 'MSISDN', width: 120 },
                     {
                         field: 'isSuccess',
-                        headerText: 'النتيجة',
+                        headerText: ti('grid.result'),
                         width: 90,
                         template: (d) =>
                             window.TelecomUiBadges?.resultSuccess(d.isSuccess) ||
-                            (d.isSuccess ? 'نجاح' : 'فشل'),
+                            (d.isSuccess ? ti('grid.success') : ti('grid.fail')),
                     },
                     { field: 'executionTimeMs', headerText: 'ms', width: 70 },
                     {
@@ -124,10 +134,10 @@ const App = {
                         template: (d) => statusBadge(d.responseStatusCode),
                     },
                     {
-                        headerText: 'تفاصيل',
+                        headerText: ti('grid.details'),
                         width: 90,
                         template: () =>
-                            '<button type="button" class="btn btn-sm btn-outline-telecom integration-payload-btn">عرض</button>',
+                            `<button type="button" class="btn btn-sm btn-outline-telecom integration-payload-btn">${escapeHtml(ti('grid.view'))}</button>`,
                     },
                 ],
                 recordClick: (args) => {
@@ -139,13 +149,34 @@ const App = {
             mainGrid.obj.appendTo(mainGridRef.value);
         };
 
+        const onLocaleChanged = () => {
+            localeTick.value++;
+            window.TelecomI18n?.applyDom?.();
+            if (!mainGrid.obj) return;
+            const rows = state.rows;
+            mainGrid.obj.destroy();
+            mainGrid.obj = null;
+            createGrid();
+            mainGrid.obj.dataSource = rows;
+            mainGrid.obj.refresh();
+        };
+
         Vue.onMounted(async () => {
+            await window.TelecomI18n?.ensureLoaded?.();
+            const title = window.TelecomI18n?.t?.('integrationMonitor.pageTitle');
+            if (title) document.title = title;
+            window.TelecomI18n?.applyDom?.();
+            document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
             await Promise.all([methods.loadHealth(), methods.load()]);
             createGrid();
             if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
         });
 
-        return { state, handler, mainGridRef, healthBadge };
+        Vue.onUnmounted(() => {
+            document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
+        });
+
+        return { state, handler, mainGridRef, healthBadge, ti };
     },
 };
 

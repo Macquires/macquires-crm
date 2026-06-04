@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Macquires CRM — Operational Reports &amp; Dashboards | Syriatel Proposal</title>
+  <style>
+    :root {
+      --macquires-orange: #e85d04;
+      --macquires-orange-dark: #c44d03;
+      --syriatel-red: #c8102e;
+      --text: #1a1d22;
+      --muted: #5c6370;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 2rem 1.25rem 3rem;
+      max-width: 960px;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.65rem; color: var(--syriatel-red); margin: 0 0 0.5rem; }
+    h2 { font-size: 1.2rem; margin: 2rem 0 0.75rem; }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; color: var(--macquires-orange-dark); }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+    .section-bar {
+      background: linear-gradient(90deg, var(--macquires-orange) 0%, var(--macquires-orange-dark) 100%);
+      color: #fff;
+      padding: 0.55rem 1rem;
+      font-weight: 600;
+      font-size: 1.05rem;
+      border-radius: 4px;
+      margin: 2rem 0 1rem;
+    }
+    .lead, .proposal-p {
+      background: var(--card);
+      border-left: 4px solid var(--macquires-orange);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .proposal-p p { margin: 0 0 0.75rem; }
+    .proposal-p p:last-child { margin-bottom: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      font-size: 0.9rem;
+      margin: 1rem 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #fff7ed; color: var(--macquires-orange-dark); }
+    .rfp-map th { background: #fef2f2; color: var(--syriatel-red); }
+    ul { margin: 0.5rem 0 1rem 1.25rem; }
+    li { margin: 0.35rem 0; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #fff;
+      margin: 1rem 0;
+    }
+    .mermaid-wrap {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    code { font-size: 0.85em; background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 3px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
+</head>
+<body>
+
+<header>
+  <h1>Macquires CRM for Syriatel</h1>
+  <p class="subtitle"><strong>Custom Reports, Alerts, Notifications, and Validation</strong> — Standard operational reports, supervisor dashboards, and audit-ready data tables (as implemented in the current product build).</p>
+</header>
+
+<div class="section-bar">Scope of response — Reports &amp; operational visibility</div>
+
+<div class="proposal-p">
+  <p>Macquires understands that Syriatel needs more than static report definitions: supervisors and back-office teams must see live workload, SLA adherence, and exception queues while agents work in the same system. Our proposal therefore describes reporting that is <strong>native to the CRM</strong>—fed directly from telecom operations, payments, inventory, integration attempts, and audit tables created at the counter—not a separate data mart that lags behind the business day.</p>
+  <p><strong>Macquires will provide</strong> showroom agents, back-office approvers, and management users with role-appropriate dashboards and filterable operational registers. Branch and regional scope, where configured, limits strategic views to the subscriber base each role may oversee. All figures shown in management MIS strips are traceable to underlying operation and payment rows, supporting audit questions without exporting to a third tool for routine supervision.</p>
+</div>
+
+<div class="section-bar">Standard operational reports, data tables &amp; supervisor dashboards</div>
+
+<div class="lead">
+  <strong>Macquires will deliver</strong> the operational reporting pack below as part of the Syriatel CRM go-live. The pack includes live KPI strips (daily and configurable date ranges), supervisor cockpits, searchable operation registers with per-case audit trails, payment and integration logs, and executive MIS views on the unified dashboard.
+</div>
+
+<h2>Alignment with typical Syriatel RFP report names</h2>
+
+<div class="proposal-p">
+  <p>Evaluators often ask for named reports such as a Daily Sales Report, an Active Suspensions Log, or a SIM Swap Audit Trail. Macquires maps these expectations to concrete screens and APIs already present in the solution. The table below shows that mapping; the following sections describe each area in business terms.</p>
+</div>
+
+<table class="rfp-map">
+  <thead>
+    <tr>
+      <th>Typical RFP report name</th>
+      <th>Native Macquires CRM equivalent</th>
+      <th>Primary UI / API</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Daily Sales Report</strong> (activations, devices)</td>
+      <td>Selling-line activation KPIs (volume, completed, failed, SLA, rejection reasons) plus device-sale KPIs; Retail persona cockpit widgets</td>
+      <td><code>GetSellingLineActivationKpis</code>, <code>GetDeviceSaleKpis</code>; Back Office Dashboard; <code>/Dashboards/DefaultDashboard</code></td>
+    </tr>
+    <tr>
+      <td><strong>Active Suspensions Log</strong></td>
+      <td>Suspension KPI strip and filterable operations grid (temporary suspension kind, line status, fraud and auto-reconnect flags)</td>
+      <td><code>GetSuspensionKpis</code>; <code>GetTelecomOperationList</code>; Telecom Hub; Back Office Dashboard</td>
+    </tr>
+    <tr>
+      <td><strong>SIM Swap Audit Trail</strong></td>
+      <td>SIM swap KPIs plus per-operation audit log with ICCID snapshot on completion and downloadable identity scans for lost/stolen cases</td>
+      <td><code>GetSimSwapKpis</code>; <code>TelecomOperationAuditLog</code>; Hub and back-office views</td>
+    </tr>
+    <tr>
+      <td><strong>Payment / recharge daily</strong></td>
+      <td>Payment services KPIs and payment transaction register (amounts, status, references, reversals)</td>
+      <td><code>GetPaymentServicesKpis</code>, <code>GetPaymentTransactionList</code></td>
+    </tr>
+    <tr>
+      <td><strong>Refunds &amp; high-value approvals</strong></td>
+      <td>Refund KPIs including pending back-office queue, dual-approval count, and settled amounts</td>
+      <td><code>GetRefundKpis</code>; RFD- operations in Hub</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="proposal-p">
+  <p>For <strong>Daily Sales</strong>, Macquires treats new line activations and device sales as first-class operation types (ACT- and DEV- prefixes). Supervisors see completion rate, fallout to failed or pending-external status, average handling time against a five-minute activation SLA, and ranked rejection reasons—equivalent to a branch daily sales quality report, not only a raw count.</p>
+  <p>For <strong>Active Suspensions</strong>, the suspension panel reports volumes completed and failed, cases still awaiting back-office approval, fraud-related suspensions, and lines with auto-reconnect scheduled. The same data can be exported from the operations grid filtered by kind and status for a formal “log” extract at go-live if Syriatel requires a scheduled file.</p>
+  <p>For <strong>SIM Swap Audit</strong>, every completed swap writes an operational audit entry including old and new ICCID context (the “black box” snapshot). Lost or stolen swaps are counted separately in KPIs; identity documents remain linked to the operation for supervisor review before approval.</p>
+</div>
+
+<h2>Reporting architecture</h2>
+
+<div class="proposal-p">
+  <p>Macquires uses a single operational data path: what the agent captures in Telecom Hub or Customer 360 is what supervisors see minutes later on the Back Office Dashboard. Integration success or failure is logged in parallel so IT and operations can reconcile CBS/HLR issues without a separate trouble-ticket spreadsheet.</p>
+</div>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph Ops["Counter &amp; Hub"]
+    H[Telecom Hub grid]
+    C360[Customer 360]
+  end
+  subgraph Data["Operational store"]
+    TOR[TelecomOperationRequest]
+    PAY[TelecomPaymentTransaction]
+    AUD[Operation &amp; user audit]
+    INV[MSISDN / SIM / Device inventory]
+  end
+  subgraph Views["Native reports &amp; dashboards"]
+    BO[Back Office Dashboard]
+    MIS[DefaultDashboard MIS + Strategic]
+    LOG[Billing &amp; Integration logs]
+  end
+  H --> TOR
+  C360 --> TOR
+  TOR --> BO
+  PAY --> BO
+  TOR --> MIS
+  AUD --> LOG
+  INV --> BO
+</pre>
+</div>
+
+<div class="section-bar">Supervisor &amp; management dashboards</div>
+
+<h3>Unified operator cockpit (persona-driven)</h3>
+
+<div class="proposal-p">
+  <p><strong>Macquires will configure</strong> the Syriatel unified dashboard (<code>/Dashboards/DefaultDashboard</code>) so each persona—Executive, Retail showroom, Back Office, Call Center, and system administration—sees only widgets relevant to their duties. Widgets are loaded dynamically from the platform dashboard service and refresh on a polling interval appropriate to operational use.</p>
+  <p>Retail users receive quick links and status tiles oriented to activation and customer search. Back-office users see pending approval counts. Executives with MIS permission see an embedded strip for ARPU and churn proxies plus branch workload heat, and may open full <strong>Strategic Analytics</strong> for revenue index trends, technical-ticket SLA, subscriber segment mix, and a branch leaderboard scoped by region or branch.</p>
+</div>
+
+<ul>
+  <li><strong>Bento cockpit</strong> — persona widgets via <code>GET /Dashboard/GetMyWidgets</code></li>
+  <li><strong>MIS strip</strong> — ARPU proxy, churn proxy, city/branch workload (<code>GetTelecomDashboardKpis</code>)</li>
+  <li><strong>Strategic Analytics</strong> — executive KPIs with scope filters (<code>GetStrategicMetrics</code>); standalone page <code>/Telecom/StrategicAnalytics</code></li>
+</ul>
+
+<h3>Back Office operations dashboard (supervisor control tower)</h3>
+
+<div class="proposal-p">
+  <p><strong>Macquires will provide</strong> a dedicated Back Office Dashboard that consolidates what would otherwise require dozens of separate reports. One screen gives Syriatel supervisors the live technical-ticket queue (open and in-progress, with critical-priority highlighting), financial performance for payment services, and KPI panels for every major lifecycle process: change GSM type, change number, package migration and VAS, termination, suspension, reconnect, refund, ownership transfer, SIM swap, selling-line activation, and device sales.</p>
+  <p>Each panel supports operational supervision: counts for the day (or selected period), completed versus failed, back-office pending approvals, SLA compliance percentages, and top reasons or offer names where applicable. Payment services additionally lists the latest payment transactions so supervisors can investigate failed or reversed PAY- rows without leaving the dashboard.</p>
+  <p>Macquires recommends this dashboard as the <strong>primary supervisor workstation</strong> for Syriatel back-office and team-lead roles, with the Telecom Hub used for drill-down into individual operations.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Panel</th><th>Supervisor value</th><th>API</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Live technical tickets</td><td>Workload and critical incidents (including fraud-payment tickets)</td><td>Technical ticket APIs + queue UI</td></tr>
+    <tr><td>Payment services</td><td>Recharge volume, failures, reversals, SLA ≤2 min</td><td><code>GetPaymentServicesKpis</code>, <code>GetPaymentTransactionList</code></td></tr>
+    <tr><td>CGT / CNR / MGR-VAS / TRM / SUS / RCN / RFD / TKO / SIM / ACT / DEV</td><td>Per-process volume, BO pending, SLA, reason breakdowns</td><td>Matching <code>Get*Kpis</code> handlers</td></tr>
+    <tr><td>Bulk import</td><td>MSISDN, customer, catalog job monitoring</td><td><code>/Telecom/BulkImportMonitor</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Telecom Hub — agent and team-lead workbench</h3>
+
+<div class="proposal-p">
+  <p><strong>Macquires will provide</strong> the Telecom Hub as the day-to-day operational register for showroom and call-center staff. The grid lists all operation types with status, document state, MSISDN, approval requirements, and flags such as lost-or-stolen SIM swap. Navigation badges show how many cases await back-office action, reducing the need for informal escalation channels.</p>
+  <p>Team leads use the same grid with filters to answer “what failed today on this branch?”—functionally equivalent to a lightweight operational report with full drill-down to operation detail, audit history, and attached identity documents.</p>
+</div>
+
+<div class="section-bar">Operational data tables &amp; audit registers</div>
+
+<div class="proposal-p">
+  <p>Beyond dashboards, Syriatel users need <strong>tabular evidence</strong> for audits and disputes. Macquires delivers the following native data tables, each backed by a secured API and permission checks. Where Syriatel requires scheduled CSV or Excel extracts at go-live, Macquires will implement exports from these same queries—no duplicate logic.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Data table</th><th>Business use</th><th>Access</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Telecom operations register</strong></td>
+      <td>Complete list of ACT-, SIM-, CNR-, SUS-, DEV-, RFD-, etc. with filters</td>
+      <td><code>GetTelecomOperationList</code> — Telecom Hub</td>
+    </tr>
+    <tr>
+      <td><strong>Operation detail &amp; audit trail</strong></td>
+      <td>Status history, field snapshots, supervisor accountability</td>
+      <td><code>GetTelecomOperationDetail</code>; <code>TelecomOperationAuditLog</code></td>
+    </tr>
+    <tr>
+      <td><strong>Payment transactions</strong></td>
+      <td>Reconciliation of recharge, voucher, reversal by reference</td>
+      <td><code>GetPaymentTransactionList</code>, <code>GetPaymentTransactionDetail</code></td>
+    </tr>
+    <tr>
+      <td><strong>Billing integration log</strong></td>
+      <td>CBS success/failure per operation for billing disputes</td>
+      <td><code>/Telecom/BillingIntegration</code></td>
+    </tr>
+    <tr>
+      <td><strong>Integration monitor</strong></td>
+      <td>HLR, SMS, payment gateway health and message-level log</td>
+      <td><code>/Telecom/IntegrationMonitor</code></td>
+    </tr>
+    <tr>
+      <td><strong>Back office user audit</strong></td>
+      <td>Who accessed PII, confirmed operations, ran network commands</td>
+      <td><code>/Telecom/BackOfficeAuditList</code></td>
+    </tr>
+    <tr>
+      <td><strong>Technical tickets</strong></td>
+      <td>Fraud, provisioning fallout, tier-2/3 escalation archive</td>
+      <td><code>/Telecom/TechnicalTicketList</code></td>
+    </tr>
+    <tr>
+      <td><strong>MSISDN &amp; device inventory</strong></td>
+      <td>Number pool and IMEI availability for stock control</td>
+      <td><code>MsisdnInventory</code>, <code>DeviceInventory</code></td>
+    </tr>
+    <tr>
+      <td><strong>Bulk import jobs</strong></td>
+      <td>Row-level errors; exportable error file for data quality teams</td>
+      <td>Bulk import monitor APIs</td>
+    </tr>
+    <tr>
+      <td><strong>Customer 360</strong></td>
+      <td>Single-subscriber view: lines, balances, history, documents</td>
+      <td><code>Customer360Profile</code></td>
+    </tr>
+    <tr>
+      <td><strong>Unified search</strong></td>
+      <td>Investigations by MSISDN, national ID, name, operation number</td>
+      <td>Unified / universal search pages</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="proposal-p">
+  <p><strong>Macquires will ensure</strong> that SIM swap and other sensitive operations retain immutable audit rows after completion, so a “SIM Swap Audit Trail” request from Syriatel is satisfied by standard operation detail plus audit log export, not a custom one-off report project.</p>
+</div>
+
+<div class="section-bar">Period reporting &amp; KPI API catalogue</div>
+
+<div class="proposal-p">
+  <p>All major KPI endpoints accept optional <strong>from/to UTC dates</strong> (and branch where applicable). Macquires will use this capability during go-live to define Syriatel’s official daily, weekly, and monthly operational packs—e.g. end-of-day activation quality per branch—without building separate report engines for each period.</p>
+  <p>Available KPI domains include: selling-line activation, SIM swap, suspension, reconnect, termination, change number, change GSM type, takeover, offer migration and VAS, device sale, refund settlement, payment services, telecom dashboard MIS strip, and strategic executive metrics.</p>
+</div>
+
+<div class="section-bar">Platform context, go-live options &amp; honesty note</div>
+
+<div class="proposal-p">
+  <p>The Macquires platform also includes ERP-style dashboards (sales, inventory, purchase, leads) for enterprises that enable those modules. For Syriatel, <strong>telecom operational reporting described above is in scope</strong> for the CRM rollout; ERP widgets remain optional.</p>
+  <p><strong>Macquires will work with Syriatel</strong> during design workshops to confirm any additional named reports (fixed PDF layouts, regulator submissions) and implement them as scheduled extracts or SSRS/Power BI datasets on the same operational tables. Revenue and ARPU figures in MIS and strategic views currently use documented operational proxies until full CBS revenue feeds are connected; labels and tooltips will make this clear to management users.</p>
+  <p>Role-based access will be enforced: MIS and strategic analytics require <code>telecom.reports.mis</code>; billing and integration logs require dedicated telecom permissions; PII and national ID reveal remain audited.</p>
+</div>
+
+<p class="note"><strong>Implementation note:</strong> Demo environments use mock CBS, HLR, and SMS connectors. Report structure, KPI definitions, and audit behavior are production-ready; only revenue depth and external gateway live traffic depend on Syriatel interface go-live.</p>
+
+<div class="section-bar">Summary for Syriatel evaluators</div>
+
+<div class="proposal-p">
+  <p>Macquires CRM ships <strong>more than a dozen native KPI dashboards</strong> and <strong>ten or more operational data tables</strong> aligned to telecom supervision: activations as daily sales, suspensions, SIM swaps with audit trails, payments and refunds, lifecycle changes, integration health, and inventory. The Back Office Dashboard is the supervisor cockpit; the Telecom Hub is the agent register; executive MIS lives on the unified dashboard and Strategic Analytics page.</p>
+  <p><strong>Macquires commits</strong> to delivering this reporting pack as part of the Syriatel CRM program, with workshop-based confirmation of any extra statutory report layouts and scheduled extracts before UAT sign-off.</p>
+</div>
+
+<footer>
+  <p><strong>Document:</strong> Macquires CRM — Syriatel proposal fragment (Reports &amp; Dashboards). Content reflects implemented UI routes and API handlers in the macquires-crm codebase.</p>
+  <p><strong>Macquires</strong> — Custom Reports, Alerts, Notifications, and Validation.</p>
+</footer>
+
+</body>
+</html>

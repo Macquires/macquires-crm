@@ -1,7 +1,31 @@
-const TABS = [
-    { id: 'profile', label: 'البيانات والفوترة', icon: 'bi bi-person-vcard' },
-    { id: 'services', label: 'الباقات والخدمات', icon: 'bi bi-reception-4' },
-    { id: 'tickets', label: 'الشكاوى والدعم', icon: 'bi bi-ticket-detailed' },
+const telecomT = (key, fallback) => {
+    try {
+        const raw = String(key);
+        const paths = [];
+        if (!raw.includes('.')) {
+            paths.push(`customer360Profile.${raw}`, raw);
+        } else if (raw.startsWith('customer360Profile.')) {
+            paths.push(raw);
+        } else {
+            paths.push(raw, `customer360Profile.${raw}`, `customerList.${raw}`);
+        }
+        for (const k of paths) {
+            const hit = window.TelecomI18n?.t?.(k);
+            if (hit) return hit;
+        }
+        return fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+const ticketEnumLabel = (group, code) =>
+    telecomT(`ticketEnums.${group}.${code}`, '') || '—';
+
+const TAB_DEFS = [
+    { id: 'profile', key: 'tabs.profile', icon: 'bi bi-person-vcard' },
+    { id: 'services', key: 'tabs.services', icon: 'bi bi-reception-4' },
+    { id: 'tickets', key: 'tabs.tickets', icon: 'bi bi-ticket-detailed' },
 ];
 
 const PERM = {
@@ -23,26 +47,12 @@ const PERM = {
     takeover: 'customer.update',
 };
 
-const PROV_SUCCESS_DEFAULT =
-    'تم تسجيل العملية؛ جاري/اكتمل التزامن مع CBS وHLR';
-
-const WIZARD_TITLES = {
-    takeover: 'نقل الملكية',
-    migrate: 'ترحيل باقة MGR',
-    simswap: 'تبديل شريحة',
-    addpackage: 'إضافة باقة / VAS',
-    activate: 'تفعيل خط جديد',
-    changeGsm: 'تحويل نوع الخط CGT',
-    changeNumber: 'تغيير رقم الخط CNR',
-    termination: 'إنهاء خط TRM',
-    suspension: 'حظر مؤقت SUS',
-    reconnect: 'إعادة تفعيل RCN',
-    refund: 'استرداد RFD',
-    badDebt: 'تحصيل BDR',
-    deviceSale: 'بيع جهاز DEV',
-};
-
 const isPremiumMsisdnCategory = (cat) => [1, 2, 3, 'Silver', 'Gold', 'Platinum'].includes(cat);
+
+const contentLocale = () => {
+    const lang = (document.documentElement.lang || 'en').toLowerCase();
+    return lang.startsWith('en') ? 'en' : 'ar';
+};
 
 const wizardKindToApi = (k) => {
     if (k === 'activate') return 0;
@@ -61,9 +71,6 @@ const wizardKindToApi = (k) => {
     return 0;
 };
 
-const ISSUE = { 0: 'شبكة', 1: 'فوترة', 2: 'حظر شريحة', 3: 'تفعيل' };
-const PRIORITY = { 0: 'منخفض', 1: 'متوسط', 2: 'عالي', 3: 'حرج' };
-const STATUS = { 0: 'مفتوحة', 1: 'قيد المعالجة', 2: 'تم الحل', 3: 'مصعّدة' };
 const RESOLVED = 2;
 
 const pickHttpErrorMessage = (e) => {
@@ -79,7 +86,8 @@ const pickHttpErrorMessage = (e) => {
 const formatDt = (utc) => {
     if (!utc) return '—';
     try {
-        return new Date(utc).toLocaleString('ar-SY', { dateStyle: 'short', timeStyle: 'short' });
+        const loc = contentLocale() === 'en' ? 'en-US' : 'ar-SY';
+        return new Date(utc).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'short' });
     } catch {
         return String(utc);
     }
@@ -88,24 +96,214 @@ const formatDt = (utc) => {
 const formatDateOnly = (val) => {
     if (!val) return '—';
     try {
-        return new Date(val).toLocaleDateString('ar-SY', { dateStyle: 'medium' });
+        const loc = contentLocale() === 'en' ? 'en-US' : 'ar-SY';
+        return new Date(val).toLocaleDateString(loc, { dateStyle: 'medium' });
     } catch {
         return String(val);
     }
 };
 
-const OPERATIONAL_LABELS = {
-    Pending: 'قيد الانتظار',
-    Active: 'نشط',
-    Suspended: 'موقوف',
-    Terminated: 'منتهي',
-    SuspendedInbound: 'موقوف وارد',
-    SuspendedOutbound: 'موقوف صادر',
-    Deactivated: 'معطّل',
-};
-
 const Customer360ProfileApp = {
     setup() {
+        const localeTick = Vue.ref(0);
+
+        const ui = Vue.computed(() => {
+            localeTick.value;
+            const f = (k, fb = '') => telecomT(`fields.${k}`, fb);
+            const s = (k, fb = '') => telecomT(`sections.${k}`, fb);
+            const h = (k, fb = '') => telecomT(`hero.${k}`, fb);
+            return {
+                pageTitle: telecomT('pageTitle', 'Subscriber 360'),
+                heroEyebrow: telecomT('heroEyebrow', 'Customer 360'),
+                hero: {
+                    activeLines: h('activeLines', '{count} lines'),
+                    tickets: h('tickets', 'Tickets'),
+                    aiAgent: h('aiAgent', 'AI agent'),
+                    search: h('search', 'Search'),
+                    crmRegistry: h('crmRegistry', 'CRM'),
+                    opsHub: h('opsHub', 'Hub'),
+                },
+                sections: {
+                    fullInfo: s('fullInfo'),
+                    identity: s('identity'),
+                    individual: s('individual'),
+                    corporate: s('corporate'),
+                    contact: s('contact'),
+                    address: s('address'),
+                    contactsTable: s('contactsTable'),
+                    audit: s('audit'),
+                    allSubscriptions: s('allSubscriptions'),
+                    liveAssets: s('liveAssets'),
+                    operationsPipeline: s('operationsPipeline'),
+                    supportTickets: s('supportTickets'),
+                    vasByLine: s('vasByLine'),
+                },
+                actions: {
+                    provisioningHub: telecomT('actions.provisioningHub', 'Provisioning hub'),
+                    techSupport: telecomT('actions.techSupport', 'Support'),
+                    techSupportSub: telecomT('actions.techSupportSub', 'AI'),
+                    inFlight: telecomT('actions.inFlight', 'Processing…'),
+                },
+                grid: {
+                    product: telecomT('grid.product', 'Plan'),
+                    subscriptionType: telecomT('grid.subscriptionType', 'Type'),
+                    status: telecomT('grid.status', 'Status'),
+                    lineType: telecomT('grid.lineType', 'Line type'),
+                    simType: telecomT('grid.simType', 'SIM type'),
+                    simStatus: telecomT('grid.simStatus', 'SIM status'),
+                    documents: telecomT('grid.documents', 'Documents'),
+                    balanceLimit: telecomT('grid.balanceLimit', 'Balance'),
+                    loyalty: telecomT('grid.loyalty', 'Loyalty'),
+                    activation: telecomT('grid.activation', 'Activation'),
+                },
+                profileTab: {
+                    legal: telecomT('profileTab.legal', 'Legal'),
+                    billing: telecomT('profileTab.billing', 'Billing'),
+                    noMsisdn: telecomT('profileTab.noMsisdn', ''),
+                    billingLog: telecomT('profileTab.billingLog', 'Log'),
+                    operation: telecomT('profileTab.operation', 'Op'),
+                    result: telecomT('profileTab.result', 'Result'),
+                    time: telecomT('profileTab.time', 'Time'),
+                    noLogs: telecomT('profileTab.noLogs', 'Empty'),
+                },
+                servicesTab: {
+                    activePlans: telecomT('servicesTab.activePlans', 'Plans'),
+                    noSubs: telecomT('servicesTab.noSubs', ''),
+                    currentBalance: telecomT('servicesTab.currentBalance', 'Balance'),
+                    walletLoadFailed: telecomT('servicesTab.walletLoadFailed', ''),
+                    quotaTitle: telecomT('servicesTab.quotaTitle', 'Quotas'),
+                    noBuckets: telecomT('servicesTab.noBuckets', ''),
+                    unlimited: telecomT('servicesTab.unlimited', 'Unlimited'),
+                    vasTitle: telecomT('servicesTab.vasTitle', 'VAS'),
+                    activateService: telecomT('servicesTab.activateService', 'Activate'),
+                    noVas: telecomT('servicesTab.noVas', ''),
+                    vasTotal: telecomT('servicesTab.vasTotal', 'Total'),
+                    vasActive: telecomT('servicesTab.vasActive', 'Active'),
+                    vasSuspended: telecomT('servicesTab.vasSuspended', 'Suspended'),
+                    vasLines: telecomT('servicesTab.vasLines', 'Lines'),
+                    vasPerLine: telecomT('servicesTab.vasPerLine', 'services'),
+                    vasActiveBadge: telecomT('servicesTab.vasActiveBadge', 'active'),
+                    service: telecomT('servicesTab.service', 'Service'),
+                    status: telecomT('servicesTab.status', 'Status'),
+                    activatedAt: telecomT('servicesTab.activatedAt', 'Activated'),
+                    deactivatedAt: telecomT('servicesTab.deactivatedAt', 'Deactivated'),
+                },
+                ticketsTab: {
+                    title: telecomT('ticketsTab.title', 'Tickets'),
+                    archive: telecomT('ticketsTab.archive', 'Archive'),
+                    empty: telecomT('ticketsTab.empty', ''),
+                    forceCbs: telecomT('ticketsTab.forceCbs', 'CBS'),
+                    hlrSync: telecomT('ticketsTab.hlrSync', 'HLR'),
+                    escalate: telecomT('ticketsTab.escalate', 'Escalate'),
+                    closed: telecomT('ticketsTab.closed', ''),
+                    noRbac: telecomT('ticketsTab.noRbac', ''),
+                },
+                ai: {
+                    title: telecomT('ai.title', 'AI'),
+                    hint: telecomT('ai.hint', ''),
+                    transcript: telecomT('ai.transcript', 'Transcript'),
+                    transcriptPh: telecomT('ai.transcriptPh', ''),
+                    cancel: telecomT('ai.cancel', 'Cancel'),
+                    run: telecomT('ai.run', 'Run'),
+                },
+                wizardUi: {
+                    closeAria: telecomT('wizardUi.closeAria', 'Close'),
+                    stepData: telecomT('wizardUi.stepData', 'Data'),
+                    stepReg: telecomT('wizardUi.stepReg', 'Reg'),
+                    stepDone: telecomT('wizardUi.stepDone', 'Done'),
+                    linkedLine: telecomT('wizardUi.linkedLine', 'Line:'),
+                    pickSubscription: telecomT('wizardUi.pickSubscription', 'Line'),
+                    notes: telecomT('wizardUi.notes', 'Notes'),
+                    step2Help: telecomT('wizardUi.step2Help', ''),
+                    createDraft: telecomT('wizardUi.createDraft', 'Draft'),
+                    opNumber: telecomT('wizardUi.opNumber', '#:'),
+                    markDocument: telecomT('wizardUi.markDocument', 'Document'),
+                    documentDone: telecomT('wizardUi.documentDone', 'Done'),
+                    paymentBlock: telecomT('wizardUi.paymentBlock', 'Payment'),
+                    amountPh: telecomT('wizardUi.amountPh', 'Amount'),
+                    paymentRefPh: telecomT('wizardUi.paymentRefPh', 'Ref'),
+                    recordPayment: telecomT('wizardUi.recordPayment', 'Pay'),
+                    paymentDone: telecomT('wizardUi.paymentDone', 'Paid'),
+                    confirmCbs: telecomT('wizardUi.confirmCbs', 'CBS'),
+                    awaitBo: telecomT('wizardUi.awaitBo', 'BO'),
+                    confirmed: telecomT('wizardUi.confirmed', 'OK'),
+                    doneTitle: telecomT('wizardUi.doneTitle', 'Done'),
+                    doneHint: telecomT('wizardUi.doneHint', ''),
+                    prev: telecomT('wizardUi.prev', 'Back'),
+                    nextReg: telecomT('wizardUi.nextReg', 'Next'),
+                    nextVas: telecomT('wizardUi.nextVas', 'VAS'),
+                    nextSummary: telecomT('wizardUi.nextSummary', 'Summary'),
+                    close: telecomT('wizardUi.close', 'Close'),
+                    additionalLine: telecomT('wizardUi.additionalLine', ''),
+                    availableMsisdn: telecomT('wizardUi.availableMsisdn', 'MSISDN'),
+                    imsiFromStock: telecomT('wizardUi.imsiFromStock', 'IMSI'),
+                    package: telecomT('wizardUi.package', 'Package'),
+                    iccid: telecomT('wizardUi.iccid', 'ICCID'),
+                    activationChannel: telecomT('wizardUi.activationChannel', 'Channel'),
+                    channelShowroom: telecomT('wizardUi.channelShowroom', 'Showroom'),
+                    channelDealer: telecomT('wizardUi.channelDealer', 'Dealer'),
+                    channelDigital: telecomT('wizardUi.channelDigital', 'Digital'),
+                    dealerCode: telecomT('wizardUi.dealerCode', 'Dealer'),
+                    searchNewOwner: telecomT('wizardUi.searchNewOwner', 'Search'),
+                    newOwnerId: telecomT('wizardUi.newOwnerId', 'ID'),
+                    pointsUnit: telecomT('wizardUi.pointsUnit', 'pts'),
+                },
+                subscriptionBadge: telecomT('subscriptionBadge', '{count}'),
+                loyaltyPoints: telecomT('loyaltyPoints', 'pts'),
+                balancePrefix: telecomT('balancePrefix', 'Balance:'),
+                limitPrefix: telecomT('limitPrefix', 'Limit:'),
+                fields: {
+                    displayName: f('displayName'),
+                    accountNumber: f('accountNumber'),
+                    customerKind: f('customerKind'),
+                    status: f('status'),
+                    statusReason: f('statusReason'),
+                    statusNote: f('statusNote'),
+                    group: f('group'),
+                    category: f('category'),
+                    description: f('description'),
+                    nationalId: f('nationalId'),
+                    dob: f('dob'),
+                    nationality: f('nationality'),
+                    gender: f('gender'),
+                    occupation: f('occupation'),
+                    commercialRegistry: f('commercialRegistry'),
+                    taxNumber: f('taxNumber'),
+                    authorizedSignatory: f('authorizedSignatory'),
+                    legalStatus: f('legalStatus'),
+                    billingMode: f('billingMode'),
+                    parentCompany: f('parentCompany'),
+                    primaryPhone: f('primaryPhone'),
+                    email: f('email'),
+                    fax: f('fax'),
+                    website: f('website'),
+                    whatsApp: f('whatsApp'),
+                    street: f('street'),
+                    city: f('city'),
+                    state: f('state'),
+                    zip: f('zip'),
+                    country: f('country'),
+                    contactName: f('contactName'),
+                    contactTitle: f('contactTitle'),
+                    contactPhone: f('contactPhone'),
+                    contactEmail: f('contactEmail'),
+                    contactNotes: f('contactNotes'),
+                    createdAt: f('createdAt'),
+                    updatedAt: f('updatedAt'),
+                    customerId: f('customerId'),
+                },
+            };
+        });
+
+        const tabs = Vue.computed(() => {
+            localeTick.value;
+            return TAB_DEFS.map((t) => ({
+                id: t.id,
+                icon: t.icon,
+                label: telecomT(t.key, t.id),
+            }));
+        });
+
         const state = Vue.reactive({
             customerId: '',
             profile: null,
@@ -119,7 +317,7 @@ const Customer360ProfileApp = {
             rechargeBusy: '',
             hlrBusy: '',
             hlrBySub: {},
-            aiSim: { msisdn: '', transcript: 'أخي شحنت كاش والنت واقف عندي بعد الشحن', busy: false },
+            aiSim: { msisdn: '', transcript: '', busy: false },
             opBusy: null,
             isProvisioningInFlight: false,
             prov: {
@@ -339,7 +537,7 @@ const Customer360ProfileApp = {
         const lineOptions = Vue.computed(() => {
             return allSubscriptions.value.map((s) => ({
                 key: `${s.subscriberProfileId}|${s.msisdn}|${s.msisdnAssetId}`,
-                label: `${s.msisdn || '—'} · ${s.productOfferingName || s.productName || 'خط'}`,
+                label: `${s.msisdn || '—'} · ${s.productOfferingName || s.productName || telecomT('lineDefault', 'Line')}`,
                 subscriberProfileId: s.subscriberProfileId,
                 msisdn: s.msisdn,
                 msisdnAssetId: s.msisdnAssetId,
@@ -453,8 +651,10 @@ const Customer360ProfileApp = {
             if (label) return label;
             const raw = core.customerKind ?? core.CustomerKind;
             const s = String(raw ?? '').toLowerCase();
-            if (s === 'corporate' || raw === 1 || raw === '1') return 'شركة';
-            if (s === 'individual' || raw === 0 || raw === '0') return 'فرد';
+            if (s === 'corporate' || raw === 1 || raw === '1')
+                return telecomT('enums.customerKind.corporate', 'Corporate');
+            if (s === 'individual' || raw === 0 || raw === '0')
+                return telecomT('enums.customerKind.individual', 'Individual');
             return '—';
         };
 
@@ -465,10 +665,10 @@ const Customer360ProfileApp = {
             const label = core?.statusLabel ?? core?.StatusLabel;
             if (label) return label;
             const s = core?.status ?? core?.Status;
-            if (s === 0 || s === 'Active') return 'نشط';
-            if (s === 1 || s === 'Suspended') return 'موقوف';
-            if (s === 2 || s === 'Closed') return 'مغلق';
-            if (s === 3 || s === 'Blacklisted') return 'قائمة سوداء';
+            if (s === 0 || s === 'Active') return telecomT('enums.customerStatus.active', 'Active');
+            if (s === 1 || s === 'Suspended') return telecomT('enums.customerStatus.suspended', 'Suspended');
+            if (s === 2 || s === 'Closed') return telecomT('enums.customerStatus.closed', 'Closed');
+            if (s === 3 || s === 'Blacklisted') return telecomT('enums.customerStatus.blacklisted', 'Blacklisted');
             return String(s ?? '—');
         });
 
@@ -505,7 +705,7 @@ const Customer360ProfileApp = {
         const operationalStatusLabel = (s) => {
             if (!s) return '—';
             const key = String(s).replace(/\s/g, '');
-            return OPERATIONAL_LABELS[key] ?? s;
+            return telecomT(`enums.operational.${key}`, s);
         };
 
         const mappedTickets = Vue.computed(() =>
@@ -518,7 +718,7 @@ const Customer360ProfileApp = {
                     msisdn: r.msisdn ?? r.Msisdn,
                     notes: r.notes ?? r.Notes,
                     status,
-                    statusLabel: STATUS[status] ?? '—',
+                    statusLabel: ticketEnumLabel('status', status),
                     statusBadge:
                         status === RESOLVED
                             ? 'bg-success'
@@ -527,8 +727,8 @@ const Customer360ProfileApp = {
                               : status === 1
                                 ? 'bg-primary'
                                 : 'bg-warning text-dark',
-                    priorityLabel: PRIORITY[priority] ?? '—',
-                    issueLabel: ISSUE[Number(r.issueType ?? r.IssueType)] ?? '—',
+                    priorityLabel: ticketEnumLabel('priority', priority),
+                    issueLabel: ticketEnumLabel('issue', Number(r.issueType ?? r.IssueType)),
                     createdDisplay: formatDt(r.createdAtUtc ?? r.CreatedAtUtc),
                     canOperate: status !== RESOLVED,
                 };
@@ -568,20 +768,19 @@ const Customer360ProfileApp = {
             return n.toLocaleString('ar-SY', { maximumFractionDigits: 2 });
         };
 
-        const BUCKET_TYPE_LABELS = {
-            0: 'دقائق',
-            1: 'إنترنت',
-            2: 'رسائل',
-            Voice: 'دقائق',
-            Data: 'إنترنت',
-            Sms: 'رسائل',
-        };
-
         const bucketLabel = (b) => {
             const label = b?.label ?? b?.Label;
             if (label) return label;
             const t = b?.componentType ?? b?.ComponentType;
-            return BUCKET_TYPE_LABELS[t] ?? String(t ?? '—');
+            const map = {
+                0: window.TelecomI18n?.t?.('customerList.c360.walletVoice') || 'Voice',
+                1: window.TelecomI18n?.t?.('customerList.c360.walletData') || 'Data',
+                2: window.TelecomI18n?.t?.('customerList.c360.walletSms') || 'SMS',
+                Voice: window.TelecomI18n?.t?.('customerList.c360.walletVoice') || 'Voice',
+                Data: window.TelecomI18n?.t?.('customerList.c360.walletData') || 'Data',
+                Sms: window.TelecomI18n?.t?.('customerList.c360.walletSms') || 'SMS',
+            };
+            return map[t] ?? String(t ?? '—');
         };
 
         const lineWallet = (subscriptionId) => state.lineWallets[subscriptionId] ?? null;
@@ -636,7 +835,7 @@ const Customer360ProfileApp = {
                 if (status === 2 || status === 'Completed') return detail;
                 if (status === 3 || status === 'Failed') {
                     throw Object.assign(
-                        new Error(detail?.failureReason || detail?.FailureReason || 'فشلت معاملة الدفع'),
+                        new Error(detail?.failureReason || detail?.FailureReason || telecomT('swal.paymentConfirmFailed', 'Payment failed')),
                         { response: res }
                     );
                 }
@@ -647,13 +846,16 @@ const Customer360ProfileApp = {
 
         const executePaymentFlow = async (customerId, subscriptionId, busyKey, onSuccess) => {
             const { value: method } = await Swal.fire({
-                title: 'طريقة الشحن',
+                title: telecomT('swal.rechargeMethod', 'Recharge method'),
                 input: 'radio',
-                inputOptions: { wallet: 'محفظة / نقد', voucher: 'قسيمة (كرت شحن)' },
+                inputOptions: {
+                    wallet: telecomT('swal.walletCash', 'Wallet / cash'),
+                    voucher: telecomT('swal.voucher', 'Voucher'),
+                },
                 inputValue: 'wallet',
                 showCancelButton: true,
-                confirmButtonText: 'متابعة',
-                cancelButtonText: 'إلغاء',
+                confirmButtonText: telecomT('swal.continue', 'Continue'),
+                cancelButtonText: telecomT('swal.cancel', 'Cancel'),
             });
             if (!method) return;
 
@@ -662,12 +864,13 @@ const Customer360ProfileApp = {
 
             if (method === 'voucher') {
                 const { value: voucherCode } = await Swal.fire({
-                    title: 'رمز القسيمة',
+                    title: telecomT('swal.voucherCode', 'Voucher code'),
                     input: 'text',
-                    inputPlaceholder: 'مثال: VOUCH-DEMO-15000',
+                    inputPlaceholder: telecomT('swal.voucherPh', ''),
                     showCancelButton: true,
-                    confirmButtonText: 'تحقق',
-                    inputValidator: (v) => (!v || !String(v).trim() ? 'أدخل رمز القسيمة' : undefined),
+                    confirmButtonText: telecomT('swal.validate', 'Validate'),
+                    inputValidator: (v) =>
+                        !v || !String(v).trim() ? telecomT('swal.voucherRequired', 'Required') : undefined,
                 });
                 if (!voucherCode) return;
                 const valRes = await AxiosManager.post('/Telecom/ValidateVoucher', {
@@ -675,15 +878,18 @@ const Customer360ProfileApp = {
                 });
                 const val = valRes?.data?.content ?? valRes?.data?.Content;
                 if (!(val?.valid ?? val?.Valid)) {
-                    Swal.fire({ icon: 'error', title: val?.messageAr || val?.MessageAr || 'قسيمة غير صالحة' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: val?.messageAr || val?.MessageAr || telecomT('swal.voucherInvalid', 'Invalid'),
+                    });
                     return;
                 }
                 const ok = await Swal.fire({
                     icon: 'info',
-                    title: 'قسيمة صالحة',
+                    title: telecomT('swal.voucherOk', 'Valid'),
                     text: val?.messageAr || val?.MessageAr,
                     showCancelButton: true,
-                    confirmButtonText: 'شحن بالقسيمة',
+                    confirmButtonText: telecomT('swal.rechargeWithVoucher', 'Recharge'),
                 });
                 if (!ok.isConfirmed) return;
                 createBody = {
@@ -699,24 +905,26 @@ const Customer360ProfileApp = {
                 gatewayRef = `VCHR-${String(voucherCode).trim()}`;
             } else {
                 const { value: amountStr } = await Swal.fire({
-                    title: 'مبلغ الشحن',
+                    title: telecomT('swal.rechargeAmount', 'Amount'),
                     input: 'number',
                     inputPlaceholder: '15000',
                     showCancelButton: true,
-                    confirmButtonText: 'التالي',
+                    confirmButtonText: telecomT('swal.continue', 'Continue'),
                     inputValidator: (v) => {
                         const n = parseFloat(v);
-                        if (!v || Number.isNaN(n) || n <= 0) return 'أدخل مبلغاً صحيحاً';
+                        if (!v || Number.isNaN(n) || n <= 0)
+                            return telecomT('swal.amountInvalid', 'Invalid amount');
                     },
                 });
                 if (!amountStr) return;
                 const { value: gw } = await Swal.fire({
-                    title: 'مرجع الدفع',
+                    title: telecomT('swal.paymentRef', 'Payment reference'),
                     input: 'text',
                     inputPlaceholder: 'WAL-2026-001234',
                     showCancelButton: true,
-                    confirmButtonText: 'تأكيد الشحن',
-                    inputValidator: (v) => (!v || !String(v).trim() ? 'أدخل مرجع الدفع' : undefined),
+                    confirmButtonText: telecomT('swal.confirmRecharge', 'Confirm'),
+                    inputValidator: (v) =>
+                        !v || !String(v).trim() ? telecomT('swal.paymentRefRequired', 'Required') : undefined,
                 });
                 if (!gw) return;
                 createBody = {
@@ -736,7 +944,7 @@ const Customer360ProfileApp = {
                 const createRes = await AxiosManager.post('/Telecom/CreatePaymentTransaction', createBody);
                 const draft = createRes?.data?.content ?? createRes?.data?.Content;
                 const paymentId = draft?.paymentId ?? draft?.PaymentId;
-                if (!paymentId) throw new Error('لم يُنشأ مسودة الدفع');
+                if (!paymentId) throw new Error(telecomT('swal.paymentDraftMissing', 'No draft'));
 
                 const confirmRes = await AxiosManager.post('/Telecom/ConfirmPaymentTransaction', {
                     paymentId,
@@ -745,22 +953,25 @@ const Customer360ProfileApp = {
                 });
                 const confirm = confirmRes?.data?.content ?? confirmRes?.data?.Content;
                 if (!(confirm?.success ?? confirm?.Success)) {
-                    throw new Error(confirm?.messageAr || confirm?.MessageAr || 'فشل تأكيد الدفع');
+                    throw new Error(
+                        confirm?.messageAr || confirm?.MessageAr || telecomT('swal.paymentConfirmFailed', 'Failed')
+                    );
                 }
                 await pollPaymentDetail(paymentId);
                 await onSuccess();
+                const currency = telecomT('common.currencySuffix', 'SYP');
                 Swal.fire({
                     icon: 'success',
-                    title: 'إيصال الدفع',
+                    title: telecomT('swal.receipt', 'Receipt'),
                     html:
-                        `<p>${confirm?.messageAr || confirm?.MessageAr || 'تم الشحن'}</p>` +
+                        `<p>${confirm?.messageAr || confirm?.MessageAr || telecomT('swal.recharged', 'Done')}</p>` +
                         `<p class="small"><strong>PAY:</strong> ${confirm?.paymentNumber ?? confirm?.PaymentNumber}</p>` +
-                        `<p class="small"><strong>إيصال:</strong> ${confirm?.receiptNumber ?? confirm?.ReceiptNumber}</p>` +
+                        `<p class="small"><strong>${telecomT('swal.receiptNo', 'Receipt')}</strong> ${confirm?.receiptNumber ?? confirm?.ReceiptNumber}</p>` +
                         `<p class="small"><strong>CorrelationId:</strong> <span dir="ltr">${confirm?.correlationId ?? confirm?.CorrelationId}</span></p>` +
-                        `<p class="small"><strong>الرصيد:</strong> ${formatAmount(confirm?.newBalance ?? confirm?.NewBalance)} ل.س</p>`,
+                        `<p class="small"><strong>${telecomT('swal.balanceAfter', 'Balance')}</strong> ${formatAmount(confirm?.newBalance ?? confirm?.NewBalance)} ${currency}</p>`,
                 });
             } catch (e) {
-                toastError(e, 'تعذّر تنفيذ الشحن');
+                toastError(e, telecomT('swal.rechargeFailed', 'Recharge failed'));
             } finally {
                 state.rechargeBusy = '';
             }
@@ -770,7 +981,7 @@ const Customer360ProfileApp = {
             const wallet = lineWallet(sub.id);
             const msisdn = sub.msisdn || wallet?.msisdn || '';
             if (!msisdn) {
-                Swal.fire({ icon: 'warning', title: 'لا يوجد رقم خط للشحن' });
+                Swal.fire({ icon: 'warning', title: telecomT('swal.noMsisdnRecharge', 'No MSISDN') });
                 return;
             }
             await executePaymentFlow(state.customerId, sub.id, sub.id, () => loadProfile(true));
@@ -778,7 +989,7 @@ const Customer360ProfileApp = {
 
         const loadProfile = async (silent = false) => {
             if (!state.customerId) {
-                state.loadError = 'معرّف المشترك مفقود في الرابط.';
+                state.loadError = telecomT('swal.customerIdMissing', 'Missing id');
                 state.loading = false;
                 return;
             }
@@ -794,7 +1005,7 @@ const Customer360ProfileApp = {
                 const content = res?.data?.content ?? res?.data?.Content ?? null;
                 state.profile = content;
                 if (!state.profile?.core) {
-                    state.loadError = 'لم يُعثر على ملف المشترك.';
+                    state.loadError = telecomT('swal.profileNotFound', 'Not found');
                 } else {
                     state.aiSim.msisdn = primaryMsisdn() || state.aiSim.msisdn;
                     ensureLineSelected();
@@ -802,7 +1013,7 @@ const Customer360ProfileApp = {
                 }
             } catch (e) {
                 state.profile = null;
-                state.loadError = e?.response?.data?.message || e?.message || 'تعذّر تحميل Customer 360';
+                state.loadError = e?.response?.data?.message || e?.message || telecomT('swal.loadFailed', 'Load failed');
             } finally {
                 if (!silent) {
                     state.loading = false;
@@ -839,6 +1050,9 @@ const Customer360ProfileApp = {
 
         const openAiWizard = () => {
             state.aiSim.msisdn = primaryMsisdn() || state.aiSim.msisdn;
+            if (!state.aiSim.transcript) {
+                state.aiSim.transcript = telecomT('ai.transcriptPh', '');
+            }
             if (!aiModal) {
                 aiModal = new bootstrap.Modal(document.getElementById('c360AiWizardModal'));
             }
@@ -849,7 +1063,7 @@ const Customer360ProfileApp = {
             const msisdn = (state.aiSim.msisdn || '').trim();
             const transcript = (state.aiSim.transcript || '').trim();
             if (!msisdn || transcript.length < 5) {
-                Swal.fire({ icon: 'warning', title: 'أدخل الرقم ونص المكالمة (5 أحرف+)' });
+                Swal.fire({ icon: 'warning', title: telecomT('swal.aiInputRequired', 'Input required') });
                 return;
             }
             state.aiSim.busy = true;
@@ -863,11 +1077,11 @@ const Customer360ProfileApp = {
                 state.activeTab = 'tickets';
                 await loadProfile(true);
                 toastSuccess(
-                    'تذكرة AI جاهزة',
+                    telecomT('swal.aiCreated', 'AI ticket ready'),
                     `<p class="small mb-0">${body?.ticketNumber ?? ''}<br/>${body?.summaryAr ?? ''}</p>`
                 );
             } catch (e) {
-                toastError(e, 'تعذر إنشاء التذكرة');
+                toastError(e, telecomT('swal.aiCreateFailed', 'Create failed'));
             } finally {
                 state.aiSim.busy = false;
             }
@@ -880,12 +1094,12 @@ const Customer360ProfileApp = {
                     ticketId: t.id,
                 });
                 const body = res?.data?.content ?? res?.data?.Content;
-                const msg = body?.message || body?.Message || 'تم دفع الشحنة وتسوية CBS';
+                const msg = body?.message || body?.Message || telecomT('swal.cbsForced', 'CBS applied');
                 await loadProfile(true);
                 await loadCbs();
                 toastSuccess(msg);
             } catch (e) {
-                toastError(e, 'تعذر ضغط الشحنة');
+                toastError(e, telecomT('swal.cbsForceFailed', 'CBS failed'));
             } finally {
                 setOpBusy(null);
             }
@@ -899,11 +1113,11 @@ const Customer360ProfileApp = {
                     technicalTicketId: t.id,
                 });
                 const body = res?.data?.content ?? res?.data?.Content;
-                const msg = body?.message || body?.Message || 'تمت مزامنة HLR';
+                const msg = body?.message || body?.Message || telecomT('swal.hlrSynced', 'HLR synced');
                 await loadProfile(true);
                 toastSuccess(msg);
             } catch (e) {
-                toastError(e, 'فشلت مزامنة HLR');
+                toastError(e, telecomT('swal.hlrSyncFailed', 'HLR failed'));
             } finally {
                 setOpBusy(null);
             }
@@ -911,15 +1125,15 @@ const Customer360ProfileApp = {
 
         const escalateTicket = async (t) => {
             const { value: notes } = await Swal.fire({
-                title: 'تصعيد للقسم الهندسي (Tier-3)',
+                title: telecomT('swal.escalateTitle', 'Escalate'),
                 input: 'textarea',
-                inputLabel: 'سبب التصعيد (10 أحرف على الأقل)',
-                inputPlaceholder: 'وصف المشكلة التقنية...',
+                inputLabel: telecomT('swal.escalateLabel', 'Reason'),
+                inputPlaceholder: telecomT('swal.escalatePh', ''),
                 showCancelButton: true,
-                confirmButtonText: 'تصعيد',
-                cancelButtonText: 'إلغاء',
+                confirmButtonText: telecomT('swal.escalate', 'Escalate'),
+                cancelButtonText: telecomT('swal.cancel', 'Cancel'),
                 inputValidator: (v) =>
-                    !v || v.trim().length < 10 ? 'أدخل 10 أحرف على الأقل' : undefined,
+                    !v || v.trim().length < 10 ? telecomT('swal.escalateMin', 'Min 10 chars') : undefined,
             });
             if (!notes) return;
             setOpBusy(t.id, 'escalate');
@@ -929,9 +1143,9 @@ const Customer360ProfileApp = {
                     escalationNotes: notes.trim(),
                 });
                 await loadProfile(true);
-                toastSuccess('تم تصعيد التذكرة لفريق الشبكة الأساسية');
+                toastSuccess(telecomT('swal.escalated', 'Escalated'));
             } catch (e) {
-                toastError(e, 'فشل التصعيد');
+                toastError(e, telecomT('swal.escalateFailed', 'Failed'));
             } finally {
                 setOpBusy(null);
             }
@@ -939,17 +1153,23 @@ const Customer360ProfileApp = {
 
         const operationalBadgeClass = (s) => {
             const v = String(s || '').toLowerCase();
-            if (v.includes('active') || v.includes('نشط')) return 'bg-success';
-            if (v.includes('suspend') || v.includes('موقوف')) return 'bg-warning text-dark';
+            if (v.includes('active')) return 'bg-success';
+            if (v.includes('suspend')) return 'bg-warning text-dark';
             return 'bg-secondary';
         };
 
         const vasStatusLabel = (s) => {
             const v = String(s || '').toLowerCase();
-            if (v === 'active') return 'نشطة';
-            if (v === 'suspended') return 'موقوفة';
+            if (v === 'active') return telecomT('vasStatus.active', 'Active');
+            if (v === 'suspended') return telecomT('vasStatus.suspended', 'Suspended');
             return s || '—';
         };
+
+        const subscriptionBadgeText = Vue.computed(() => {
+            localeTick.value;
+            const tpl = telecomT('subscriptionBadge', '{count}');
+            return tpl.replace('{count}', String(allSubscriptions.value.length));
+        });
 
         const vasBadgeClass = (s) => {
             const v = String(s || '').toLowerCase();
@@ -958,9 +1178,13 @@ const Customer360ProfileApp = {
             return 'bg-secondary';
         };
 
-        const wizardTitle = Vue.computed(
-            () => WIZARD_TITLES[state.wizard.kind] || 'معالج التشغيل'
-        );
+        const wizardTitle = Vue.computed(() => {
+            localeTick.value;
+            const k = state.wizard.kind;
+            if (!k) return '';
+            const hit = window.TelecomI18n?.t?.(`wizard.titles.${k}`);
+            return hit || k;
+        });
 
         const activateRequiredDeposit = Vue.computed(() => {
             if (state.wizard.kind !== 'activate') return 0;
@@ -1224,7 +1448,7 @@ const Customer360ProfileApp = {
             const amount = Number(state.wizard.devDownPayment);
             const ref = (state.wizard.devPaymentReference || '').trim();
             if (!amount || !ref) {
-                Swal.fire({ icon: 'warning', title: 'أدخل مبلغ الدفع ومرجع الدفع' });
+                Swal.fire({ icon: 'warning', title: telecomT('swal.paymentAmountRequired', 'Payment required') });
                 return;
             }
             state.wizard.paymentBusy = true;
@@ -1238,12 +1462,20 @@ const Customer360ProfileApp = {
                 });
                 if (res?.data?.code === 200) {
                     state.wizard.documentMarkedUploaded = true;
-                    Swal.fire({ icon: 'success', title: 'تم تسجيل الدفع', timer: 1200, showConfirmButton: false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: telecomT('swal.paymentRecorded', 'Recorded'),
+                        timer: 1200,
+                        showConfirmButton: false,
+                    });
                 } else {
-                    throw Object.assign(new Error(res?.data?.message || 'فشل'), { response: res });
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                        { response: res }
+                    );
                 }
             } catch (e) {
-                toastError(e, 'تعذّر تسجيل دفع الجهاز');
+                toastError(e, telecomT('swal.devicePaymentFailed', 'Device payment failed'));
             } finally {
                 state.wizard.paymentBusy = false;
             }
@@ -1501,7 +1733,7 @@ const Customer360ProfileApp = {
 
         const requireLine = () => {
             if (lineOptions.value.length) return true;
-            Swal.fire({ icon: 'warning', title: 'لا يوجد خط نشط لهذا المشترك لتنفيذ العملية.' });
+            Swal.fire({ icon: 'warning', title: telecomT('swal.noActiveLine', 'No active line') });
             return false;
         };
 
@@ -1547,7 +1779,7 @@ const Customer360ProfileApp = {
                 activate: () => can.value.network,
             };
             if (!permMap[kind]?.()) {
-                Swal.fire({ icon: 'info', title: 'لا توجد صلاحية لهذه العملية' });
+                Swal.fire({ icon: 'info', title: telecomT('swal.noPermission', 'No permission') });
                 return;
             }
             if (kind !== 'activate' && !requireLine()) return;
@@ -1555,18 +1787,19 @@ const Customer360ProfileApp = {
             state.wizard.kind = kind;
             resetWizardState();
             if (kind !== 'activate' && !bindPrimaryFromLine()) {
-                Swal.fire({ icon: 'warning', title: 'تعذّر ربط الاشتراك بالعملية' });
+                Swal.fire({ icon: 'warning', title: telecomT('swal.subscriptionLinkFailed', 'Link failed') });
                 return;
             }
             if (kind === 'activate') {
                 const subs = allSubscriptions.value;
                 const p = subs.find((s) => s.isPrimaryLine) || subs[0];
                 if (!p?.subscriberProfileId) {
-                    Swal.fire({ icon: 'warning', title: 'لا يوجد ملف مشترك لهذا العميل' });
+                    Swal.fire({ icon: 'warning', title: telecomT('swal.noCustomerProfile', 'No profile') });
                     return;
                 }
                 state.wizard.primarySubscriberProfileId = p.subscriberProfileId;
-                state.wizard.primaryLabel = state.profile?.core?.displayName || 'مشترك حالي';
+                state.wizard.primaryLabel =
+                    state.profile?.core?.displayName || telecomT('swal.currentSubscriber', 'Subscriber');
                 await loadActivatePoolData();
             } else if (kind === 'migrate') {
                 await loadWizardMigrationOffers();
@@ -1608,7 +1841,7 @@ const Customer360ProfileApp = {
             const nat = (state.wizard.takeoverSearchNationalId || '').trim();
             const ph = (state.wizard.takeoverSearchPhone || '').trim();
             if (nat.length < 2 && ph.length < 2) {
-                Swal.fire({ icon: 'info', title: 'أدخل رقم وطني أو جوال (حرفين على الأقل)' });
+                Swal.fire({ icon: 'info', title: telecomT('swal.searchMinChars', 'Search hint') });
                 return;
             }
             state.wizard.takeoverBusy = true;
@@ -1623,7 +1856,7 @@ const Customer360ProfileApp = {
                 state.wizard.takeoverTargetLabel = '';
             } catch (e) {
                 state.wizard.takeoverResults = [];
-                toastError(e, 'تعذّر البحث');
+                toastError(e, telecomT('customerList.swal.searchFailed', 'Search failed'));
             } finally {
                 state.wizard.takeoverBusy = false;
             }
@@ -1645,92 +1878,91 @@ const Customer360ProfileApp = {
                 const pid = (pick?.subscriberProfileId || '').trim();
                 state.wizard.takeoverTargetProfileId = pid;
                 if (!pid) {
-                    Swal.fire({ icon: 'warning', title: 'لا يوجد ملف مشترك للعميل المختار' });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: telecomT('customerList.swal.noSubscriberProfile', 'No profile'),
+                    });
                 } else {
-                    state.wizard.takeoverTargetLabel = `جاهز: ${c.name || '—'} (${pid.slice(0, 8)}…)`;
+                    state.wizard.takeoverTargetLabel = `${c.name || '—'} (${pid.slice(0, 8)}…)`;
                 }
             } catch (e) {
-                toastError(e, 'تعذّر تحميل ملف المالك الجديد');
+                toastError(e, telecomT('swal.loadFailed', 'Load failed'));
             } finally {
                 state.wizard.takeoverBusy = false;
             }
         };
 
-        const validateWizardStep1 = () => {
+        const validateWizardStep1 = async () => {
             const k = state.wizard.kind;
-            if (k !== 'activate' && !(state.wizard.primarySubscriberProfileId || '').trim()) {
-                Swal.fire({ icon: 'warning', title: 'لا يوجد اشتراك مرتبط' });
+            const warn = (key, fb) => {
+                Swal.fire({ icon: 'warning', title: telecomT(key, fb) });
                 return false;
+            };
+            const deny = (msg) => {
+                Swal.fire({
+                    icon: 'error',
+                    title: telecomT('reconnect.matrixDenied', 'Denied'),
+                    text: msg,
+                });
+                return false;
+            };
+            if (k !== 'activate' && !(state.wizard.primarySubscriberProfileId || '').trim()) {
+                return warn('swal.subscriptionLinkFailed', 'No subscription');
             }
             if (k === 'takeover' && !(state.wizard.takeoverTargetProfileId || '').trim()) {
-                Swal.fire({ icon: 'warning', title: 'اختر المالك الجديد' });
-                return false;
+                return warn('wizard.secondaryRequiredHint', 'Select new owner');
             }
             if (k === 'takeover' && !(state.wizard.takeoverTransferReason || '').trim()) {
-                Swal.fire({ icon: 'warning', title: 'سبب نقل الملكية مطلوب' });
-                return false;
+                return warn('takeOver.transferReason', 'Transfer reason required');
             }
             if (k === 'migrate' && !(state.wizard.selectedOfferingId || '').trim()) {
-                Swal.fire({ icon: 'warning', title: 'اختر الباقة الجديدة' });
-                return false;
+                return warn('customerList.swal.pickPackage', 'Pick package');
             }
             if (k === 'changeGsm') {
                 if (!(state.wizard.cgtTargetTypeId || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اختر نوع الخط الجديد' });
-                    return false;
+                    return warn('changeGsm.targetType', 'Pick line type');
                 }
                 if (!(state.wizard.cgtMigrationReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'سبب التحويل مطلوب' });
-                    return false;
+                    return warn('changeGsm.migrationReason', 'Reason required');
                 }
             }
             if (k === 'addpackage' && !(state.wizard.selectedVasCode || '').trim()) {
-                Swal.fire({ icon: 'warning', title: 'اختر خدمة VAS' });
-                return false;
+                return warn('wizard.vasPlaceholder', 'Pick VAS');
             }
             if (k === 'changeNumber') {
                 if (!(state.wizard.cnTargetMsisdnAssetId || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اختر الرقم الجديد من المخزون' });
-                    return false;
+                    return warn('changeNumber.targetMsisdn', 'Pick number');
                 }
                 if (!(state.wizard.cnNumberChangeReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اختر سبب التغيير' });
-                    return false;
+                    return warn('changeNumber.changeReason', 'Pick reason');
                 }
                 if (state.wizard.cnRequiresBackOffice && !state.wizard.identityFile) {
-                    Swal.fire({ icon: 'warning', title: 'ارفع إيصال الدفع أو موافقة المشرف' });
-                    return false;
+                    return warn('changeNumber.paymentDocHint', 'Upload receipt');
                 }
             }
             if (k === 'termination') {
                 if (!(state.wizard.trmTerminationReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'سبب الإنهاء مطلوب' });
-                    return false;
+                    return warn('customerList.swal.terminationIncomplete', 'Termination incomplete');
                 }
                 if (
                     state.wizard.trmTerminationType === 'Voluntary'
                     && !(state.wizard.trmRetentionOfferOutcome || '').trim()
                 ) {
-                    Swal.fire({ icon: 'warning', title: 'نتيجة عرض الاحتفاظ مطلوبة' });
-                    return false;
+                    return warn('customerList.swal.retentionRequired', 'Retention required');
                 }
                 if (state.wizard.trmRequiresBackOffice && !state.wizard.identityFile) {
-                    Swal.fire({ icon: 'warning', title: 'ارفع الوثيقة / القرار الإداري' });
-                    return false;
+                    return warn('termination.identityRequired', 'Document required');
                 }
             }
             if (k === 'simswap') {
                 if (!(state.wizard.simReplacementReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اختر سبب التبديل' });
-                    return false;
+                    return warn('customerList.swal.pickSimReason', 'Pick reason');
                 }
                 if ((state.wizard.simIccid || '').trim().length < 19) {
-                    Swal.fire({ icon: 'warning', title: 'أدخل ICCID (19 رقم)' });
-                    return false;
+                    return warn('customerList.swal.enterNewIccid', 'ICCID required');
                 }
                 if (state.wizard.simLostOrStolen && !state.wizard.identityFile) {
-                    Swal.fire({ icon: 'warning', title: 'ارفع إقرار / هوية المشترك' });
-                    return false;
+                    return warn('customerList.swal.uploadIdentity', 'Upload ID');
                 }
             }
             if (k === 'activate') {
@@ -1738,58 +1970,53 @@ const Customer360ProfileApp = {
                 const offeringId = (state.wizard.selectedOfferingId || '').trim();
                 const iccid = (state.wizard.simIccid || '').trim();
                 if (!assetId || !offeringId || iccid.length < 19) {
-                    Swal.fire({ icon: 'warning', title: 'أكمل الرقم والباقة وICCID' });
-                    return false;
+                    return warn('customerList.swal.newLineIncomplete', 'Incomplete activation');
                 }
             }
             if (k === 'suspension') {
                 if (!(state.wizard.susSuspensionReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'سبب الحظر مطلوب' });
-                    return false;
+                    return warn('suspension.suspensionReason', 'Reason required');
                 }
                 if (state.wizard.susAutoReconnectEnabled && !(state.wizard.susEndDateLocal || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'تاريخ انتهاء الحظر مطلوب' });
-                    return false;
+                    return warn('suspension.endDateRequired', 'End date required');
                 }
                 onSusTypeChange();
             }
             if (k === 'reconnect') {
                 if (!(state.wizard.rcnReconnectReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'سبب إعادة التفعيل مطلوب' });
-                    return false;
+                    return warn('reconnect.reconnectReason', 'Reason required');
                 }
                 if (state.wizard.rcnClearanceType === 'Payment' && !(state.wizard.rcnPaymentReference || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
-                    return false;
+                    return warn('reconnect.paymentReference', 'Payment ref required');
                 }
                 await loadReconnectEligibility();
-                if (state.wizard.rcnEligibility && !state.wizard.rcnEligibility.allowed && !state.wizard.rcnEligibility.Allowed) {
-                    const msg = state.wizard.rcnEligibility.messageAr || state.wizard.rcnEligibility.MessageAr || '';
-                    Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
-                    return false;
+                if (
+                    state.wizard.rcnEligibility
+                    && !state.wizard.rcnEligibility.allowed
+                    && !state.wizard.rcnEligibility.Allowed
+                ) {
+                    const msg =
+                        state.wizard.rcnEligibility.messageAr || state.wizard.rcnEligibility.MessageAr || '';
+                    return deny(msg);
                 }
             }
             if (k === 'refund') {
                 if (!(state.wizard.rfdRefundReason || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'سبب الاسترداد مطلوب' });
-                    return false;
+                    return warn('refund.refundReason', 'Reason required');
                 }
                 const amt = Number(state.wizard.rfdRefundAmount);
                 if (!amt || amt <= 0) {
-                    Swal.fire({ icon: 'warning', title: 'مبلغ الاسترداد مطلوب' });
-                    return false;
+                    return warn('refund.refundAmount', 'Amount required');
                 }
             }
             if (k === 'badDebt') {
                 if (state.wizard.bdrCollectionAction === 'PaymentRecorded') {
                     if (!(state.wizard.bdrPaymentReference || '').trim()) {
-                        Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
-                        return false;
+                        return warn('badDebt.paymentReference', 'Payment ref required');
                     }
                     const col = Number(state.wizard.bdrCollectedAmount);
                     if (!col || col <= 0) {
-                        Swal.fire({ icon: 'warning', title: 'المبلغ المحصّل مطلوب' });
-                        return false;
+                        return warn('badDebt.collectedAmount', 'Amount required');
                     }
                 }
                 if (
@@ -1797,24 +2024,25 @@ const Customer360ProfileApp = {
                         || state.wizard.bdrCollectionAction === 'WriteOffFull')
                     && !(Number(state.wizard.bdrWriteOffAmount) > 0)
                 ) {
-                    Swal.fire({ icon: 'warning', title: 'مبلغ الشطب مطلوب' });
-                    return false;
+                    return warn('badDebt.writeOffAmount', 'Write-off required');
                 }
                 await loadBadDebtEligibility();
-                if (state.wizard.bdrEligibility && !state.wizard.bdrEligibility.allowed && !state.wizard.bdrEligibility.Allowed) {
-                    const msg = state.wizard.bdrEligibility.messageAr || state.wizard.bdrEligibility.MessageAr || '';
-                    Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
-                    return false;
+                if (
+                    state.wizard.bdrEligibility
+                    && !state.wizard.bdrEligibility.allowed
+                    && !state.wizard.bdrEligibility.Allowed
+                ) {
+                    const msg =
+                        state.wizard.bdrEligibility.messageAr || state.wizard.bdrEligibility.MessageAr || '';
+                    return deny(msg);
                 }
             }
             if (k === 'deviceSale') {
                 if (!(state.wizard.devInventoryId || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اختر جهازاً من المخزون' });
-                    return false;
+                    return warn('deviceSale.deviceImei', 'Pick device');
                 }
                 if (state.wizard.devSaleType === 'Installment' && !(state.wizard.devInstallmentPlanId || '').trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اختر خطة التقسيط' });
-                    return false;
+                    return warn('deviceSale.installmentPlan', 'Pick plan');
                 }
             }
             return true;
@@ -1932,7 +2160,7 @@ const Customer360ProfileApp = {
             const ref = (state.wizard.paymentReference || '').trim();
             const amt = Number(state.wizard.paymentAmount);
             if (!ref || !(amt > 0)) {
-                Swal.fire({ icon: 'warning', title: 'أدخل رقم مرجع الدفع والمبلغ' });
+                Swal.fire({ icon: 'warning', title: telecomT('swal.paymentAmountRequired', 'Payment required') });
                 return;
             }
             state.wizard.paymentBusy = true;
@@ -1946,19 +2174,27 @@ const Customer360ProfileApp = {
                 });
                 if (res?.data?.code === 200) {
                     state.wizard.paymentRecorded = true;
-                    Swal.fire({ icon: 'success', title: 'تم تثبيت الدفع', timer: 1200, showConfirmButton: false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: telecomT('swal.paymentRecorded', 'Recorded'),
+                        timer: 1200,
+                        showConfirmButton: false,
+                    });
                 } else {
-                    throw Object.assign(new Error(res?.data?.message || 'فشل'), { response: res });
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                        { response: res }
+                    );
                 }
             } catch (e) {
-                toastError(e, 'تعذّر تسجيل الدفع');
+                toastError(e, telecomT('swal.devicePaymentFailed', 'Payment failed'));
             } finally {
                 state.wizard.paymentBusy = false;
             }
         };
 
         const submitWizardVasActivate = async () => {
-            if (!validateWizardStep1()) return;
+            if (!(await validateWizardStep1())) return;
             const line = parseSelectedLine();
             const msisdn = (line?.msisdn || '').trim();
             const code = (state.wizard.selectedVasCode || '').trim();
@@ -1975,21 +2211,25 @@ const Customer360ProfileApp = {
                 if (res?.data?.code === 200) {
                     state.wizard.vasActivated = true;
                     state.wizard.createdOperationNumber = res?.data?.content?.operationNumber ?? '';
+                    const vasOk = telecomT('swal.vasActivated', 'VAS activated');
                     state.wizard.confirmStatusHint =
-                        'تم تفعيل VAS بنجاح' +
+                        vasOk +
                         (state.wizard.createdOperationNumber
                             ? ` (${state.wizard.createdOperationNumber})`
                             : '');
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم تفعيل الخدمة',
+                        title: telecomT('swal.vasActivateTitle', 'Activated'),
                         text: state.wizard.confirmStatusHint,
                         timer: 2500,
                         showConfirmButton: false,
                     });
                     state.wizard.step = 3;
                 } else {
-                    throw Object.assign(new Error(res?.data?.message || 'فشل'), { response: res });
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                        { response: res }
+                    );
                 }
             } catch (e) {
                 const errName = e?.response?.data?.error?.name;
@@ -2000,8 +2240,8 @@ const Customer360ProfileApp = {
                     '';
                 Swal.fire({
                     icon: errName === 'BusinessRuleViolationException' ? 'warning' : 'error',
-                    title: errName === 'BusinessRuleViolationException' ? 'VAL-11' : 'تعذّر التفعيل',
-                    text: msg || 'تعذّر تفعيل الخدمة — تحقق من الأهلية (VAL-11)',
+                    title: errName === 'BusinessRuleViolationException' ? 'VAL-11' : telecomT('swal.vasActivateFailed', 'Failed'),
+                    text: msg || telecomT('swal.vasActivateFailedHint', 'VAL-11'),
                 });
             } finally {
                 state.wizard.submitBusy = false;
@@ -2009,9 +2249,9 @@ const Customer360ProfileApp = {
             }
         };
 
-        const wizardStepNext = () => {
+        const wizardStepNext = async () => {
             if (state.wizard.step === 1) {
-                if (!validateWizardStep1()) return;
+                if (!(await validateWizardStep1())) return;
                 if (state.wizard.kind === 'addpackage') {
                     submitWizardVasActivate();
                     return;
@@ -2023,7 +2263,7 @@ const Customer360ProfileApp = {
                 if (!canWizardFinishStep2.value) {
                     Swal.fire({
                         icon: 'info',
-                        title: 'أكمل التسجيل والوثيقة وتأكيد CBS',
+                        title: telecomT('swal.completeRegDocCbs', 'Complete steps'),
                     });
                     return;
                 }
@@ -2036,7 +2276,7 @@ const Customer360ProfileApp = {
         };
 
         const submitWizardCreateDraft = async () => {
-            if (!validateWizardStep1()) return;
+            if (!(await validateWizardStep1())) return;
             if (state.wizard.kind === 'changeNumber' && state.wizard.cnTargetMsisdnAssetId) {
                 try {
                     await AxiosManager.post('/Telecom/ReserveMsisdnForCustomer', {
@@ -2045,7 +2285,7 @@ const Customer360ProfileApp = {
                         reservedByUserId: StorageManager.getUserId(),
                     });
                 } catch (e) {
-                    toastError(e, 'تعذّر حجز الرقم الجديد');
+                    toastError(e, telecomT('swal.reserveNewNumberFailed', 'Reserve failed'));
                     return;
                 }
             }
@@ -2057,7 +2297,7 @@ const Customer360ProfileApp = {
                         reservedByUserId: StorageManager.getUserId(),
                     });
                 } catch (e) {
-                    toastError(e, 'تعذّر حجز الرقم');
+                    toastError(e, telecomT('swal.reserveMsisdnFailed', 'Reserve failed'));
                     return;
                 }
             }
@@ -2113,18 +2353,21 @@ const Customer360ProfileApp = {
                     }
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم إنشاء المسودة',
+                        title: telecomT('swal.draftCreated', 'Draft created'),
                         html:
                             `<p class="mb-1">${state.wizard.createdOperationNumber}</p>` +
-                            '<p class="small text-muted mb-0">ظهرت العملية في طابور قمرة العمليات الخلفية للمعالجة.</p>',
+                            `<p class="small text-muted mb-0">${telecomT('swal.draftCreatedHint', '')}</p>`,
                         timer: 2800,
                         showConfirmButton: false,
                     });
                 } else {
-                    throw Object.assign(new Error(res?.data?.message || 'فشل إنشاء العملية'), { response: res });
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.draftCreateFailed', 'Create failed')),
+                        { response: res }
+                    );
                 }
             } catch (e) {
-                toastError(e, 'تعذّر إنشاء المسودة');
+                toastError(e, telecomT('customerList.swal.operationFailed', 'Operation failed'));
             } finally {
                 state.wizard.submitBusy = false;
                 state.isProvisioningInFlight = false;
@@ -2134,23 +2377,23 @@ const Customer360ProfileApp = {
         const submitWizardMarkDocument = async () => {
             if (!state.wizard.createdOperationId) return;
             if (state.wizard.kind === 'takeover' && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: 'ارفع هوية المالك الجديد' });
+                Swal.fire({ icon: 'warning', title: telecomT('takeOver.identityRequired', 'Upload ID') });
                 return;
             }
             if (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: 'ارفع إقرار / هوية المشترك' });
+                Swal.fire({ icon: 'warning', title: telecomT('customerList.swal.uploadIdentity', 'Upload ID') });
                 return;
             }
             if (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: 'ارفع إيصال الدفع أو موافقة المشرف' });
+                Swal.fire({ icon: 'warning', title: telecomT('changeNumber.paymentDocHint', 'Upload receipt') });
                 return;
             }
             if (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: 'ارفع الوثيقة / القرار الإداري' });
+                Swal.fire({ icon: 'warning', title: telecomT('termination.identityRequired', 'Upload document') });
                 return;
             }
             if (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: 'ارفع وثيقة الاعتماد' });
+                Swal.fire({ icon: 'warning', title: telecomT('refund.boHint', 'Upload document') });
                 return;
             }
             state.wizard.uploadBusy = true;
@@ -2186,14 +2429,17 @@ const Customer360ProfileApp = {
                         || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
                         || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
                         || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
-                            ? 'تم الإرسال للباك أوفيس'
-                            : 'تم تسجيل الوثيقة';
+                            ? telecomT('swal.sentToBackOffice', 'Sent to BO')
+                            : telecomT('swal.documentRecorded', 'Document recorded');
                     Swal.fire({ icon: 'success', title, timer: 1400, showConfirmButton: false });
                 } else {
-                    throw Object.assign(new Error(res?.data?.message || 'فشل'), { response: res });
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                        { response: res }
+                    );
                 }
             } catch (e) {
-                toastError(e, 'تعذّر تسجيل الوثيقة');
+                toastError(e, telecomT('customerList.swal.operationFailed', 'Operation failed'));
             } finally {
                 state.wizard.uploadBusy = false;
             }
@@ -2214,7 +2460,7 @@ const Customer360ProfileApp = {
                     const hint =
                         content.statusHintAr ??
                         content.StatusHintAr ??
-                        PROV_SUCCESS_DEFAULT;
+                        telecomT('provSuccess', 'Operation recorded');
                     state.wizard.confirmStatusHint = hint;
                     toastSuccess(hint);
                     if (content.hlrCompletesAsynchronously ?? content.HlrCompletesAsynchronously) {
@@ -2225,17 +2471,31 @@ const Customer360ProfileApp = {
                         }
                     }
                 } else {
-                    throw Object.assign(new Error(res?.data?.message || 'فشل التأكيد'), { response: res });
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('customerList.swal.confirmFailed', 'Confirm failed')),
+                        { response: res }
+                    );
                 }
             } catch (e) {
-                toastError(e, 'تعذّر تأكيد CBS');
+                toastError(e, telecomT('customerList.swal.confirmFailed', 'Confirm failed'));
             } finally {
                 state.wizard.confirmBusy = false;
                 state.isProvisioningInFlight = false;
             }
         };
 
+        const refreshPageI18n = async () => {
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                localeTick.value++;
+                const title = telecomT('pageTitle', 'Subscriber 360');
+                if (title) document.title = title;
+                window.TelecomI18n?.refresh?.();
+            } catch (_) { /* ignore */ }
+        };
+
         Vue.onMounted(async () => {
+            document.documentElement.addEventListener('syriatel-locale-changed', refreshPageI18n);
             try {
                 if (!StorageManager.getAccessToken?.()) {
                     window.location.href = '/Accounts/Login';
@@ -2255,6 +2515,7 @@ const Customer360ProfileApp = {
                 const params = new URLSearchParams(window.location.search);
                 state.customerId = params.get('customerId') || '';
                 await loadProfile();
+                await refreshPageI18n();
                 const deepWizard = (params.get('wizard') || '').trim();
                 const deepLineKey = (params.get('lineKey') || '').trim();
                 if (deepLineKey) {
@@ -2265,7 +2526,7 @@ const Customer360ProfileApp = {
                 }
             } catch (e) {
                 console.error('Customer360Profile init:', e);
-                state.loadError = 'غير مصرّح أو انتهت الجلسة.';
+                state.loadError = telecomT('backOffice.dashboard.messages.accessDenied', 'Access denied');
             } finally {
                 if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
             }
@@ -2273,7 +2534,15 @@ const Customer360ProfileApp = {
 
         return {
             state,
-            tabs: TABS,
+            tabs,
+            ui,
+            telecomT,
+            localeTick,
+            activeLinesLabel: Vue.computed(() => {
+                localeTick.value;
+                const tpl = telecomT('hero.activeLines', '{count} lines');
+                return tpl.replace('{count}', String(activeLinesCount.value));
+            }),
             can,
             selectedLineTerminated,
             selectedLineSuspended,
@@ -2301,6 +2570,7 @@ const Customer360ProfileApp = {
             isCorporate,
             statusBadgeClass,
             allSubscriptions,
+            subscriptionBadgeText,
             operationalStatusLabel,
             checkHlr,
             loadProfile,

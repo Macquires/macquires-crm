@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UZiFW0FDDuI=",
+  "dgSpecHash": "/zJelrq71TY=",
   "success": true,
-  "projectFilePath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj",
+  "projectFilePath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\HP\\.nuget\\packages\\automapper\\15.1.1\\automapper.15.1.1.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
@@ -80,8 +80,8 @@
     "C:\\Users\\HP\\.nuget\\packages\\system.text.json\\9.0.0\\system.text.json.9.0.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.threading.tasks.extensions\\4.5.4\\system.threading.tasks.extensions.4.5.4.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.windows.extensions\\6.0.0\\system.windows.extensions.6.0.0.nupkg.sha512",
-    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.14\\microsoft.netcore.app.ref.9.0.14.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.14\\microsoft.windowsdesktop.app.ref.9.0.14.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.14\\microsoft.netcore.app.ref.9.0.14.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.14\\microsoft.aspnetcore.app.ref.9.0.14.nupkg.sha512"
   ],
   "logs": []

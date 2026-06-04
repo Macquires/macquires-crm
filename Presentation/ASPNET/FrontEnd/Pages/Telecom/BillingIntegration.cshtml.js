@@ -1,11 +1,16 @@
 const BILLING_LOG_VIEWER_ROLES = new Set(['TelecomAdmin', 'TelecomBackOffice', 'TelecomManagement']);
 
-function formatDateAr(d) {
+function getUiLang() {
+    return (document.documentElement.lang || 'en').toLowerCase().startsWith('en') ? 'en' : 'ar';
+}
+
+function formatDateLocale(d) {
     if (!d) return '—';
     try {
         const dt = new Date(d);
         if (Number.isNaN(dt.getTime())) return '—';
-        return new Intl.DateTimeFormat('ar-SY', {
+        const loc = getUiLang() === 'en' ? 'en-GB' : 'ar-SY';
+        return new Intl.DateTimeFormat(loc, {
             dateStyle: 'short',
             timeStyle: 'short',
         }).format(dt);
@@ -96,12 +101,28 @@ const BillingIntegrationApp = {
             },
         };
 
+        const pageLabel = Vue.computed(() => {
+            const tpl =
+                (typeof window.TelecomI18n !== 'undefined' && window.TelecomI18n.t('billingIntegration.pageOf')) ||
+                'Page {page} of {total}';
+            return tpl.replace('{page}', String(state.page)).replace('{total}', String(state.totalPages));
+        });
+
         Vue.onMounted(async () => {
             if (typeof hideSpinnerAndShowContent === 'function') {
                 hideSpinnerAndShowContent();
             }
+            if (typeof window.TelecomI18n !== 'undefined') {
+                await window.TelecomI18n.ensureLoaded();
+            }
             if (canAccess) {
                 await loadPage();
+            }
+        });
+
+        document.documentElement.addEventListener('syriatel-locale-changed', () => {
+            if (typeof window.TelecomI18n !== 'undefined') {
+                window.TelecomI18n.refresh().catch(() => {});
             }
         });
 
@@ -109,7 +130,8 @@ const BillingIntegrationApp = {
             state,
             canAccess,
             handler,
-            formatDate: formatDateAr,
+            pageLabel,
+            formatDate: formatDateLocale,
         };
     },
 };

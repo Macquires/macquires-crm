@@ -1,14 +1,14 @@
 @page "/Telecom/StrategicAnalytics"
 @{
-    ViewData["Title"] = "التحليلات الاستراتيجية — Executive MIS";
+    ViewData["Title"] = "Strategic analytics — Executive MIS";
 }
 
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 
 <div class="form-card strategic-analytics-page" id="formcard">
     <div id="strategicAnalyticsGate" class="text-center py-5 d-none">
-        <p class="text-light opacity-75 mb-3">لا تملك صلاحية عرض التحليلات الاستراتيجية.</p>
-        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-light">العودة للوحة القيادة</a>
+        <p class="text-light opacity-75 mb-3" data-telecom-i18n="strategicAnalytics.noPermission">You do not have permission to view strategic analytics.</p>
+        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-light" data-telecom-i18n="strategicAnalytics.backToDashboard">Back to dashboard</a>
     </div>
 
     <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root strategic-exec-dark">

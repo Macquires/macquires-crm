@@ -6,26 +6,14 @@ const MsisdnInventoryApp = {
 
         const isEn = () => document.documentElement.lang?.toLowerCase().startsWith('en');
 
-        const t = (key, fallbackAr, fallbackEn) => {
-            const fb = isEn() ? fallbackEn || fallbackAr : fallbackAr;
-            try {
-                const parts = key.split('.');
-                let node = window.__telecomLocale?.telecom;
-                for (const p of parts) {
-                    node = node?.[p];
-                }
-                return node || fb;
-            } catch {
-                return fb;
-            }
-        };
+        const t = (key) => window.TelecomI18n?.t?.(`msisdnInventory.${key}`) || key;
 
         const state = Vue.reactive({
             loading: true,
             allRows: [],
             statusFilter: '',
             quickSearch: '',
-            searchPlaceholder: isEn() ? 'MSISDN, ICCID…' : 'بحث MSISDN أو ICCID…',
+            searchPlaceholder: '',
             kpis: { total: 0, available: 0, reserved: 0, active: 0, quarantined: 0 },
             pageSize: 50,
         });
@@ -43,6 +31,12 @@ const MsisdnInventoryApp = {
             const h = box?.clientHeight ?? 0;
             return h > 120 ? h : 400;
         };
+
+        const escapeHtml = (s) =>
+            String(s ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
 
         const pick = (o, ...keys) => {
             if (!o) return undefined;
@@ -75,22 +69,19 @@ const MsisdnInventoryApp = {
         };
 
         const statusLabel = (status) => {
-            const ar = {
-                Available: 'متاح',
-                Reserved: 'محجوز',
-                Active: 'نشط',
-                Quarantined: 'حجر',
-                Suspended: 'موقوف',
+            const map = {
+                Available: 'available',
+                Reserved: 'reserved',
+                Active: 'active',
+                Quarantined: 'quarantined',
+                Suspended: 'suspended',
             };
-            const en = {
-                Available: 'Available',
-                Reserved: 'Reserved',
-                Active: 'Active',
-                Quarantined: 'Quarantined',
-                Suspended: 'Suspended',
-            };
-            const map = isEn() ? en : ar;
-            return map[status] || status || '—';
+            const fk = map[status];
+            if (fk) {
+                const hit = t(`filter.${fk}`);
+                if (hit && hit !== `filter.${fk}`) return hit;
+            }
+            return status || '—';
         };
 
         const mapRow = (row) => {
@@ -112,7 +103,7 @@ const MsisdnInventoryApp = {
                 statusLabel: statusLabel(status),
                 assignmentLabel: subscriberName
                     ? String(subscriberName)
-                    : t('msisdnInventory.showroomStock', 'بضاعة في المعرض', 'Showroom stock'),
+                    : t('showroomStock'),
                 productName: pick(row, 'productName', 'ProductName') || '—',
                 releaseDisplay,
             };
@@ -198,9 +189,9 @@ const MsisdnInventoryApp = {
                         e?.response?.data?.message ||
                         e?.response?.data?.error?.message ||
                         e?.message ||
-                        'تعذر تحميل مستودع الأرقام';
+                        t('messages.loadFailed');
                     if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'خطأ في التحميل', text: msg });
+                        Swal.fire({ icon: 'error', title: t('messages.loadErrorTitle'), text: msg });
                     } else {
                         console.error('MsisdnInventory load failed', e);
                     }
@@ -258,7 +249,7 @@ const MsisdnInventoryApp = {
                 allowSorting: true,
                 allowResizing: true,
                 gridLines: 'Horizontal',
-                emptyRecordTemplate: '<div class="text-center py-4 text-muted">لا توجد أرقام مطابقة</div>',
+                emptyRecordTemplate: `<div class="text-center py-4 text-muted">${escapeHtml(t('messages.emptyGrid'))}</div>`,
                 pageSettings: {
                     currentPage: 1,
                     pageSize: state.pageSize,
@@ -280,20 +271,20 @@ const MsisdnInventoryApp = {
                 columns: [
                     {
                         field: 'msisdn',
-                        headerText: t('msisdnInventory.columns.msisdn', 'رقم الموبايل', 'MSISDN'),
+                        headerText: t('columns.msisdn'),
                         width: 130,
                         isPrimaryKey: true,
                     },
-                    { field: 'iccid', headerText: t('msisdnInventory.columns.iccid', 'ICCID', 'ICCID'), width: 160 },
-                    { field: 'imsi', headerText: t('msisdnInventory.columns.imsi', 'IMSI', 'IMSI'), width: 140 },
+                    { field: 'iccid', headerText: t('columns.iccid'), width: 160 },
+                    { field: 'imsi', headerText: t('columns.imsi'), width: 140 },
                     {
                         field: 'statusLabel',
-                        headerText: t('msisdnInventory.columns.status', 'الحالة', 'Status'),
+                        headerText: t('columns.status'),
                         width: 130,
                     },
-                    { field: 'assignmentLabel', headerText: t('msisdnInventory.columns.assignment', 'الارتباط', 'Assignment'), width: 180 },
-                    { field: 'productName', headerText: t('msisdnInventory.columns.product', 'الباقة / المنتج', 'Package'), width: 180 },
-                    { field: 'releaseDisplay', headerText: t('msisdnInventory.columns.releaseDate', 'فك الحجز / الحجر', 'Release / quarantine'), width: 160 },
+                    { field: 'assignmentLabel', headerText: t('columns.assignment'), width: 180 },
+                    { field: 'productName', headerText: t('columns.product'), width: 180 },
+                    { field: 'releaseDisplay', headerText: t('columns.releaseDate'), width: 160 },
                 ],
             });
                 mainGrid.obj.appendTo(host);
@@ -302,7 +293,7 @@ const MsisdnInventoryApp = {
                 console.error('MsisdnInventory grid init failed', err);
                 mainGrid.obj = null;
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'تعذر عرض الجدول', text: String(err?.message || err) });
+                    Swal.fire({ icon: 'error', title: t('messages.gridInitFailed'), text: String(err?.message || err) });
                 }
                 return false;
             }
@@ -319,7 +310,7 @@ const MsisdnInventoryApp = {
                 const ok = await waitForSyncfusion();
                 if (!ok) {
                     if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'مكتبة الجداول غير محمّلة' });
+                        Swal.fire({ icon: 'error', title: t('messages.syncfusionMissing') });
                     }
                     return;
                 }
@@ -331,14 +322,11 @@ const MsisdnInventoryApp = {
             });
         };
 
-        const loadTelecomLocale = async () => {
-            try {
-                const lang = isEn() ? 'en' : 'ar';
-                const res = await fetch(`/locales/telecom.${lang}.json`);
-                if (res.ok) window.__telecomLocale = await res.json();
-            } catch {
-                /* optional */
-            }
+        const applyLocaleUi = () => {
+            state.searchPlaceholder = t('searchPh');
+            const title = window.TelecomI18n?.t?.('msisdnInventory.title');
+            if (title) document.title = title;
+            window.TelecomI18n?.applyDom?.();
         };
 
         const onWindowResize = () => applyGridHeight();
@@ -351,7 +339,17 @@ const MsisdnInventoryApp = {
             } catch (e) {
                 console.warn('MsisdnInventory: session sync failed', e);
             }
-            await loadTelecomLocale();
+            await window.TelecomI18n?.ensureLoaded?.();
+            applyLocaleUi();
+            document.documentElement.addEventListener('syriatel-locale-changed', () => {
+                applyLocaleUi();
+                if (mainGrid.obj) {
+                    mainGrid.obj.destroy();
+                    mainGrid.obj = null;
+                    createGrid();
+                    bindGridData(false);
+                }
+            });
             await methods.load();
             await ensureGridReady();
             window.addEventListener('resize', onWindowResize);

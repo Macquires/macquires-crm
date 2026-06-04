@@ -82,6 +82,9 @@
   <data name="Page_TelecomHubTitle" xml:space="preserve">
     <value>Syriatel Unified Portal — Operations Hub</value>
   </data>
+  <data name="Page_BillingIntegrationTitle" xml:space="preserve">
+    <value>Billing integration</value>
+  </data>
   <data name="Login_PageTitle" xml:space="preserve">
     <value>Sign in — Syriatel</value>
   </data>

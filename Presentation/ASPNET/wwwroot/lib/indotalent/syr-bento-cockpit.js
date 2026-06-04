@@ -5,13 +5,18 @@ const SyrBentoCockpit = (function () {
     const PREVIEW_KEY = 'syrPreviewPersona';
     const WIDGET_KIND = { Stat: 0, Cta: 1, OmniSearch: 2, StatusList: 3 };
 
-    const PERSONA_SUBTITLES = {
-        Executive: 'مؤشرات الأداء والتقارير التنفيذية',
-        CallCenter: 'بحث سريع وحالة الشبكة',
-        Retail: 'تفعيل وبيع — صالة العرض',
-        BackOffice: 'موافقات وعمليات معلقة',
-        SysAdmin: 'مراقبة المنصة والتكاملات',
+    const PERSONA_SUBTITLE_KEYS = {
+        Executive: 'personaExecutive',
+        CallCenter: 'personaCallCenter',
+        Retail: 'personaRetail',
+        BackOffice: 'personaBackOffice',
+        SysAdmin: 'personaSysAdmin',
     };
+
+    function bdT(key) {
+        const hit = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t('defaultDashboard.cockpit.' + key) : null;
+        return hit || key;
+    }
 
     const pollTimers = new Map();
     let mountedWidgets = [];
@@ -69,7 +74,9 @@ const SyrBentoCockpit = (function () {
     function localizedCtaLabel(w) {
         const useEn = getLang() === 'en';
         return escapeHtml(
-            useEn ? w.ctaLabelEn || w.CtaLabelEn || w.ctaLabelAr || w.CtaLabelAr : w.ctaLabelAr || w.CtaLabelAr || 'فتح'
+            useEn
+                ? w.ctaLabelEn || w.CtaLabelEn || w.ctaLabelAr || w.CtaLabelAr
+                : w.ctaLabelAr || w.CtaLabelAr || bdT('ctaOpen')
         );
     }
 
@@ -141,7 +148,7 @@ const SyrBentoCockpit = (function () {
     function renderValueBody(w, data) {
         const kind = widgetKind(w);
         if (kind === WIDGET_KIND.OmniSearch) {
-            return `<input type="search" class="syr-bento-search-lg syr-bento-omni-inline" placeholder="MSISDN، اسم، أو رقم وطني…" autocomplete="off" />`;
+            return `<input type="search" class="syr-bento-search-lg syr-bento-omni-inline" placeholder="${bdT('omniPlaceholder')}" autocomplete="off" />`;
         }
         if (kind === WIDGET_KIND.Cta) {
             const url = w.ctaUrl || w.CtaUrl || '#';
@@ -156,7 +163,7 @@ const SyrBentoCockpit = (function () {
         if (kind === WIDGET_KIND.StatusList && data) {
             const items = data.items ?? data.Items ?? [];
             if (!items.length) {
-                return `<p class="text-muted small mb-0">N/A</p>`;
+                return `<p class="text-muted small mb-0">${bdT('na')}</p>`;
             }
             return `<ul class="list-unstyled mb-0 syr-bento-status-list">
                 ${items
@@ -173,7 +180,7 @@ const SyrBentoCockpit = (function () {
         if (!data) {
             return `<p class="syr-bento-value text-muted mb-0"><span class="spinner-border spinner-border-sm"></span></p>`;
         }
-        const val = data.valueText ?? data.ValueText ?? 'N/A';
+        const val = data.valueText ?? data.ValueText ?? bdT('na');
         const sub = data.subtitle ?? data.Subtitle;
         return `
             <p class="syr-bento-value mb-0 ${statusClass(data.status ?? data.Status)}">${escapeHtml(val)}</p>
@@ -214,9 +221,9 @@ const SyrBentoCockpit = (function () {
         } catch (e) {
             console.warn('Widget data', pk, e);
             updateCardBody(cardEl, w, {
-                valueText: 'N/A',
+                valueText: bdT('na'),
                 status: 'error',
-                subtitle: 'تعذّر تحميل البيانات',
+                subtitle: bdT('dataLoadFailed'),
             });
         }
     }
@@ -251,8 +258,7 @@ const SyrBentoCockpit = (function () {
         clearPollers();
         mountedWidgets = widgets;
         if (!widgets.length) {
-            containerEl.innerHTML =
-                '<p class="text-muted col-12">لا توجد عناصر لوحة لهذا الدور — راجع إعدادات DashboardWidgets.</p>';
+            containerEl.innerHTML = '<p class="text-muted col-12">' + escapeHtml(bdT('noWidgets')) + '</p>';
             return;
         }
         containerEl.innerHTML = widgets.map(buildCardShell).join('');
@@ -284,9 +290,28 @@ const SyrBentoCockpit = (function () {
 
     function updateSubtitle(persona) {
         const subtitle = document.getElementById('syrBentoSubtitle');
-        if (subtitle) {
-            subtitle.textContent = PERSONA_SUBTITLES[persona] || 'لوحة التشغيل الديناميكية';
+        if (!subtitle) {
+            return;
         }
+        const key = PERSONA_SUBTITLE_KEYS[persona];
+        subtitle.textContent = key ? bdT(key) : bdT('dynamicSubtitle');
+        subtitle.removeAttribute('data-telecom-i18n');
+    }
+
+    function applyPageChromeI18n() {
+        const slim = document.getElementById('telecomOperatorDashSlim');
+        if (slim && typeof TelecomI18n !== 'undefined') {
+            slim.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
+            slim.setAttribute('lang', document.documentElement.getAttribute('lang') || 'ar');
+            if (TelecomI18n.applyDomI18n) {
+                TelecomI18n.applyDomI18n(slim);
+            }
+        }
+        const title = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t('defaultDashboard.pageTitle') : null;
+        if (title) {
+            document.title = title;
+        }
+        updateSubtitle(getPersona());
     }
 
     async function mount(containerEl) {
@@ -297,8 +322,11 @@ const SyrBentoCockpit = (function () {
         containerEl.setAttribute('data-persona', persona);
         document.body.setAttribute('data-persona', persona);
 
+        applyPageChromeI18n();
         containerEl.innerHTML =
-            '<p class="text-muted col-12"><span class="spinner-border spinner-border-sm"></span> جاري تحميل اللوحة…</p>';
+            '<p class="text-muted col-12"><span class="spinner-border spinner-border-sm"></span> ' +
+            escapeHtml(bdT('loadingPanel')) +
+            '</p>';
 
         try {
             const widgets = await fetchWidgets();
@@ -315,8 +343,8 @@ const SyrBentoCockpit = (function () {
                 e?.code === 'ERR_CANCELED' ||
                 (e?.message && /canceled|aborted/i.test(e.message));
             containerEl.innerHTML = canceled
-                ? '<p class="text-muted col-12">تم إلغاء التحميل — جاري التحديث…</p>'
-                : '<p class="text-danger col-12">تعذّر تحميل لوحة القيادة. تحقق من SQL Server ثم أعد تحميل الصفحة.</p>';
+                ? '<p class="text-muted col-12">' + escapeHtml(bdT('loadCanceled')) + '</p>'
+                : '<p class="text-danger col-12">' + escapeHtml(bdT('loadError')) + '</p>';
         }
     }
 
@@ -337,14 +365,16 @@ const SyrBentoCockpit = (function () {
         const fluid = slimRoot.querySelector('.syriatel-dash-slim') || slimRoot.querySelector('.container-fluid') || slimRoot;
         fluid.innerHTML = `
             <header class="mb-4">
-                <h1 class="h4 fw-semibold text-syriatel-red mb-1">سيريتل — لوحة القيادة</h1>
-                <p class="text-muted small mb-0" id="syrBentoSubtitle">جاري التحميل…</p>
+                <h1 class="h4 fw-semibold text-syriatel-red mb-1" data-telecom-i18n="defaultDashboard.title">Syriatel — Executive dashboard</h1>
+                <p class="text-muted small mb-0" id="syrBentoSubtitle" data-telecom-i18n="defaultDashboard.loading">Loading…</p>
             </header>
             <div id="syrBentoCockpit" class="syr-bento-grid" data-persona=""></div>`;
+        applyPageChromeI18n();
         return document.getElementById('syrBentoCockpit');
     }
 
     document.documentElement.addEventListener('syriatel-locale-changed', function () {
+        applyPageChromeI18n();
         const host = document.getElementById('syrBentoCockpit');
         if (host && mountedWidgets.length) {
             renderGrid(host, mountedWidgets);

@@ -1,6 +1,6 @@
 @page "/Telecom/IntegrationMonitor"
 @{
-    ViewData["Title"] = "سجل ربط الشبكة والتكاملات";
+    ViewData["Title"] = "Core network integration log";
 }
 
 <div id="app" v-cloak class="telecom-premium-page container-fluid">
@@ -24,10 +24,10 @@
     <div class="telecom-bento-card mb-3">
         <div class="card-body py-3">
             <p class="text-muted small mb-0">
-                مراقبة طلبات واستجابات تكاملات HLR و CBS وبوابة الرسائل — سطر بسطر.
-                <a href="/Administration/GlobalSettings" class="ms-1">الإعدادات العامة</a>
+                <span data-telecom-i18n="integrationMonitor.intro">Monitor HLR, CBS, and SMS gateway integration requests — line by line.</span>
+                <a href="/Administration/GlobalSettings" class="ms-1" data-telecom-i18n="integrationMonitor.settingsLink">Global settings</a>
                 ·
-                <a href="/Administration">الحوكمة والنظام</a>
+                <a href="/Administration" data-telecom-i18n="integrationMonitor.governanceLink">Governance & system</a>
             </p>
         </div>
     </div>
@@ -40,25 +40,25 @@
                     <input id="Msisdn" class="form-control" v-model="state.filters.msisdn" placeholder="09…" dir="ltr" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="System">النظام</label>
+                    <label class="form-label" for="System">{{ ti('system') }}</label>
                     <select id="System" class="form-select" v-model="state.filters.integrationSystem">
-                        <option value="">— الكل —</option>
+                        <option value="">{{ ti('allSystems') }}</option>
                         <option value="Huawei_HLR">Huawei HLR</option>
                         <option value="Huawei_CBS">Huawei CBS</option>
                         <option value="SmsGateway">SMS Gateway</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label" for="FromDate">من تاريخ</label>
+                    <label class="form-label" for="FromDate">{{ ti('fromDate') }}</label>
                     <input id="FromDate" type="date" class="form-control" v-model="state.filters.fromDate" />
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label" for="ToDate">إلى تاريخ</label>
+                    <label class="form-label" for="ToDate">{{ ti('toDate') }}</label>
                     <input id="ToDate" type="date" class="form-control" v-model="state.filters.toDate" />
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-telecom-primary w-100" v-on:click="handler.search">
-                        <i class="bi bi-search me-1"></i> بحث
+                        <i class="bi bi-search me-1"></i> {{ ti('search') }}
                     </button>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                 <div ref="mainGridRef"></div>
             </div>
             <p class="small text-muted px-3 pb-3 mb-0" v-if="state.totalCount > 0">
-                إجمالي السجلات: <strong v-text="state.totalCount"></strong>
+                {{ ti('totalRecords') }}: <strong v-text="state.totalCount"></strong>
             </p>
         </div>
     </div>

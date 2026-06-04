@@ -17,7 +17,7 @@ public static class FrontEndConfiguration
         services.Configure<RequestLocalizationOptions>(options =>
         {
             var cultures = new[] { "ar", "en" }.Select(static c => new CultureInfo(c)).ToList();
-            options.DefaultRequestCulture = new RequestCulture("ar");
+            options.DefaultRequestCulture = new RequestCulture("en");
             options.SupportedCultures = cultures;
             options.SupportedUICultures = cultures;
             options.RequestCultureProviders =

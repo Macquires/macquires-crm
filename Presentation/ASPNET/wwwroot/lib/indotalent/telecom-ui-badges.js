@@ -55,14 +55,24 @@
         return 'duotone-info';
     };
 
+    const badgeT = (key, fallback) => {
+        try {
+            const hit = global.TelecomI18n?.t?.(key);
+            return hit || fallback;
+        } catch {
+            return fallback;
+        }
+    };
+
     const ticketStatusLabel = (status) => {
-        const labels = {
+        const n = Number(status);
+        const fallbacks = {
             0: 'مفتوحة',
             1: 'قيد المعالجة',
             2: 'تم الحل',
             3: 'مصعّدة',
         };
-        return labels[Number(status)] || '—';
+        return badgeT(`backOffice.dashboard.enums.status.${n}`, fallbacks[n]) || '—';
     };
 
     const ticketChannelClass = (channel) => {
@@ -87,21 +97,42 @@
     const ticketCategoryLabel = (category) => {
         const c = String(category ?? '').toLowerCase();
         const n = Number(category);
-        if (c === 'simswap' || n === 1) return '🌐 تبديل شريحة';
-        if (c === 'packagemigration' || n === 2) return '📦 ترحيل باقة';
-        if (c === 'ownershiptransfer' || n === 3) return '👤 نقل ملكية';
-        if (c === 'lineactivation' || n === 4) return '📡 تفعيل خط';
-        if (c === 'vasactivation' || n === 5) return '➕ خدمة VAS';
-        if (c === 'complaint' || n === 0) return '📞 شكوى';
-        return '—';
+        const keyByCat = {
+            simswap: 'simswap',
+            packagemigration: 'packagemigration',
+            ownershiptransfer: 'ownershiptransfer',
+            lineactivation: 'lineactivation',
+            vasactivation: 'vasactivation',
+            complaint: 'complaint',
+        };
+        let key = keyByCat[c];
+        if (!key && n === 1) key = 'simswap';
+        if (!key && n === 2) key = 'packagemigration';
+        if (!key && n === 3) key = 'ownershiptransfer';
+        if (!key && n === 4) key = 'lineactivation';
+        if (!key && n === 5) key = 'vasactivation';
+        if (!key && n === 0) key = 'complaint';
+        if (!key) return '—';
+        const fallbacks = {
+            simswap: 'تبديل شريحة',
+            packagemigration: 'ترحيل باقة',
+            ownershiptransfer: 'نقل ملكية',
+            lineactivation: 'تفعيل خط',
+            vasactivation: 'خدمة VAS',
+            complaint: 'شكوى',
+        };
+        return badgeT(`backOffice.dashboard.badges.category.${key}`, fallbacks[key]);
     };
 
     const ticketChannelLabel = (channel) => {
         const c = String(channel || '');
-        if (c === 'Customer_Care_Voice_AI') return 'ذكاء اصطناعي — كول سنتر';
-        if (c === 'Self_Care_App') return 'تطبيق العميل';
-        if (c === 'Showroom_Agent') return 'معرض';
-        if (c === 'CallCenter_Agent') return 'كول سنتر';
+        const fallbacks = {
+            Customer_Care_Voice_AI: 'ذكاء اصطناعي — كول سنتر',
+            Self_Care_App: 'تطبيق العميل',
+            Showroom_Agent: 'معرض',
+            CallCenter_Agent: 'كول سنتر',
+        };
+        if (fallbacks[c]) return badgeT(`backOffice.dashboard.badges.channel.${c}`, fallbacks[c]);
         return c || '—';
     };
 
@@ -124,6 +155,21 @@
         return `<span class="telecom-duotone-badge ${toneClass}">${pulse}${escapeHtml(label)}</span>`;
     };
 
+    const renderIcon = (biIcon, label, toneClass, showPulse = true) => {
+        const pulse =
+            showPulse && withPulse(toneClass)
+                ? '<span class="pulse-dot" aria-hidden="true"></span>'
+                : '';
+        const icon = biIcon ? `<i class="bi ${biIcon}" aria-hidden="true"></i>` : '';
+        return `<span class="telecom-duotone-badge ${toneClass}">${pulse}${icon}<span class="telecom-duotone-badge__label">${escapeHtml(label)}</span></span>`;
+    };
+
+    const isCorporateSubscriberKind = (kind) => {
+        const raw = kind;
+        const s = String(raw ?? '').trim().toLowerCase();
+        return s === 'corporate' || raw === 1 || raw === '1';
+    };
+
     global.TelecomUiBadges = {
         poolStatus(status, label) {
             return render(label || status, poolStatusClass(status));
@@ -136,7 +182,9 @@
         },
         resultSuccess(isSuccess) {
             return render(
-                isSuccess ? 'نجاح' : 'فشل',
+                isSuccess
+                    ? badgeT('backOffice.dashboard.badges.resultSuccess', 'نجاح')
+                    : badgeT('backOffice.dashboard.badges.resultFailed', 'فشل'),
                 isSuccess ? 'duotone-success' : 'duotone-danger'
             );
         },
@@ -170,6 +218,18 @@
             const label = labelOverride || ticketStatusLabel(status);
             const pulse = Number(status) === 0;
             return render(label, cls, pulse);
+        },
+        /** B2C / B2B subscriber kind (Customer list Type column). */
+        subscriberKind(kind, labelOverride) {
+            const isCorporate = isCorporateSubscriberKind(kind);
+            const label =
+                labelOverride ??
+                (isCorporate
+                    ? badgeT('customerList.onboarding.corporate', 'Corporate')
+                    : badgeT('customerList.onboarding.individual', 'Individual'));
+            return isCorporate
+                ? renderIcon('bi-building', label, 'duotone-warning', true)
+                : renderIcon('bi-person-fill', label, 'duotone-info', false);
         },
     };
 })(typeof window !== 'undefined' ? window : globalThis);

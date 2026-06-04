@@ -1,14 +1,16 @@
-const ACTION_LABELS = {
-    SubscriberSearched: 'بحث عن مشترك',
-    CustomerViewed: 'اطلاع على ملف مشترك',
-    NetworkCommandExecuted: 'أمر شبكة (HLR)',
-    TicketResolved: 'إغلاق تذكرة',
-    BulkImportStarted: 'بدء استيراد',
-    BulkImportExecuted: 'تنفيذ استيراد',
-    TelecomOperationConfirmed: 'تأكيد عملية BSS',
-};
+const auditT = (key) => window.TelecomI18n?.t?.(`backOffice.auditList.actions.${key}`) || key;
 
-const ACTION_OPTIONS = Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label }));
+const ACTION_KEYS = [
+    'SubscriberSearched',
+    'CustomerViewed',
+    'NetworkCommandExecuted',
+    'TicketResolved',
+    'BulkImportStarted',
+    'BulkImportExecuted',
+    'TelecomOperationConfirmed',
+];
+
+const actionOptions = () => ACTION_KEYS.map((value) => ({ value, label: auditT(value) }));
 
 const escapeHtml = (s) =>
     String(s ?? '')
@@ -19,11 +21,14 @@ const escapeHtml = (s) =>
 const formatDt = (utc) => {
     if (!utc) return '';
     try {
-        return new Date(utc).toLocaleString('ar-SY', { dateStyle: 'short', timeStyle: 'medium' });
+        const loc = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en-US' : 'ar-SY';
+        return new Date(utc).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'medium' });
     } catch {
         return String(utc);
     }
 };
+
+const gridT = (key) => window.TelecomI18n?.t?.(`backOffice.auditList.grid.${key}`) || key;
 
 const plainRows = (rows) => (Array.isArray(rows) ? rows.map((r) => ({ ...r })) : []);
 
@@ -75,7 +80,7 @@ const BackOfficeAuditListApp = {
             summary: { logsToday: 0, networkCommandsToday: 0, totalMatching: 0 },
             rows: [],
             totalCount: 0,
-            actionOptions: ACTION_OPTIONS,
+            actionOptions: actionOptions(),
         });
 
         const mainGridRef = Vue.ref(null);
@@ -112,7 +117,7 @@ const BackOfficeAuditListApp = {
                 ipAddress: r.ipAddress ?? r.IpAddress,
                 actorDisplayName: r.actorDisplayName ?? r.ActorDisplayName,
                 targetDisplayName: r.targetDisplayName ?? r.TargetDisplayName,
-                actionLabel: ACTION_LABELS[actionType] || actionType,
+                actionLabel: auditT(actionType) !== actionType ? auditT(actionType) : actionType,
                 occurredDisplay: formatDt(occurredAtUtc),
             };
         };
@@ -143,7 +148,9 @@ const BackOfficeAuditListApp = {
         const openDetail = (row) => {
             if (!row) return;
             if (window.AuditDetailModal) {
-                AuditDetailModal.show(row, { actionLabels: ACTION_LABELS });
+                AuditDetailModal.show(row, {
+                    actionLabels: Object.fromEntries(ACTION_KEYS.map((k) => [k, auditT(k)])),
+                });
                 return;
             }
             const titleEl = document.getElementById('auditDrawerTitle');
@@ -199,14 +206,14 @@ const BackOfficeAuditListApp = {
                 },
                 columns: [
                     { field: 'id', isPrimaryKey: true, visible: false },
-                    { field: 'occurredDisplay', headerText: 'الوقت', width: 165 },
+                    { field: 'occurredDisplay', headerText: gridT('time'), width: 165 },
                     {
                         field: 'actionLabel',
-                        headerText: 'العملية',
+                        headerText: gridT('action'),
                         width: 175,
                         allowFiltering: false,
                     },
-                    { field: 'summaryAr', headerText: 'الملخص', width: 300, minWidth: 140 },
+                    { field: 'summaryAr', headerText: gridT('summary'), width: 300, minWidth: 140 },
                     { field: 'ipAddress', headerText: 'IP', width: 120 },
                 ],
                 recordDoubleClick: (args) => openDetail(args?.rowData),
@@ -227,6 +234,14 @@ const BackOfficeAuditListApp = {
 
         Vue.onMounted(async () => {
             try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                window.TelecomI18n?.applyDom?.();
+                const pageTitle = window.TelecomI18n?.t?.('backOffice.auditList.title');
+                if (pageTitle) document.title = pageTitle;
+                document.documentElement.addEventListener('syriatel-locale-changed', () => {
+                    state.actionOptions = actionOptions();
+                    window.TelecomI18n?.applyDom?.();
+                });
                 await SecurityManager.authorizePage(['TelecomBackOffice', 'TelecomAdmin', 'TelecomManagement']);
                 await SecurityManager.validateToken();
                 await methods.load();

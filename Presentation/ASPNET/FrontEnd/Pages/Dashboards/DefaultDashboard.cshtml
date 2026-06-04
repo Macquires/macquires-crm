@@ -1,24 +1,24 @@
 @page
 @{
-    ViewData["Title"] = "لوحة التحكم — سوريا تيليكوم";
+    ViewData["Title"] = "Dashboard";
 }
 
 <div class="form-card syr-operator-page telecom-premium-page" id="formcard">
-    <div id="telecomOperatorDashSlim" dir="rtl" lang="ar">
+    <div id="telecomOperatorDashSlim">
         <div class="container-fluid py-3 px-3 px-lg-4 syriatel-dash-slim dash-unified-layout">
             <header class="mb-3">
-                <h1 class="h4 fw-semibold text-syriatel-red mb-1">سيريتل — لوحة القيادة</h1>
-                <p class="text-muted small mb-0" id="syrBentoSubtitle">جاري التحميل…</p>
+                <h1 class="h4 fw-semibold text-syriatel-red mb-1" data-telecom-i18n="defaultDashboard.title">Syriatel — Executive dashboard</h1>
+                <p class="text-muted small mb-0" id="syrBentoSubtitle" data-telecom-i18n="defaultDashboard.loading">Loading…</p>
             </header>
-            <section class="dash-unified-cards" aria-label="مؤشرات التشغيل">
+            <section class="dash-unified-cards" data-telecom-i18n-title="defaultDashboard.kpisAria" aria-label="Operational KPIs">
                 <div id="syrBentoCockpit" class="syr-bento-grid syr-bento-single-row" data-persona=""></div>
             </section>
-            <section id="mis-reports" class="dash-unified-mis d-none mt-4" aria-label="تقارير MIS">
+            <section id="mis-reports" class="dash-unified-mis d-none mt-4" data-telecom-i18n-title="defaultDashboard.misAria" aria-label="MIS reports">
                 <div id="misReportsApp" v-cloak class="strategic-exec-root">
                     @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml")
                 </div>
             </section>
-            <section id="strategic-analytics" class="dash-unified-strategic d-none mt-4" aria-label="التحليلات الاستراتيجية">
+            <section id="strategic-analytics" class="dash-unified-strategic d-none mt-4" data-telecom-i18n-title="defaultDashboard.strategicAria" aria-label="Strategic analytics">
                 <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root">
                     @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
                 </div>

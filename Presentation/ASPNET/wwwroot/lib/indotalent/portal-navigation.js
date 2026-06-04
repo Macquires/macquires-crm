@@ -2,7 +2,7 @@
  * Syr-Tel custom sidebar — server-filtered menu, premium accordions.
  */
 const PortalNavigation = (function () {
-    const PERSONA_LABELS = {
+    const PERSONA_LABELS_AR = {
         Executive: 'الإدارة العليا',
         CallCenter: 'مركز الاتصال',
         Retail: 'المعرض',
@@ -10,8 +10,115 @@ const PortalNavigation = (function () {
         SysAdmin: 'الإدارة التقنية',
     };
 
+    const PERSONA_LABELS_EN = {
+        Executive: 'Executive',
+        CallCenter: 'Call center',
+        Retail: 'Retail showroom',
+        BackOffice: 'Back office',
+        SysAdmin: 'Technical administration',
+    };
+
+    function personaLabels() {
+        return getLang() === 'en' ? PERSONA_LABELS_EN : PERSONA_LABELS_AR;
+    }
+
     const PREVIEW_KEY = 'syrPreviewPersona';
     const EXPANDED_KEY = 'syrNavExpandedModules';
+    const SIDEBAR_SCROLL_KEY = 'syrSidebarScrollPosition';
+    const LEGACY_SIDEBAR_SCROLL_KEY = 'sidebarScrollPosition';
+
+    function getSidebarScrollEl() {
+        return document.getElementById('sidebar');
+    }
+
+    function saveSidebarScroll() {
+        const el = getSidebarScrollEl();
+        if (!el) {
+            return;
+        }
+        try {
+            sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(el.scrollTop));
+        } catch {
+            /* ignore */
+        }
+    }
+
+    function readSavedSidebarScroll() {
+        try {
+            let raw = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+            if (raw === null) {
+                raw = sessionStorage.getItem(LEGACY_SIDEBAR_SCROLL_KEY);
+            }
+            if (raw === null) {
+                return null;
+            }
+            const top = parseInt(raw, 10);
+            return Number.isFinite(top) ? top : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function restoreSidebarScroll() {
+        const el = getSidebarScrollEl();
+        const top = readSavedSidebarScroll();
+        if (!el || top === null) {
+            return;
+        }
+        el.scrollTop = top;
+    }
+
+    function scrollActiveNavIntoViewIfNeeded() {
+        const sidebar = getSidebarScrollEl();
+        const active = document.querySelector('#syrPortalNav .syr-nav-link.active');
+        if (!sidebar || !active) {
+            return;
+        }
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const linkRect = active.getBoundingClientRect();
+        if (linkRect.top >= sidebarRect.top && linkRect.bottom <= sidebarRect.bottom) {
+            return;
+        }
+        active.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        saveSidebarScroll();
+    }
+
+    function afterNavRenderScrollSync() {
+        function syncOnce() {
+            restoreSidebarScroll();
+            scrollActiveNavIntoViewIfNeeded();
+            saveSidebarScroll();
+        }
+        syncOnce();
+        requestAnimationFrame(syncOnce);
+        // Accordion expand uses ~280ms CSS transition; re-sync when layout height settles.
+        window.setTimeout(syncOnce, 320);
+    }
+
+    function bindSidebarScrollPersistence() {
+        const el = getSidebarScrollEl();
+        if (!el || el.dataset.syrScrollBound === '1') {
+            return;
+        }
+        el.dataset.syrScrollBound = '1';
+        el.addEventListener('scroll', saveSidebarScroll, { passive: true });
+        window.addEventListener('beforeunload', saveSidebarScroll);
+        const navHost = document.getElementById('syrPortalNav');
+        const quickHost = document.getElementById('syrQuickActions');
+        const onNavClick = function (e) {
+            const link = e.target.closest('a.syr-nav-link, a.syr-quick-action');
+            if (!link || !link.getAttribute('href') || link.getAttribute('href') === '#') {
+                return;
+            }
+            saveSidebarScroll();
+        };
+        if (navHost) {
+            navHost.addEventListener('click', onNavClick);
+        }
+        if (quickHost) {
+            quickHost.addEventListener('click', onNavClick);
+        }
+    }
 
     function normalizePath(url) {
         if (!url || url === '#') return '';
@@ -130,18 +237,19 @@ const PortalNavigation = (function () {
     }
 
     function getPermissionPersonaLabel() {
+        const labels = personaLabels();
         const perms = StorageManager.getPermissions?.() || [];
         if (!perms.length) {
             return '';
         }
         if (StorageManager.hasAnyPermission(perms, ['admin.users.manage', 'admin.settings.manage', 'admin.roles.manage'])) {
-            return PERSONA_LABELS.SysAdmin;
+            return labels.SysAdmin;
         }
         if (StorageManager.hasAnyPermission(perms, ['bulk.import.upload', 'telecom.asset.manage'])) {
-            return PERSONA_LABELS.BackOffice;
+            return labels.BackOffice;
         }
         if (StorageManager.hasAnyPermission(perms, ['telecom.reports.mis'])) {
-            return PERSONA_LABELS.Executive;
+            return labels.Executive;
         }
         if (
             StorageManager.hasAnyPermission(perms, [
@@ -150,10 +258,10 @@ const PortalNavigation = (function () {
                 'telecom.line.simswap_request',
             ])
         ) {
-            return PERSONA_LABELS.Retail;
+            return labels.Retail;
         }
         if (StorageManager.hasAnyPermission(perms, ['customer.view'])) {
-            return PERSONA_LABELS.CallCenter;
+            return labels.CallCenter;
         }
         return '';
     }
@@ -259,9 +367,10 @@ const PortalNavigation = (function () {
             (StorageManager.getUserRoles() || []).some(
                 (r) => r === 'TelecomAdmin' || r === 'TelecomManagement'
             );
+        const labels = personaLabels();
         const personaLabel = previewActive
-            ? PERSONA_LABELS[persona] || persona || ''
-            : getPermissionPersonaLabel() || PERSONA_LABELS[persona] || persona || '';
+            ? labels[persona] || persona || ''
+            : getPermissionPersonaLabel() || labels[persona] || persona || '';
 
         const chipEl = document.getElementById('syrPersonaChip');
         if (chipEl) {
@@ -299,6 +408,8 @@ const PortalNavigation = (function () {
             `<p class="small text-white-50 px-3 py-2">${getLang() === 'en' ? 'No menu items' : 'لا عناصر في القائمة'}</p>`;
 
         bindAccordionHandlers(container, containerId, options);
+        bindSidebarScrollPersistence();
+        afterNavRenderScrollSync();
     }
 
     async function reloadMenuForPreview(previewPersona) {
@@ -444,6 +555,7 @@ const PortalNavigation = (function () {
     }
 
     async function init() {
+        bindSidebarScrollPersistence();
         await syncOperatorSession(false);
         const savedPreview = sessionStorage.getItem(PREVIEW_KEY);
         const roles = StorageManager.getUserRoles() || [];
@@ -480,7 +592,8 @@ const PortalNavigation = (function () {
         syncOperatorSession,
         enforcePermissionLanding,
         getEffectivePersona,
-        PERSONA_LABELS,
+        PERSONA_LABELS: personaLabels,
+        personaLabels,
         PREVIEW_KEY,
     };
 })();

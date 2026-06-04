@@ -48,7 +48,7 @@ public static partial class NavigationTreeStructure
             "SortOrder": 2,
             "Children": [
                 { "URL": "/Telecom/TelecomHub", "Name": "مركز عمليات الشبكة", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-broadcast", "SortOrder": 1, "IsQuickAction": true, "BadgeKey": "pendingOperations" },
-                { "URL": "/Telecom/BackOfficeDashboard", "Name": "قمرة العمليات الخلفية", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-speedometer2", "SortOrder": 2, "IsQuickAction": true, "BadgeKey": "overdueTickets" },
+                { "URL": "/Telecom/BackOfficeDashboard", "Name": "مركز العمليات الخلفية", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-speedometer2", "SortOrder": 2, "IsQuickAction": true, "BadgeKey": "overdueTickets" },
                 { "URL": "/Telecom/TechnicalTicketList", "Name": "إدارة التذاكر الفنية", "IsModule": false, "Personas": ["CallCenter","BackOffice","SysAdmin"], "Icon": "bi-ticket-detailed", "SortOrder": 3, "BadgeKey": "openTechnicalTickets" },
                 { "URL": "/Telecom/BulkImportMonitor", "Name": "مراقبة الاستيراد الضخم", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-cloud-upload", "SortOrder": 4, "BadgeKey": "bulkImportActive" },
                 { "URL": "/Telecom/MsisdnInventory", "Name": "مستودع الأرقام والشرائح", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-boxes", "SortOrder": 5 },
@@ -64,7 +64,7 @@ public static partial class NavigationTreeStructure
             "SortOrder": 3,
             "Children": [
                 { "URL": "/Customers/CustomerList", "Name": "سجل المشتركين", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-person-lines-fill", "SortOrder": 1, "IsQuickAction": true },
-                { "URL": "/Telecom/TelecomHub?entry=subscriber", "Name": "سجل الخطوط والاشتراكات", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-search", "SortOrder": 2, "IsQuickAction": true },
+                { "URL": "/Telecom/UnifiedSearch", "Name": "سجل الخطوط والاشتراكات", "IsModule": false, "Personas": ["Executive","CallCenter","Retail","BackOffice","SysAdmin"], "Icon": "bi-search", "SortOrder": 2, "IsQuickAction": true },
                 { "URL": "/CustomerGroups/CustomerGroupList", "Name": "المجموعات والحسابات", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-diagram-3", "SortOrder": 3 },
                 { "URL": "/CustomerCategories/CustomerCategoryList", "Name": "شرائح وتصنيفات العملاء", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-tags", "SortOrder": 4 },
                 { "URL": "/CustomerContacts/CustomerContactList", "Name": "جهات اتصال المشتركين", "IsModule": false, "Personas": ["CallCenter","BackOffice","SysAdmin"], "Icon": "bi-telephone", "SortOrder": 5 }

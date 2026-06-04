@@ -1,6 +1,6 @@
 @page "/Telecom/BackOfficeDashboard"
 @{
-    ViewData["Title"] = "قمرة العمليات الخلفية";
+    ViewData["Title"] = "Back-office operations center";
 }
 <style>
     #bo-dashboard-page { min-height: 70vh; background: var(--sys-bg); }
@@ -43,7 +43,7 @@
         <div>
             <h1 class="h4 mb-1 fw-bold text-danger">
                 <i class="bi bi-speedometer2 me-2"></i>
-                <span data-telecom-i18n="backOffice.title">قمرة العمليات الخلفية</span>
+                <span data-telecom-i18n="backOffice.title">مركز العمليات الخلفية</span>
             </h1>
             <p class="text-muted small mb-1" data-telecom-i18n="backOffice.subtitle">تذاكر الدعم، الكتالوج، والشبكة</p>
             <p class="text-muted small mb-0">
@@ -65,7 +65,7 @@
                 <i class="bi bi-journal-text me-1"></i>
                 <span data-telecom-i18n="backOffice.audit">سجل عملياتي</span>
             </a>
-            <button type="button" class="btn btn-danger btn-sm" id="boReloadBtn" title="تحديث">
+            <button type="button" class="btn btn-danger btn-sm" id="boReloadBtn" data-telecom-i18n-title="backOffice.dashboard.refresh" title="تحديث">
                 <i class="bi bi-arrow-clockwise me-1"></i>
                 <span data-telecom-i18n="backOffice.dashboard.refresh">تحديث</span>
             </button>
@@ -126,7 +126,7 @@
                         <div class="rounded-3 bg-light p-3"><i class="bi bi-cloud-upload text-danger fs-3"></i></div>
                         <div>
                             <div class="telecom-bento-kpi-label" data-telecom-i18n="backOffice.bentoBulk">مراقبة الاستيراد</div>
-                            <div class="small text-muted mt-1">MSISDN · عملاء · باقات</div>
+                            <div class="small text-muted mt-1" data-telecom-i18n="backOffice.dashboard.panels.bulkImportHint">MSISDN · عملاء · باقات</div>
                         </div>
                     </div>
                 </div>
@@ -136,31 +136,31 @@
 
     <div class="telecom-bento-card mb-4" id="boPaymentServicesPanel">
         <div class="card-header bg-white border-0 py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-cash-coin me-2"></i>الأداء المالي (Payment Services)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-cash-coin me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.paymentServices">الأداء المالي (Payment Services)</span></h2>
             <span class="small text-muted" id="boPaymentKpiRefresh">—</span>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small mb-3" id="boPaymentKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">مشحون اليوم</span><strong id="payKpiAmount">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">مكتمل</span><strong id="payKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فشل</span><strong id="payKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="payKpiFailRate">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤2د</span><strong id="payKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">معكوس</span><strong id="payKpiReversed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.rechargedToday">مشحون اليوم</span><strong id="payKpiAmount">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">مكتمل</span><strong id="payKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فشل</span><strong id="payKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="payKpiFailRate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla2m">SLA ≤2د</span><strong id="payKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.reversed">معكوس</span><strong id="payKpiReversed">—</strong></div>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>PAY-</th>
-                            <th>الخط</th>
-                            <th>المبلغ</th>
-                            <th>الحالة</th>
+                            <th data-telecom-i18n="backOffice.dashboard.kpi.line">الخط</th>
+                            <th data-telecom-i18n="backOffice.dashboard.kpi.amount">المبلغ</th>
+                            <th data-telecom-i18n="backOffice.dashboard.kpi.status">الحالة</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="boPaymentTxBody">
-                        <tr><td colspan="5" class="text-muted text-center py-3">جاري التحميل…</td></tr>
+                        <tr><td colspan="5" class="text-muted text-center py-3" data-telecom-i18n="backOffice.dashboard.kpi.loadingRow">جاري التحميل…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -169,216 +169,216 @@
 
     <div class="telecom-bento-card mb-4" id="boChangeGsmKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-shuffle me-2"></i>أداء تحويل تقنيات الخطوط (CGT)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-shuffle me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.changeGsm">أداء تحويل تقنيات الخطوط (CGT)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boChangeGsmKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="cgtKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="cgtKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="cgtKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="cgtKpiFailRate">—</strong></div>
-                <div class="col-md-4"><span class="text-muted d-block">أكثر الأسباب</span><strong id="cgtKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="cgtKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="cgtKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="cgtKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="cgtKpiFailRate">—</strong></div>
+                <div class="col-md-4"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topReasons">أكثر الأسباب</span><strong id="cgtKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boChangeNumberKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-telephone-forward me-2"></i>تغيير رقم الخط (CNR)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-telephone-forward me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.changeNumber">تغيير رقم الخط (CNR)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boChangeNumberKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="cnrKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="cnrKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="cnrKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="cnrKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">مميز اليوم</span><strong id="cnrKpiPremium">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">رسوم مميز</span><strong id="cnrKpiPremiumFees">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤20د</span><strong id="cnrKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="cnrKpiFailRate">—</strong></div>
-                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب التغيير</span><strong id="cnrKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="cnrKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="cnrKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="cnrKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="cnrKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.premiumToday">مميز اليوم</span><strong id="cnrKpiPremium">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.premiumFees">رسوم مميز</span><strong id="cnrKpiPremiumFees">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla20m">SLA ≤20د</span><strong id="cnrKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="cnrKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topChangeReasons">أكثر أسباب التغيير</span><strong id="cnrKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boOfferSubscriptionKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-box-seam me-2"></i>تحليلات العروض والاشتراكات (MGR / VAS)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-box-seam me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.offerSubscription">تحليلات العروض والاشتراكات (MGR / VAS)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boOfferSubscriptionKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">ترحيل اليوم</span><strong id="osKpiMgrTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">MGR منجز</span><strong id="osKpiMgrCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">MGR فاشل</span><strong id="osKpiMgrFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">VAS تفعيل</span><strong id="osKpiVasActivate">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">VAS إلغاء</span><strong id="osKpiVasDeactivate">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="osKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل MGR</span><strong id="osKpiFailRate">—</strong></div>
-                <div class="col-md-10"><span class="text-muted d-block">أكثر الباقات ترحيلاً</span><strong id="osKpiTopOffers" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.mgrToday">ترحيل اليوم</span><strong id="osKpiMgrTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.mgrCompleted">MGR منجز</span><strong id="osKpiMgrCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.mgrFailed">MGR فاشل</span><strong id="osKpiMgrFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.vasActivate">VAS تفعيل</span><strong id="osKpiVasActivate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.vasDeactivate">VAS إلغاء</span><strong id="osKpiVasDeactivate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla30m">SLA ≤30د</span><strong id="osKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.mgrFailRate">نسبة الفشل MGR</span><strong id="osKpiFailRate">—</strong></div>
+                <div class="col-md-10"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topMigratedOffers">أكثر الباقات ترحيلاً</span><strong id="osKpiTopOffers" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boTerminationKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-phone-vibrate me-2"></i>إنهاء الخط (TRM)</h2>
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-phone-vibrate me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.termination">إنهاء الخط (TRM)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boTerminationKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="trmKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="trmKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="trmKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="trmKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">طوعي</span><strong id="trmKpiVoluntary">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فواتير نهائية</span><strong id="trmKpiFinalBills">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="trmKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="trmKpiFailRate">—</strong></div>
-                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب الإنهاء</span><strong id="trmKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="trmKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="trmKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="trmKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="trmKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.voluntary">طوعي</span><strong id="trmKpiVoluntary">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.finalBills">فواتير نهائية</span><strong id="trmKpiFinalBills">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla30m">SLA ≤30د</span><strong id="trmKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="trmKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topTerminationReasons">أكثر أسباب الإنهاء</span><strong id="trmKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boSuspensionKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-slash-circle me-2"></i>حظر مؤقت (SUS)</h2>
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-slash-circle me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.suspension">حظر مؤقت (SUS)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="susKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="susKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="susKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="susKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">احتيال</span><strong id="susKpiFraud">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">إعادة تلقائية</span><strong id="susKpiAuto">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="susKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="susKpiFailRate">—</strong></div>
-                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب الحظر</span><strong id="susKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="susKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="susKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="susKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="susKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.fraud">احتيال</span><strong id="susKpiFraud">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.autoReconnect">إعادة تلقائية</span><strong id="susKpiAuto">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla30m">SLA ≤30د</span><strong id="susKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="susKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topSuspensionReasons">أكثر أسباب الحظر</span><strong id="susKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boRefundKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-cash-coin me-2"></i>استرداد الأموال والتأمينات (RFD)</h2>
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-cash-coin me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.refund">استرداد الأموال والتأمينات (RFD)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="rfdKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="rfdKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="rfdKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="rfdKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">مبالغ مستردة</span><strong id="rfdKpiSettledAmount">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">اعتماد مزدوج</span><strong id="rfdKpiDual">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤45د</span><strong id="rfdKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="rfdKpiFailRate">—</strong></div>
-                <div class="col-md-8"><span class="text-muted d-block">أسباب الرفض</span><strong id="rfdKpiRejections" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="rfdKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="rfdKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="rfdKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="rfdKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.settledAmount">مبالغ مستردة</span><strong id="rfdKpiSettledAmount">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.dualApproval">اعتماد مزدوج</span><strong id="rfdKpiDual">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla45m">SLA ≤45د</span><strong id="rfdKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="rfdKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.rejectionReasons">أسباب الرفض</span><strong id="rfdKpiRejections" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boBadDebtKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-piggy-bank me-2"></i>تحصيل الديون المعدومة (BDR)</h2>
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-piggy-bank me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.badDebt">تحصيل الديون المعدومة (BDR)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="bdrKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="bdrKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="bdrKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="bdrKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">محصّل اليوم</span><strong id="bdrKpiCollected">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">شطب اليوم</span><strong id="bdrKpiWriteOff">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">خطط سداد</span><strong id="bdrKpiPlans">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="bdrKpiFailRate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="bdrKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="bdrKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="bdrKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="bdrKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.collectedToday">محصّل اليوم</span><strong id="bdrKpiCollected">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.writeOffToday">شطب اليوم</span><strong id="bdrKpiWriteOff">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.paymentPlans">خطط سداد</span><strong id="bdrKpiPlans">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="bdrKpiFailRate">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boDeviceSaleKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-phone me-2"></i>بيع الأجهزة (DEV)</h2>
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-phone me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.deviceSale">بيع الأجهزة (DEV)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small">
-                <div class="col-md-2"><span class="text-muted d-block">الحجم</span><strong id="devKpiVolume">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="devKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="devKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الإنجاز</span><strong id="devKpiCompletion">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">Fallout</span><strong id="devKpiFallout">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">تقسيط</span><strong id="devKpiInstallment">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نقد</span><strong id="devKpiCash">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">Overrides</span><strong id="devKpiOverrides">—</strong></div>
-                <div class="col-md-8"><span class="text-muted d-block">أسباب الرفض</span><strong id="devKpiRejections" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.volume">الحجم</span><strong id="devKpiVolume">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="devKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="devKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completionRate">نسبة الإنجاز</span><strong id="devKpiCompletion">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.falloutRate">نسبة فشل التنفيذ على الشبكة</span><strong id="devKpiFallout">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.installment">تقسيط</span><strong id="devKpiInstallment">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.cash">نقد</span><strong id="devKpiCash">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.overrides">Overrides</span><strong id="devKpiOverrides">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.rejectionReasons">أسباب الرفض</span><strong id="devKpiRejections" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boReconnectKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-reception-4 me-2"></i>إعادة تفعيل (RCN)</h2>
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-reception-4 me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.reconnect">إعادة تفعيل (RCN)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="rcnKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="rcnKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="rcnKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="rcnKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">تسوية مالية</span><strong id="rcnKpiPayment">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">تسوية احتيال</span><strong id="rcnKpiFraud">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="rcnKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="rcnKpiFailRate">—</strong></div>
-                <div class="col-md-8"><span class="text-muted d-block">أكثر أسباب إعادة التفعيل</span><strong id="rcnKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="rcnKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="rcnKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="rcnKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="rcnKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.paymentCleared">تسوية مالية</span><strong id="rcnKpiPayment">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.fraudClearance">تسوية احتيال</span><strong id="rcnKpiFraud">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla30m">SLA ≤30د</span><strong id="rcnKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="rcnKpiFailRate">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topReconnectReasons">أكثر أسباب إعادة التفعيل</span><strong id="rcnKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boSimSwapKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-sim me-2"></i>تحليلات وأداء تبديل الشرائح (SIM Swap)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-sim me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.simSwap">تحليلات وأداء تبديل الشرائح (SIM Swap)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boSimSwapKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="simKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="simKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="simKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="simKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">مفقودة/مسروقة</span><strong id="simKpiLost">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤20د</span><strong id="simKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="simKpiFailRate">—</strong></div>
-                <div class="col-md-10"><span class="text-muted d-block">أكثر أسباب التبديل</span><strong id="simKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="simKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="simKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="simKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="simKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.lostStolen">مفقودة/مسروقة</span><strong id="simKpiLost">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla20m">SLA ≤20د</span><strong id="simKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="simKpiFailRate">—</strong></div>
+                <div class="col-md-10"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topSwapReasons">أكثر أسباب التبديل</span><strong id="simKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boTakeOverKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-person-lines-fill me-2"></i>نقل الملكية (TKO)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-person-lines-fill me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.takeOver">نقل الملكية (TKO)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boTakeOverKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="tkoKpiTotal">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="tkoKpiCompleted">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="tkoKpiFailed">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="tkoKpiPending">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="tkoKpiFailRate">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤30د</span><strong id="tkoKpiSla">—</strong></div>
-                <div class="col-12"><span class="text-muted d-block">أكثر أسباب النقل</span><strong id="tkoKpiReasons" class="d-block">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.today">اليوم</span><strong id="tkoKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completed">منجز</span><strong id="tkoKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failed">فاشل</span><strong id="tkoKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.pendingBo">بانتظار BO</span><strong id="tkoKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.failRate">نسبة الفشل</span><strong id="tkoKpiFailRate">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla30m">SLA ≤30د</span><strong id="tkoKpiSla">—</strong></div>
+                <div class="col-12"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.topTransferReasons">أكثر أسباب النقل</span><strong id="tkoKpiReasons" class="d-block">—</strong></div>
             </div>
         </div>
     </div>
 
     <div class="telecom-bento-card mb-4" id="boSellingLineKpiPanel">
         <div class="card-header bg-white border-0 py-2">
-            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-phone-vibrate me-2"></i>مؤشرات تفعيل الخط (Selling Line)</h2>
+            <h2 class="h6 mb-0 fw-bold text-danger"><i class="bi bi-phone-vibrate me-2"></i><span data-telecom-i18n="backOffice.dashboard.panels.sellingLine">مؤشرات تفعيل الخط (Selling Line)</span></h2>
         </div>
         <div class="card-body py-3">
             <div class="row g-3 small" id="boSellingLineKpiBody">
-                <div class="col-md-2"><span class="text-muted d-block">الحجم</span><strong id="slKpiVolume">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">نسبة الإنجاز</span><strong id="slKpiCompletion">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">Fallout</span><strong id="slKpiFallout">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">SLA ≤5د</span><strong id="slKpiSla">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">متوسط المعالجة (د)</span><strong id="slKpiAht">—</strong></div>
-                <div class="col-md-2"><span class="text-muted d-block">استثناءات يدوية</span><strong id="slKpiOverride">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.volume">الحجم</span><strong id="slKpiVolume">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.completionRate">نسبة الإنجاز</span><strong id="slKpiCompletion">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.falloutRate">نسبة فشل التنفيذ على الشبكة</span><strong id="slKpiFallout">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla5m">SLA ≤5د</span><strong id="slKpiSla">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.avgHandlingMin">متوسط المعالجة (د)</span><strong id="slKpiAht">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.manualOverrides">استثناءات يدوية</span><strong id="slKpiOverride">—</strong></div>
             </div>
         </div>
     </div>
@@ -446,7 +446,7 @@
                     <strong id="boDrawerMsisdn" class="font-monospace" dir="ltr">—</strong>
                 </div>
                 <div class="col-6">
-                    <span class="text-muted d-block">نوع العملية</span>
+                    <span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.operationType">نوع العملية</span>
                     <span id="boDrawerCategory">—</span>
                 </div>
                 <div class="col-6">
@@ -465,23 +465,23 @@
         </div>
         <label class="form-label small fw-semibold" for="boTicketStatus" data-telecom-i18n="backOffice.dashboard.statusField">حالة التذكرة</label>
         <select id="boTicketStatus" class="form-select mb-2">
-            <option value="0">مفتوحة</option>
-            <option value="1">قيد المعالجة</option>
-            <option value="2">تم الحل</option>
-            <option value="3">مصعّدة</option>
+            <option value="0" data-telecom-i18n="backOffice.dashboard.enums.status.0">مفتوحة</option>
+            <option value="1" data-telecom-i18n="backOffice.dashboard.enums.status.1">قيد المعالجة</option>
+            <option value="2" data-telecom-i18n="backOffice.dashboard.enums.status.2">تم الحل</option>
+            <option value="3" data-telecom-i18n="backOffice.dashboard.enums.status.3">مصعّدة</option>
         </select>
         <label class="form-label small fw-semibold" for="boTicketPriority" data-telecom-i18n="backOffice.priority">الأولوية</label>
         <select id="boTicketPriority" class="form-select mb-3">
-            <option value="0">منخفض</option>
-            <option value="1">متوسط</option>
-            <option value="2">عالي</option>
-            <option value="3">حرج</option>
+            <option value="0" data-telecom-i18n="backOffice.dashboard.enums.priority.0">منخفض</option>
+            <option value="1" data-telecom-i18n="backOffice.dashboard.enums.priority.1">متوسط</option>
+            <option value="2" data-telecom-i18n="backOffice.dashboard.enums.priority.2">عالي</option>
+            <option value="3" data-telecom-i18n="backOffice.dashboard.enums.priority.3">حرج</option>
         </select>
         <label class="form-label small fw-semibold" for="boOperatorNotes">
             <span data-telecom-i18n="backOffice.dashboard.resolutionNotes">ملاحظات الحل الفنية</span>
             <span class="text-muted fw-normal" data-telecom-i18n="backOffice.dashboard.resolutionHint"> — مطلوبة عند الإغلاق</span>
         </label>
-        <textarea id="boOperatorNotes" class="form-control mb-2" rows="4" placeholder="مثال: تمت إعادة مزامنة HLR وإعادة تفعيل البيانات على CBS…"></textarea>
+        <textarea id="boOperatorNotes" class="form-control mb-2" rows="4" data-telecom-i18n-placeholder="backOffice.dashboard.resolutionPlaceholder" placeholder="مثال: تمت إعادة مزامنة HLR وإعادة تفعيل البيانات على CBS…"></textarea>
         <button class="btn btn-link btn-sm px-0 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#boPayloadCollapse">
             <i class="bi bi-code-slash me-1"></i>
             <span data-telecom-i18n="backOffice.dashboard.technicalDetails">تفاصيل تقنية (JSON)</span>
@@ -511,13 +511,13 @@
         <div id="boTier3Panel" class="collapse mb-3">
             <div class="bo-drawer-section border border-secondary border-opacity-25">
                 <label class="form-label small fw-semibold mb-1" for="boTier3Notes" data-telecom-i18n="backOffice.dashboard.tier3NotesLabel">سبب التصعيد والملاحظات الفنية (Tier-3)</label>
-                <textarea id="boTier3Notes" class="form-control" rows="3" dir="auto" placeholder="اشرح سبب التصعيد للقسم الهندسي (10 أحرف على الأقل)…"></textarea>
+                <textarea id="boTier3Notes" class="form-control" rows="3" dir="auto" data-telecom-i18n-placeholder="backOffice.dashboard.tier3Placeholder" placeholder="اشرح سبب التصعيد للقسم الهندسي (10 أحرف على الأقل)…"></textarea>
                 <div class="d-flex gap-2 mt-2">
                     <button type="button" class="btn btn-secondary btn-sm" id="boTier3Submit">
                         <i class="bi bi-send me-1"></i>
                         <span data-telecom-i18n="backOffice.dashboard.tier3Confirm">تأكيد التصعيد</span>
                     </button>
-                    <button type="button" class="btn btn-link btn-sm text-muted" id="boTier3Cancel">إلغاء</button>
+                    <button type="button" class="btn btn-link btn-sm text-muted" id="boTier3Cancel" data-telecom-i18n="backOffice.dashboard.tier3Cancel">إلغاء</button>
                 </div>
             </div>
         </div>
@@ -525,7 +525,7 @@
             <div class="bo-drawer-section border border-info border-opacity-25">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="small fw-semibold text-info" data-telecom-i18n="backOffice.dashboard.liveTelemetry">قياسات الشبكة الحية</span>
-                    <button type="button" class="btn-close btn-sm" id="boLiveStatusClose" aria-label="إغلاق"></button>
+                    <button type="button" class="btn-close btn-sm" id="boLiveStatusClose" data-telecom-i18n-title="backOffice.dashboard.closeAria" aria-label="إغلاق"></button>
                 </div>
                 <div id="boLiveStatusBody" class="small font-monospace" dir="ltr" style="text-align:left">—</div>
             </div>

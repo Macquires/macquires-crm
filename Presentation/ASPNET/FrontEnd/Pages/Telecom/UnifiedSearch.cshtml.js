@@ -1,3 +1,5 @@
+const usT = (key) => window.TelecomI18n?.t?.(`unifiedSearch.${key}`) || key;
+
 function normalizeIndicDigits(term) {
     return String(term || '').replace(/[٠-٩۰-۹]/g, (ch) => {
         const cp = ch.codePointAt(0);
@@ -44,6 +46,7 @@ const UnifiedSearchApp = {
             results: [],
             selectedCustomerId: '',
             inlineAlert: '',
+            searchPlaceholder: '',
         });
 
         let searchModal = null;
@@ -60,7 +63,7 @@ const UnifiedSearchApp = {
         const selectRow = (row) => {
             const cid = pickCustomerId(row);
             if (!cid) {
-                state.inlineAlert = 'هذا السجل غير مربوط بملف مشترك — اختر نتيجة تحتوي CustomerId.';
+                state.inlineAlert = usT('noCustomerId');
                 state.selectedCustomerId = '';
                 return;
             }
@@ -72,17 +75,17 @@ const UnifiedSearchApp = {
             state.inlineAlert = '';
             const term = (state.searchTerm || '').trim();
             if (term.length < 2) {
-                state.inlineAlert = 'أدخل معرّفاً صالحاً (حرفان على الأقل).';
+                state.inlineAlert = usT('termTooShort');
                 state.results = [];
                 return;
             }
             if (isNameOnlySearchTerm(term)) {
-                state.inlineAlert = 'البحث بالاسم غير مسموح — استخدم الرقم الوطني أو السجل التجاري أو MSISDN.';
+                state.inlineAlert = usT('nameNotAllowed');
                 state.results = [];
                 return;
             }
             if (!isValidIdentifierTerm(term)) {
-                state.inlineAlert = 'صيغة غير معتمدة — استخدم 10 أرقام (هوية/09…) أو سجلاً تجارياً.';
+                state.inlineAlert = usT('invalidFormat');
                 state.results = [];
                 return;
             }
@@ -109,7 +112,7 @@ const UnifiedSearchApp = {
                 showModal();
             } catch (e) {
                 state.results = [];
-                state.inlineAlert = e?.response?.data?.message || 'تعذّر تنفيذ البحث.';
+                state.inlineAlert = e?.response?.data?.message || usT('searchFailed');
             } finally {
                 state.searchBusy = false;
             }
@@ -130,29 +133,33 @@ const UnifiedSearchApp = {
             }
         };
 
+        const applyLocaleUi = () => {
+            state.searchPlaceholder = usT('placeholder');
+            const title = usT('pageTitle');
+            if (title) document.title = title;
+            window.TelecomI18n?.applyDom?.();
+        };
+
         Vue.onMounted(async () => {
-            try {
-                if (!StorageManager.getAccessToken?.()) {
-                    window.location.href = '/Accounts/Login';
-                    return;
-                }
-                readQueryPrefill();
-                document.getElementById('unifiedSearchInput')?.focus();
-            } catch (e) {
-                console.error('UnifiedSearch init:', e);
-            } finally {
-                if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
-            }
+            await window.TelecomI18n?.ensureLoaded?.();
+            applyLocaleUi();
+            document.documentElement.addEventListener('syriatel-locale-changed', applyLocaleUi);
+            readQueryPrefill();
+            if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
+        });
+
+        Vue.onUnmounted(() => {
+            document.documentElement.removeEventListener('syriatel-locale-changed', applyLocaleUi);
         });
 
         return {
             state,
             runSearch,
             selectRow,
-            redirectToFullProfile,
             rowKey,
-            pickCustomerId,
             displayName,
+            redirectToFullProfile,
+            usT,
         };
     },
 };

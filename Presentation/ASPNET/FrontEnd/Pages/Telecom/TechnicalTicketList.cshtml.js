@@ -1,11 +1,27 @@
-const ISSUE = { 0: 'شبكة', 1: 'فوترة', 2: 'حظر شريحة', 3: 'تفعيل' };
-const PRIORITY = { 0: 'منخفض', 1: 'متوسط', 2: 'عالي', 3: 'حرج' };
-const STATUS = { 0: 'مفتوحة', 1: 'قيد المعالجة', 2: 'تم الحل', 3: 'مصعّدة' };
+const ttT = (key, fallback) => {
+    try {
+        const raw = String(key);
+        const paths = raw.includes('.') && !raw.startsWith('technicalTickets.')
+            ? [raw, `technicalTickets.${raw}`]
+            : [`technicalTickets.${raw}`, raw];
+        for (const k of paths) {
+            const hit = window.TelecomI18n?.t?.(k);
+            if (hit) return hit;
+        }
+        return fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+const ticketEnumLabel = (group, code) => window.TelecomI18n?.t?.(`ticketEnums.${group}.${code}`) || '—';
 
 const formatDt = (utc) => {
     if (!utc) return '—';
     try {
-        return new Date(utc).toLocaleString('ar-SY', { dateStyle: 'short', timeStyle: 'short' });
+        const lang = (document.documentElement.lang || 'en').toLowerCase();
+        const loc = lang.startsWith('en') ? 'en-US' : 'ar-SY';
+        return new Date(utc).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'short' });
     } catch {
         return String(utc);
     }
@@ -75,11 +91,11 @@ const App = {
                 createdAtUtc: r.createdAtUtc ?? r.CreatedAtUtc ?? null,
                 createdDisplay: formatDt(r.createdAtUtc ?? r.CreatedAtUtc),
                 resolvedDisplay: formatDt(r.resolvedAtUtc ?? r.ResolvedAtUtc),
-                issueLabel: ISSUE[Number(r.issueType ?? r.IssueType)] ?? '—',
+                issueLabel: ticketEnumLabel('issue', Number(r.issueType ?? r.IssueType)),
                 categoryLabelHtml:
                     window.TelecomUiBadges?.ticketCategory(ticketCategory) || ticketCategory,
-                priorityLabel: PRIORITY[Number(r.priority ?? r.Priority)] ?? '—',
-                statusLabel: STATUS[Number(r.status ?? r.Status)] ?? '—',
+                priorityLabel: ticketEnumLabel('priority', Number(r.priority ?? r.Priority)),
+                statusLabel: ticketEnumLabel('status', Number(r.status ?? r.Status)),
             };
         };
 
@@ -113,9 +129,9 @@ const App = {
                     e?.response?.data?.message ||
                     e?.response?.data?.error?.message ||
                     e?.message ||
-                    'تعذر تحميل التذاكر';
+                    ttT('swal.loadFailed', 'Load failed');
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'خطأ في التحميل', text: msg });
+                    Swal.fire({ icon: 'error', title: ttT('swal.loadError', 'Error'), text: msg });
                 } else {
                     console.error('TechnicalTicketList load failed', e);
                 }
@@ -201,17 +217,17 @@ const App = {
                 columns: [
                     { field: 'id', isPrimaryKey: true, visible: false },
                     { field: 'createdAtUtc', visible: false, type: 'date', format: 'yyyy-MM-ddTHH:mm:ss' },
-                    { field: 'ticketNumber', headerText: 'رقم التذكرة', width: 120 },
-                    { field: 'customerDisplayName', headerText: 'المشترك', width: 130 },
+                    { field: 'ticketNumber', headerText: ttT('grid.ticketNumber', 'Ticket #'), width: 120 },
+                    { field: 'customerDisplayName', headerText: ttT('grid.subscriber', 'Subscriber'), width: 130 },
                     { field: 'msisdn', headerText: 'MSISDN', width: 110 },
-                    { field: 'categoryLabelHtml', headerText: 'نوع العملية', width: 130, allowFiltering: false },
-                    { field: 'statusLabel', headerText: 'الحالة', width: 120, allowFiltering: false },
-                    { field: 'priorityLabel', headerText: 'الأولوية', width: 100, allowFiltering: false },
-                    { field: 'createdByChannel', headerText: 'المصدر', width: 150, allowFiltering: false },
-                    { field: 'createdDisplay', headerText: 'تاريخ الإنشاء', width: 140 },
-                    { field: 'notes', headerText: 'الوصف', width: 220, minWidth: 120 },
-                    { field: 'resolutionNotes', headerText: 'ملاحظات الحل', width: 180 },
-                    { field: 'resolvedDisplay', headerText: 'تاريخ الإغلاق', width: 140 },
+                    { field: 'categoryLabelHtml', headerText: ttT('grid.operationType', 'Type'), width: 130, allowFiltering: false },
+                    { field: 'statusLabel', headerText: ttT('grid.status', 'Status'), width: 120, allowFiltering: false },
+                    { field: 'priorityLabel', headerText: ttT('grid.priority', 'Priority'), width: 100, allowFiltering: false },
+                    { field: 'createdByChannel', headerText: ttT('grid.source', 'Source'), width: 150, allowFiltering: false },
+                    { field: 'createdDisplay', headerText: ttT('grid.createdAt', 'Created'), width: 140 },
+                    { field: 'notes', headerText: ttT('grid.description', 'Description'), width: 220, minWidth: 120 },
+                    { field: 'resolutionNotes', headerText: ttT('grid.resolutionNotes', 'Resolution'), width: 180 },
+                    { field: 'resolvedDisplay', headerText: ttT('grid.resolvedAt', 'Closed'), width: 140 },
                 ],
             });
             grid.obj.appendTo(gridRef.value);
@@ -226,7 +242,7 @@ const App = {
                 const msisdn = (state.aiSim.msisdn || '').trim();
                 const transcript = (state.aiSim.transcript || '').trim();
                 if (!msisdn || transcript.length < 5) {
-                    Swal.fire({ icon: 'warning', title: 'أدخل الرقم ونص المكالمة (5 أحرف+)' });
+                    Swal.fire({ icon: 'warning', title: ttT('swal.aiInputRequired', '') });
                     return;
                 }
                 state.aiSim.busy = true;
@@ -240,13 +256,13 @@ const App = {
                     bindGrid();
                     Swal.fire({
                         icon: 'success',
-                        title: 'تذكرة AI في الأرشيف والطابور الحي',
+                        title: ttT('swal.aiCreated', ''),
                         html: `<p class="small mb-0">${body?.ticketNumber ?? ''}<br/>${body?.summaryAr ?? ''}</p>`,
                     });
                 } catch (e) {
                     Swal.fire({
                         icon: 'error',
-                        title: e?.response?.data?.message || 'تعذر إنشاء التذكرة',
+                        title: e?.response?.data?.message || ttT('swal.aiCreateFailed', ''),
                     });
                 } finally {
                     state.aiSim.busy = false;
@@ -258,7 +274,7 @@ const App = {
                 const newPriority = Number(document.getElementById('ttTicketPriority')?.value ?? 1);
                 const notes = document.getElementById('ttOperatorNotes')?.value?.trim() || '';
                 if (newStatus === 2 && notes.length < 5) {
-                    Swal.fire({ icon: 'warning', title: 'أدخل ملاحظات الحل عند الإغلاق' });
+                    Swal.fire({ icon: 'warning', title: ttT('swal.resolutionRequired', '') });
                     return;
                 }
                 try {
@@ -271,14 +287,71 @@ const App = {
                     statusDrawer?.hide();
                     await load();
                     bindGrid();
-                    Swal.fire({ icon: 'success', title: 'تم حفظ الحالة', timer: 2000, showConfirmButton: false });
+                    Swal.fire({ icon: 'success', title: ttT('swal.saved', ''), timer: 2000, showConfirmButton: false });
                 } catch (e) {
-                    Swal.fire({ icon: 'error', title: e?.response?.data?.message || 'فشل التحديث' });
+                    Swal.fire({ icon: 'error', title: e?.response?.data?.message || ttT('swal.updateFailed', '') });
                 }
             },
         };
 
+        const localeTick = Vue.ref(0);
+        const ui = Vue.computed(() => {
+            localeTick.value;
+            return {
+                pageTitle: ttT('pageTitle', 'Tickets'),
+                subtitle: ttT('subtitle', ''),
+                openFromSubscriber: ttT('openFromSubscriber', ''),
+                aiSimTitle: ttT('aiSimTitle', ''),
+                aiSimHint: ttT('aiSimHint', ''),
+                callTranscript: ttT('callTranscript', ''),
+                createAiTicket: ttT('createAiTicket', ''),
+                filterStatus: ttT('filterStatus', ''),
+                filterAll: ttT('filterAll', ''),
+                searchMsisdn: ttT('searchMsisdn', ''),
+                search: ttT('search', ''),
+                gridHint: ttT('gridHint', ''),
+                drawer: {
+                    subscriber: ttT('drawer.subscriber', ''),
+                    msisdn: ttT('drawer.msisdn', 'MSISDN'),
+                    status: ttT('drawer.status', ''),
+                    resolutionNotes: ttT('drawer.resolutionNotes', ''),
+                    save: ttT('drawer.save', ''),
+                },
+            };
+        });
+
+        const refreshGridHeaders = () => {
+            if (!grid.obj || typeof grid.obj.getColumnByField !== 'function') return;
+            const setH = (field, key, fb) => {
+                const c = grid.obj.getColumnByField(field);
+                if (c) c.headerText = ttT(key, fb);
+            };
+            setH('ticketNumber', 'grid.ticketNumber', 'Ticket #');
+            setH('customerDisplayName', 'grid.subscriber', 'Subscriber');
+            setH('categoryLabelHtml', 'grid.operationType', 'Type');
+            setH('statusLabel', 'grid.status', 'Status');
+            setH('priorityLabel', 'grid.priority', 'Priority');
+            setH('createdByChannel', 'grid.source', 'Source');
+            setH('createdDisplay', 'grid.createdAt', 'Created');
+            setH('notes', 'grid.description', 'Description');
+            setH('resolutionNotes', 'grid.resolutionNotes', 'Resolution');
+            setH('resolvedDisplay', 'grid.resolvedAt', 'Closed');
+            if (typeof grid.obj.refreshHeader === 'function') grid.obj.refreshHeader();
+        };
+
+        const refreshPageI18n = async () => {
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                localeTick.value++;
+                const title = ttT('pageTitle', 'Tickets');
+                if (title) document.title = title;
+                window.TelecomI18n?.refresh?.();
+                refreshGridHeaders();
+            } catch (_) { /* ignore */ }
+        };
+
         Vue.onMounted(async () => {
+            document.documentElement.addEventListener('syriatel-locale-changed', refreshPageI18n);
             try {
                 if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
                     await PortalNavigation.syncOperatorSession(true);
@@ -293,13 +366,14 @@ const App = {
                 'TelecomManagement',
             ]);
             await load();
+            await refreshPageI18n();
             const sfReady = await waitForSyncfusion();
             if (!sfReady) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'error',
-                        title: 'مكتبة الجداول غير محمّلة',
-                        text: 'أعد تحميل الصفحة (Syncfusion).',
+                        title: ttT('swal.gridLibMissing', ''),
+                        text: ttT('swal.gridLibHint', ''),
                     });
                 }
                 if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
@@ -318,7 +392,7 @@ const App = {
             if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
         });
 
-        return { gridRef, state, handler, loading: Vue.computed(() => state.loading) };
+        return { gridRef, state, handler, ui, ttT, ticketEnumLabel, loading: Vue.computed(() => state.loading) };
     },
 };
 Vue.createApp(App).mount('#app');

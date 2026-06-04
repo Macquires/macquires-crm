@@ -42,10 +42,11 @@ public class TelecomOperationRequestConfiguration : BaseEntityConfiguration<Tele
         builder.Property(x => x.NewCustomerId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.PriorSubscriberProfileId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.ReplacementReason).HasMaxLength(256).IsRequired(false);
-        builder.Property(x => x.IsLostOrStolenReport).HasDefaultValue(false);
-        builder.Property(x => x.AutoReconnectEnabled).HasDefaultValue(false);
-        builder.Property(x => x.NotificationSuppressed).HasDefaultValue(false);
-        builder.Property(x => x.FraudClearanceConfirmed).HasDefaultValue(false);
+        // Required + no EF store default: HasDefaultValue(false) with NullableBit converter caused NULL on INSERT.
+        builder.Property(x => x.IsLostOrStolenReport).IsRequired();
+        builder.Property(x => x.AutoReconnectEnabled).IsRequired();
+        builder.Property(x => x.NotificationSuppressed).IsRequired();
+        builder.Property(x => x.FraudClearanceConfirmed).IsRequired();
         builder.Property(x => x.PriorSimInventoryId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.PriorMsisdnAssetId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.TargetMsisdnAssetId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
@@ -88,7 +89,7 @@ public class TelecomOperationRequestConfiguration : BaseEntityConfiguration<Tele
         builder.Property(x => x.RefundSettlementStatus).HasMaxLength(32).IsRequired(false);
         builder.Property(x => x.RefundCbsReference).HasMaxLength(128).IsRequired(false);
         builder.Property(x => x.RefundGatewayReference).HasMaxLength(128).IsRequired(false);
-        builder.Property(x => x.RequiresDualApproval).HasDefaultValue(false);
+        builder.Property(x => x.RequiresDualApproval).IsRequired();
         builder.Property(x => x.CollectionAction).HasMaxLength(32).IsRequired(false);
         builder.Property(x => x.DunningStage).HasMaxLength(32).IsRequired(false);
         builder.Property(x => x.PriorDunningStage).HasMaxLength(32).IsRequired(false);

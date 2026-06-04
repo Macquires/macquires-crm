@@ -3,15 +3,33 @@
     Layout = null;
 }
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8" />
-    <title>تقارير MIS</title>
+    <title>MIS reports</title>
+    <script src="/lib/indotalent/telecom-i18n.js"></script>
     <script>
-        window.location.replace('/Dashboards/DefaultDashboard#mis-reports');
+        (async function () {
+            await window.TelecomI18n?.ensureLoaded?.();
+            const lang = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            const t = (k) => window.TelecomI18n?.t?.('misRedirect.' + k) || k;
+            document.title = t('title');
+            const p = document.getElementById('mis-redirect-body');
+            if (p) {
+                p.innerHTML =
+                    t('body') +
+                    ' <a href="/Dashboards/DefaultDashboard#mis-reports">' +
+                    t('link') +
+                    '</a> ' +
+                    t('linkSuffix');
+            }
+            window.location.replace('/Dashboards/DefaultDashboard#mis-reports');
+        })();
     </script>
 </head>
 <body>
-    <p>جاري التحويل إلى لوحة القيادة الموحّدة… <a href="/Dashboards/DefaultDashboard#mis-reports">اضغط هنا</a> إن لم يتم التحويل تلقائياً.</p>
+    <p id="mis-redirect-body">Redirecting to the unified dashboard…</p>
 </body>
 </html>

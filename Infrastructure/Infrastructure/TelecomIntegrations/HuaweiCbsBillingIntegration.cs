@@ -324,7 +324,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
                     && l.TelecomOperationRequestId == operationId
                     && l.Success
                     && l.Message != null
-                    && !l.Message.Contains(TelecomBssOperations.CbsReverseAccount, StringComparison.Ordinal),
+                    // EF Core: Contains(string) only — StringComparison overload is not translatable to SQL.
+                    && !l.Message.Contains(TelecomBssOperations.CbsReverseAccount),
                 cancellationToken);
     }
 

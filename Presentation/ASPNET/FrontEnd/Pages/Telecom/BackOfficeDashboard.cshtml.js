@@ -1,7 +1,6 @@
 /* Back Office dashboard — plain JS, premium UX */
 
 (function () {
-    const ISSUE = { 0: 'شبكة', 1: 'فوترة', 2: 'حظر شريحة', 3: 'تفعيل' };
     const CATEGORY = {
         0: 'Complaint',
         1: 'SimSwap',
@@ -10,9 +9,14 @@
         4: 'LineActivation',
         5: 'VasActivation',
     };
-    const PRIORITY = { 0: 'منخفض', 1: 'متوسط', 2: 'عالي', 3: 'حرج' };
-    const STATUS = { 0: 'مفتوحة', 1: 'قيد المعالجة', 2: 'تم الحل', 3: 'مصعّدة' };
     const PREVIEW_MAX = 50;
+
+    const ENUM_FALLBACK = {
+        issue: { 0: 'Network', 1: 'Billing', 2: 'SIM bar', 3: 'Activation' },
+        priority: { 0: 'Low', 1: 'Medium', 2: 'High', 3: 'Critical' },
+        status: { 0: 'Open', 1: 'In progress', 2: 'Resolved', 3: 'Escalated' },
+        paymentStatus: { 0: 'Draft', 1: 'Gateway', 2: 'Completed', 3: 'Failed', 4: 'Reversed' },
+    };
 
     const BACK_OFFICE_ROLES = ['TelecomBackOffice', 'TelecomAdmin', 'TelecomManagement'];
     const BACK_OFFICE_PERMISSIONS = [
@@ -30,10 +34,10 @@
         'customer.view',
     ];
 
-    const EMPTY_GRID_HTML = `
+    const emptyGridHtml = () => `
         <div class="text-center py-4 text-muted">
             <i class="bi bi-inbox display-6 d-block mb-2"></i>
-            <span>لا توجد تذاكر في طابورك</span>
+            <span>${escapeHtml(t('backOffice.dashboard.grid.emptyInbox'))}</span>
         </div>`;
 
     let tickets = [];
@@ -65,10 +69,30 @@
         }
     };
 
+    const enumLabel = (group, n) =>
+        t(`backOffice.dashboard.enums.${group}.${n}`, ENUM_FALLBACK[group]?.[n] ?? '—');
+
+    const getUiLocale = () =>
+        document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en-GB' : 'ar-SY';
+
+    const formatDateTime = (d) => {
+        try {
+            return new Date(d).toLocaleString(getUiLocale(), { dateStyle: 'short', timeStyle: 'medium' });
+        } catch {
+            return d instanceof Date ? d.toISOString() : String(d ?? '—');
+        }
+    };
+
+    const formatMoney = (n) => {
+        const val = Number(n) || 0;
+        const suffix = t('backOffice.dashboard.kpi.currencySyp');
+        return `${val.toLocaleString(getUiLocale())} ${suffix}`;
+    };
+
     const showError = (msg) => {
         const el = document.getElementById('bo-boot-error');
         if (!el) return;
-        el.textContent = msg || 'خطأ في التحميل';
+        el.textContent = msg || t('backOffice.dashboard.messages.loadError');
         el.classList.remove('d-none');
     };
 
@@ -83,11 +107,28 @@
     const setLastRefresh = () => {
         const el = document.getElementById('boLastRefresh');
         if (!el) return;
-        try {
-            el.textContent = new Date().toLocaleString('ar-SY', { dateStyle: 'short', timeStyle: 'medium' });
-        } catch {
-            el.textContent = new Date().toISOString();
-        }
+        el.textContent = formatDateTime(new Date());
+    };
+
+    const remapTicketLabels = () => {
+        tickets = tickets.map((row) => ({
+            ...row,
+            issueLabel: enumLabel('issue', Number(row.issueType)),
+            priorityLabel: enumLabel('priority', Number(row.priority)),
+            statusLabel: enumLabel('status', Number(row.status)),
+        }));
+        ticketPreview = tickets.slice(0, PREVIEW_MAX).map((row) => ({
+            ...row,
+            issueLabel: enumLabel('issue', Number(row.issueType)),
+            priorityLabel: enumLabel('priority', Number(row.priority)),
+            statusLabel: enumLabel('status', Number(row.status)),
+        }));
+    };
+
+    const applyPageI18n = () => {
+        const title = t('backOffice.title');
+        if (title) document.title = title;
+        window.TelecomI18n?.refresh?.(document.getElementById('bo-dashboard-page'));
     };
 
     const parseTicketList = (res) => {
@@ -131,10 +172,10 @@
             createdByChannel: pick(raw, 'createdByChannel', 'CreatedByChannel') || 'CallCenter_Agent',
             customerDisplayName: pick(raw, 'customerDisplayName', 'CustomerDisplayName'),
             resolutionNotes: pick(raw, 'resolutionNotes', 'ResolutionNotes'),
-            issueLabel: ISSUE[Number(pick(raw, 'issueType', 'IssueType'))] ?? '—',
+            issueLabel: enumLabel('issue', Number(pick(raw, 'issueType', 'IssueType'))),
             categoryLabelHtml: categoryLabelHtml(ticketCategory),
-            priorityLabel: PRIORITY[Number(pick(raw, 'priority', 'Priority'))] ?? '—',
-            statusLabel: STATUS[Number(pick(raw, 'status', 'Status'))] ?? '—',
+            priorityLabel: enumLabel('priority', Number(pick(raw, 'priority', 'Priority'))),
+            statusLabel: enumLabel('status', Number(pick(raw, 'status', 'Status'))),
         };
     };
 
@@ -261,10 +302,7 @@
         const bannerText = document.getElementById('boCriticalBannerText');
         if (banner && bannerText) {
             if (stats.critical > 0) {
-                const msg = t(
-                    'backOffice.dashboard.criticalAlert',
-                    `تنبيه: لديك ${stats.critical} تذكرة ذات أولوية حرجة تحتاج معالجة فورية.`
-                ).replace('{count}', String(stats.critical));
+                const msg = t('backOffice.dashboard.criticalAlert').replace('{count}', String(stats.critical));
                 bannerText.textContent = msg;
                 banner.classList.remove('d-none');
             } else {
@@ -353,7 +391,8 @@
             args.cell.innerHTML = row.categoryLabelHtml || categoryLabelHtml(row.ticketCategory);
         } else if (args.column.field === '_boAction') {
             const id = escapeHtml(row.id);
-            args.cell.innerHTML = `<button type="button" class="btn btn-sm btn-danger bo-open-ticket" data-id="${id}">معالجة</button>`;
+            const treatLabel = escapeHtml(t('backOffice.dashboard.grid.treat'));
+            args.cell.innerHTML = `<button type="button" class="btn btn-sm btn-danger bo-open-ticket" data-id="${id}">${treatLabel}</button>`;
         }
     }
 
@@ -366,6 +405,33 @@
     function applyBoTicketsGridHeight() {
         if (!ticketsGrid) return;
         ticketsGrid.height = boTicketsGridHeight();
+    }
+
+    function getBoTicketColumns() {
+        return [
+            { field: 'id', isPrimaryKey: true, visible: false },
+            { field: 'ticketNumber', headerText: t('backOffice.dashboard.grid.ticketNumber'), width: 115 },
+            { field: 'customerDisplayName', headerText: t('backOffice.dashboard.grid.subscriber'), width: 130 },
+            { field: 'msisdn', headerText: t('backOffice.dashboard.grid.msisdn'), width: 108 },
+            {
+                field: 'categoryLabelHtml',
+                headerText: t('backOffice.dashboard.grid.category'),
+                width: 130,
+                allowFiltering: false,
+            },
+            { field: 'issueLabel', headerText: t('backOffice.dashboard.grid.issue'), width: 88 },
+            { field: 'statusLabel', headerText: t('backOffice.dashboard.grid.status'), width: 118, allowFiltering: false },
+            { field: 'priorityLabel', headerText: t('backOffice.dashboard.grid.priority'), width: 105, allowFiltering: false },
+            { field: 'createdByChannel', headerText: t('backOffice.dashboard.grid.source'), width: 140, allowFiltering: false },
+            { field: 'notes', headerText: t('backOffice.dashboard.grid.complaint'), width: 200, minWidth: 120 },
+            {
+                field: '_boAction',
+                headerText: t('backOffice.dashboard.grid.action'),
+                width: 95,
+                allowSorting: false,
+                allowFiltering: false,
+            },
+        ];
     }
 
     function initTicketsGrid() {
@@ -384,34 +450,42 @@
             allowFiltering: true,
             filterSettings: { type: 'Menu' },
             pageSettings: { pageSize: 10, pageSizes: [10, 20, 50] },
-            emptyRecordTemplate: EMPTY_GRID_HTML,
+            emptyRecordTemplate: emptyGridHtml(),
             recordDoubleClick: (args) => openTicket(normalizeTicket(args.rowData)),
             rowDataBound: applyRowHighlight,
             queryCellInfo: paintTicketGridCells,
-            columns: [
-                { field: 'id', isPrimaryKey: true, visible: false },
-                { field: 'ticketNumber', headerText: 'رقم التذكرة', width: 115 },
-                { field: 'customerDisplayName', headerText: 'المشترك', width: 130 },
-                { field: 'msisdn', headerText: 'رقم الخط', width: 108 },
-                { field: 'categoryLabelHtml', headerText: 'نوع العملية', width: 130, allowFiltering: false },
-                { field: 'issueLabel', headerText: 'المشكلة', width: 88 },
-                { field: 'statusLabel', headerText: 'الحالة', width: 118, allowFiltering: false },
-                { field: 'priorityLabel', headerText: 'الأولوية', width: 105, allowFiltering: false },
-                { field: 'createdByChannel', headerText: 'المصدر', width: 140, allowFiltering: false },
-                { field: 'notes', headerText: 'الشكوى', width: 200, minWidth: 120 },
-                {
-                    field: '_boAction',
-                    headerText: 'إجراء',
-                    width: 95,
-                    allowSorting: false,
-                    allowFiltering: false,
-                },
-            ],
+            columns: getBoTicketColumns(),
             dataBound: () => bindTicketActionButtons(),
         });
         ticketsGrid.appendTo(ticketsHost);
         applyBoTicketsGridHeight();
         return true;
+    }
+
+    function refreshTicketsGridI18n() {
+        if (!ticketsGrid) return;
+        ticketsGrid.columns = getBoTicketColumns();
+        ticketsGrid.emptyRecordTemplate = emptyGridHtml();
+        refreshTicketsGrid();
+    }
+
+    function catalogToggleTemplate() {
+        const active = t('backOffice.dashboard.grid.active');
+        const inactive = t('backOffice.dashboard.grid.inactive');
+        return `<button type="button" class="btn btn-sm \${isActive ? "btn-success" : "btn-outline-secondary"} bo-toggle-offer" data-id="\${id}">\${isActive ? "${active}" : "${inactive}"}</button>`;
+    }
+
+    function getCatalogColumns() {
+        return [
+            { field: 'name', headerText: t('backOffice.dashboard.grid.offer'), width: 200 },
+            { field: 'code', headerText: t('backOffice.dashboard.grid.code'), width: 100 },
+            { field: 'defaultPrice', headerText: t('backOffice.dashboard.grid.price'), width: 90, format: 'N0' },
+            {
+                headerText: t('backOffice.dashboard.grid.catalogStatus'),
+                width: 100,
+                template: catalogToggleTemplate(),
+            },
+        ];
     }
 
     function initCatalogGrid() {
@@ -424,17 +498,7 @@
             allowPaging: true,
             allowSorting: true,
             pageSettings: { pageSize: 8 },
-            columns: [
-                { field: 'name', headerText: 'العرض', width: 200 },
-                { field: 'code', headerText: 'الكود', width: 100 },
-                { field: 'defaultPrice', headerText: 'السعر', width: 90, format: 'N0' },
-                {
-                    headerText: 'الحالة',
-                    width: 100,
-                    template:
-                        '<button type="button" class="btn btn-sm ${isActive ? "btn-success" : "btn-outline-secondary"} bo-toggle-offer" data-id="${id}">${isActive ? "مفعّل" : "متوقف"}</button>',
-                },
-            ],
+            columns: getCatalogColumns(),
             dataBound: () => {
                 catalogHost.querySelectorAll('.bo-toggle-offer').forEach((btn) => {
                     btn.onclick = (ev) => {
@@ -473,7 +537,7 @@
         document.getElementById('boDrawerMsisdn').textContent = pick(detail, 'msisdn', 'Msisdn') || row.msisdn || '—';
         document.getElementById('boDrawerCustomer').textContent = row.customerDisplayName || '—';
         document.getElementById('boDrawerIssue').textContent =
-            ISSUE[Number(pick(detail, 'issueType', 'IssueType') ?? row.issueType)] ?? '—';
+            enumLabel('issue', Number(pick(detail, 'issueType', 'IssueType') ?? row.issueType));
 
         const categoryKey = resolveCategoryKey(detail ?? row);
         const catHost = document.getElementById('boDrawerCategory');
@@ -483,15 +547,15 @@
         const priEl = document.getElementById('boDrawerPriority');
         if (priEl) {
             const pri = Number(pick(detail, 'priority', 'Priority') ?? row.priority);
-            priEl.innerHTML = window.TelecomUiBadges?.ticketPriority(pri, PRIORITY[pri]) || PRIORITY[pri] || '—';
+            priEl.innerHTML =
+                window.TelecomUiBadges?.ticketPriority(pri, enumLabel('priority', pri)) || enumLabel('priority', pri);
         }
 
         const badgeHost = document.getElementById('boDrawerStatusBadge');
         if (badgeHost) {
             badgeHost.innerHTML =
-                window.TelecomUiBadges?.ticketStatus(status, STATUS[Number(status)]) ||
-                STATUS[Number(status)] ||
-                '';
+                window.TelecomUiBadges?.ticketStatus(status, enumLabel('status', Number(status))) ||
+                enumLabel('status', Number(status));
         }
 
         const complaint = pick(detail, 'notes', 'Notes') || row.notes || '—';
@@ -519,7 +583,10 @@
             });
             const d = StorageManager.apiContent(res);
             if (!d) {
-                Swal.fire({ icon: 'warning', title: 'تعذر تحميل تفاصيل التذكرة' });
+                Swal.fire({
+                    icon: 'warning',
+                    title: t('backOffice.dashboard.messages.ticketDetailFailed'),
+                });
                 return;
             }
 
@@ -541,7 +608,10 @@
             fillDrawer(row, d);
             ticketDrawer?.show();
         } catch (e) {
-            Swal.fire({ icon: 'error', title: e?.response?.data?.message || 'تعذر فتح التذكرة' });
+            Swal.fire({
+                icon: 'error',
+                title: e?.response?.data?.message || t('backOffice.dashboard.messages.ticketOpenFailed'),
+            });
         }
     }
 
@@ -658,16 +728,18 @@
         }
     }
 
-    const QUEUE_REMOVED_SUFFIX = ' — تم إزالتها من طابور العمل الحي';
+    function queueRemovedSuffix() {
+        return t('backOffice.dashboard.queueRemovedSuffix');
+    }
 
     function queueOutcomeSuffix(body) {
         const resolved = pick(body, 'ticketAutoResolved', 'TicketAutoResolved');
         if (resolved === true || resolved === 'true') {
-            return QUEUE_REMOVED_SUFFIX;
+            return queueRemovedSuffix();
         }
         const moved = pick(body, 'ticketMovedToInProgress', 'TicketMovedToInProgress');
         if (moved === true || moved === 'true') {
-            return ' — تم تحديث الحالة إلى «قيد المعالجة»';
+            return t('backOffice.dashboard.movedInProgressSuffix');
         }
         return '';
     }
@@ -683,7 +755,7 @@
 
     async function finalizeTelecomActionSuccess(message, options = {}) {
         const { closeDrawer = true, refreshQueue = true, timer = 2800 } = options;
-        const title = message || t('backOffice.dashboard.actionOk', 'تم تنفيذ الإجراء بنجاح');
+        const title = message || t('backOffice.dashboard.actionOk');
         if (closeDrawer) hideTicketDrawer();
         if (refreshQueue) await refreshDashboardQueue();
         Swal.fire({ icon: 'success', title, timer, showConfirmButton: false });
@@ -705,9 +777,9 @@
                 technicalTicketId: selectedTicket.id,
             });
             const body = StorageManager.apiContent(res);
-            const defaultOk = t('backOffice.hlrOk', 'تمت مزامنة HLR بنجاح');
+            const defaultOk = t('backOffice.hlrOk');
             await finalizeTelecomActionSuccess(pickActionMessage(res, defaultOk) + queueOutcomeSuffix(body));
-        }).catch((e) => showTelecomActionError(e, 'فشلت مزامنة HLR'));
+        }).catch((e) => showTelecomActionError(e, t('backOffice.dashboard.messages.hlrFailed')));
     }
 
     async function forceCbsSync() {
@@ -716,12 +788,11 @@
                 ticketId: selectedTicket.id,
             });
             const body = StorageManager.apiContent(res);
-            const defaultOk = t(
-                'backOffice.dashboard.cbsForceOk',
-                'تم دفع الشحنة وتسوية الفوترة بنجاح على سيرفر هواوي CBS'
-            );
+            const defaultOk = t('backOffice.dashboard.cbsForceOk');
             await finalizeTelecomActionSuccess(pickActionMessage(res, defaultOk) + queueOutcomeSuffix(body));
-        }).catch((e) => showTelecomActionError(e, 'تعذر الاتصال بسيرفر CBS الطوارئ'));
+        }).catch((e) =>
+            showTelecomActionError(e, t('backOffice.dashboard.messages.cbsFailed'))
+        );
     }
 
     async function queryLiveNetworkStatus() {
@@ -732,15 +803,18 @@
             const content = StorageManager.apiContent(res);
             const data = content?.data ?? content?.Data ?? content;
             if (!data || typeof data !== 'object') {
-                Swal.fire({ icon: 'warning', title: 'لا توجد بيانات من الشبكة الحية' });
+                Swal.fire({
+                    icon: 'warning',
+                    title: t('backOffice.dashboard.messages.noLiveData'),
+                });
                 return;
             }
             renderLiveStatus(data);
             await finalizeTelecomActionInDrawer(
-                t('backOffice.dashboard.networkPingOk', 'تم استعلام حالة الشبكة الحية — راجع القياسات أدناه')
+                t('backOffice.dashboard.networkPingOk')
             );
             await refreshDashboardQueue();
-        }).catch((e) => showTelecomActionError(e, 'فشل استعلام الشبكة'));
+        }).catch((e) => showTelecomActionError(e, t('backOffice.dashboard.messages.networkFailed')));
     }
 
     function openTier3EscalationPanel() {
@@ -752,7 +826,10 @@
         if (!selectedTicket) return;
         const notes = document.getElementById('boTier3Notes')?.value?.trim() || '';
         if (notes.length < 10) {
-            Swal.fire({ icon: 'warning', title: 'أدخل سبب التصعيد (10 أحرف على الأقل)' });
+            Swal.fire({
+                icon: 'warning',
+                title: t('backOffice.dashboard.messages.tier3NotesMin'),
+            });
             document.getElementById('boTier3Notes')?.focus();
             return;
         }
@@ -763,9 +840,9 @@
                 escalationNotes: notes,
             });
             await finalizeTelecomActionSuccess(
-                t('backOffice.dashboard.tier3Ok', 'تم تصعيد التذكرة لفريق الشبكة الأساسية') + QUEUE_REMOVED_SUFFIX
+                t('backOffice.dashboard.tier3Ok') + queueRemovedSuffix()
             );
-        }).catch((e) => showTelecomActionError(e, 'فشل التصعيد'));
+        }).catch((e) => showTelecomActionError(e, t('backOffice.dashboard.messages.escalationFailed')));
     }
 
     async function saveTicketStatus() {
@@ -778,7 +855,10 @@
         const notes = notesEl?.value?.trim() || '';
 
         if (newStatus === 2 && notes.length < 5) {
-            Swal.fire({ icon: 'warning', title: 'أدخل ملاحظات الحل (5 أحرف على الأقل)' });
+            Swal.fire({
+                icon: 'warning',
+                title: t('backOffice.dashboard.messages.resolutionNotesMin'),
+            });
             notesEl?.focus();
             return;
         }
@@ -790,16 +870,18 @@
                 newPriority,
                 operatorNotesAr: notes,
             });
-            let msg = t('backOffice.dashboard.statusUpdated', 'تم تحديث حالة التذكرة');
+            let msg = t('backOffice.dashboard.statusUpdated');
             if (newStatus === 2) {
-                msg = t('backOffice.dashboard.resolvedQueue', 'تم إغلاق التذكرة') + QUEUE_REMOVED_SUFFIX;
+                msg = t('backOffice.dashboard.resolvedQueue') + queueRemovedSuffix();
             } else if (newStatus === 3) {
-                msg = t('backOffice.dashboard.escalatedQueue', 'تم تصعيد التذكرة') + QUEUE_REMOVED_SUFFIX;
+                msg = t('backOffice.dashboard.escalatedQueue') + queueRemovedSuffix();
             } else if (newStatus === 1) {
-                msg = t('backOffice.dashboard.inProgressQueue', 'التذكرة الآن قيد المعالجة في الطابور');
+                msg = t('backOffice.dashboard.inProgressQueue');
             }
             await finalizeTelecomActionSuccess(msg);
-        }).catch((e) => showTelecomActionError(e, 'تعذر تحديث الحالة'));
+        }).catch((e) =>
+            showTelecomActionError(e, t('backOffice.dashboard.messages.statusUpdateFailed'))
+        );
     }
 
     function quickResolve() {
@@ -809,13 +891,13 @@
         if (notesEl) {
             notesEl.focus();
             if (!notesEl.value.trim()) {
-                notesEl.placeholder = 'اشرح الإجراء الفني قبل الإغلاق السريع…';
+                notesEl.placeholder = t('backOffice.dashboard.resolutionPlaceholder');
             }
         }
         Swal.fire({
             icon: 'info',
-            title: 'إغلاق سريع',
-            text: 'اكتب ملاحظات الحل ثم اضغط «حفظ الحالة»',
+            title: t('backOffice.dashboard.quickResolveTitle'),
+            text: t('backOffice.dashboard.quickResolveText'),
             timer: 2800,
             showConfirmButton: false,
         });
@@ -828,7 +910,12 @@
             row.isActive = pick(body, 'isActive', 'IsActive') ?? !row.isActive;
             if (catalogGrid) catalogGrid.refresh();
         } catch (e) {
-            Swal.fire({ icon: 'error', title: e?.response?.data?.message || 'تعذر تغيير حالة العرض' });
+            Swal.fire({
+                icon: 'error',
+                title:
+                    e?.response?.data?.message ||
+                    t('backOffice.dashboard.messages.offeringToggleFailed'),
+            });
         }
     }
 
@@ -837,10 +924,7 @@
         return roles.some((r) => ['TelecomManagement', 'TelecomBackOffice', 'TelecomAdmin'].includes(r));
     }
 
-    const paymentStatusLabel = (s) => {
-        const map = { 0: 'مسودة', 1: 'بوابة', 2: 'مكتمل', 3: 'فاشل', 4: 'معكوس' };
-        return map[s] ?? String(s);
-    };
+    const paymentStatusLabel = (s) => enumLabel('paymentStatus', Number(s));
 
     async function loadPaymentServicesPanel() {
         const tbody = document.getElementById('boPaymentTxBody');
@@ -851,20 +935,25 @@
                 const el = document.getElementById(id);
                 if (el) el.textContent = v ?? '—';
             };
-            set('payKpiAmount', `${(pick(k, 'totalRechargedAmountToday', 'TotalRechargedAmountToday') ?? 0).toLocaleString('ar-SY')} ل.س`);
+            set(
+                'payKpiAmount',
+                formatMoney(pick(k, 'totalRechargedAmountToday', 'TotalRechargedAmountToday') ?? 0)
+            );
             set('payKpiCompleted', pick(k, 'completedCountToday', 'CompletedCountToday'));
             set('payKpiFailed', pick(k, 'failedCountToday', 'FailedCountToday'));
-            set('payKpiFailRate', `${pick(k, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('payKpiSla', `${pick(k, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('payKpiFailRate');
+            set('payKpiSla');
             set('payKpiReversed', pick(k, 'reversedCountToday', 'ReversedCountToday'));
             const refreshEl = document.getElementById('boPaymentKpiRefresh');
-            if (refreshEl) refreshEl.textContent = new Date().toLocaleString('ar-SY');
+            if (refreshEl) refreshEl.textContent = formatDateTime(new Date());
 
             const listRes = await AxiosManager.get('/Telecom/GetPaymentTransactionList?take=25', {});
             const items = listRes?.data?.content?.items ?? listRes?.data?.Content?.Items ?? [];
             if (!tbody) return;
             if (!items.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">لا معاملات</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center">${escapeHtml(
+                    t('backOffice.dashboard.kpi.noTransactions')
+                )}</td></tr>`;
                 return;
             }
             tbody.innerHTML = items
@@ -873,12 +962,14 @@
                     const canRev = row.canReverse ?? row.CanReverse;
                     const btn =
                         canRev && canReversePayment()
-                            ? `<button type="button" class="btn btn-outline-danger btn-sm py-0 btn-pay-reverse" data-id="${id}">عكس</button>`
+                            ? `<button type="button" class="btn btn-outline-danger btn-sm py-0 btn-pay-reverse" data-id="${id}">${escapeHtml(
+                                  t('backOffice.dashboard.kpi.reverse')
+                              )}</button>`
                             : '';
                     return `<tr>
                         <td class="font-monospace small">${row.number ?? row.Number}</td>
                         <td dir="ltr" class="small">${row.msisdn ?? row.Msisdn ?? '—'}</td>
-                        <td>${(row.amount ?? row.Amount ?? 0).toLocaleString('ar-SY')}</td>
+                        <td>${formatMoney(row.amount ?? row.Amount ?? 0)}</td>
                         <td>${paymentStatusLabel(row.status ?? row.Status)}</td>
                         <td>${btn}</td>
                     </tr>`;
@@ -889,20 +980,27 @@
             });
         } catch (e) {
             console.warn('Payment services panel', e);
-            if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">تعذّر التحميل</td></tr>';
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">${escapeHtml(
+                    t('backOffice.dashboard.kpi.loadFailed')
+                )}</td></tr>`;
+            }
         }
     }
 
     async function reversePayment(paymentId) {
         if (!paymentId) return;
         const { value: reason } = await Swal.fire({
-            title: 'عكس العملية المالية',
+            title: t('backOffice.dashboard.messages.reverseTitle'),
             input: 'text',
-            inputPlaceholder: 'سبب العكس (مثال: خطأ موظف)',
+            inputPlaceholder: t('backOffice.dashboard.messages.reversePlaceholder'),
             showCancelButton: true,
-            confirmButtonText: 'تأكيد العكس',
+            confirmButtonText: t('backOffice.dashboard.messages.reverseConfirm'),
             confirmButtonColor: '#c8102e',
-            inputValidator: (v) => (!v || !String(v).trim() ? 'السبب مطلوب' : undefined),
+            inputValidator: (v) =>
+                !v || !String(v).trim()
+                    ? t('backOffice.dashboard.messages.reasonRequired')
+                    : undefined,
         });
         if (!reason) return;
         try {
@@ -913,9 +1011,21 @@
             });
             const body = res?.data?.content ?? res?.data?.Content;
             await loadPaymentServicesPanel();
-            Swal.fire({ icon: 'success', title: body?.messageAr || body?.MessageAr || 'تم العكس' });
+            Swal.fire({
+                icon: 'success',
+                title:
+                    body?.messageAr ||
+                    body?.MessageAr ||
+                    t('backOffice.dashboard.messages.reverseDone'),
+            });
         } catch (e) {
-            Swal.fire({ icon: 'error', title: e?.response?.data?.message || e?.message || 'تعذّر العكس' });
+            Swal.fire({
+                icon: 'error',
+                title:
+                    e?.response?.data?.message ||
+                    e?.message ||
+                    t('backOffice.dashboard.messages.reverseFailed'),
+            });
         }
     }
 
@@ -930,8 +1040,8 @@
             set('devKpiVolume', pick(c, 'totalVolume', 'TotalVolume'));
             set('devKpiCompleted', pick(c, 'completedCount', 'CompletedCount'));
             set('devKpiFailed', pick(c, 'failedCount', 'FailedCount'));
-            set('devKpiCompletion', `${pick(c, 'completionRatePercent', 'CompletionRatePercent') ?? 0}%`);
-            set('devKpiFallout', `${pick(c, 'falloutRatePercent', 'FalloutRatePercent') ?? 0}%`);
+            set('devKpiCompletion');
+            set('devKpiFallout');
             set('devKpiInstallment', pick(c, 'installmentCount', 'InstallmentCount'));
             set('devKpiCash', pick(c, 'cashCount', 'CashCount'));
             set('devKpiOverrides', pick(c, 'manualOverrideCount', 'ManualOverrideCount'));
@@ -961,10 +1071,10 @@
             set('bdrKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
             const col = pick(c, 'collectedAmountToday', 'CollectedAmountToday');
             const wo = pick(c, 'writeOffAmountToday', 'WriteOffAmountToday');
-            set('bdrKpiCollected', col != null && col !== '' ? `${col} ل.س` : '—');
-            set('bdrKpiWriteOff', wo != null && wo !== '' ? `${wo} ل.س` : '—');
+            set('bdrKpiCollected', col != null && col !== '' ? formatMoney(col) : '—');
+            set('bdrKpiWriteOff', wo != null && wo !== '' ? formatMoney(wo) : '—');
             set('bdrKpiPlans', pick(c, 'paymentPlansToday', 'PaymentPlansToday'));
-            set('bdrKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('bdrKpiFailRate');
         } catch (e) {
             console.warn('BadDebt KPIs', e);
         }
@@ -983,10 +1093,10 @@
             set('rfdKpiFailed', pick(c, 'failedToday', 'FailedToday'));
             set('rfdKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
             const amt = pick(c, 'settledAmountToday', 'SettledAmountToday');
-            set('rfdKpiSettledAmount', amt != null && amt !== '' ? `${amt} ل.س` : '—');
+            set('rfdKpiSettledAmount', amt != null && amt !== '' ? formatMoney(amt) : '—');
             set('rfdKpiDual', pick(c, 'dualApprovalToday', 'DualApprovalToday'));
-            set('rfdKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('rfdKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('rfdKpiFailRate');
+            set('rfdKpiSla');
             const rejections = c.rejectionReasons ?? c.RejectionReasons ?? [];
             set(
                 'rfdKpiRejections',
@@ -1013,8 +1123,8 @@
             set('susKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
             set('susKpiFraud', pick(c, 'fraudToday', 'FraudToday'));
             set('susKpiAuto', pick(c, 'autoReconnectEnabledToday', 'AutoReconnectEnabledToday'));
-            set('susKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('susKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('susKpiFailRate');
+            set('susKpiSla');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             set(
                 'susKpiReasons',
@@ -1041,8 +1151,8 @@
             set('rcnKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
             set('rcnKpiPayment', pick(c, 'paymentClearedToday', 'PaymentClearedToday'));
             set('rcnKpiFraud', pick(c, 'fraudClearanceToday', 'FraudClearanceToday'));
-            set('rcnKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('rcnKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('rcnKpiFailRate');
+            set('rcnKpiSla');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             set(
                 'rcnKpiReasons',
@@ -1070,8 +1180,8 @@
             set('trmKpiVoluntary', pick(c, 'voluntaryToday', 'VoluntaryToday'));
             const bills = pick(c, 'finalBillTotalToday', 'FinalBillTotalToday');
             set('trmKpiFinalBills', bills != null && bills !== '' ? bills : '—');
-            set('trmKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('trmKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('trmKpiFailRate');
+            set('trmKpiSla');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             const txt = reasons.length
                 ? reasons
@@ -1101,8 +1211,8 @@
             set('osKpiMgrFailed', pick(c, 'migrationFailedToday', 'MigrationFailedToday'));
             set('osKpiVasActivate', pick(c, 'vasActivateToday', 'VasActivateToday'));
             set('osKpiVasDeactivate', pick(c, 'vasDeactivateToday', 'VasDeactivateToday'));
-            set('osKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('osKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('osKpiFailRate');
+            set('osKpiSla');
             const top = c.topMigratedOffers ?? c.TopMigratedOffers ?? [];
             const txt = top.length
                 ? top.map((r) => `${r.label ?? r.Label} (${r.count ?? r.Count})`).join(' · ')
@@ -1128,14 +1238,17 @@
             set('cnrKpiPremium', pick(c, 'premiumToday', 'PremiumToday'));
             const fees = pick(c, 'premiumFeeTotalToday', 'PremiumFeeTotalToday');
             set('cnrKpiPremiumFees', fees != null && fees !== '' ? fees : '—');
-            set('cnrKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('cnrKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('cnrKpiFailRate');
+            set('cnrKpiSla');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             const txt = reasons.length
                 ? reasons
                       .map((r) => {
                           const prem = r.premiumCount ?? r.PremiumCount ?? 0;
-                          const suffix = prem > 0 ? ` · ${prem} مميز` : '';
+                          const suffix =
+                              prem > 0
+                                  ? ` · ${prem} ${t('backOffice.dashboard.kpi.suffixPremium')}`
+                                  : '';
                           return `${r.reason ?? r.Reason} (${r.count ?? r.Count})${suffix}`;
                       })
                       .join(' · ')
@@ -1159,14 +1272,17 @@
             set('simKpiFailed', pick(c, 'failedToday', 'FailedToday'));
             set('simKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
             set('simKpiLost', pick(c, 'lostOrStolenToday', 'LostOrStolenToday'));
-            set('simKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('simKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('simKpiFailRate');
+            set('simKpiSla');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             const txt = reasons.length
                 ? reasons
                       .map((r) => {
                           const lost = r.lostOrStolenCount ?? r.LostOrStolenCount ?? 0;
-                          const suffix = lost > 0 ? ` · ${lost} سرقة/ضياع` : '';
+                          const suffix =
+                              lost > 0
+                                  ? ` · ${lost} ${t('backOffice.dashboard.kpi.suffixLostStolen')}`
+                                  : '';
                           return `${r.reason ?? r.Reason} (${r.count ?? r.Count})${suffix}`;
                       })
                       .join(' · ')
@@ -1189,8 +1305,8 @@
             set('tkoKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
             set('tkoKpiFailed', pick(c, 'failedToday', 'FailedToday'));
             set('tkoKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
-            set('tkoKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
-            set('tkoKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('tkoKpiFailRate');
+            set('tkoKpiSla');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             const txt = reasons.length
                 ? reasons.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
@@ -1212,7 +1328,7 @@
             set('cgtKpiTotal', pick(c, 'totalToday', 'TotalToday'));
             set('cgtKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
             set('cgtKpiFailed', pick(c, 'failedToday', 'FailedToday'));
-            set('cgtKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+            set('cgtKpiFailRate');
             const reasons = c.topReasons ?? c.TopReasons ?? [];
             const txt = reasons.length
                 ? reasons.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
@@ -1232,9 +1348,9 @@
                 if (el) el.textContent = v ?? '—';
             };
             set('slKpiVolume', pick(c, 'totalVolume', 'TotalVolume'));
-            set('slKpiCompletion', `${pick(c, 'completionRatePercent', 'CompletionRatePercent') ?? 0}%`);
-            set('slKpiFallout', `${pick(c, 'falloutRatePercent', 'FalloutRatePercent') ?? 0}%`);
-            set('slKpiSla', `${pick(c, 'slaCompliancePercent', 'SlaCompliancePercent') ?? 0}%`);
+            set('slKpiCompletion');
+            set('slKpiFallout');
+            set('slKpiSla');
             set('slKpiAht', pick(c, 'avgHandlingTimeMinutes', 'AvgHandlingTimeMinutes'));
             set('slKpiOverride', pick(c, 'manualOverrideCount', 'ManualOverrideCount'));
         } catch (e) {
@@ -1265,7 +1381,11 @@
                 ticketPreview = [];
                 updateKpis(0);
                 updateEmptyState();
-                showError(e?.response?.data?.message || e?.message || 'تعذر تحميل التذاكر');
+                showError(
+                    e?.response?.data?.message ||
+                        e?.message ||
+                        t('backOffice.dashboard.messages.ticketsLoadFailed')
+                );
             });
 
             const offeringsPromise = withTimeout(loadOfferings(), 12000, 'Catalog').catch(() => {
@@ -1278,7 +1398,9 @@
 
             const sfReady = await waitForSyncfusion();
             if (!sfReady) {
-                showError('مكتبة الجداول (Syncfusion) غير محمّلة — أعد تحميل الصفحة');
+                showError(
+                    t('backOffice.dashboard.messages.syncfusionMissing')
+                );
                 return;
             }
 
@@ -1288,7 +1410,9 @@
                         initTicketsGrid();
                     } catch (gridErr) {
                         console.error('BackOffice tickets grid init failed', gridErr);
-                        showError('تعذر عرض جدول التذاكر — جرّب تحديث الصفحة');
+                        showError(
+                            t('backOffice.dashboard.messages.gridInitFailed')
+                        );
                     }
                 }
                 refreshTicketsGrid();
@@ -1342,12 +1466,39 @@
         document.getElementById('boResolveOpenBtn')?.addEventListener('click', quickResolve);
         document.getElementById('boSaveStatusBtn')?.addEventListener('click', saveTicketStatus);
         window.addEventListener('resize', () => applyBoTicketsGridHeight());
+        document.documentElement.addEventListener('syriatel-locale-changed', async () => {
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                applyPageI18n();
+                remapTicketLabels();
+                refreshTicketsGridI18n();
+                if (catalogGrid) {
+                    catalogGrid.columns = getCatalogColumns();
+                    catalogGrid.refresh();
+                }
+                if (selectedTicket) {
+                    const row = ticketPreview.find((x) => x.id === selectedTicket.id) || selectedTicket;
+                    fillDrawer(row, selectedTicket);
+                }
+                await loadPaymentServicesPanel();
+                setLastRefresh();
+            } catch (e) {
+                console.warn('BackOffice locale refresh failed', e);
+            }
+        });
+
+        try {
+            await window.TelecomI18n?.ensureLoaded?.();
+            applyPageI18n();
+        } catch (e) {
+            console.warn('BackOffice i18n preload failed', e);
+        }
 
         const allowed = await ensureAccess();
         if (!allowed) {
             setLoading(false);
             showError(
-                'عذراً، لا تملك الصلاحيات الكافية لفتح قمرة العمليات. سجّل الخروج ثم الدخول مجدداً لتحديث الصلاحيات.'
+                t('backOffice.dashboard.messages.accessDenied')
             );
             return;
         }

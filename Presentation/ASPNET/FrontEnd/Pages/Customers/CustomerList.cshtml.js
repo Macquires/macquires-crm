@@ -1,5 +1,21 @@
 const TEL_SUB_DEFAULT_PREPAID_ID = 'a0e0e0e0-0000-4000-8000-000000000001';
 
+const telecomT = (key, fallback) => {
+    try {
+        const raw = String(key);
+        const paths = raw.includes('.') && !raw.startsWith('customerList.')
+            ? [raw, `customerList.${raw}`]
+            : [`customerList.${raw}`, raw];
+        for (const k of paths) {
+            const hit = window.TelecomI18n?.t?.(k);
+            if (hit) return hit;
+        }
+        return fallback;
+    } catch {
+        return fallback;
+    }
+};
+
 const App = {
     setup() {
         const state = Vue.reactive({
@@ -253,7 +269,6 @@ const App = {
                                         const d = new Date(createdRaw);
                                         return Number.isNaN(d.getTime()) ? null : d;
                                     })();
-                          const badge = subscriberTypeBadgeFields(item);
                           return {
                               ...item,
                               subscriberType: item.subscriberType || 'Individual',
@@ -262,8 +277,6 @@ const App = {
                               telecomMsisdnsSummary: item.telecomMsisdnsSummary || '—',
                               primaryMsisdn: item.primaryMsisdn || '—',
                               createdAtUtc,
-                              subscriberTypeBadgeClass: badge.subscriberTypeBadgeClass,
-                              subscriberTypeLabel: badge.subscriberTypeLabel,
                           };
                       })
                     : [];
@@ -771,12 +784,12 @@ const App = {
                         if (state.subscriberType === 0) {
                             const nidVal = nationalIdForSave();
                             if (!nidVal || nidVal.length !== 10) {
-                                state.errors.nationalId = 'الرقم الوطني مطلوب للأفراد ويجب أن يتكون من 10 خانات.';
+                                state.errors.nationalId = telecomT('swal.nationalIdRequired', '');
                                 isValid = false;
                             }
                         } else if (state.subscriberType === 1) {
                             if (!state.commercialRegistration || state.commercialRegistration.trim().length < 4) {
-                                state.errors.commercialRegistration = 'رقم السجل التجاري مطلوب للشركات (صيغة صالحة).';
+                                state.errors.commercialRegistration = telecomT('swal.commercialRegRequired', '');
                                 isValid = false;
                             }
                         }
@@ -826,11 +839,11 @@ const App = {
                                     if (telecomRes?.data?.code !== 200) {
                                         await Swal.fire({
                                             icon: 'warning',
-                                            title: 'تم حفظ بيانات المشترك',
+                                            title: telecomT('swal.savedTitle', 'Saved'),
                                             text:
                                                 telecomRes?.data?.message ||
-                                                'تعذّر تحديث الخط الأساسي (MSISDN / نوع الخط).',
-                                            confirmButtonText: 'حسناً',
+                                                telecomT('swal.lineUpdateFailed'),
+                                            confirmButtonText: telecomT('swal.ok', 'OK'),
                                         });
                                     } else {
                                         state.telecomSubscriptionIdInitial = state.telecomSubscriptionId;
@@ -839,12 +852,12 @@ const App = {
                                 } catch (telecomErr) {
                                     await Swal.fire({
                                         icon: 'warning',
-                                        title: 'تم حفظ بيانات المشترك',
+                                        title: telecomT('swal.savedTitle', 'Saved'),
                                         text:
                                             telecomErr.response?.data?.message ||
                                             telecomErr.message ||
-                                            'تعذّر تحديث الخط الأساسي.',
-                                        confirmButtonText: 'حسناً',
+                                            telecomT('swal.lineUpdateFailedShort'),
+                                        confirmButtonText: telecomT('swal.ok', 'OK'),
                                     });
                                 }
                             }
@@ -877,11 +890,11 @@ const App = {
                                 if (regRes?.data?.code !== 200) {
                                     await Swal.fire({
                                         icon: 'warning',
-                                        title: 'تم حفظ بيانات المشترك',
+                                        title: telecomT('swal.savedTitle', 'Saved'),
                                         text:
                                             regRes?.data?.message ||
-                                            'تعذّر تسجيل ملف المشترك أو الخط الجديد.',
-                                        confirmButtonText: 'حسناً',
+                                            telecomT('swal.bootstrapFailed'),
+                                        confirmButtonText: telecomT('swal.ok', 'OK'),
                                     });
                                 } else {
                                     state.telecomMsisdnInitial = state.telecomMsisdn || '';
@@ -890,12 +903,12 @@ const App = {
                             } catch (regErr) {
                                 await Swal.fire({
                                     icon: 'warning',
-                                    title: 'تم حفظ بيانات المشترك',
+                                    title: telecomT('swal.savedTitle', 'Saved'),
                                     text:
                                         regErr.response?.data?.message ||
                                         regErr.message ||
-                                        'تعذّر تسجيل ملف المشترك أو الخط الجديد.',
-                                    confirmButtonText: 'حسناً',
+                                        telecomT('swal.bootstrapFailed'),
+                                    confirmButtonText: telecomT('swal.ok', 'OK'),
                                 });
                             }
                         }
@@ -1067,9 +1080,9 @@ const App = {
                 if (!row) {
                     await Swal.fire({
                         icon: 'warning',
-                        title: 'تعذّر التحميل',
-                        text: 'لم يُعثر على بيانات العميل.',
-                        confirmButtonText: 'حسناً',
+                        title: telecomT('swal.loadFailed'),
+                        text: telecomT('swal.customerNotFound'),
+                        confirmButtonText: telecomT('swal.ok', 'OK'),
                     });
                     return;
                 }
@@ -1128,9 +1141,9 @@ const App = {
             } catch (e) {
                 await Swal.fire({
                     icon: 'error',
-                    title: 'خطأ',
-                    text: e.response?.data?.message ?? e.message ?? 'فشل تحميل العميل.',
-                    confirmButtonText: 'حسناً',
+                    title: telecomT('swal.error'),
+                    text: e.response?.data?.message ?? e.message ?? telecomT('swal.customerLoadFailed'),
+                    confirmButtonText: telecomT('swal.ok', 'OK'),
                 });
             }
         };
@@ -1142,9 +1155,9 @@ const App = {
                 if (nat.length < 2 && ph.length < 2) {
                     await Swal.fire({
                         icon: 'info',
-                        title: 'بحث',
-                        text: 'أدخل رقم هوية (حرفين على الأقل) أو رقم جوال (حرفين على الأقل).',
-                        confirmButtonText: 'حسناً',
+                        title: telecomT('swal.searchTitle'),
+                        text: telecomT('swal.searchHint'),
+                        confirmButtonText: telecomT('swal.ok', 'OK'),
                     });
                     return;
                 }
@@ -1159,9 +1172,9 @@ const App = {
                         state.customerSearchResults = [];
                         await Swal.fire({
                             icon: 'warning',
-                            title: 'بحث',
-                            text: res?.data?.message || 'تعذّر تنفيذ البحث.',
-                            confirmButtonText: 'حسناً',
+                            title: telecomT('swal.searchTitle'),
+                            text: res?.data?.message || telecomT('swal.searchFailed'),
+                            confirmButtonText: telecomT('swal.ok', 'OK'),
                         });
                         return;
                     }
@@ -1171,9 +1184,9 @@ const App = {
                     state.customerSearchResults = [];
                     await Swal.fire({
                         icon: 'error',
-                        title: 'خطأ',
-                        text: e.response?.data?.message ?? e.message ?? 'تعذّر تنفيذ البحث.',
-                        confirmButtonText: 'حسناً',
+                        title: telecomT('swal.error'),
+                        text: e.response?.data?.message ?? e.message ?? telecomT('swal.searchFailed'),
+                        confirmButtonText: telecomT('swal.ok', 'OK'),
                     });
                 } finally {
                     state.customerSearchBusy = false;
@@ -1383,7 +1396,7 @@ const App = {
             try {
                 const grid = mainGrid.obj;
                 if (!grid || !mainGridRef.value) return;
-                let subHeader = 'نوع الخط';
+                let subHeader = telecomT('primaryLine.lineType');
                 if (typeof grid.getColumnByField === 'function') {
                     const col = grid.getColumnByField('subscriptionTypeName');
                     if (col && col.headerText) subHeader = String(col.headerText).trim();
@@ -1472,28 +1485,18 @@ const App = {
             }, 450);
         };
 
-        const gridLocaleIsEnglish = () => {
-            const lang = (document.documentElement.lang || '').toLowerCase();
-            return lang.startsWith('en');
+        const subscriberTypeCellHtml = (row) => {
+            if (!row || typeof row !== 'object') return '—';
+            const html = window.TelecomUiBadges?.subscriberKind?.(row.subscriberType);
+            if (typeof html === 'string' && html.length > 0) return html;
+            return escapeHtml(String(row.subscriberType || '—'));
         };
 
-        /** Pre-compute badge fields for Syncfusion string template (avoids fragile function templates across ej2 builds). */
-        const subscriberTypeBadgeFields = (item) => {
-            const raw = item?.subscriberType;
-            const s = String(raw ?? '').trim().toLowerCase();
-            const isCorporate = s === 'corporate' || raw === 1 || raw === '1';
-            const en = gridLocaleIsEnglish();
-            if (isCorporate) {
-                return {
-                    subscriberTypeBadgeClass: 'badge bg-warning text-dark px-2 py-1 fs-6',
-                    subscriberTypeLabel: en ? '🏢 Corporate' : '🏢 شركة',
-                };
-            }
-            return {
-                subscriberTypeBadgeClass: 'badge bg-primary text-white px-2 py-1 fs-6',
-                subscriberTypeLabel: en ? '👤 Individual' : '👤 فرد',
-            };
-        };
+        const escapeHtml = (s) =>
+            String(s ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
 
         const mainGrid = {
             obj: null,
@@ -1513,6 +1516,11 @@ const App = {
                     allowPaging: true,
                     allowExcelExport: true,
                     filterSettings: { type: 'CheckBox' },
+                    queryCellInfo: (args) => {
+                        if (args.column?.field === 'subscriberType' && args.cell && args.data) {
+                            args.cell.innerHTML = subscriberTypeCellHtml(args.data);
+                        }
+                    },
                     actionBegin: (args) => {
                         if (args.requestType !== 'filterbeforeopen') return;
                         const colField =
@@ -1557,24 +1565,27 @@ const App = {
                         { field: 'name', headerText: 'Name', width: 200, minWidth: 200 },
                         {
                             field: 'subscriberType',
-                            headerText: gridLocaleIsEnglish() ? 'Type' : 'النوع',
-                            width: 140,
-                            minWidth: 100,
-                            template: '#subscriberTypeBadgeTemplate',
+                            headerText: telecomT('grid.type', 'Type'),
+                            width: 148,
+                            minWidth: 120,
+                            textAlign: 'Center',
+                            clipMode: 'Clip',
+                            allowTextWrap: false,
+                            disableHtmlEncode: false,
                         },
                         ...(gridAccess.showFullColumns
-                            ? [{ field: 'telecomSubscriptionLineCount', headerText: '#خطوط', width: 72, minWidth: 64 }]
+                            ? [{ field: 'telecomSubscriptionLineCount', headerText: telecomT('grid.lineCount', '# lines'), width: 72, minWidth: 64 }]
                             : []),
                         {
                             field: 'primaryMsisdn',
-                            headerText: gridAccess.showFullColumns ? 'أرقام الخطوط' : 'MSISDN',
+                            headerText: gridAccess.showFullColumns ? telecomT('grid.msisdns', 'MSISDNs') : 'MSISDN',
                             width: gridAccess.showFullColumns ? 260 : 140,
                             minWidth: gridAccess.showFullColumns ? 160 : 120,
                             template: '#msisdnsSummaryTemplate',
                         },
                         {
                             field: 'subscriptionTypeName',
-                            headerText: 'نوع الخط',
+                            headerText: telecomT('grid.lineType', 'Line type'),
                             width: 130,
                             minWidth: 100,
                             filter: { type: 'CheckBox', itemTemplate: '#mcqCustomerSubTypeFilterItem' },
@@ -1923,10 +1934,39 @@ const App = {
             }
         };
 
+        const refreshGridTelecomHeaders = () => {
+            const g = mainGrid.obj;
+            if (!g || typeof g.getColumnByField !== 'function') return;
+            const setH = (field, key, fb) => {
+                const c = g.getColumnByField(field);
+                if (c) c.headerText = telecomT(key, fb);
+            };
+            setH('subscriberType', 'grid.type', 'Type');
+            setH('telecomSubscriptionLineCount', 'grid.lineCount', '# lines');
+            setH('primaryMsisdn', 'grid.msisdns', 'MSISDNs');
+            setH('subscriptionTypeName', 'grid.lineType', 'Line type');
+            if (typeof g.refreshHeader === 'function') g.refreshHeader();
+        };
+
+        const refreshTelecomCustomerListI18n = async () => {
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                window.TelecomI18n?.refresh?.();
+                const title = telecomT('pageTitle', 'Customers');
+                if (title) document.title = title;
+                refreshGridTelecomHeaders();
+                if (mainGrid.obj && typeof mainGrid.obj.refresh === 'function') {
+                    mainGrid.obj.refresh();
+                }
+            } catch (_) { /* ignore */ }
+        };
+
         Vue.onMounted(async () => {
             document.documentElement.addEventListener('syriatel-locale-changed', refreshManageContactModalTitle);
             document.documentElement.addEventListener('syriatel-ui-modals-loaded', refreshManageContactModalTitle);
+            document.documentElement.addEventListener('syriatel-locale-changed', refreshTelecomCustomerListI18n);
             refreshManageContactModalTitle();
+            await refreshTelecomCustomerListI18n();
             try {
                 await SecurityManager.authorizePage(['Customers', 'TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement']);
                 await SecurityManager.validateToken();
@@ -2024,7 +2064,7 @@ const App = {
                 vasPanels[m] = res?.data?.content ?? { services: [] };
             } catch (e) {
                 vasPanels[m] = { services: [] };
-                vasPanelError[m] = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? 'تعذّر تحميل VAS';
+                vasPanelError[m] = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? telecomT('swal.vasLoadFailed');
             } finally {
                 vasPanelLoading[m] = false;
             }
@@ -2053,9 +2093,9 @@ const App = {
                     if (wantActive) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم التفعيل',
+                            title: telecomT('swal.activated'),
                             text: res?.data?.content?.operationNumber
-                                ? 'عملية: ' + res.data.content.operationNumber
+                                ? telecomT('swal.activatedOpPrefix') + ' ' + res.data.content.operationNumber
                                 : '',
                             timer: 2000,
                             showConfirmButton: false,
@@ -2063,7 +2103,7 @@ const App = {
                     }
                 } else {
                     if (event?.target) event.target.checked = !wantActive;
-                    Swal.fire({ icon: 'error', title: 'فشل', text: res?.data?.message || '' });
+                    Swal.fire({ icon: 'error', title: telecomT('swal.operationFailed'), text: res?.data?.message || '' });
                 }
             } catch (e) {
                 if (event?.target) event.target.checked = !wantActive;
@@ -2071,7 +2111,7 @@ const App = {
                 const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? '';
                 Swal.fire({
                     icon: errName === 'BusinessRuleViolationException' ? 'warning' : 'error',
-                    title: errName === 'BusinessRuleViolationException' ? 'تعذّر التفعيل' : 'خطأ',
+                    title: errName === 'BusinessRuleViolationException' ? telecomT('swal.activationFailed') : telecomT('swal.error'),
                     text: msg,
                 });
             } finally {
@@ -2197,7 +2237,7 @@ const App = {
             if (window.Swal) {
                 Swal.fire({
                     icon: errName === 'BusinessRuleViolationException' ? 'warning' : 'error',
-                    title: errName === 'BusinessRuleViolationException' ? 'تعذّر التنفيذ' : 'خطأ',
+                    title: errName === 'BusinessRuleViolationException' ? telecomT('swal.executionFailed') : telecomT('swal.error'),
                     text: String(msg),
                 });
             }
@@ -2393,24 +2433,24 @@ const App = {
                     createdById: uid,
                 });
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء العملية'), {
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.createOpFailed')), {
                         response: createRes,
                     });
                 }
                 const opId = createRes?.data?.content?.data?.id;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
                 const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
                     id: opId,
                     updatedById: uid,
                 });
                 if (confirmRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                    throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                         response: confirmRes,
                     });
                 }
                 if (window.Swal) {
-                    Swal.fire({ icon: 'success', title: 'تم التنفيذ', timer: 1800, showConfirmButton: false });
+                    Swal.fire({ icon: 'success', title: telecomT('swal.executed'), timer: 1800, showConfirmButton: false });
                 }
                 await loadCustomer360(state.id);
                 return true;
@@ -2561,7 +2601,7 @@ const App = {
             const nat = (lineActionModal.takeoverSearchNationalId || '').trim();
             const ph = (lineActionModal.takeoverSearchPhone || '').trim();
             if (nat.length < 2 && ph.length < 2) {
-                if (window.Swal) Swal.fire({ icon: 'info', title: 'أدخل رقم وطني أو جوال (حرفين على الأقل)' });
+                if (window.Swal) Swal.fire({ icon: 'info', title: telecomT('swal.searchOwnerHint') });
                 return;
             }
             lineActionModal.busy = true;
@@ -2592,7 +2632,7 @@ const App = {
                 const pick = subs.find((s) => s.isPrimaryLine) || subs[0];
                 lineActionModal.takeoverTargetProfileId = (pick?.subscriberProfileId || '').trim();
                 if (!lineActionModal.takeoverTargetProfileId && window.Swal) {
-                    Swal.fire({ icon: 'warning', title: 'لا يوجد ملف مشترك للعميل المختار' });
+                    Swal.fire({ icon: 'warning', title: telecomT('swal.noSubscriberProfile') });
                 }
             } catch (e) {
                 showLineActionError(e);
@@ -2607,7 +2647,7 @@ const App = {
             const offeringId = (lineActionModal.productOfferingId || '').trim();
             const iccid = (lineActionModal.simIccid || '').trim();
             if (!profileId || !assetId || !offeringId || iccid.length < 19) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أكمل الرقم والباقة وICCID (19 رقم)' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.newLineIncomplete') });
                 return;
             }
             lineActionModal.busy = true;
@@ -2642,7 +2682,7 @@ const App = {
             const sub = lineActionModal.sub;
             const offeringId = (lineActionModal.productOfferingId || '').trim();
             if (!sub || !offeringId) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر الباقة الجديدة' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.pickPackage') });
                 return;
             }
             lineActionModal.busy = true;
@@ -2666,15 +2706,15 @@ const App = {
             const iccid = (lineActionModal.simIccid || '').trim();
             const reason = (lineActionModal.simReplacementReason || '').trim();
             if (!sub || !reason) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر سبب التبديل' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.pickSimReason') });
                 return;
             }
             if (iccid.length < 19) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أدخل ICCID الجديد (19 رقم)' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.enterNewIccid') });
                 return;
             }
             if (lineActionModal.simLostOrStolen && !lineActionModal.simIdentityFile) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع إقرار / هوية المشترك' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.uploadIdentity') });
                 return;
             }
             if (lineActionModal.simLostOrStolen) {
@@ -2695,12 +2735,12 @@ const App = {
                         createdById: uid,
                     });
                     if (createRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), {
+                        throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.createRequestFailed')), {
                             response: createRes,
                         });
                     }
                     const opId = createRes?.data?.content?.data?.id;
-                    if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                    if (!opId) throw new Error(telecomT('swal.noOpId'));
                     const form = new FormData();
                     form.append('id', opId);
                     form.append('updatedById', uid || '');
@@ -2711,8 +2751,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد المشرف (SIM-).',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.sentToBackOfficeSimHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -2750,15 +2790,15 @@ const App = {
             const reason = (lineActionModal.trmTerminationReason || '').trim();
             const type = (lineActionModal.trmTerminationType || '').trim();
             if (!sub || !reason || !type) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أكمل نوع وسبب الإنهاء' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.terminationIncomplete') });
                 return;
             }
             if (type === 'Voluntary' && !(lineActionModal.trmRetentionOfferOutcome || '').trim()) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'نتيجة عرض الاحتفاظ مطلوبة' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.retentionRequired') });
                 return;
             }
             if (lineActionModal.trmRequiresBackOffice && !lineActionModal.trmIdentityFile) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع الوثيقة / القرار الإداري' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.uploadAdminDoc') });
                 return;
             }
             const key = sub.id || '__line__';
@@ -2780,13 +2820,13 @@ const App = {
                 };
                 const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), {
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.createRequestFailed')), {
                         response: createRes,
                     });
                 }
                 const opId = createRes?.data?.content?.data?.id;
                 const entity = createRes?.data?.content?.data;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 lineActionModal.trmRequiresBackOffice =
                     String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
                     || lineActionModal.trmRequiresBackOffice;
@@ -2801,8 +2841,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد الإنهاء (TRM-).',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.pendingTrmHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -2814,12 +2854,12 @@ const App = {
                         updatedById: uid,
                     });
                     if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
                     }
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: 'تم إنهاء الخط', timer: 1800, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: telecomT('swal.lineTerminated'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
@@ -2836,11 +2876,11 @@ const App = {
             const sub = lineActionModal.sub;
             const reason = (lineActionModal.susSuspensionReason || '').trim();
             if (!sub || !reason) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'سبب الحظر مطلوب' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.suspensionReasonRequired') });
                 return;
             }
             if (lineActionModal.susAutoReconnectEnabled && !(lineActionModal.susEndDateLocal || '').trim()) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'تاريخ انتهاء الحظر مطلوب' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.suspensionEndRequired') });
                 return;
             }
             const key = sub.id || '__line__';
@@ -2866,11 +2906,11 @@ const App = {
                 };
                 const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.failShort')), { response: createRes });
                 }
                 const opId = createRes?.data?.content?.data?.id;
                 const entity = createRes?.data?.content?.data;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 lineActionModal.susRequiresBackOffice =
                     String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
                     || lineActionModal.susRequiresBackOffice;
@@ -2879,8 +2919,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد الحظر (SUS-).',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.pendingSusHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -2892,12 +2932,12 @@ const App = {
                         updatedById: uid,
                     });
                     if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
                     }
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: 'تم حظر الخط', timer: 1800, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: telecomT('swal.lineSuspended'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
@@ -2914,11 +2954,11 @@ const App = {
             const sub = lineActionModal.sub;
             const reason = (lineActionModal.rcnReconnectReason || '').trim();
             if (!sub || !reason) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'سبب إعادة التفعيل مطلوب' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.reconnectReasonRequired') });
                 return;
             }
             if (lineActionModal.rcnClearanceType === 'Payment' && !(lineActionModal.rcnPaymentReference || '').trim()) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.paymentRefRequired') });
                 return;
             }
             await loadListReconnectEligibility();
@@ -2929,7 +2969,7 @@ const App = {
             ) {
                 const msg =
                     lineActionModal.rcnEligibility.messageAr || lineActionModal.rcnEligibility.MessageAr || '';
-                if (window.Swal) Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
+                if (window.Swal) Swal.fire({ icon: 'error', title: telecomT('swal.notAllowed'), text: msg });
                 return;
             }
             const key = sub.id || '__line__';
@@ -2951,11 +2991,11 @@ const App = {
                 };
                 const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.failShort')), { response: createRes });
                 }
                 const opId = createRes?.data?.content?.data?.id;
                 const entity = createRes?.data?.content?.data;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 lineActionModal.rcnRequiresBackOffice =
                     String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
                     || lineActionModal.rcnRequiresBackOffice;
@@ -2964,8 +3004,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد RCN.',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.pendingRcnHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -2977,12 +3017,12 @@ const App = {
                         updatedById: uid,
                     });
                     if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
                     }
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: 'تم إعادة التفعيل', timer: 1800, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: telecomT('swal.reconnected'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
@@ -3000,11 +3040,11 @@ const App = {
             const reason = (lineActionModal.rfdRefundReason || '').trim();
             const amt = Number(lineActionModal.rfdRefundAmount);
             if (!sub || !reason || !amt || amt <= 0) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أكمل بيانات الاسترداد' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.refundIncomplete') });
                 return;
             }
             if (lineActionModal.rfdRequiresBackOffice && !lineActionModal.rfdIdentityFile) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع وثيقة الاعتماد' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.uploadApprovalDoc') });
                 return;
             }
             const key = sub.id || '__line__';
@@ -3026,11 +3066,11 @@ const App = {
                 };
                 const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.failShort')), { response: createRes });
                 }
                 const opId = createRes?.data?.content?.data?.id;
                 const entity = createRes?.data?.content?.data;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 lineActionModal.rfdRequiresBackOffice =
                     String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
                     || !!entity?.requiresDualApproval
@@ -3046,8 +3086,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد الاسترداد (RFD-).',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.pendingRfdHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -3059,12 +3099,12 @@ const App = {
                         updatedById: uid,
                     });
                     if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
                     }
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: 'تم تنفيذ الاسترداد', timer: 1800, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: telecomT('swal.refundDone'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
@@ -3082,11 +3122,11 @@ const App = {
             if (!sub) return;
             if (lineActionModal.bdrCollectionAction === 'PaymentRecorded') {
                 if (!(lineActionModal.bdrPaymentReference || '').trim()) {
-                    if (window.Swal) Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
+                    if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.paymentRefRequired') });
                     return;
                 }
                 if (!(Number(lineActionModal.bdrCollectedAmount) > 0)) {
-                    if (window.Swal) Swal.fire({ icon: 'warning', title: 'المبلغ المحصّل مطلوب' });
+                    if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.collectionAmountRequired') });
                     return;
                 }
             }
@@ -3098,7 +3138,7 @@ const App = {
             ) {
                 const msg =
                     lineActionModal.bdrEligibility.messageAr || lineActionModal.bdrEligibility.MessageAr || '';
-                if (window.Swal) Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
+                if (window.Swal) Swal.fire({ icon: 'error', title: telecomT('swal.notAllowed'), text: msg });
                 return;
             }
             const key = sub.id || '__line__';
@@ -3125,10 +3165,10 @@ const App = {
                 };
                 const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.failShort')), { response: createRes });
                 }
                 const opId = createRes?.data?.content?.data?.id;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 lineActionModal.bdrRequiresBackOffice =
                     String(createRes?.data?.content?.data?.approvalLevelRequired || '').toLowerCase() ===
                         'backoffice'
@@ -3137,8 +3177,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد التحصيل (BDR-).',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.pendingBdrHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -3150,12 +3190,12 @@ const App = {
                         updatedById: uid,
                     });
                     if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
                     }
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: 'تم تسجيل التحصيل', timer: 1800, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: telecomT('swal.collectionDone'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
@@ -3173,11 +3213,11 @@ const App = {
             const targetId = (lineActionModal.cnTargetMsisdnAssetId || '').trim();
             const reason = (lineActionModal.cnNumberChangeReason || '').trim();
             if (!sub || !targetId || !reason) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر الرقم الجديد وسبب التغيير' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.changeNumberIncomplete') });
                 return;
             }
             if (lineActionModal.cnRequiresBackOffice && !lineActionModal.cnPaymentFile) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع إيصال الدفع أو موافقة المشرف' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.uploadPaymentReceipt') });
                 return;
             }
             const key = sub.id || '__line__';
@@ -3205,12 +3245,12 @@ const App = {
                 }
                 const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), {
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.createRequestFailed')), {
                         response: createRes,
                     });
                 }
                 const opId = createRes?.data?.content?.data?.id;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 if (lineActionModal.cnRequiresBackOffice) {
                     const form = new FormData();
                     form.append('id', opId);
@@ -3222,8 +3262,8 @@ const App = {
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الإرسال للباك أوفيس',
-                            text: 'الطلب بانتظار اعتماد تغيير الرقم (CNR-).',
+                            title: telecomT('swal.sentToBackOffice'),
+                            text: telecomT('swal.pendingCnrHint'),
                             timer: 2800,
                             showConfirmButton: false,
                         });
@@ -3235,12 +3275,12 @@ const App = {
                         updatedById: uid,
                     });
                     if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
                     }
                     if (window.Swal) {
-                        Swal.fire({ icon: 'success', title: 'تم تغيير الرقم', timer: 1800, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: telecomT('swal.changeNumberDone'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
@@ -3257,15 +3297,15 @@ const App = {
             const sub = lineActionModal.sub;
             const secondary = (lineActionModal.takeoverTargetProfileId || '').trim();
             if (!sub || !secondary) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'اختر المالك الجديد' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.takeoverOwnerRequired') });
                 return;
             }
             if (!(lineActionModal.takeoverTransferReason || '').trim()) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'سبب نقل الملكية مطلوب' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.takeoverReasonRequired') });
                 return;
             }
             if (!lineActionModal.takeoverIdentityFile) {
-                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع هوية المالك الجديد' });
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('swal.takeoverUploadIdentity') });
                 return;
             }
             const key = sub.id || '__line__';
@@ -3285,10 +3325,10 @@ const App = {
                     createdById: uid,
                 });
                 if (createRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(createRes?.data?.message || 'فشل إنشاء الطلب'), { response: createRes });
+                    throw Object.assign(new Error(createRes?.data?.message || telecomT('swal.createRequestFailed')), { response: createRes });
                 }
                 const opId = createRes?.data?.content?.data?.id;
-                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                if (!opId) throw new Error(telecomT('swal.noOpId'));
                 const form = new FormData();
                 form.append('id', opId);
                 form.append('updatedById', uid || '');
@@ -3299,8 +3339,8 @@ const App = {
                 if (window.Swal) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم الإرسال للباك أوفيس',
-                        text: 'الطلب قيد التدقيق القانوني. بعد الاعتماد يُنفَّذ النقل على CBS وHLR تلقائياً.',
+                        title: telecomT('swal.sentToBackOffice'),
+                        text: telecomT('swal.takeoverSentHint'),
                         timer: 2800,
                         showConfirmButton: false,
                     });
@@ -3319,10 +3359,10 @@ const App = {
             const s = Number(status);
             const failed = s === 4;
             return [
-                { label: 'مسودة', done: s !== 4, active: s === 0, failed },
-                { label: 'وثائق', done: s >= 5 || s === 6 || s === 3 || s === 1, active: s === 5, failed },
-                { label: 'تجهيز', done: s === 3 || s === 1, active: s === 6, failed },
-                { label: 'منجز', done: s === 3, active: false, failed },
+                { label: telecomT('ops.pipeline.draft', 'Draft'), done: s !== 4, active: s === 0, failed },
+                { label: telecomT('ops.pipeline.docs', 'Documents'), done: s >= 5 || s === 6 || s === 3 || s === 1, active: s === 5, failed },
+                { label: telecomT('ops.pipeline.provisioning', 'Provisioning'), done: s === 3 || s === 1, active: s === 6, failed },
+                { label: telecomT('ops.pipeline.done', 'Done'), done: s === 3, active: false, failed },
             ];
         };
 
@@ -3348,7 +3388,7 @@ const App = {
                 }
             } catch (e) {
                 state.customer360 = null;
-                state.customer360Error = e?.response?.data?.message || e?.message || 'تعذّر تحميل Customer 360';
+                state.customer360Error = e?.response?.data?.message || e?.message || telecomT('swal.loadFailed', 'Load failed');
             } finally {
                 state.customer360Busy = false;
             }
@@ -3365,7 +3405,14 @@ const App = {
             const label = b?.label ?? b?.Label;
             if (label) return label;
             const t = b?.componentType ?? b?.ComponentType;
-            const map = { 0: 'دقائق', 1: 'إنترنت', 2: 'رسائل', Voice: 'دقائق', Data: 'إنترنت', Sms: 'رسائل' };
+            const map = {
+                0: telecomT('c360.walletVoice', 'Voice'),
+                1: telecomT('c360.walletData', 'Data'),
+                2: telecomT('c360.walletSms', 'SMS'),
+                Voice: telecomT('c360.walletVoice', 'Voice'),
+                Data: telecomT('c360.walletData', 'Data'),
+                Sms: telecomT('c360.walletSms', 'SMS'),
+            };
             return map[t] ?? String(t ?? '—');
         };
 
@@ -3405,7 +3452,7 @@ const App = {
                 const status = detail?.status ?? detail?.Status;
                 if (status === 2 || status === 'Completed') return detail;
                 if (status === 3 || status === 'Failed') {
-                    throw new Error(detail?.failureReason || detail?.FailureReason || 'فشلت معاملة الدفع');
+                    throw new Error(detail?.failureReason || detail?.FailureReason || telecomT('swal.paymentTxnFailed'));
                 }
                 await new Promise((r) => setTimeout(r, 500));
             }
@@ -3414,12 +3461,15 @@ const App = {
 
         const executeListPaymentFlow = async (customerId, subscriptionId, busyKey) => {
             const { value: method } = await Swal.fire({
-                title: 'طريقة الشحن',
+                title: telecomT('swal.rechargeMethod'),
                 input: 'radio',
-                inputOptions: { wallet: 'محفظة / نقد', voucher: 'قسيمة' },
+                inputOptions: {
+                    wallet: telecomT('swal.rechargeWallet'),
+                    voucher: telecomT('swal.rechargeVoucher'),
+                },
                 inputValue: 'wallet',
                 showCancelButton: true,
-                confirmButtonText: 'متابعة',
+                confirmButtonText: telecomT('swal.continueBtn'),
             });
             if (!method) return;
 
@@ -3427,10 +3477,10 @@ const App = {
             let gatewayRef;
             if (method === 'voucher') {
                 const { value: voucherCode } = await Swal.fire({
-                    title: 'رمز القسيمة',
+                    title: telecomT('swal.voucherCodeTitle'),
                     input: 'text',
                     showCancelButton: true,
-                    inputValidator: (v) => (!v || !String(v).trim() ? 'أدخل الرمز' : undefined),
+                    inputValidator: (v) => (!v || !String(v).trim() ? telecomT('swal.enterVoucherCode') : undefined),
                 });
                 if (!voucherCode) return;
                 const valRes = await AxiosManager.post('/Telecom/ValidateVoucher', {
@@ -3438,7 +3488,10 @@ const App = {
                 });
                 const val = valRes?.data?.content ?? valRes?.data?.Content;
                 if (!(val?.valid ?? val?.Valid)) {
-                    Swal.fire({ icon: 'error', title: val?.messageAr || val?.MessageAr || 'قسيمة غير صالحة' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: val?.messageAr || val?.MessageAr || telecomT('swal.invalidVoucher'),
+                    });
                     return;
                 }
                 createBody = {
@@ -3453,22 +3506,22 @@ const App = {
                 gatewayRef = `VCHR-${String(voucherCode).trim()}`;
             } else {
                 const { value: amountStr } = await Swal.fire({
-                    title: 'مبلغ الشحن',
+                    title: telecomT('swal.rechargeAmount'),
                     input: 'number',
                     showCancelButton: true,
-                    confirmButtonText: 'التالي',
+                    confirmButtonText: telecomT('swal.next'),
                     inputValidator: (v) => {
                         const n = parseFloat(v);
-                        if (!v || Number.isNaN(n) || n <= 0) return 'مبلغ غير صالح';
+                        if (!v || Number.isNaN(n) || n <= 0) return telecomT('swal.invalidAmount');
                     },
                 });
                 if (!amountStr) return;
                 const { value: gw } = await Swal.fire({
-                    title: 'مرجع الدفع',
+                    title: telecomT('swal.paymentRefTitle'),
                     input: 'text',
                     showCancelButton: true,
-                    confirmButtonText: 'تأكيد',
-                    inputValidator: (v) => (!v || !String(v).trim() ? 'مرجع مطلوب' : undefined),
+                    confirmButtonText: telecomT('swal.confirm'),
+                    inputValidator: (v) => (!v || !String(v).trim() ? telecomT('swal.refRequired') : undefined),
                 });
                 if (!gw) return;
                 createBody = {
@@ -3494,13 +3547,17 @@ const App = {
                 });
                 const confirm = confirmRes?.data?.content ?? confirmRes?.data?.Content;
                 if (!(confirm?.success ?? confirm?.Success)) {
-                    throw new Error(confirm?.messageAr || confirm?.MessageAr || 'فشل التأكيد');
+                    throw new Error(confirm?.messageAr || confirm?.MessageAr || telecomT('swal.confirmFailed'));
                 }
                 await pollPaymentDetailList(paymentId);
                 await loadCustomer360(state.id);
-                Swal.fire({ icon: 'success', title: 'تم الشحن', text: confirm?.messageAr || confirm?.MessageAr });
+                Swal.fire({
+                    icon: 'success',
+                    title: telecomT('swal.rechargeOk'),
+                    text: confirm?.messageAr || confirm?.MessageAr,
+                });
             } catch (e) {
-                Swal.fire({ icon: 'error', title: e?.message || 'تعذّر الشحن' });
+                Swal.fire({ icon: 'error', title: e?.message || telecomT('swal.rechargeFailed') });
             } finally {
                 state.rechargeBusy = '';
             }
@@ -3511,7 +3568,7 @@ const App = {
             const wallet = lineWalletForSub(sub.id);
             const msisdn = sub.msisdn || wallet?.msisdn || '';
             if (!msisdn) {
-                Swal.fire({ icon: 'warning', title: 'لا يوجد رقم خط للشحن' });
+                Swal.fire({ icon: 'warning', title: telecomT('swal.noMsisdnForRecharge') });
                 return;
             }
             await executeListPaymentFlow(state.id, sub.id, sub.id);
@@ -3526,11 +3583,19 @@ const App = {
                     state.nationalId = c.nationalId;
                     state.nationalIdRevealed = true;
                 } else if (window.Swal) {
-                    Swal.fire({ icon: 'info', title: 'غير متاح', text: 'لا يوجد رقم وطني لهذا السجل.' });
+                    Swal.fire({
+                        icon: 'info',
+                        title: telecomT('swal.unavailable'),
+                        text: telecomT('swal.noNationalId'),
+                    });
                 }
             } catch (e) {
                 if (window.Swal) {
-                    Swal.fire({ icon: 'error', title: 'صلاحية', text: e?.response?.data?.message || 'ليس لديك صلاحية ViewDecryptedPII' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: telecomT('swal.permissionError'),
+                        text: e?.response?.data?.message || 'ViewDecryptedPII',
+                    });
                 }
             }
         };
@@ -3586,18 +3651,37 @@ const App = {
                 const body = res?.data?.content;
                 if (res?.data?.code === 200 && body?.success) {
                     await queryCustomerHlrLiveStatus();
-                    alert(body.message || 'تمت المزامنة');
-                } else {
-                    alert(body?.message || res?.data?.message || 'فشل المزامنة');
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: telecomT('swal.syncOk'),
+                            text: body.message || '',
+                            timer: 1800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: telecomT('swal.syncFailed'),
+                        text: body?.message || res?.data?.message || '',
+                    });
                 }
             } catch (e) {
-                alert(e?.response?.data?.message || e?.message || 'HLR');
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: telecomT('swal.syncFailed'),
+                        text: e?.response?.data?.message || e?.message || 'HLR',
+                    });
+                }
             } finally {
                 state.hlrResyncBusy = false;
             }
         };
 
         return {
+            telecomT,
             mainGridRef,
             mainModalRef,
             manageContactModalRef,
@@ -3687,18 +3771,26 @@ const App = {
                 const primary = subs.find((s) => s.isPrimaryLine) || subs[0];
                 const msisdn = primary?.msisdn || '';
                 if (!msisdn) {
-                    Swal.fire({ icon: 'warning', title: 'لا يوجد رقم MSISDN للمشترك' });
+                    Swal.fire({ icon: 'warning', title: telecomT('supportTicket.noMsisdn', 'No MSISDN') });
                     return;
                 }
+                const issueOpts = [
+                    [0, telecomT('supportTicket.issueNetwork', 'Network')],
+                    [1, telecomT('supportTicket.issueBilling', 'Billing')],
+                    [2, telecomT('supportTicket.issueSimBlock', 'SIM block')],
+                    [3, telecomT('supportTicket.issueActivation', 'Activation')],
+                ]
+                    .map(([v, lbl]) => `<option value="${v}">${lbl}</option>`)
+                    .join('');
                 const { value: form } = await Swal.fire({
-                    title: 'فتح تذكرة دعم فني',
+                    title: telecomT('supportTicket.title', 'Open support ticket'),
                     html:
                         `<p class="small text-muted" dir="ltr">${msisdn}</p>` +
-                        '<select id="swal-issue" class="form-select mb-2"><option value="0">شبكة</option><option value="1">فوترة</option><option value="2">حظر شريحة</option><option value="3">تفعيل</option></select>' +
-                        '<textarea id="swal-notes" class="form-control" rows="3" placeholder="وصف المشكلة"></textarea>',
+                        `<select id="swal-issue" class="form-select mb-2">${issueOpts}</select>` +
+                        `<textarea id="swal-notes" class="form-control" rows="3" placeholder="${telecomT('supportTicket.notesPh', '')}"></textarea>`,
                     focusConfirm: false,
                     showCancelButton: true,
-                    confirmButtonText: 'إنشاء',
+                    confirmButtonText: telecomT('supportTicket.create', 'Create'),
                     preConfirm: () => ({
                         issueType: Number(document.getElementById('swal-issue')?.value ?? 0),
                         notes: document.getElementById('swal-notes')?.value?.trim() || '',
@@ -3714,9 +3806,17 @@ const App = {
                         customerId: state.id,
                         subscriberProfileId: primary?.subscriberProfileId,
                     });
-                    Swal.fire({ icon: 'success', title: 'تم إنشاء التذكرة', timer: 2000, showConfirmButton: false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: telecomT('supportTicket.createdOk', 'Ticket created'),
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
                 } catch (e) {
-                    Swal.fire({ icon: 'error', title: e?.response?.data?.message || 'فشل إنشاء التذكرة' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: e?.response?.data?.message || telecomT('supportTicket.createFail', 'Create failed'),
+                    });
                 }
             },
         };

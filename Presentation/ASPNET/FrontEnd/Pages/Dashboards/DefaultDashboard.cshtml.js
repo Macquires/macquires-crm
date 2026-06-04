@@ -150,7 +150,7 @@ const App = {
                     allowSelection: false,
                     allowGrouping: false,
                     allowTextWrap: false,
-                    allowResizing: false,
+                    allowResizing: true,
                     allowPaging: true,
                     allowExcelExport: false,
                     sortSettings: { columns: [{ field: 'orderDate', direction: 'Descending' }] },
@@ -178,7 +178,7 @@ const App = {
                     allowSelection: false,
                     allowGrouping: false,
                     allowTextWrap: false,
-                    allowResizing: false,
+                    allowResizing: true,
                     allowPaging: true,
                     allowExcelExport: false,
                     sortSettings: { columns: [{ field: 'movementDate', direction: 'Descending' }] },
@@ -212,7 +212,7 @@ const App = {
                     allowSelection: false,
                     allowGrouping: false,
                     allowTextWrap: false,
-                    allowResizing: false,
+                    allowResizing: true,
                     allowPaging: true,
                     allowExcelExport: false,
                     sortSettings: { columns: [{ field: 'orderDate', direction: 'Descending' }] },
@@ -562,8 +562,11 @@ function initTelecomOperatorSlimDashboard() {
 
             if (allowed === false) {
                 if (host) {
-                    host.innerHTML =
-                        '<p class="text-muted col-12">لا تملك صلاحية عرض لوحة القيادة. تواصل مع مسؤول النظام.</p>';
+                    const msg =
+                        typeof TelecomI18n !== 'undefined' && TelecomI18n.t
+                            ? TelecomI18n.t('defaultDashboard.noPermission')
+                            : 'No permission';
+                    host.innerHTML = '<p class="text-muted col-12">' + (msg || '') + '</p>';
                 }
                 return;
             }
@@ -588,8 +591,11 @@ function initTelecomOperatorSlimDashboard() {
         } catch (e) {
             console.error('slim dash', e);
             if (host) {
-                host.innerHTML =
-                    '<p class="text-danger col-12">تعذّر تحميل لوحة القيادة. أعد تحميل الصفحة أو تحقق من الاتصال.</p>';
+                const msg =
+                    typeof TelecomI18n !== 'undefined' && TelecomI18n.t
+                        ? TelecomI18n.t('defaultDashboard.loadFailed')
+                        : 'Load failed';
+                host.innerHTML = '<p class="text-danger col-12">' + (msg || '') + '</p>';
             }
         } finally {
             if (typeof hideSpinnerAndShowContent === 'function') {
@@ -602,6 +608,23 @@ function initTelecomOperatorSlimDashboard() {
     })();
 }
 
+async function applyDefaultDashboardLocale() {
+    if (typeof TelecomI18n === 'undefined') {
+        return;
+    }
+    await TelecomI18n.ensureLoaded();
+    const slim = document.getElementById('telecomOperatorDashSlim');
+    if (slim) {
+        slim.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
+        slim.setAttribute('lang', document.documentElement.getAttribute('lang') || 'ar');
+        TelecomI18n.applyDomI18n(slim);
+    }
+    const title = TelecomI18n.t('defaultDashboard.pageTitle');
+    if (title) {
+        document.title = title;
+    }
+}
+
 (async function bootstrapDefaultDashboard() {
     try {
         if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
@@ -610,6 +633,16 @@ function initTelecomOperatorSlimDashboard() {
     } catch (e) {
         console.warn('DefaultDashboard: session sync failed', e);
     }
+
+    try {
+        await applyDefaultDashboardLocale();
+    } catch (e) {
+        console.warn('DefaultDashboard: locale init failed', e);
+    }
+
+    document.documentElement.addEventListener('syriatel-locale-changed', () => {
+        applyDefaultDashboardLocale().catch(() => {});
+    });
 
     initTelecomOperatorSlimDashboard();
 })();

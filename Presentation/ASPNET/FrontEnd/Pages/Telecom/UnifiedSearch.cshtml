@@ -1,6 +1,6 @@
 @page "/Telecom/UnifiedSearch"
 @{
-    ViewData["Title"] = "البحث الموحّد — Customer 360";
+    ViewData["Title"] = "Unified search — Customer 360";
 }
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 <style>
@@ -20,29 +20,29 @@
             <div class="col-12 col-lg-10 col-xl-8">
                 <div class="card us-hero-card mb-4">
                     <div class="card-body p-4 p-lg-5 text-center">
-                        <p class="text-uppercase small text-muted mb-2">Syria Telecom BSS</p>
+                        <p class="text-uppercase small text-muted mb-2" data-telecom-i18n="unifiedSearch.kicker">Syria Telecom BSS</p>
                         <h1 class="h3 fw-bold text-danger mb-2">
-                            <i class="fas fa-search me-2"></i>البحث الموحّد الذكي
+                            <i class="fas fa-search me-2"></i><span data-telecom-i18n="unifiedSearch.title">Smart unified search</span>
                         </h1>
-                        <p class="text-muted small mb-4">
-                            الرقم الوطني · السجل التجاري · رقم الاشتراك (MSISDN) فقط — بدون بحث بالاسم
+                        <p class="text-muted small mb-4" data-telecom-i18n="unifiedSearch.subtitle">
+                            National ID · commercial registry · MSISDN only — no name search
                         </p>
                         <div class="input-group input-group-lg us-search-group mx-auto" style="max-width: 640px;">
                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-fingerprint text-danger"></i></span>
                             <input id="unifiedSearchInput" type="search" class="form-control border-start-0"
-                                   v-model="state.searchTerm" placeholder="09XXXXXXXX أو الرقم الوطني أو السجل التجاري"
+                                   v-model="state.searchTerm" :placeholder="state.searchPlaceholder"
                                    autocomplete="off" dir="ltr" @@keyup.enter="runSearch" />
                             <button type="button" class="btn btn-danger px-4" :disabled="state.searchBusy" @@click="runSearch">
                                 <span v-if="state.searchBusy" class="spinner-border spinner-border-sm"></span>
-                                <span v-else><i class="fas fa-bolt me-1"></i> بحث</span>
+                                <span v-else><i class="fas fa-bolt me-1"></i> {{ usT('search') }}</span>
                             </button>
                         </div>
                         <p v-if="state.inlineAlert" class="alert alert-warning small mt-3 mb-0 py-2" role="alert">{{ state.inlineAlert }}</p>
-                        <p class="form-text small text-muted mt-3 mb-0">اضغط Enter للبحث — تظهر النتائج في نافذة مركزية فوراً</p>
+                        <p class="form-text small text-muted mt-3 mb-0" data-telecom-i18n="unifiedSearch.hintEnter">Press Enter to search</p>
                     </div>
                 </div>
                 <div class="text-center">
-                    <a href="/Telecom/TelecomHub" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-right me-1"></i> مركز العمليات</a>
+                    <a href="/Telecom/TelecomHub" class="btn btn-outline-secondary btn-sm" data-telecom-i18n="unifiedSearch.hubLink"><i class="fas fa-arrow-right me-1"></i> Operations hub</a>
                 </div>
             </div>
         </div>
@@ -53,28 +53,28 @@
             <div class="modal-content shadow-lg">
                 <div class="modal-header border-0">
                     <h2 class="modal-title h5 mb-0" id="searchResultModalLabel">
-                        <i class="fas fa-list-ul me-2"></i>نتائج البحث السريعة
+                        <i class="fas fa-list-ul me-2"></i>{{ usT('modalTitle') }}
                     </h2>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" :aria-label="usT('close')"></button>
                 </div>
                 <div class="modal-body p-0">
                     <div v-if="state.searchBusy" class="text-center py-5">
                         <span class="spinner-border text-danger"></span>
-                        <p class="small text-muted mt-2 mb-0">جاري الاستعلام…</p>
+                        <p class="small text-muted mt-2 mb-0">{{ usT('loading') }}</p>
                     </div>
                     <div v-else-if="!state.results.length" class="text-center py-5 text-muted">
                         <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                        <p class="mb-0 small">لا توجد مطابقات لهذا المعرّف.</p>
+                        <p class="mb-0 small">{{ usT('noResults') }}</p>
                     </div>
                     <div v-else class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
                                     <th style="width:2.5rem;"></th>
-                                    <th>المشترك</th>
-                                    <th>المعرّف</th>
-                                    <th dir="ltr">MSISDN</th>
-                                    <th>الحالة</th>
+                                    <th>{{ usT('colSubscriber') }}</th>
+                                    <th>{{ usT('colId') }}</th>
+                                    <th dir="ltr">{{ usT('colMsisdn') }}</th>
+                                    <th>{{ usT('colStatus') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -97,11 +97,11 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ usT('close') }}</button>
                     <button type="button" class="btn btn-primary btn-load-360-profile"
                             :disabled="!state.selectedCustomerId"
                             @@click="redirectToFullProfile">
-                        <i class="fas fa-user-shield me-1"></i> عرض الملف الكامل للمشترك
+                        <i class="fas fa-user-shield me-1"></i> {{ usT('openProfile') }}
                     </button>
                 </div>
             </div>
@@ -112,4 +112,3 @@
 @section Scripts {
     <script src="~/FrontEnd/Pages/Telecom/UnifiedSearch.cshtml.js" asp-append-version="true"></script>
 }
-

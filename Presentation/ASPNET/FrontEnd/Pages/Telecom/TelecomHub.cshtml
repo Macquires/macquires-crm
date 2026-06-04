@@ -162,10 +162,10 @@
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-device-sale shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
-                                @@click="openWizard('deviceSale')" aria-label="بيع جهاز DEV">
+                                @@click="openWizard('deviceSale')" :aria-label="t('telecom.tiles.deviceSale.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
-                            <span class="fs-6 fw-semibold d-block">بيع جهاز / راوتر</span>
-                            <small class="opacity-75">DEV- · كاش أو تقسيط</small>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.deviceSale.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.deviceSale.sub') }}</small>
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
@@ -256,16 +256,36 @@
                                         <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardSecondary">{{ t('telecom.wizard.cancel') }}</button>
                                     </div>
                                 </div>
-                                <div class="col-12" v-if="wizard.kind === 'migrate'">
-                                    <label class="form-label small" for="wizTargetOffer">{{ t('telecom.wizard.targetOffer') }}</label>
-                                    <input id="wizTargetOffer" type="text" class="form-control form-control-sm" v-model="wizard.targetOfferName"
-                                           :placeholder="t('telecom.wizard.targetOfferPh')" maxlength="200" />
+                                <div class="col-12" v-if="wizard.kind === 'migrate' || wizard.kind === 'activate'">
+                                    <p v-if="currentProductName && wizard.kind === 'migrate'" class="small text-muted mb-1">
+                                        {{ t('telecom.wizard.migrationOffers.currentPlan') }}: <strong>{{ currentProductName }}</strong>
+                                    </p>
+                                    <p v-if="migrationLineTypeHint" class="small text-muted mb-1">{{ t('telecom.wizard.migrationOffers.lineTypeHint', { type: migrationLineTypeHint }) }}</p>
+                                    <p v-if="!wizard.primarySubscriberProfileId" class="small text-warning mb-1">{{ t('telecom.wizard.migrationOffers.selectSubscriberFirst') }}</p>
+                                    <label class="form-label small" for="wizTargetOffer">{{ t('telecom.wizard.targetOffer') }} <span class="text-danger">*</span></label>
+                                    <div v-if="migrationOffersBusy" class="placeholder-glow mb-2"><span class="placeholder col-12" style="height:2.25rem;"></span></div>
+                                    <select v-else id="wizTargetOffer" class="form-select form-select-sm mb-2" v-model="wizard.migrationTargetProductId">
+                                        <option value="">{{ t('telecom.wizard.migrationOffers.placeholder') }}</option>
+                                        <option v-for="p in migrationEligibleProducts" :key="p.id" :value="p.id">{{ productDisplayName(p) }} ({{ p.serviceCode }})</option>
+                                        <option value="OTHER">{{ t('telecom.wizard.migrationOffers.options.OTHER') }}</option>
+                                    </select>
+                                    <div v-if="migrateNeedsOtherText">
+                                        <label class="form-label small" for="wizTargetOfferOther">{{ t('telecom.wizard.migrationOffers.otherLabel') }}</label>
+                                        <input id="wizTargetOfferOther" type="text" class="form-control form-control-sm" v-model="wizard.targetOfferOtherText"
+                                               :placeholder="t('telecom.wizard.migrationOffers.otherPh')" maxlength="200" />
+                                        <p class="small text-muted mb-0 mt-1">{{ t('telecom.wizard.migrationOffers.otherRequiredHint') }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12" v-if="wizard.kind === 'activate'">
+                                    <label class="form-label small" for="wizActivateIccid">{{ t('telecom.wizard.activateIccid') }} <span class="text-danger">*</span></label>
+                                    <input id="wizActivateIccid" type="text" class="form-control form-control-sm font-monospace mb-1" dir="ltr" maxlength="19" v-model="wizard.simIccid" />
+                                    <p class="small text-muted mb-0">{{ t('telecom.wizard.activateIccidHint') }}</p>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'addpackage'">
                                     <label class="form-label small">{{ t('telecom.tiles.addpackage.title') }}</label>
                                     <div v-if="wizard.vasCatalogBusy" class="placeholder-glow"><span class="placeholder col-12" style="height:2.5rem;"></span></div>
                                     <select v-else class="form-select form-select-sm" v-model="wizard.selectedVasCode">
-                                        <option value="">— VAS —</option>
+                                        <option value="">{{ t('telecom.wizard.vasPlaceholder') }}</option>
                                         <option v-for="v in wizard.vasCatalog" :key="v.serviceCode" :value="v.serviceCode">{{ v.nameAr }} ({{ v.serviceCode }})</option>
                                     </select>
                                     <p class="small text-muted mt-1 mb-0">{{ t('telecom.offerSubscription.incompatibleLine') }}</p>
@@ -283,7 +303,7 @@
                                         <label class="form-check-label small" for="hubSimLost">{{ t('telecom.simSwap.lostOrStolen') }}</label>
                                     </div>
                                     <p v-if="wizard.simLostOrStolen" class="small text-warning">{{ t('telecom.simSwap.lostOrStolenHint') }}</p>
-                                    <label class="form-label small">ICCID *</label>
+                                    <label class="form-label small">{{ t('telecom.wizard.simIccidLabel') }} *</label>
                                     <input type="text" class="form-control form-control-sm font-monospace" dir="ltr" maxlength="19" v-model="wizard.simIccid" />
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'takeover'">
@@ -298,31 +318,31 @@
                                     </select>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'deviceSale'">
-                                    <label class="form-label small">جهاز (IMEI) *</label>
+                                    <label class="form-label small">{{ t('telecom.deviceSale.deviceImei') }} *</label>
                                     <select class="form-select form-select-sm mb-2" v-model="wizard.devInventoryId" @@change="onDevicePicked">
-                                        <option value="">— اختر —</option>
+                                        <option value="">{{ t('telecom.common.selectPlaceholder') }}</option>
                                         <option v-for="d in wizard.devDevices" :key="d.id" :value="d.id">{{ d.imei }} — {{ d.model }} ({{ d.listPrice }})</option>
                                     </select>
-                                    <label class="form-label small">نوع البيع *</label>
+                                    <label class="form-label small">{{ t('telecom.deviceSale.saleType') }} *</label>
                                     <select class="form-select form-select-sm mb-2" v-model="wizard.devSaleType">
-                                        <option value="Cash">نقدي</option>
-                                        <option value="Installment">تقسيط</option>
+                                        <option value="Cash">{{ t('telecom.deviceSale.saleCash') }}</option>
+                                        <option value="Installment">{{ t('telecom.deviceSale.saleInstallment') }}</option>
                                     </select>
                                     <div v-if="wizard.devSaleType === 'Installment'">
-                                        <label class="form-label small">خطة التقسيط *</label>
+                                        <label class="form-label small">{{ t('telecom.deviceSale.installmentPlan') }} *</label>
                                         <select class="form-select form-select-sm mb-2" v-model="wizard.devInstallmentPlanId">
-                                            <option value="">— اختر —</option>
-                                            <option v-for="p in wizard.devPlans" :key="p.id" :value="p.id">{{ p.nameAr }} ({{ p.months }} شهر)</option>
+                                            <option value="">{{ t('telecom.common.selectPlaceholder') }}</option>
+                                            <option v-for="p in wizard.devPlans" :key="p.id" :value="p.id">{{ p.nameAr }} ({{ p.months }} {{ t('telecom.common.monthsUnit') }})</option>
                                         </select>
                                     </div>
                                     <div v-if="wizard.devFinancingPreview" class="alert alert-info py-2 small">{{ wizard.devFinancingPreview }}</div>
-                                    <div v-if="wizard.devRequiresFinance" class="alert alert-warning py-2 small">يتطلب اعتماد فايننس قبل التأكيد.</div>
+                                    <div v-if="wizard.devRequiresFinance" class="alert alert-warning py-2 small">{{ t('telecom.deviceSale.financeApproval') }}</div>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'deviceSale' && wizard.createdOperationId">
-                                    <label class="form-label small">الدفعة / مرجع الدفع (VAL-14-03)</label>
+                                    <label class="form-label small">{{ t('telecom.deviceSale.downPayment') }}</label>
                                     <input type="number" class="form-control form-control-sm mb-2" v-model="wizard.devDownPayment" />
-                                    <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.devPaymentReference" placeholder="مرجع الدفع" />
-                                    <button type="button" class="btn btn-sm btn-outline-primary" @@click="recordDeviceDownPayment">تسجيل الدفع</button>
+                                    <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.devPaymentReference" :placeholder="t('telecom.deviceSale.paymentReferencePh')" />
+                                    <button type="button" class="btn btn-sm btn-outline-primary" @@click="recordDeviceDownPayment">{{ t('telecom.deviceSale.recordPayment') }}</button>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'termination'">
                                     <p class="small text-muted mb-2">
@@ -393,10 +413,10 @@
                                     <label class="form-label small">{{ t('telecom.refund.refundReason') }} *</label>
                                     <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.rfdRefundReason" />
                                     <div v-if="wizard.rfdDepositSnapshot != null" class="small text-muted mb-1">
-                                        {{ t('telecom.refund.depositSnapshot') }}: <strong>{{ wizard.rfdDepositSnapshot }}</strong> ل.س
+                                        {{ t('telecom.refund.depositSnapshot') }}: <strong>{{ wizard.rfdDepositSnapshot }}</strong> {{ t('telecom.common.currencySuffix') }}
                                     </div>
                                     <div v-if="wizard.rfdWalletSnapshot != null" class="small text-muted mb-2">
-                                        {{ t('telecom.refund.walletSnapshot') }}: <strong>{{ wizard.rfdWalletSnapshot }}</strong> ل.س
+                                        {{ t('telecom.refund.walletSnapshot') }}: <strong>{{ wizard.rfdWalletSnapshot }}</strong> {{ t('telecom.common.currencySuffix') }}
                                     </div>
                                     <div v-if="wizard.rfdRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ t('telecom.refund.boHint') }}</div>
                                 </div>
@@ -441,14 +461,14 @@
                                     </select>
                                     <label class="form-label small">{{ t('telecom.badDebt.dunningStage') }}</label>
                                     <select class="form-select form-select-sm mb-2" v-model="wizard.bdrDunningStage" @@change="onBdrActionChange">
-                                        <option value="Reminder1">Reminder1</option>
-                                        <option value="Reminder2">Reminder2</option>
-                                        <option value="SoftBar">SoftBar</option>
-                                        <option value="HardBar">HardBar</option>
-                                        <option value="WriteOffPending">WriteOffPending</option>
+                                        <option value="Reminder1">{{ t('telecom.badDebt.dunningStages.Reminder1') }}</option>
+                                        <option value="Reminder2">{{ t('telecom.badDebt.dunningStages.Reminder2') }}</option>
+                                        <option value="SoftBar">{{ t('telecom.badDebt.dunningStages.SoftBar') }}</option>
+                                        <option value="HardBar">{{ t('telecom.badDebt.dunningStages.HardBar') }}</option>
+                                        <option value="WriteOffPending">{{ t('telecom.badDebt.dunningStages.WriteOffPending') }}</option>
                                     </select>
                                     <div v-if="wizard.bdrEligibility && (wizard.bdrEligibility.outstandingBalanceSnapshot != null || wizard.bdrEligibility.OutstandingBalanceSnapshot != null)" class="small text-muted mb-2">
-                                        {{ t('telecom.badDebt.balanceSnapshot') }}: <strong class="text-danger">{{ wizard.bdrEligibility.outstandingBalanceSnapshot ?? wizard.bdrEligibility.OutstandingBalanceSnapshot }}</strong> ل.س
+                                        {{ t('telecom.badDebt.balanceSnapshot') }}: <strong class="text-danger">{{ wizard.bdrEligibility.outstandingBalanceSnapshot ?? wizard.bdrEligibility.OutstandingBalanceSnapshot }}</strong> {{ t('telecom.common.currencySuffix') }}
                                     </div>
                                     <label v-if="wizard.bdrCollectionAction === 'PaymentRecorded'" class="form-label small">{{ t('telecom.badDebt.collectedAmount') }} *</label>
                                     <input v-if="wizard.bdrCollectionAction === 'PaymentRecorded'" type="number" min="1" class="form-control form-control-sm mb-2" v-model="wizard.bdrCollectedAmount" @@blur="onBdrActionChange" />
@@ -499,12 +519,12 @@
                                     <p v-if="wizard.cgtCurrentTypeLabel" class="small text-muted mb-2">{{ wizard.cgtCurrentTypeLabel }}</p>
                                     <div v-if="wizard.cgtTargetsBusy" class="spinner-border spinner-border-sm text-danger"></div>
                                     <template v-else>
-                                        <label class="form-label small">نوع الخط الجديد *</label>
+                                        <label class="form-label small">{{ t('telecom.changeGsm.targetType') }} *</label>
                                         <select class="form-select form-select-sm mb-2" v-model="wizard.cgtTargetTypeId">
                                             <option value="">—</option>
-                                            <option v-for="t in wizard.cgtTargets" :key="t.id" :value="t.id">{{ t.nameAr }} ({{ t.code }})</option>
+                                            <option v-for="tgt in wizard.cgtTargets" :key="tgt.id" :value="tgt.id">{{ tgt.nameAr }} ({{ tgt.code }})</option>
                                         </select>
-                                        <label class="form-label small">سبب التحويل *</label>
+                                        <label class="form-label small">{{ t('telecom.changeGsm.migrationReason') }} *</label>
                                         <input type="text" class="form-control form-control-sm" v-model="wizard.cgtMigrationReason" maxlength="256" />
                                     </template>
                                 </div>
@@ -573,24 +593,24 @@
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
-                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.arpuTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.arpuHint') }}</span></h3>
-                            <p class="telecom-kpi-value mb-0 fw-semibold text-primary">{{ formatMoney(kpis.arpuDemo) }}</p>
+                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.pendingOpsTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.pendingOpsHint') }}</span></h3>
+                            <p class="telecom-kpi-value mb-0 fw-semibold text-warning">{{ operationKpis.pending }}</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
-                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.churnTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.churnHint') }}</span></h3>
-                            <p class="telecom-kpi-value mb-0 fw-semibold text-warning">{{ kpis.churnPercentDemo }}%</p>
+                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.completedOpsTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.completedOpsHint') }}</span></h3>
+                            <p class="telecom-kpi-value mb-0 fw-semibold text-success">{{ operationKpis.completed }}</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
-                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.agilityTitle') }}</h3>
-                            <p class="mb-0 small text-muted lh-lg">{{ t('telecom.kpis.agilityBody') }}</p>
+                            <h3 class="h6 text-muted mb-2">{{ t('telecom.kpis.failedOpsTitle') }} <span class="fw-normal small">{{ t('telecom.kpis.failedOpsHint') }}</span></h3>
+                            <p class="telecom-kpi-value mb-0 fw-semibold text-danger">{{ operationKpis.failed }}</p>
                         </div>
                     </div>
                 </div>
@@ -613,7 +633,10 @@
                 </div>
                 <div class="col-lg-6">
                     <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom fw-semibold py-3">{{ t('telecom.branch.title') }}</div>
+                        <div class="card-header bg-white border-bottom fw-semibold py-3">
+                            {{ t('telecom.branch.title') }}
+                            <span class="fw-normal small text-muted ms-1">{{ t('telecom.branch.revenueHint') }}</span>
+                        </div>
                         <div class="card-body p-0">
                             <ul v-if="kpis.branchHeat && kpis.branchHeat.length" class="list-group list-group-flush">
                                 <li v-for="b in kpis.branchHeat" :key="b.branchName" class="list-group-item d-flex justify-content-between align-items-center py-3">
@@ -668,12 +691,12 @@
                                     </tr>
                                     <tr v-for="o in operations" :key="o.id" :class="{ 'table-warning': isSecureOpPendingReview(o) }">
                                         <td class="text-nowrap">{{ o.number }}</td>
-                                        <td>{{ kindLabelAr(o.kind) }}</td>
+                                        <td>{{ kindLabel(o.kind) }}</td>
                                         <td class="small">
                                             <span>{{ o.subscriberName || t('telecom.ops.dash') }}</span>
                                             <span v-if="Number(o.kind) === 3 && o.replacementReason" class="text-muted d-block">
                                                 {{ t('telecom.simSwap.replacementReason') }}: {{ o.replacementReason }}
-                                                <span v-if="o.isLostOrStolenReport" class="badge bg-warning text-dark ms-1">مفقودة/مسروقة</span>
+                                                <span v-if="o.isLostOrStolenReport" class="badge bg-warning text-dark ms-1">{{ t('telecom.ops.lostStolenBadge') }}</span>
                                             </span>
                                             <span v-if="Number(o.kind) === 2 && o.transferReason" class="text-muted d-block">
                                                 {{ t('telecom.takeOver.transferReason') }}: {{ o.transferReason }}
@@ -682,7 +705,7 @@
                                                 {{ t('telecom.wizard.secondaryLabel') }}: {{ o.secondarySubscriberName }}
                                             </span>
                                         </td>
-                                        <td><span class="badge rounded-pill" :class="statusBadge(o.status)">{{ statusLabelAr(o.status) }}</span></td>
+                                        <td><span class="badge rounded-pill" :class="statusBadge(o.status)">{{ statusLabel(o.status) }}</span></td>
                                         <td>{{ o.documentStatusName }}</td>
                                         <td v-if="hubPermissions.canConfirmCbs">
                                             <button v-if="isSecureOpPendingReview(o)" type="button" class="btn btn-success btn-sm"
@@ -707,7 +730,7 @@
                             <ul class="list-group list-group-flush">
                                 <li v-for="r in searchResults" :key="r.id + r.resultType" class="list-group-item py-3">
                                     <div class="fw-semibold">{{ r.title }}</div>
-                                    <div class="small text-muted">{{ r.resultType }} ? {{ r.subtitle }}</div>
+                                    <div class="small text-muted">{{ r.subtitle }}</div>
                                 </li>
                                 <li v-if="!searchBusy && searchResults.length === 0" class="list-group-item text-muted small py-4 text-center">
                                     {{ hasSearched ? t('telecom.searchPanel.emptyAfter') : t('telecom.searchPanel.emptyBefore') }}
@@ -766,11 +789,11 @@
                                         </div>
                                         <div class="col-md-6" v-if="takeOverApproval.detail.outstandingBalanceSnapshot != null">
                                             <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.balance') }}</p>
-                                            <p class="mb-0 fw-semibold text-danger">{{ takeOverApproval.detail.outstandingBalanceSnapshot }} ل.س</p>
+                                            <p class="mb-0 fw-semibold text-danger">{{ takeOverApproval.detail.outstandingBalanceSnapshot }} {{ t('telecom.common.currencySuffix') }}</p>
                                         </div>
                                         <div class="col-md-6" v-if="takeOverApproval.detail.writeOffAmount">
                                             <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.writeOff') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.writeOffAmount }} ل.س</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.writeOffAmount }} {{ t('telecom.common.currencySuffix') }}</p>
                                         </div>
                                         <div class="col-md-6" v-if="takeOverApproval.detail.paymentReference">
                                             <p class="small text-muted mb-1">{{ t('telecom.badDebt.paymentReference') }}</p>
@@ -891,6 +914,10 @@
         .big-tile:hover { transform: translateY(-2px); box-shadow: var(--sys-shadow-card-hover) !important; }
         .big-tile:focus-visible { outline: 3px solid color-mix(in srgb, var(--sys-card-bg) 85%, transparent); outline-offset: 3px; }
         .tile-icon { font-size: 1.35rem; opacity: 0.95; }
+        .tile-bad-debt {
+            background: linear-gradient(145deg, #9a3412 0%, #c2410c 100%) !important;
+            color: var(--sys-card-bg, #fff) !important;
+        }
         .map-mock { overflow: hidden; }
         .telecom-kpi-value { font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.2; }
         .telecom-step { border: 1px solid var(--sys-border); }

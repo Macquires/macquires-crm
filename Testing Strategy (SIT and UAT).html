@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Macquires CRM — Testing Strategy (SIT and UAT) | Syriatel</title>
+  <style>
+    :root {
+      --macquires-orange: #e85d04;
+      --macquires-orange-dark: #c44d03;
+      --syriatel-red: #c8102e;
+      --text: #1a1d22;
+      --muted: #5c6370;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 2rem 1.25rem 3rem;
+      max-width: 960px;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.65rem; color: var(--syriatel-red); margin: 0 0 0.35rem; }
+    h2 { font-size: 1.15rem; margin: 1.75rem 0 0.6rem; }
+    h3 { font-size: 1.02rem; margin: 1.35rem 0 0.45rem; color: var(--macquires-orange-dark); }
+    .doc-meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 1.75rem; }
+    .section-bar {
+      background: linear-gradient(90deg, var(--macquires-orange) 0%, var(--macquires-orange-dark) 100%);
+      color: #fff;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      font-size: 1.08rem;
+      border-radius: 4px;
+      margin: 2.25rem 0 1rem;
+    }
+    .proposal-ready {
+      background: var(--card);
+      border-left: 4px solid var(--macquires-orange);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0 1.25rem;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .proposal-ready p { margin: 0 0 0.85rem; }
+    .proposal-ready p:last-child { margin-bottom: 0; }
+    .rfp-label {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--syriatel-red);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      font-size: 0.88rem;
+      margin: 0.75rem 0 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #fff7ed; color: var(--macquires-orange-dark); }
+    ul, ol { margin: 0.4rem 0 1rem 1.2rem; }
+    li { margin: 0.3rem 0; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #fff;
+      margin: 1rem 0;
+    }
+    .mermaid-wrap {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 1rem 0 1.25rem;
+      overflow-x: auto;
+    }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    code { font-size: 0.84em; background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 3px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
+</head>
+<body>
+
+<header>
+  <h1>Macquires CRM for Syriatel</h1>
+  <p class="doc-meta">Scope of Services — <strong>4. Testing Strategy (SIT and UAT)</strong></p>
+</header>
+
+<div class="section-bar">Testing Strategy (SIT and UAT)</div>
+
+<div class="proposal-ready">
+  <p>Macquires will verify the Syriatel CRM in two controlled phases before production cutover. <strong>System Integration Testing (SIT)</strong> proves that the application correctly calls Syriatel’s core telecom interfaces (billing, network, SMS, payments) and handles failure modes. <strong>User Acceptance Testing (UAT)</strong> proves that business users can complete showroom and back-office journeys on realistic data with the correct roles and environments.</p>
+  <p><strong>Macquires will provide</strong> test plans, automated regression suites, integration observability built into the product, and clear entry/exit criteria for each phase. Syriatel participation is required for sandbox connectivity, test MSISDNs, and business sign-off scripts.</p>
+</div>
+
+<!-- ==================== SIT ==================== -->
+
+<div class="section-bar">SIT architecture</div>
+
+<p class="rfp-label">RFP — external systems &amp; API validation approach</p>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will integrate</strong> the CRM with the external Syriatel core telecom systems listed below. Each integration is implemented behind a typed .NET contract in the application layer; the infrastructure layer supplies either a live connector (SIT/UAT when enabled) or a logged fallback path when the interface is disabled for resilience testing.</p>
+  <p>During SIT, Macquires validates APIs end-to-end: request/response correlation, idempotent replay, retry and circuit-breaker behaviour, and persistence of every attempt in integration logs for audit.</p>
+</div>
+
+<h2>External systems the CRM must integrate with</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Syriatel system</th>
+      <th>Role in CRM</th>
+      <th>Application contract</th>
+      <th>SIT connector (current build)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Billing / IN (CBS)</strong></td>
+      <td>Subscriber provisioning, balance/debt checks, recharge posting, reversals, termination billing snapshot</td>
+      <td><code>IBillingSystemIntegration</code></td>
+      <td><code>HuaweiCbsBillingIntegration</code> (Huawei CBS bridge; Polly retries; <code>BillingIntegrationLog</code> per attempt)</td>
+    </tr>
+    <tr>
+      <td><strong>Core network (HLR)</strong></td>
+      <td>Create/change/suspend/terminate subscriber on network; live status query; HLR resync</td>
+      <td><code>INetworkProvisioningService</code>, <code>IHLRLiveStatusService</code></td>
+      <td><code>HlrNetworkProvisioningService</code> (Polly retry + circuit breaker; async <code>PendingExternal</code> queue)</td>
+    </tr>
+    <tr>
+      <td><strong>SMS gateway</strong></td>
+      <td>Customer notifications (activation, SIM swap, payments, lifecycle)</td>
+      <td><code>ISmsGatewayIntegration</code></td>
+      <td><code>SmsGatewayMockIntegration</code> with live/fallback via <code>IntegrationEnablement</code> (replaceable at go-live)</td>
+    </tr>
+    <tr>
+      <td><strong>Charging / IN top-up</strong></td>
+      <td>Charging alignment for prepaid flows (orchestrated with payment services)</td>
+      <td><code>IChargingSystemIntegration</code></td>
+      <td><code>ChargingSystemMockIntegration</code> (SIT against Syriatel charging sandbox when wired)</td>
+    </tr>
+    <tr>
+      <td><strong>Payment gateway</strong></td>
+      <td>Cash-desk reference capture, wallet credit, Syriatel Cash refund, payment confirm/reverse</td>
+      <td><code>IPaymentGatewayIntegration</code></td>
+      <td><code>PaymentGatewayMockIntegration</code> (SIT against Syriatel payment APIs when wired)</td>
+    </tr>
+    <tr>
+      <td><strong>Directory / subscriber sync</strong></td>
+      <td>Optional directory sync from operator master data</td>
+      <td><code>ITelecomDirectorySync</code></td>
+      <td><code>TelecomDirectoryMockSyncIntegration</code> (live directory TBD at interface design)</td>
+    </tr>
+    <tr>
+      <td><strong>VAS / HLR VAS</strong></td>
+      <td>Activate/deactivate value-added services on network</td>
+      <td><code>IVasProvisioningService</code></td>
+      <td><code>HlrVasProvisioningService</code></td>
+    </tr>
+    <tr>
+      <td><strong>Device logistics (optional)</strong></td>
+      <td>External device stock confirmation where warehouse is outside CRM</td>
+      <td><code>IDeviceInventoryIntegration</code></td>
+      <td><code>DeviceInventoryMockIntegration</code></td>
+    </tr>
+    <tr>
+      <td><strong>eSIM DP+ (optional)</strong></td>
+      <td>eSIM profile download where eSIM sales are in scope</td>
+      <td><code>IESimDpPlusService</code></td>
+      <td><code>ESimDpPlusMockService</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="proposal-ready">
+  <p><strong>At go-live</strong>, Macquires replaces mock connectors with Syriatel-approved production adapters where interfaces are finalized; SIT/UAT environments use the same code paths with sandbox endpoints and credentials. Global toggles (<code>IntegrationHuaweiEnabled</code>, <code>IntegrationHlrEnabled</code>, <code>IntegrationSmsEnabled</code>) allow controlled switching between live sandboxes and emergency fallback simulation without redeploying the CRM.</p>
+</div>
+
+<h2>Technical approach — validating APIs during SIT</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will execute</strong> a layered SIT strategy that combines automated tests, operator-visible logs, and scripted interface scenarios. The goal is to prove that every confirm/provision path writes the correct downstream message and leaves a traceable correlation ID in the CRM.</p>
+</div>
+
+<h3>Layer 1 — Automated regression (CI / pre-UAT)</h3>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will run</strong> the existing <code>Application.Tests</code> and <code>Domain.Tests</code> suites (telecom eligibility, SIM swap, termination workflow, payment velocity, bulk import headers, integration circuit-breaker contracts, dashboard widgets, RBAC). These tests validate business rules and integration result contracts before any Syriatel sandbox is available.</p>
+</div>
+
+<ul>
+  <li>Eligibility and workflow: selling line, SIM swap, takeover, change number, suspension/reconnect, termination, refunds, device sale, offer migration.</li>
+  <li>Integration resilience: <code>IntegrationCircuitBreakerTests</code> — fallback still allows workflow continuation with <code>QueuedForSync</code> / <code>PendingExternal</code>.</li>
+  <li>HLR operation naming and termination provisioning contracts.</li>
+</ul>
+
+<h3>Layer 2 — Live interface SIT (Syriatel sandboxes)</h3>
+
+<div class="proposal-ready">
+  <p>For each external system, Macquires will execute <strong>interface test packs</strong> mapped to CRM operations: activation (CBS + HLR CreateSubscriber), SIM swap, suspend/reconnect, termination, recharge confirm, refund to wallet, VAS activate/deactivate. Each test case records: operation number, correlation ID, success/failure, latency, and raw payload reference in logs.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Validation mechanism</th><th>What it proves</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BillingIntegration</code> UI + <code>GetBillingIntegrationLogList</code></td>
+      <td>Every CBS attempt per operation; filter by result; replay/idempotency visible</td>
+    </tr>
+    <tr>
+      <td><code>IntegrationMonitor</code> + <code>GetIntegrationLogList</code></td>
+      <td>HLR, SMS, payment gateway messages with system tag and timing</td>
+    </tr>
+    <tr>
+      <td><code>GetIntegrationHealthStatus</code></td>
+      <td>Huawei CBS, HLR, SMS — live vs fallback mode per global settings</td>
+    </tr>
+    <tr>
+      <td><code>QueryHlrLiveStatus</code> / <code>ResyncSubscriberFromHlr</code></td>
+      <td>Downstream network truth vs CRM subscriber record</td>
+    </tr>
+    <tr>
+      <td>Polly retry + HLR circuit breaker</td>
+      <td>Transient failure handling; open circuit does not corrupt local state</td>
+    </tr>
+    <tr>
+      <td><code>PendingExternalSyncService</code></td>
+      <td>Async completion when HLR/CBS returns deferred success</td>
+    </tr>
+    <tr>
+      <td>Negative tests (disabled integration)</td>
+      <td>Fallback path logs <code>FALLBACK</code> status; operation moves to <code>PendingExternal</code> for recovery</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+  subgraph SIT["SIT validation"]
+    CRM[Macquires CRM API]
+    LOG[Integration &amp; billing logs]
+    AUTO[xUnit regression]
+  end
+  subgraph EXT["Syriatel sandboxes"]
+    CBS[Huawei CBS / Billing]
+    HLR[HLR]
+    SMS[SMS Gateway]
+    PAY[Payment / Charging]
+  end
+  AUTO --> CRM
+  CRM --> CBS
+  CRM --> HLR
+  CRM --> SMS
+  CRM --> PAY
+  CRM --> LOG
+</pre>
+</div>
+
+<h3>SIT entry and exit criteria</h3>
+
+<div class="proposal-ready">
+  <p><strong>SIT entry:</strong> SIT environment deployed; sandbox URLs and credentials configured; test MSISDN/SIM/ICCID ranges allocated; integration toggles set to live for systems under test.</p>
+  <p><strong>SIT exit:</strong> All mandatory interface packs pass; zero open Sev-1 integration defects; billing and HLR logs show successful provision for golden-path scenarios; fallback/recovery scenarios documented; Macquires and Syriatel integration owners sign the SIT completion record.</p>
+</div>
+
+<!-- ==================== UAT ==================== -->
+
+<div class="section-bar">UAT prerequisites</div>
+
+<p class="rfp-label">RFP — environments, seeding, roles, and workstations before business testing</p>
+
+<div class="proposal-ready">
+  <p><strong>Before Syriatel business users begin UAT</strong>, Macquires and Syriatel will jointly verify the prerequisites below. UAT uses a dedicated environment isolated from production, populated with representative subscriber data (migration rehearsal or controlled seed), and accounts that mirror real showroom, back-office, call-center, and management personas.</p>
+  <p><strong>Macquires will prepare</strong> UAT scripts per journey (activation, SIM swap, payment/recharge, refund, suspension, Customer 360 search). Syriatel will assign named testers per role and record pass/fail against acceptance criteria.</p>
+</div>
+
+<h2>Distinct testing environments</h2>
+
+<table>
+  <thead>
+    <tr><th>Environment</th><th>Purpose</th><th>Macquires / Syriatel responsibility</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>SIT</strong></td>
+      <td>Interface-focused; may use mocks + partial live sandboxes</td>
+      <td>Macquires deploys build; Syriatel provides sandbox connectivity</td>
+    </tr>
+    <tr>
+      <td><strong>UAT</strong></td>
+      <td>Business acceptance on stable build; realistic data volume sample</td>
+      <td>Macquires deploys; data from migration wave rehearsal or approved seed; Syriatel testers</td>
+    </tr>
+    <tr>
+      <td><strong>Production</strong></td>
+      <td>Not used for UAT; cutover only after UAT sign-off</td>
+      <td>Syriatel change control; Macquires go-live support</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="proposal-ready">
+  <p>Each environment requires: SQL Server database (schema aligned via EF migrations + telecom SQL runbook), ASP.NET Core API host, static front-end assets, HTTPS certificate, and configured <code>appsettings</code> for connection strings, field encryption keys, and bulk-import storage. UAT must not share a database with SIT.</p>
+</div>
+
+<h2>Database seeding and test data</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will load</strong> UAT data using one of two approved approaches (selected in the migration workshop):</p>
+</div>
+
+<ol>
+  <li><strong>Migration rehearsal data</strong> — Subset or full wave from bulk import (customers, MSISDN/SIM, package migration) representing real Syriatel formats (preferred for business realism).</li>
+  <li><strong>Controlled demo seed</strong> — System seeders: roles, permissions, global settings, product catalog, <code>TelecomSyriatelSeeder</code> subscribers, Customer 360 enrichment, sample technical tickets (for empty UAT only).</li>
+</ol>
+
+<div class="proposal-ready">
+  <p>Regardless of source, UAT data must include: active and suspended lines, at least one corporate and one individual customer, prepaid and postpaid subscription types, available MSISDN/SIM inventory, product offerings for migration tests, and non-production payment references. National IDs in UAT must be fictional or anonymized per Syriatel privacy rules.</p>
+</div>
+
+<h2>User roles and access profiles</h2>
+
+<div class="proposal-ready">
+  <p><strong>Macquires will provision</strong> distinct Syriatel test accounts mapped to telecom Identity roles and permission catalog entries. Each UAT tester uses one primary persona so menu visibility and approve/deny behaviour match go-live.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Persona / role</th><th>Typical UAT use</th><th>Seeded role name</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Showroom agent</td><td>Hub wizards, Customer 360, recharge, activation</td><td><code>TelecomShowroom</code></td></tr>
+    <tr><td>Back office</td><td>Approvals, SIM swap BO, refunds, billing log review</td><td><code>TelecomBackOffice</code></td></tr>
+    <tr><td>Call center</td><td>Search, technical tickets, read-only network query</td><td><code>TelecomCallCenter</code></td></tr>
+    <tr><td>Management / MIS</td><td>Dashboards, strategic metrics (where permitted)</td><td><code>TelecomManagement</code></td></tr>
+    <tr><td>System admin</td><td>Integration health, bulk import, user/role checks</td><td><code>TelecomAdmin</code></td></tr>
+  </tbody>
+</table>
+
+<div class="proposal-ready">
+  <p>Additional permission checks validated in UAT include: PII reveal (<code>RolesViewDecryptedPII</code>), payment reversal, bulk import monitor, technical ticket resolve, and persona-filtered navigation (showroom users must not see back-office-only menus).</p>
+</div>
+
+<h2>Client workstations and access</h2>
+
+<div class="proposal-ready">
+  <p><strong>Syriatel must provide</strong> UAT workstations that meet the following minimum standard. Macquires will publish a short UAT workstation checklist before testing starts.</p>
+</div>
+
+<ul>
+  <li><strong>Browser:</strong> Current Microsoft Edge or Google Chrome; JavaScript enabled; pop-ups allowed for document download where needed.</li>
+  <li><strong>Network:</strong> HTTPS access to UAT CRM URL; VPN or private link if the environment is not public internet.</li>
+  <li><strong>Resolution:</strong> 1366×768 or higher (Telecom Hub and Back Office Dashboard are responsive but optimized for desktop).</li>
+  <li><strong>Authentication:</strong> Each tester receives individual credentials (JWT session); shared accounts are not permitted for sign-off.</li>
+  <li><strong>Locale:</strong> Arabic RTL UI validated; English where dual-language labels apply.</li>
+  <li><strong>Peripherals (showroom UAT):</strong> If document scan upload is tested, workstation file picker and PDF/image upload for identity documents on takeover/lost-SIM flows.</li>
+</ul>
+
+<h2>UAT verification checklist (before testers start)</h2>
+
+<table>
+  <thead>
+    <tr><th>Item</th><th>Verified by</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>UAT URL reachable; TLS valid</td><td>Syriatel IT + Macquires</td></tr>
+    <tr><td>All persona accounts login successfully</td><td>Macquires</td></tr>
+    <tr><td>Menu matches persona (no forbidden screens)</td><td>Syriatel business + Macquires</td></tr>
+    <tr><td>Test MSISDNs searchable in Hub / Customer 360</td><td>Syriatel business</td></tr>
+    <tr><td>Integration toggles documented (live vs fallback for UAT)</td><td>Macquires</td></tr>
+    <tr><td>SMS test line or sandbox receipt confirmed (if live SMS in UAT)</td><td>Syriatel</td></tr>
+    <tr><td>UAT script pack issued (Arabic/English)</td><td>Macquires</td></tr>
+    <tr><td>Defect logging channel agreed (priority, owner)</td><td>Joint</td></tr>
+  </tbody>
+</table>
+
+<h2>UAT exit criteria</h2>
+
+<div class="proposal-ready">
+  <p><strong>UAT is complete</strong> when Syriatel business owners sign acceptance for all in-scope journeys, open defects are either fixed or formally waived with expiry date, and a go-live readiness note confirms migration data strategy for production. Macquires will not request production cutover until written UAT sign-off is received.</p>
+</div>
+
+<p class="note"><strong>Scope note:</strong> Demo builds ship with mock payment, charging, SMS, and directory connectors; SIT proves adapter contracts and logs. UAT may run on mocks for business process sign-off while parallel SIT completes live sandbox certification—schedule agreed in the test plan.</p>
+
+<div class="section-bar">Summary</div>
+
+<div class="proposal-ready">
+  <p><strong>SIT:</strong> Macquires lists nine external telecom integration domains (CBS billing, HLR, SMS, charging, payment gateway, directory, VAS, device logistics, eSIM), validates them through automated tests, sandbox interface packs, and built-in billing/integration logs with health toggles and resilience patterns.</p>
+  <p><strong>UAT:</strong> Syriatel receives isolated UAT environment, seeded or migrated test data, five telecom personas with correct RBAC, verified workstations and VPN/HTTPS access, and a joint checklist before business testers execute signed scripts.</p>
+  <p><strong>Macquires commits</strong> to deliver SIT/UAT test plans, support defect triage during both phases, and gate production on SIT completion and written UAT acceptance.</p>
+</div>
+
+<footer>
+  <p>Macquires CRM — Syriatel proposal, Scope of Services: Testing Strategy (SIT and UAT) only.</p>
+</footer>
+
+</body>
+</html>
