@@ -84,11 +84,11 @@ public sealed class DeviceInstallmentDelinquencyHostedService : BackgroundServic
                     .FirstOrDefaultAsync(o => o.Id == op.Id, cancellationToken);
                 if (operation != null)
                 {
-                    await ticketQueue.EnqueueProvisioningFalloutAsync(
+                    await ticketQueue.EnqueueDeviceInstallmentCollectionsAsync(
                         operation,
-                        $"VAL-14-04: تقسيط متأخر — عقد {contract.ContractNumber}",
-                        actorUserId: null,
-                        cancellationToken: cancellationToken);
+                        contract.ContractNumber,
+                        "VAL-14-04: قسط متأخر — يتطلب متابعة تحصيل",
+                        cancellationToken);
                 }
             }
         }

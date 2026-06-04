@@ -276,6 +276,43 @@
         </div>
     </div>
 
+    <div class="telecom-bento-card mb-4" id="boBadDebtKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-piggy-bank me-2"></i>تحصيل الديون المعدومة (BDR)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small">
+                <div class="col-md-2"><span class="text-muted d-block">اليوم</span><strong id="bdrKpiTotal">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="bdrKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="bdrKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">بانتظار BO</span><strong id="bdrKpiPending">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">محصّل اليوم</span><strong id="bdrKpiCollected">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">شطب اليوم</span><strong id="bdrKpiWriteOff">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">خطط سداد</span><strong id="bdrKpiPlans">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الفشل</span><strong id="bdrKpiFailRate">—</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boDeviceSaleKpiPanel">
+        <div class="card-header bg-white border-0 py-2">
+            <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-phone me-2"></i>بيع الأجهزة (DEV)</h2>
+        </div>
+        <div class="card-body py-3">
+            <div class="row g-3 small">
+                <div class="col-md-2"><span class="text-muted d-block">الحجم</span><strong id="devKpiVolume">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">منجز</span><strong id="devKpiCompleted">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">فاشل</span><strong id="devKpiFailed">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نسبة الإنجاز</span><strong id="devKpiCompletion">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">Fallout</span><strong id="devKpiFallout">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">تقسيط</span><strong id="devKpiInstallment">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">نقد</span><strong id="devKpiCash">—</strong></div>
+                <div class="col-md-2"><span class="text-muted d-block">Overrides</span><strong id="devKpiOverrides">—</strong></div>
+                <div class="col-md-8"><span class="text-muted d-block">أسباب الرفض</span><strong id="devKpiRejections" class="d-block">—</strong></div>
+            </div>
+        </div>
+    </div>
+
     <div class="telecom-bento-card mb-4" id="boReconnectKpiPanel">
         <div class="card-header bg-white border-0 py-2">
             <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-reception-4 me-2"></i>إعادة تفعيل (RCN)</h2>

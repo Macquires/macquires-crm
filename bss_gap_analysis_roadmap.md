@@ -5,8 +5,9 @@
 **Date**: 2026-05-13 (updated 2026-05-20)  
 **Scope**: Full gap analysis mapping the current codebase against TM Forum eTOM/SID standards for Tier-1 Telecom BSS
 
-> **تحديث 2026-05-20:** التقرير السيادي الكامل للمطابقة مع Blueprint سيريتل + 16 موديول MoM متوفر في [`docs/BLUEPRINT_COVERAGE_REPORT_FULL_AR.md`](docs/BLUEPRINT_COVERAGE_REPORT_FULL_AR.md).  
-> **النسب المرجعية:** ~43% BSS إجمالي · ~48% MoM (16) · ~49% Blueprint Part 3 · ~85% معماري · Selling Line ~72%.
+> **تحديث 2026-06-04:** التقرير السيادي الكامل للمطابقة مع Blueprint سيريتل + 16 موديول MoM متوفر في [`docs/BLUEPRINT_COVERAGE_REPORT_FULL_AR.md`](docs/BLUEPRINT_COVERAGE_REPORT_FULL_AR.md).  
+> **النسب المرجعية:** ~46% BSS إجمالي · ~54% MoM (16) · ~52% Blueprint Part 3 · ~85% معماري · Selling Line ~72%.  
+> **فحص يدوي:** [`docs/TELECOM_E2E_SMOKE_AR.md`](docs/TELECOM_E2E_SMOKE_AR.md)
 
 ---
 

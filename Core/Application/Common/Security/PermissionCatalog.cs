@@ -53,6 +53,11 @@ public static class PermissionCatalog
     public const string TelecomLineRefund = "telecom.line.refund";
     public const string TelecomLineRefundRequest = "telecom.line.refund_request";
     public const string TelecomLineRefundApprove = "telecom.line.refund_approve";
+    public const string TelecomLineCollection = "telecom.line.collection";
+    public const string TelecomLineCollectionRequest = "telecom.line.collection_request";
+    public const string TelecomLineCollectionApprove = "telecom.line.collection_approve";
+    public const string TelecomLineCollectionManage = "telecom.line.collection_manage";
+    public const string TelecomLineRecharge = "telecom.line.recharge";
 
     // Bulk engine
     public const string BulkImportUpload = "bulk.import.upload";
@@ -105,6 +110,11 @@ public static class PermissionCatalog
         new(TelecomLineRefund, "Telecom", "استرداد تأمين/محفظة (RFD) — تنفيذ كامل", "Complete deposit/wallet refund (RFD)"),
         new(TelecomLineRefundRequest, "Telecom", "طلب استرداد مالي (معرض)", "Submit refund request from showroom"),
         new(TelecomLineRefundApprove, "Telecom", "اعتماد استرداد مبالغ عالية (باك أوفيس)", "Approve high-value / Syriatel Cash refund"),
+        new(TelecomLineCollection, "Telecom", "تحصيل وديون معدومة (BDR) — تنفيذ كامل", "Complete collections / bad debt (BDR)"),
+        new(TelecomLineCollectionRequest, "Telecom", "طلب تحصيل من المعرض", "Submit collection request from showroom"),
+        new(TelecomLineCollectionApprove, "Telecom", "اعتماد شطب/وكالة تحصيل (باك أوفيس)", "Approve write-off / agency referral"),
+        new(TelecomLineCollectionManage, "Telecom", "إدارة محفظة التحصيل والـ KPIs", "Manage collections portfolio and KPIs"),
+        new(TelecomLineRecharge, "Telecom", "شحن رصيد وقسائم (PAY-)", "Recharge prepaid balance and redeem vouchers"),
         new(BulkImportUpload, "BulkImport", "رفع ملفات الاستيراد الضخم", "Upload bulk import files"),
         new(BulkImportMonitor, "BulkImport", "مراقبة الاستيراد الضخم", "Monitor bulk import jobs and counters"),
     ];
@@ -117,6 +127,7 @@ public static class PermissionCatalog
             [
                 CustomerView,
                 TelecomReportsMis,
+                TelecomLineRecharge,
                 BulkImportMonitor,
                 AdminAuditView,
             ],
@@ -151,6 +162,10 @@ public static class PermissionCatalog
                 TelecomDeviceInstallmentApprove,
                 TelecomLineRefund,
                 TelecomLineRefundApprove,
+                TelecomLineCollection,
+                TelecomLineCollectionApprove,
+                TelecomLineCollectionManage,
+                TelecomLineRecharge,
                 CustomerView,
             ],
             [TelecomEnterpriseRoleMatrix.RoleShowroom] =
@@ -176,6 +191,8 @@ public static class PermissionCatalog
                 TelecomNetworkHlrResync,
                 TelecomDeviceSellRequest,
                 TelecomLineRefundRequest,
+                TelecomLineCollectionRequest,
+                TelecomLineRecharge,
                 BulkImportMonitor,
             ],
             [TelecomEnterpriseRoleMatrix.RoleCallCenter] =

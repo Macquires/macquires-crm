@@ -40,9 +40,9 @@ isProject: false
 
 | المقياس | النسبة |
 |---------|--------|
-| **المطابقة الإجمالية المرجّحة (BSS إنتاجي)** | **~43%** |
-| **Part 3 — 22 نطاق Blueprint** | **~49%** |
-| **16 موديول MoM سيريتل (متوسط)** | **~48%** |
+| **المطابقة الإجمالية المرجّحة (BSS إنتاجي)** | **~46%** |
+| **Part 3 — 22 نطاق Blueprint** | **~52%** |
+| **16 موديول MoM سيريتل (متوسط)** | **~54%** |
 | **الأساس المعماري (Clean Arch, CQRS, RBAC)** | **~85%** |
 | **تكاملات إنتاج CBS/HLR/Payment** | **~35%** |
 
@@ -73,7 +73,7 @@ isProject: false
 | # | MoM (AR) | MoM (EN) | % | مرجع الكود الرئيسي |
 |---|----------|----------|---|-------------------|
 | 1 | بيع خط جديد | Selling Line | **72%** | [`TelecomActivationWorkflow`](Core/Application/Common/Telecom/TelecomActivationWorkflow.cs), Customer360/TelecomHub wizards |
-| 2 | خدمات الدفع وتسوية الفواتير | Payment services | **32%** | [`RechargeCustomer360Line`](Core/Application/Features/CustomerManager/Commands/RechargeCustomer360Line.cs), mock CBS |
+| 2 | خدمات الدفع وتسوية الفواتير | Payment services | **82%** | [`PaymentServicesOrchestrator`](Core/Application/Common/Telecom/PaymentServices/PaymentServicesOrchestrator.cs), PAY- ledger, BO panel |
 | 3 | تغيير نوع الخط | Change GSM type | **40%** | `TelecomOperationKind.Migration` — ليس GSM-type change مستقل |
 | 4 | نقل الملكية | Transfer of ownership | **68%** | `TakeOver` + [`ApplyTakeOverAsync`](Core/Application/Common/Telecom/TelecomActivationWorkflow.cs) |
 | 5 | الالتزامات الماليّة والتعاقدية | Obligation | **15%** | debt check في takeover فقط؛ **لا entity Obligation/Contract** |

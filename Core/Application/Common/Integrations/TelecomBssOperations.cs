@@ -25,6 +25,9 @@ public static class TelecomBssOperations
     public const string CbsPostDeviceSale = "CbsPostDeviceSale";
     public const string CbsCreateDeviceInstallmentContract = "CbsCreateDeviceInstallmentContract";
     public const string CbsPostRefundCreditNote = "CbsPostRefundCreditNote";
+    public const string CbsPostCollectionPayment = "CbsPostCollectionPayment";
+    public const string CbsPostWriteOff = "CbsPostWriteOff";
+    public const string CbsDunningNotify = "CbsDunningNotify";
 }
 
 /// <summary>Explicit phase for billing provision (idempotency + adapter branching).</summary>

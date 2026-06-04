@@ -110,6 +110,9 @@ function createTelecomApp() {
                 const canApproveRefund =
                     StorageManager.hasAnyPermission?.(perms, ['telecom.line.refund_approve']) ||
                     roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice'].includes(x));
+                const canApproveCollection =
+                    StorageManager.hasAnyPermission?.(perms, ['telecom.line.collection_approve']) ||
+                    roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice'].includes(x));
                 return {
                     canCreateOps: roles.some((x) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(x)),
                     canConfirmCbs: roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice'].includes(x)),
@@ -120,6 +123,7 @@ function createTelecomApp() {
                     canApproveSuspension,
                     canApproveReconnect,
                     canApproveRefund,
+                    canApproveCollection,
                     canSeeBillingLog: roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice', 'TelecomManagement'].includes(x)),
                     showRetailShortcuts: roles.some((x) => !TELECOM_ROLE_NAMES.has(x)),
                     canOpenSubscriberRegistry: roles.some((x) => SUBSCRIBER_REGISTRY_ROLES.has(x)),
@@ -241,6 +245,7 @@ function createTelecomApp() {
                 if (k === 'reconnect') return 9;
                 if (k === 'deviceSale') return 10;
                 if (k === 'refund') return 11;
+                if (k === 'badDebt') return 12;
                 return 0;
             };
 
@@ -345,6 +350,16 @@ function createTelecomApp() {
                 state.wizard.rfdDepositSnapshot = null;
                 state.wizard.rfdWalletSnapshot = null;
                 state.wizard.rfdRequiresBackOffice = false;
+                state.wizard.bdrCollectionAction = 'PaymentRecorded';
+                state.wizard.bdrDunningStage = 'Reminder1';
+                state.wizard.bdrCollectedAmount = '';
+                state.wizard.bdrWriteOffAmount = '';
+                state.wizard.bdrPaymentReference = '';
+                state.wizard.bdrAgencyReference = '';
+                state.wizard.bdrPaymentPlanMonths = '';
+                state.wizard.bdrRequiresBackOffice = false;
+                state.wizard.bdrEligibilityBusy = false;
+                state.wizard.bdrEligibility = null;
                 state.migrationEligibleProducts = [];
                 state.migrationOffersBusy = false;
                 state.migrationLineTypeHint = '';
@@ -398,6 +413,7 @@ function createTelecomApp() {
                 if (k === 9) return 'إعادة تفعيل RCN';
                 if (k === 10) return 'بيع جهاز DEV';
                 if (k === 11) return 'استرداد مالي RFD';
+                if (k === 12) return 'تحصيل ديون BDR';
                 return String(kind ?? '—');
             };
 
@@ -442,6 +458,11 @@ function createTelecomApp() {
                 && Number(o?.status) === 5
                 && String(o?.approvalLevelRequired || '').toLowerCase() === 'backoffice';
 
+            const isBadDebtBoPending = (o) =>
+                Number(o?.kind) === 12
+                && Number(o?.status) === 5
+                && String(o?.approvalLevelRequired || '').toLowerCase() === 'backoffice';
+
             const isSecureOpPendingReview = (o) =>
                 isTakeOverPendingReview(o)
                 || isSimSwapPendingReview(o)
@@ -449,7 +470,8 @@ function createTelecomApp() {
                 || isTerminationBoPending(o)
                 || isSuspensionBoPending(o)
                 || isReconnectBoPending(o)
-                || isRefundBoPending(o);
+                || isRefundBoPending(o)
+                || isBadDebtBoPending(o);
 
             const pendingTakeOverCount = Vue.computed(
                 () => (state.operations || []).filter((o) => isTakeOverPendingReview(o)).length
@@ -479,6 +501,10 @@ function createTelecomApp() {
                 () => (state.operations || []).filter((o) => isRefundBoPending(o)).length
             );
 
+            const pendingBadDebtCount = Vue.computed(
+                () => (state.operations || []).filter((o) => isBadDebtBoPending(o)).length
+            );
+
             const pendingSecureOpCount = Vue.computed(
                 () =>
                     pendingTakeOverCount.value
@@ -488,6 +514,7 @@ function createTelecomApp() {
                     + pendingSuspensionCount.value
                     + pendingReconnectCount.value
                     + pendingRefundCount.value
+                    + pendingBadDebtCount.value
             );
 
             const secureOpApproveLabel = (o) => {
@@ -497,6 +524,7 @@ function createTelecomApp() {
                 if (Number(o?.kind) === 8) return t('telecom.ops.approveSuspension');
                 if (Number(o?.kind) === 9) return t('telecom.ops.approveReconnect');
                 if (Number(o?.kind) === 11) return t('telecom.ops.approveRefund');
+                if (Number(o?.kind) === 12) return t('telecom.ops.approveCollection');
                 return t('telecom.ops.approveTakeOver');
             };
 
@@ -526,6 +554,9 @@ function createTelecomApp() {
                 if (k === 11) {
                     return hubPermissions.value.canApproveRefund;
                 }
+                if (k === 12) {
+                    return hubPermissions.value.canApproveCollection;
+                }
                 return hubPermissions.value.canApproveTakeOver;
             });
 
@@ -548,6 +579,9 @@ function createTelecomApp() {
                 if (Number(state.takeOverApproval.kind) === 11) {
                     return t('telecom.refundModal.title');
                 }
+                if (Number(state.takeOverApproval.kind) === 12) {
+                    return t('telecom.badDebtModal.title');
+                }
                 return t('telecom.takeOverModal.title');
             });
 
@@ -569,6 +603,9 @@ function createTelecomApp() {
                 }
                 if (Number(state.takeOverApproval.kind) === 11) {
                     return t('telecom.refundModal.approve');
+                }
+                if (Number(state.takeOverApproval.kind) === 12) {
+                    return t('telecom.badDebtModal.approve');
                 }
                 return t('telecom.takeOverModal.approve');
             });
@@ -1116,6 +1153,50 @@ function createTelecomApp() {
                 if (state.wizard.kind === 'reconnect') {
                     loadReconnectEligibility();
                 }
+                if (state.wizard.kind === 'badDebt') {
+                    loadBadDebtEligibility();
+                }
+            };
+
+            const loadBadDebtEligibility = async () => {
+                const pid = (state.wizard.primarySubscriberProfileId || '').trim();
+                const assetId = (state.wizard.primaryMsisdnAssetId || '').trim();
+                if (!pid || !assetId) {
+                    state.wizard.bdrEligibility = null;
+                    return;
+                }
+                state.wizard.bdrEligibilityBusy = true;
+                try {
+                    const qs = new URLSearchParams({
+                        subscriberProfileId: pid,
+                        msisdnAssetId: assetId,
+                        collectionAction: (state.wizard.bdrCollectionAction || 'PaymentRecorded').trim(),
+                        dunningStage: (state.wizard.bdrDunningStage || 'Reminder1').trim(),
+                        collectionApprovalConfirmed: 'false',
+                    });
+                    const pay = (state.wizard.bdrPaymentReference || '').trim();
+                    if (pay) qs.set('paymentReference', pay);
+                    const col = Number(state.wizard.bdrCollectedAmount);
+                    if (col > 0) qs.set('collectedAmount', String(col));
+                    const wo = Number(state.wizard.bdrWriteOffAmount);
+                    if (wo > 0) qs.set('writeOffAmount', String(wo));
+                    const res = await AxiosManager.get('/Telecom/GetBadDebtEligibility?' + qs.toString(), {});
+                    const d = res?.data?.content?.data ?? res?.data?.content?.Data ?? null;
+                    state.wizard.bdrEligibility = d;
+                    if (d) {
+                        state.wizard.bdrRequiresBackOffice =
+                            !!d.requiresBackOfficeApproval || !!d.RequiresBackOfficeApproval;
+                    }
+                } catch (e) {
+                    state.wizard.bdrEligibility = null;
+                    console.warn('BadDebt eligibility', e);
+                } finally {
+                    state.wizard.bdrEligibilityBusy = false;
+                }
+            };
+
+            const onBdrActionChange = () => {
+                loadBadDebtEligibility();
             };
 
             const loadReconnectEligibility = async () => {
@@ -1439,6 +1520,37 @@ function createTelecomApp() {
                     }
                 }
 
+                if (state.wizard.kind === 'badDebt') {
+                    if (!(state.wizard.primaryMsisdnAssetId || '').trim()) {
+                        if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: t('telecom.badDebt.currentMsisdn') });
+                        return false;
+                    }
+                    if (state.wizard.bdrCollectionAction === 'PaymentRecorded') {
+                        if (!(state.wizard.bdrPaymentReference || '').trim()) {
+                            if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: t('telecom.badDebt.paymentReference') });
+                            return false;
+                        }
+                        const col = Number(state.wizard.bdrCollectedAmount);
+                        if (!col || col <= 0) {
+                            if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: t('telecom.badDebt.collectedAmount') });
+                            return false;
+                        }
+                    }
+                    if ((state.wizard.bdrCollectionAction === 'WriteOffPartial' || state.wizard.bdrCollectionAction === 'WriteOffFull')) {
+                        const wo = Number(state.wizard.bdrWriteOffAmount);
+                        if (!wo || wo <= 0) {
+                            if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: t('telecom.badDebt.writeOffAmount') });
+                            return false;
+                        }
+                    }
+                    await loadBadDebtEligibility();
+                    if (state.wizard.bdrEligibility && !state.wizard.bdrEligibility.allowed && !state.wizard.bdrEligibility.Allowed) {
+                        const msg = state.wizard.bdrEligibility.messageAr || state.wizard.bdrEligibility.MessageAr || '';
+                        if (window.Swal) Swal.fire({ icon: 'error', title: t('telecom.swal.notAllowedTitle'), text: msg });
+                        return false;
+                    }
+                }
+
                 if (state.wizard.kind === 'termination') {
                     if (!(state.wizard.primaryMsisdnAssetId || '').trim()) {
                         if (window.Swal) {
@@ -1730,8 +1842,6 @@ function createTelecomApp() {
                             state.wizard.kind === 'reconnect' ? (state.wizard.rcnReconnectReason || '').trim() || null : null,
                         clearanceType:
                             state.wizard.kind === 'reconnect' ? (state.wizard.rcnClearanceType || '').trim() || null : null,
-                        paymentReference:
-                            state.wizard.kind === 'reconnect' ? (state.wizard.rcnPaymentReference || '').trim() || null : null,
                         fraudClearanceConfirmed:
                             state.wizard.kind === 'reconnect' ? !!state.wizard.rcnFraudClearanceConfirmed : false,
                         deviceInventoryId:
@@ -1754,6 +1864,31 @@ function createTelecomApp() {
                             state.wizard.kind === 'refund' && state.wizard.rfdRefundAmount
                                 ? Number(state.wizard.rfdRefundAmount)
                                 : null,
+                        collectionAction:
+                            state.wizard.kind === 'badDebt' ? (state.wizard.bdrCollectionAction || '').trim() || null : null,
+                        dunningStage:
+                            state.wizard.kind === 'badDebt' ? (state.wizard.bdrDunningStage || '').trim() || null : null,
+                        collectedAmount:
+                            state.wizard.kind === 'badDebt' && state.wizard.bdrCollectedAmount
+                                ? Number(state.wizard.bdrCollectedAmount)
+                                : null,
+                        writeOffAmount:
+                            state.wizard.kind === 'badDebt' && state.wizard.bdrWriteOffAmount
+                                ? Number(state.wizard.bdrWriteOffAmount)
+                                : null,
+                        paymentReference:
+                            state.wizard.kind === 'badDebt'
+                                ? (state.wizard.bdrPaymentReference || '').trim() || null
+                                : state.wizard.kind === 'reconnect'
+                                    ? (state.wizard.rcnPaymentReference || '').trim() || null
+                                    : null,
+                        agencyReference:
+                            state.wizard.kind === 'badDebt' ? (state.wizard.bdrAgencyReference || '').trim() || null : null,
+                        paymentPlanMonths:
+                            state.wizard.kind === 'badDebt' && state.wizard.bdrPaymentPlanMonths
+                                ? Number(state.wizard.bdrPaymentPlanMonths)
+                                : null,
+                        collectionApprovalConfirmed: false,
                     };
                     const res = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                     const ok = res?.data?.code === 200;
@@ -1792,6 +1927,14 @@ function createTelecomApp() {
                                 || !!entity.requiresDualApproval;
                             state.wizard.rfdDepositSnapshot = entity.depositBalanceSnapshot ?? entity.DepositBalanceSnapshot ?? null;
                             state.wizard.rfdWalletSnapshot = entity.walletBalanceSnapshot ?? entity.WalletBalanceSnapshot ?? null;
+                        }
+                        if (state.wizard.kind === 'badDebt') {
+                            state.wizard.bdrRequiresBackOffice =
+                                String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                                || state.wizard.bdrRequiresBackOffice;
+                            if (state.wizard.bdrRequiresBackOffice) {
+                                state.wizard.documentMarkedUploaded = true;
+                            }
                         }
                         if (window.Swal) {
                             Swal.fire({
@@ -2026,6 +2169,16 @@ function createTelecomApp() {
                             icon: 'info',
                             title: t('telecom.swal.notAllowedTitle'),
                             text: 'صلاحية اعتماد الاسترداد (telecom.line.refund_approve) مطلوبة.',
+                        });
+                    }
+                    return;
+                }
+                if (kind === 12 && !hubPermissions.value.canApproveCollection) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: t('telecom.swal.notAllowedTitle'),
+                            text: 'صلاحية اعتماد التحصيل (telecom.line.collection_approve) مطلوبة.',
                         });
                     }
                     return;
@@ -2461,6 +2614,9 @@ function createTelecomApp() {
                             if (wizParam === 'reconnect') {
                                 await loadReconnectEligibility();
                             }
+                            if (wizParam === 'badDebt') {
+                                await loadBadDebtEligibility();
+                            }
                         }
                     }
 
@@ -2561,6 +2717,9 @@ function createTelecomApp() {
                 onRefundTypeChange,
                 loadReconnectEligibility,
                 onRcnClearanceChange,
+                loadBadDebtEligibility,
+                onBdrActionChange,
+                pendingBadDebtCount,
                 loadChangeNumberPool,
                 onChangeNumberTargetPicked,
                 secureOpApproveLabel,

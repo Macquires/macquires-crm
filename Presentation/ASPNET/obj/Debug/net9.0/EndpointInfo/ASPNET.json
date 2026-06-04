@@ -5031,6 +5031,87 @@
         }
       }
     },
+    "/api/Telecom/GetReconnectEligibility": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "subscriberProfileId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "msisdnAssetId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reconnectReason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clearanceType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentReference",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fraudClearanceConfirmed",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "sourceSuspensionOperationId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetReconnectEligibilityResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetReconnectEligibilityResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetReconnectEligibilityResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Telecom/GetReconnectKpis": {
       "get": {
         "tags": [
@@ -5071,6 +5152,143 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GetReconnectKpisResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetBadDebtEligibility": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "subscriberProfileId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "msisdnAssetId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collectionAction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dunningStage",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentReference",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collectedAmount",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "writeOffAmount",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "collectionApprovalConfirmed",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBadDebtEligibilityResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBadDebtEligibilityResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBadDebtEligibilityResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetBadDebtKpis": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBadDebtKpisResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBadDebtKpisResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBadDebtKpisResultApiSuccessResult"
                 }
               }
             }
@@ -9289,6 +9507,40 @@
           "refundMethod": {
             "type": "string",
             "nullable": true
+          },
+          "collectionAction": {
+            "type": "string",
+            "nullable": true
+          },
+          "dunningStage": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectedAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "writeOffAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "agencyReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentPlanMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "collectionNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionApprovalConfirmed": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -9799,6 +10051,11 @@
             "items": {
               "$ref": "#/components/schemas/Customer360UsageBucketDto"
             },
+            "nullable": true
+          },
+          "outstandingBalance": {
+            "type": "number",
+            "format": "double",
             "nullable": true
           }
         },
@@ -11678,6 +11935,125 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetBackOfficeAuditLogListResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetBadDebtEligibilityDto": {
+        "type": "object",
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "validationCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "requiresBackOfficeApproval": {
+            "type": "boolean"
+          },
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "outstandingBalanceSnapshot": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetBadDebtEligibilityResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GetBadDebtEligibilityDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetBadDebtEligibilityResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetBadDebtEligibilityResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetBadDebtKpisResult": {
+        "type": "object",
+        "properties": {
+          "totalToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingBackOffice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "collectedAmountToday": {
+            "type": "number",
+            "format": "double"
+          },
+          "writeOffAmountToday": {
+            "type": "number",
+            "format": "double"
+          },
+          "paymentPlansToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetBadDebtKpisResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetBadDebtKpisResult"
           }
         },
         "additionalProperties": false
@@ -14746,6 +15122,73 @@
         },
         "additionalProperties": false
       },
+      "GetReconnectEligibilityDto": {
+        "type": "object",
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "validationCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "requiresBackOfficeApproval": {
+            "type": "boolean"
+          },
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSuspensionOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastSuspensionType": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetReconnectEligibilityResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GetReconnectEligibilityDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetReconnectEligibilityResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetReconnectEligibilityResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetReconnectKpisResult": {
         "type": "object",
         "properties": {
@@ -15762,6 +16205,84 @@
             "nullable": true
           },
           "deprovisionStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "reconnectReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearanceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearanceTypeLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSuspensionOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSuspensionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSuspensionTypeLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "fraudClearanceConfirmed": {
+            "type": "boolean"
+          },
+          "fraudClearanceByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionAction": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionActionLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "dunningStage": {
+            "type": "string",
+            "nullable": true
+          },
+          "outstandingBalanceSnapshot": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "collectedAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "writeOffAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "agencyReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionSettlementStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionNote": {
             "type": "string",
             "nullable": true
           }
@@ -19861,7 +20382,8 @@
           8,
           9,
           10,
-          11
+          11,
+          12
         ],
         "type": "integer",
         "format": "int32"
@@ -20291,6 +20813,55 @@
           },
           "requiresDualApproval": {
             "type": "boolean"
+          },
+          "collectionAction": {
+            "type": "string",
+            "nullable": true
+          },
+          "dunningStage": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorDunningStage": {
+            "type": "string",
+            "nullable": true
+          },
+          "outstandingBalanceSnapshot": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "collectedAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "writeOffAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "agencyReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentPlanMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "nextDunningDueUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "collectionNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionSettlementStatus": {
+            "type": "string",
+            "nullable": true
           },
           "auditLogs": {
             "type": "array",

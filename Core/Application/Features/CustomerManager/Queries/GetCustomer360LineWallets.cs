@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Integrations;
 using Application.Common.Telecom;
 using Domain.Entities;
 using MediatR;
@@ -22,7 +23,8 @@ public record Customer360LineWalletDto(
     decimal? Balance,
     string Currency,
     string? ErrorMessage,
-    List<Customer360UsageBucketDto> Buckets);
+    List<Customer360UsageBucketDto> Buckets,
+    decimal? OutstandingBalance = null);
 
 public class GetCustomer360LineWalletsResult
 {
@@ -37,10 +39,12 @@ public class GetCustomer360LineWalletsRequest : IRequest<GetCustomer360LineWalle
 public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360LineWalletsRequest, GetCustomer360LineWalletsResult>
 {
     private readonly IQueryContext _query;
+    private readonly IBillingSystemIntegration _billing;
 
-    public GetCustomer360LineWalletsHandler(IQueryContext query)
+    public GetCustomer360LineWalletsHandler(IQueryContext query, IBillingSystemIntegration billing)
     {
         _query = query;
+        _billing = billing;
     }
 
     public async Task<GetCustomer360LineWalletsResult> Handle(
@@ -100,10 +104,19 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
                     c.SortOrder))
                 .ToList();
 
-            wallets[sub.Id] = Customer360WalletBuilder.Build(
+            var built = Customer360WalletBuilder.Build(
                 sub.MsisdnAsset?.Msisdn,
                 profile?.PrepaidBalance,
                 components);
+
+            decimal? outstanding = null;
+            var msisdn = Customer360WalletBuilder.NormalizeMsisdn(sub.MsisdnAsset?.Msisdn);
+            if (!string.IsNullOrEmpty(msisdn))
+            {
+                outstanding = await _billing.GetOutstandingBalanceAsync(msisdn, cancellationToken);
+            }
+
+            wallets[sub.Id] = built with { OutstandingBalance = outstanding };
         }
 
         return new GetCustomer360LineWalletsResult { WalletsBySubscriptionId = wallets };

@@ -18,6 +18,7 @@ public static class TelecomOperationLabels
         TelecomOperationKind.Reconnect => "إعادة تفعيل RCN",
         TelecomOperationKind.DeviceSale => "بيع جهاز DEV",
         TelecomOperationKind.DepositRefundSettlement => "استرداد مالي RFD",
+        TelecomOperationKind.BadDebtRecovery => "تحصيل ديون BDR",
         _ => kind.ToString()
     };
 

@@ -16,6 +16,7 @@ using Application.Common.Telecom.Suspension;
 using Application.Common.Telecom.Reconnect;
 using Application.Common.Telecom.DeviceSales;
 using Application.Common.Telecom.Refund;
+using Application.Common.Telecom.BadDebt;
 using Application.Common.Telecom.OfferSubscription;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
     private readonly IDeviceSaleCompletionService _deviceSaleCompletion;
     private readonly IRefundEligibilityChecker _refundEligibility;
     private readonly IRefundCompletionService _refundCompletion;
+    private readonly IBadDebtEligibilityChecker _badDebtEligibility;
+    private readonly IBadDebtCompletionService _badDebtCompletion;
 
     public TelecomActivationWorkflow(
         ICommandRepository<TelecomOperationRequest> operationRepository,
@@ -87,7 +90,9 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         IDeviceSalesEligibilityChecker deviceSalesEligibility,
         IDeviceSaleCompletionService deviceSaleCompletion,
         IRefundEligibilityChecker refundEligibility,
-        IRefundCompletionService refundCompletion)
+        IRefundCompletionService refundCompletion,
+        IBadDebtEligibilityChecker badDebtEligibility,
+        IBadDebtCompletionService badDebtCompletion)
     {
         _operationRepository = operationRepository;
         _profileRepository = profileRepository;
@@ -117,6 +122,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         _deviceSaleCompletion = deviceSaleCompletion;
         _refundEligibility = refundEligibility;
         _refundCompletion = refundCompletion;
+        _badDebtEligibility = badDebtEligibility;
+        _badDebtCompletion = badDebtCompletion;
     }
 
     public async Task<TelecomActivationWorkflowResult> ConfirmActivationAsync(
@@ -342,9 +349,33 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             }
         }
 
+        if (entity.Kind == TelecomOperationKind.BadDebtRecovery)
+        {
+            if (string.IsNullOrEmpty(entity.MsisdnAssetId))
+            {
+                return Fail(entity, "رقم الخط غير محدد في طلب التحصيل.");
+            }
+
+            if (string.Equals(entity.ApprovalLevelRequired, "BackOffice", StringComparison.OrdinalIgnoreCase)
+                && !entity.FraudClearanceConfirmed
+                && !string.IsNullOrWhiteSpace(actorUserId))
+            {
+                entity.FraudClearanceConfirmed = true;
+                entity.FraudClearanceByUserId = actorUserId;
+                _operationRepository.Update(entity);
+            }
+
+            var badDebtCheck = await _badDebtEligibility.ValidateForConfirmAsync(entity, cancellationToken);
+            if (!badDebtCheck.Allowed)
+            {
+                return Fail(entity, badDebtCheck.MessageAr);
+            }
+        }
+
         BindSubscriptionResult? bindResult = null;
         var deviceSaleFulfilled = false;
         var refundFulfilled = false;
+        var badDebtFulfilled = false;
         OperationProvisionContext? provisionCtx = null;
         BillingProvisionResult billingResult;
 
@@ -424,20 +455,32 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
                     await _refundCompletion.FulfillAsync(entity, actorUserId, ct);
                     refundFulfilled = true;
                 }
+                else if (entity.Kind == TelecomOperationKind.BadDebtRecovery)
+                {
+                    await ApplyBadDebtRecoveryAsync(entity, actorUserId, ct);
+                    await _badDebtCompletion.FulfillAsync(entity, actorUserId, ct);
+                    badDebtFulfilled = true;
+                }
 
                 _operationRepository.Update(entity);
                 await _unitOfWork.SaveAsync(ct);
             }, cancellationToken);
         }
-        catch (Exception ex) when (entity.Kind is TelecomOperationKind.DeviceSale or TelecomOperationKind.DepositRefundSettlement)
+        catch (Exception ex) when (entity.Kind is TelecomOperationKind.DeviceSale
+                                   or TelecomOperationKind.DepositRefundSettlement
+                                   or TelecomOperationKind.BadDebtRecovery)
         {
             if (entity.Kind == TelecomOperationKind.DeviceSale)
             {
                 await _deviceSaleCompletion.CompensateOnFailureAsync(entity, cancellationToken);
             }
-            else
+            else if (entity.Kind == TelecomOperationKind.DepositRefundSettlement)
             {
                 await _refundCompletion.CompensateOnFailureAsync(entity, cancellationToken);
+            }
+            else
+            {
+                await _badDebtCompletion.CompensateOnFailureAsync(entity, cancellationToken);
             }
             await _orchestrator.TransitionAsync(entity, TelecomOperationStatus.Failed, actorUserId, ex.Message, cancellationToken);
             _operationRepository.Update(entity);
@@ -483,6 +526,10 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         {
             billingResult = new BillingProvisionResult(true, "اكتمل استرداد المبلغ (CBS + محفظة).");
         }
+        else if (badDebtFulfilled)
+        {
+            billingResult = new BillingProvisionResult(true, "اكتمل ترحيل التحصيل (CBS).");
+        }
         else
         {
             billingResult = await _billing.ProvisionAsync(billingRequest, cancellationToken);
@@ -497,6 +544,10 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             else if (entity.Kind == TelecomOperationKind.DepositRefundSettlement)
             {
                 await _refundCompletion.CompensateOnFailureAsync(entity, cancellationToken);
+            }
+            else if (entity.Kind == TelecomOperationKind.BadDebtRecovery)
+            {
+                await _badDebtCompletion.CompensateOnFailureAsync(entity, cancellationToken);
             }
 
             if (bindResult != null)
@@ -600,7 +651,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             or TelecomOperationKind.TemporarySuspension
             or TelecomOperationKind.Reconnect
             or TelecomOperationKind.DeviceSale
-            or TelecomOperationKind.DepositRefundSettlement)
+            or TelecomOperationKind.DepositRefundSettlement
+            or TelecomOperationKind.BadDebtRecovery)
         {
             return;
         }
@@ -1053,6 +1105,47 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         entity.ReactivationAtUtc ??= DateTime.UtcNow;
 
         return await BuildProvisionContextAsync(entity, cancellationToken);
+    }
+
+    private async Task ApplyBadDebtRecoveryAsync(
+        TelecomOperationRequest entity,
+        string? actorUserId,
+        CancellationToken cancellationToken)
+    {
+        var msisdnAssetId = entity.MsisdnAssetId
+            ?? throw new BusinessRuleViolationException("رقم الخط غير محدد.");
+
+        entity.PriorDunningStage = entity.DunningStage;
+
+        if (string.Equals(entity.DunningStage, BadDebtWellKnown.HardBar, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(entity.CollectionAction, BadDebtWellKnown.DunningEscalation, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(entity.DunningStage, BadDebtWellKnown.HardBar, StringComparison.OrdinalIgnoreCase))
+        {
+            var profile = await _profileRepository.GetAsync(entity.SubscriberProfileId, cancellationToken)
+                ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
+
+            entity.PriorOperationalStatus ??= profile.OperationalStatus.ToString();
+            if (profile.OperationalStatus == SubscriberOperationalStatus.Active)
+            {
+                profile.Suspend();
+                profile.UpdatedById = actorUserId;
+                _profileRepository.Update(profile);
+            }
+
+            var msisdnAsset = await _msisdnRepository.GetAsync(msisdnAssetId, cancellationToken)
+                ?? throw new BusinessRuleViolationException("أصل الرقم غير موجود.");
+
+            if (msisdnAsset.PoolStatus == MsisdnPoolStatus.Active)
+            {
+                msisdnAsset.TransitionTo(MsisdnPoolStatus.Suspended);
+                msisdnAsset.UpdatedById = actorUserId;
+                _msisdnRepository.Update(msisdnAsset);
+            }
+
+            entity.BarStatus = "BillingBar";
+        }
+
+        entity.ProvisioningResult = "Pending";
     }
 
     private static void ApplyBarringToProfile(SubscriberProfile profile, string barringLevel)

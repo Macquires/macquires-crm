@@ -4631,17 +4631,17 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
+      "projectUniqueName": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
       "projectName": "ASPNET",
-      "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
+      "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
       "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\obj\\",
+      "outputPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\HP\\NuGet.Config",
+        "c:\\Users\\HP\\NuGet.Config",
         "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -4656,14 +4656,13 @@
       },
       "frameworks": {
         "net9.0": {
-          "framework": "net9.0",
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj": {
-              "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj"
+            "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj": {
+              "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj"
             },
-            "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj"
+            "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
+              "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj"
             }
           }
         }
@@ -4682,7 +4681,6 @@
     },
     "frameworks": {
       "net9.0": {
-        "framework": "net9.0",
         "targetAlias": "net9.0",
         "dependencies": {
           "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {

@@ -149,6 +149,16 @@
                         </button>
                     </div>
                     <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-bad-debt shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
+                                :disabled="!hubPermissions.canCreateOps"
+                                @@click="openWizard('badDebt')" :aria-label="t('telecom.tiles.badDebt.aria')">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-coins"></i></span>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.badDebt.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.badDebt.sub') }}</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-device-sale shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
@@ -417,6 +427,46 @@
                                         <label class="form-check-label small" for="rcnFraudClear">{{ t('telecom.reconnect.fraudClearance') }}</label>
                                     </div>
                                     <div v-if="wizard.rcnRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ t('telecom.reconnect.boHint') }}</div>
+                                </div>
+                                <div class="col-12" v-if="wizard.kind === 'badDebt'">
+                                    <p class="small text-muted mb-2">{{ t('telecom.badDebt.currentMsisdn') }}: <strong class="font-monospace" dir="ltr">{{ wizard.primaryLabel }}</strong></p>
+                                    <label class="form-label small">{{ t('telecom.badDebt.collectionAction') }} *</label>
+                                    <select class="form-select form-select-sm mb-2" v-model="wizard.bdrCollectionAction" @@change="onBdrActionChange">
+                                        <option value="PaymentRecorded">{{ t('telecom.badDebt.actionPayment') }}</option>
+                                        <option value="PaymentPlan">{{ t('telecom.badDebt.actionPaymentPlan') }}</option>
+                                        <option value="DunningEscalation">{{ t('telecom.badDebt.actionDunning') }}</option>
+                                        <option value="AgencyReferral">{{ t('telecom.badDebt.actionAgency') }}</option>
+                                        <option value="WriteOffPartial">{{ t('telecom.badDebt.actionWriteOffPartial') }}</option>
+                                        <option value="WriteOffFull">{{ t('telecom.badDebt.actionWriteOffFull') }}</option>
+                                    </select>
+                                    <label class="form-label small">{{ t('telecom.badDebt.dunningStage') }}</label>
+                                    <select class="form-select form-select-sm mb-2" v-model="wizard.bdrDunningStage" @@change="onBdrActionChange">
+                                        <option value="Reminder1">Reminder1</option>
+                                        <option value="Reminder2">Reminder2</option>
+                                        <option value="SoftBar">SoftBar</option>
+                                        <option value="HardBar">HardBar</option>
+                                        <option value="WriteOffPending">WriteOffPending</option>
+                                    </select>
+                                    <div v-if="wizard.bdrEligibility && (wizard.bdrEligibility.outstandingBalanceSnapshot != null || wizard.bdrEligibility.OutstandingBalanceSnapshot != null)" class="small text-muted mb-2">
+                                        {{ t('telecom.badDebt.balanceSnapshot') }}: <strong class="text-danger">{{ wizard.bdrEligibility.outstandingBalanceSnapshot ?? wizard.bdrEligibility.OutstandingBalanceSnapshot }}</strong> ل.س
+                                    </div>
+                                    <label v-if="wizard.bdrCollectionAction === 'PaymentRecorded'" class="form-label small">{{ t('telecom.badDebt.collectedAmount') }} *</label>
+                                    <input v-if="wizard.bdrCollectionAction === 'PaymentRecorded'" type="number" min="1" class="form-control form-control-sm mb-2" v-model="wizard.bdrCollectedAmount" @@blur="onBdrActionChange" />
+                                    <label v-if="wizard.bdrCollectionAction === 'PaymentRecorded'" class="form-label small">{{ t('telecom.badDebt.paymentReference') }} *</label>
+                                    <input v-if="wizard.bdrCollectionAction === 'PaymentRecorded'" type="text" class="form-control form-control-sm mb-2" v-model="wizard.bdrPaymentReference" @@blur="onBdrActionChange" />
+                                    <label v-if="wizard.bdrCollectionAction === 'PaymentPlan'" class="form-label small">{{ t('telecom.badDebt.paymentPlanMonths') }}</label>
+                                    <input v-if="wizard.bdrCollectionAction === 'PaymentPlan'" type="number" min="1" max="36" class="form-control form-control-sm mb-2" v-model="wizard.bdrPaymentPlanMonths" />
+                                    <label v-if="wizard.bdrCollectionAction === 'AgencyReferral'" class="form-label small">{{ t('telecom.badDebt.agencyReference') }}</label>
+                                    <input v-if="wizard.bdrCollectionAction === 'AgencyReferral'" type="text" class="form-control form-control-sm mb-2" v-model="wizard.bdrAgencyReference" />
+                                    <label v-if="wizard.bdrCollectionAction === 'WriteOffPartial' || wizard.bdrCollectionAction === 'WriteOffFull'" class="form-label small">{{ t('telecom.badDebt.writeOffAmount') }} *</label>
+                                    <input v-if="wizard.bdrCollectionAction === 'WriteOffPartial' || wizard.bdrCollectionAction === 'WriteOffFull'" type="number" min="1" class="form-control form-control-sm mb-2" v-model="wizard.bdrWriteOffAmount" @@blur="onBdrActionChange" />
+                                    <div v-if="wizard.bdrEligibilityBusy" class="alert alert-light py-2 small mb-2">{{ t('telecom.badDebt.matrixLoading') }}</div>
+                                    <div v-else-if="wizard.bdrEligibility" class="alert py-2 small mb-2" :class="(wizard.bdrEligibility.allowed || wizard.bdrEligibility.Allowed) ? ((wizard.bdrEligibility.requiresBackOfficeApproval || wizard.bdrEligibility.RequiresBackOfficeApproval) ? 'alert-warning' : 'alert-success') : 'alert-danger'">
+                                        <strong>{{ t('telecom.badDebt.matrixTitle') }}:</strong>
+                                        {{ wizard.bdrEligibility.messageAr || wizard.bdrEligibility.MessageAr }}
+                                        <span class="d-block mt-1 font-monospace text-muted">{{ wizard.bdrEligibility.validationCode || wizard.bdrEligibility.ValidationCode }}</span>
+                                    </div>
+                                    <div v-if="wizard.bdrRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ t('telecom.badDebt.boHint') }}</div>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'changeNumber'">
                                     <p v-if="wizard.cnCurrentMsisdn || wizard.primaryLabel" class="small text-muted mb-2">
@@ -707,6 +757,24 @@
                                         <div class="col-md-6" v-if="takeOverApproval.detail.suspensionReason">
                                             <p class="small text-muted mb-1">{{ t('telecom.suspensionModal.reason') }}</p>
                                             <p class="mb-0">{{ takeOverApproval.detail.suspensionReason }}</p>
+                                        </div>
+                                    </template>
+                                    <template v-if="takeOverApproval.kind === 12">
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.collectionActionLabelAr || takeOverApproval.detail.collectionAction">
+                                            <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.action') }}</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.collectionActionLabelAr || takeOverApproval.detail.collectionAction }}</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.outstandingBalanceSnapshot != null">
+                                            <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.balance') }}</p>
+                                            <p class="mb-0 fw-semibold text-danger">{{ takeOverApproval.detail.outstandingBalanceSnapshot }} ل.س</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.writeOffAmount">
+                                            <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.writeOff') }}</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.writeOffAmount }} ل.س</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.paymentReference">
+                                            <p class="small text-muted mb-1">{{ t('telecom.badDebt.paymentReference') }}</p>
+                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.paymentReference }}</p>
                                         </div>
                                     </template>
                                     <template v-if="takeOverApproval.kind === 9">

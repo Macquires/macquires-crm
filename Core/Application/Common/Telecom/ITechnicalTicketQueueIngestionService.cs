@@ -19,4 +19,11 @@ public interface ITechnicalTicketQueueIngestionService
         string failureMessage,
         string? actorUserId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>VAL-14-04 — device installment overdue → collections queue.</summary>
+    Task<TelecomTechnicalTicket?> EnqueueDeviceInstallmentCollectionsAsync(
+        TelecomOperationRequest operation,
+        string contractNumber,
+        string message,
+        CancellationToken cancellationToken = default);
 }

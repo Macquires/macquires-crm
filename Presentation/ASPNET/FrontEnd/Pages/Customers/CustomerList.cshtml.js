@@ -1247,11 +1247,42 @@ const App = {
             const canTerminateLine =
                 StorageManager.hasAnyPermission?.(perms, ['telecom.line.termination_request']) ||
                 roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canSuspensionLine =
+                StorageManager.hasAnyPermission?.(perms, [
+                    'telecom.line.suspension_request',
+                    'telecom.line.suspension',
+                ]) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canReconnectLine =
+                StorageManager.hasAnyPermission?.(perms, [
+                    'telecom.line.reconnect_request',
+                    'telecom.line.reconnect',
+                ]) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canRefundLine =
+                StorageManager.hasAnyPermission?.(perms, [
+                    'telecom.line.refund_request',
+                    'telecom.line.refund',
+                ]) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canCollectionLine =
+                StorageManager.hasAnyPermission?.(perms, [
+                    'telecom.line.collection_request',
+                    'telecom.line.collection',
+                ]) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomBackOffice'].includes(r));
+            const canDeviceSaleLine =
+                StorageManager.hasAnyPermission?.(perms, [
+                    'telecom.device.sell_request',
+                    'telecom.device.sell',
+                ]) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
             const canTakeOverLine =
                 StorageManager.hasAnyPermission?.(perms, ['telecom.line.activate']) ||
                 roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
-            const canRechargeLine = roles.some((r) =>
-                ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const canRechargeLine =
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.recharge']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
             return {
                 isStrictTelecom,
                 canMutate,
@@ -1265,6 +1296,11 @@ const App = {
                 canSimSwapLine,
                 canChangeNumberLine,
                 canTerminateLine,
+                canSuspensionLine,
+                canReconnectLine,
+                canRefundLine,
+                canCollectionLine,
+                canDeviceSaleLine,
                 canTakeOverLine,
                 canRechargeLine,
             };
@@ -2077,16 +2113,64 @@ const App = {
             trmRetentionOfferOutcome: 'Declined',
             trmRequiresBackOffice: false,
             trmIdentityFile: null,
+            susSuspensionType: 'CustomerRequest',
+            susSuspensionReason: '',
+            susBarringLevel: 'Full',
+            susAutoReconnectEnabled: false,
+            susEndDateLocal: '',
+            susRequiresBackOffice: false,
+            rcnReconnectReason: '',
+            rcnClearanceType: 'Customer',
+            rcnPaymentReference: '',
+            rcnFraudClearanceConfirmed: false,
+            rcnRequiresBackOffice: false,
+            rcnEligibility: null,
+            rcnEligibilityBusy: false,
+            rfdRefundType: 'Deposit',
+            rfdRefundMethod: 'CreditNote',
+            rfdRefundAmount: '',
+            rfdRefundReason: '',
+            rfdRequiresBackOffice: false,
+            rfdIdentityFile: null,
+            bdrCollectionAction: 'PaymentRecorded',
+            bdrDunningStage: 'Reminder1',
+            bdrCollectedAmount: '',
+            bdrWriteOffAmount: '',
+            bdrPaymentReference: '',
+            bdrRequiresBackOffice: false,
+            bdrEligibility: null,
+            bdrEligibilityBusy: false,
         });
 
         const isLineProcessing = (key) => !!lineProcessing[key || ''];
+
+        const isLineSuspended = (sub) => {
+            const st = String(sub?.profileOperationalStatus || sub?.ProfileOperationalStatus || '').toLowerCase();
+            return st === 'suspended' || st === 'suspendedinbound' || st === 'suspendedoutbound';
+        };
+
+        const goToC360Wizard = (sub, wizardKind) => {
+            const cid = state.id || state.customer360?.core?.id || state.customer360?.core?.Id;
+            if (!cid || !sub?.subscriberProfileId) return;
+            const qs = new URLSearchParams({
+                customerId: cid,
+                wizard: wizardKind,
+                lineKey: `${sub.subscriberProfileId}|${sub.msisdn || ''}|${sub.msisdnAssetId || ''}`,
+            });
+            window.location.href = '/Telecom/Customer360Profile?' + qs.toString();
+        };
 
         const hasAnyLineAction = () =>
             gridAccess.canMigrateLine
             || gridAccess.canSimSwapLine
             || gridAccess.canChangeNumberLine
             || gridAccess.canTerminateLine
-            || gridAccess.canTakeOverLine;
+            || gridAccess.canTakeOverLine
+            || gridAccess.canSuspensionLine
+            || gridAccess.canReconnectLine
+            || gridAccess.canRefundLine
+            || gridAccess.canCollectionLine
+            || gridAccess.canDeviceSaleLine;
 
         const isLineTerminated = (sub) =>
             String(sub?.profileOperationalStatus || sub?.ProfileOperationalStatus || '')
@@ -2150,6 +2234,95 @@ const App = {
             lineActionModal.trmRetentionOfferOutcome = 'Declined';
             lineActionModal.trmRequiresBackOffice = false;
             lineActionModal.trmIdentityFile = null;
+            lineActionModal.susSuspensionType = 'CustomerRequest';
+            lineActionModal.susSuspensionReason = '';
+            lineActionModal.susBarringLevel = 'Full';
+            lineActionModal.susAutoReconnectEnabled = false;
+            lineActionModal.susEndDateLocal = '';
+            lineActionModal.susRequiresBackOffice = false;
+            lineActionModal.rcnReconnectReason = '';
+            lineActionModal.rcnClearanceType = 'Customer';
+            lineActionModal.rcnPaymentReference = '';
+            lineActionModal.rcnFraudClearanceConfirmed = false;
+            lineActionModal.rcnRequiresBackOffice = false;
+            lineActionModal.rcnEligibility = null;
+            lineActionModal.rfdRefundType = 'Deposit';
+            lineActionModal.rfdRefundMethod = 'CreditNote';
+            lineActionModal.rfdRefundAmount = '';
+            lineActionModal.rfdRefundReason = '';
+            lineActionModal.rfdRequiresBackOffice = false;
+            lineActionModal.rfdIdentityFile = null;
+            lineActionModal.bdrCollectionAction = 'PaymentRecorded';
+            lineActionModal.bdrDunningStage = 'Reminder1';
+            lineActionModal.bdrCollectedAmount = '';
+            lineActionModal.bdrWriteOffAmount = '';
+            lineActionModal.bdrPaymentReference = '';
+            lineActionModal.bdrRequiresBackOffice = false;
+            lineActionModal.bdrEligibility = null;
+        };
+
+        const onSusTypeChangeList = () => {
+            const ty = (lineActionModal.susSuspensionType || '').trim();
+            lineActionModal.susRequiresBackOffice = ty === 'Fraud' || ty === 'Regulatory';
+        };
+
+        const loadListReconnectEligibility = async () => {
+            const sub = lineActionModal.sub;
+            if (!sub?.subscriberProfileId || !sub?.msisdnAssetId) return;
+            lineActionModal.rcnEligibilityBusy = true;
+            try {
+                const qs = new URLSearchParams({
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId,
+                    reconnectReason: (lineActionModal.rcnReconnectReason || 'CustomerRequest').trim(),
+                    clearanceType: (lineActionModal.rcnClearanceType || 'Customer').trim(),
+                    fraudClearanceConfirmed: String(!!lineActionModal.rcnFraudClearanceConfirmed),
+                });
+                const pay = (lineActionModal.rcnPaymentReference || '').trim();
+                if (pay) qs.set('paymentReference', pay);
+                const res = await AxiosManager.get('/Telecom/GetReconnectEligibility?' + qs.toString(), {});
+                const d = res?.data?.content?.data ?? res?.data?.content?.Data ?? null;
+                lineActionModal.rcnEligibility = d;
+                if (d) {
+                    lineActionModal.rcnRequiresBackOffice =
+                        !!d.requiresBackOfficeApproval || !!d.RequiresBackOfficeApproval;
+                }
+            } catch {
+                lineActionModal.rcnEligibility = null;
+            } finally {
+                lineActionModal.rcnEligibilityBusy = false;
+            }
+        };
+
+        const loadListBadDebtEligibility = async () => {
+            const sub = lineActionModal.sub;
+            if (!sub?.subscriberProfileId || !sub?.msisdnAssetId) return;
+            lineActionModal.bdrEligibilityBusy = true;
+            try {
+                const qs = new URLSearchParams({
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId,
+                    collectionAction: (lineActionModal.bdrCollectionAction || 'PaymentRecorded').trim(),
+                    dunningStage: (lineActionModal.bdrDunningStage || 'Reminder1').trim(),
+                });
+                const pay = (lineActionModal.bdrPaymentReference || '').trim();
+                if (pay) qs.set('paymentReference', pay);
+                const col = Number(lineActionModal.bdrCollectedAmount);
+                if (col > 0) qs.set('collectedAmount', String(col));
+                const wo = Number(lineActionModal.bdrWriteOffAmount);
+                if (wo > 0) qs.set('writeOffAmount', String(wo));
+                const res = await AxiosManager.get('/Telecom/GetBadDebtEligibility?' + qs.toString(), {});
+                const d = res?.data?.content?.data ?? res?.data?.content?.Data ?? null;
+                lineActionModal.bdrEligibility = d;
+                if (d) {
+                    lineActionModal.bdrRequiresBackOffice =
+                        !!d.requiresBackOfficeApproval || !!d.RequiresBackOfficeApproval;
+                }
+            } catch {
+                lineActionModal.bdrEligibility = null;
+            } finally {
+                lineActionModal.bdrEligibilityBusy = false;
+            }
         };
 
         const onTerminationTypeChangeList = () => {
@@ -2342,6 +2515,46 @@ const App = {
             resetLineActionModal();
             lineActionModal.sub = sub;
             showBsModal('C360TakeOverModal');
+        };
+
+        const openSuspensionModal = (sub) => {
+            if (!gridAccess.canSuspensionLine || !sub || isLineTerminated(sub) || isLineSuspended(sub)) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            onSusTypeChangeList();
+            showBsModal('C360SuspensionModal');
+        };
+
+        const openReconnectModal = async (sub) => {
+            if (!gridAccess.canReconnectLine || !sub || !isLineSuspended(sub)) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            await loadListReconnectEligibility();
+            showBsModal('C360ReconnectModal');
+        };
+
+        const openRefundModal = (sub) => {
+            if (!gridAccess.canRefundLine || !sub || isLineTerminated(sub)) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            lineActionModal.rfdRequiresBackOffice = lineActionModal.rfdRefundType === 'SyriatelCash';
+            showBsModal('C360RefundModal');
+        };
+
+        const openBadDebtModal = async (sub) => {
+            if (!gridAccess.canCollectionLine || !sub || isLineTerminated(sub)) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            await loadListBadDebtEligibility();
+            showBsModal('C360BadDebtModal');
+        };
+
+        const onRefundTypeChangeList = () => {
+            lineActionModal.rfdRequiresBackOffice = lineActionModal.rfdRefundType === 'SyriatelCash';
+        };
+
+        const onRefundIdentityFileChange = (ev) => {
+            lineActionModal.rfdIdentityFile = ev?.target?.files?.[0] || null;
         };
 
         const searchTakeoverTarget = async () => {
@@ -2611,6 +2824,342 @@ const App = {
                 }
                 await loadCustomer360(state.id);
                 hideBsModal('C360TerminationModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
+        };
+
+        const submitSuspension = async () => {
+            const sub = lineActionModal.sub;
+            const reason = (lineActionModal.susSuspensionReason || '').trim();
+            if (!sub || !reason) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'سبب الحظر مطلوب' });
+                return;
+            }
+            if (lineActionModal.susAutoReconnectEnabled && !(lineActionModal.susEndDateLocal || '').trim()) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'تاريخ انتهاء الحظر مطلوب' });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const body = {
+                    kind: 8,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    suspensionType: (lineActionModal.susSuspensionType || '').trim(),
+                    suspensionReason: reason,
+                    barringLevel: (lineActionModal.susBarringLevel || 'Full').trim(),
+                    autoReconnectEnabled: !!lineActionModal.susAutoReconnectEnabled,
+                    suspensionEndDateUtc:
+                        lineActionModal.susAutoReconnectEnabled && lineActionModal.susEndDateLocal
+                            ? new Date(lineActionModal.susEndDateLocal).toISOString()
+                            : null,
+                    notes: `CustomerList|Suspension|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                };
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                const entity = createRes?.data?.content?.data;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                lineActionModal.susRequiresBackOffice =
+                    String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                    || lineActionModal.susRequiresBackOffice;
+                if (lineActionModal.susRequiresBackOffice) {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد الحظر (SUS-).',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: opId,
+                        updatedById: uid,
+                    });
+                    if (confirmRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                            response: confirmRes,
+                        });
+                    }
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'success', title: 'تم حظر الخط', timer: 1800, showConfirmButton: false });
+                    }
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360SuspensionModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
+        };
+
+        const submitReconnect = async () => {
+            const sub = lineActionModal.sub;
+            const reason = (lineActionModal.rcnReconnectReason || '').trim();
+            if (!sub || !reason) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'سبب إعادة التفعيل مطلوب' });
+                return;
+            }
+            if (lineActionModal.rcnClearanceType === 'Payment' && !(lineActionModal.rcnPaymentReference || '').trim()) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
+                return;
+            }
+            await loadListReconnectEligibility();
+            if (
+                lineActionModal.rcnEligibility
+                && !lineActionModal.rcnEligibility.allowed
+                && !lineActionModal.rcnEligibility.Allowed
+            ) {
+                const msg =
+                    lineActionModal.rcnEligibility.messageAr || lineActionModal.rcnEligibility.MessageAr || '';
+                if (window.Swal) Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const body = {
+                    kind: 9,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    reconnectReason: reason,
+                    clearanceType: (lineActionModal.rcnClearanceType || '').trim(),
+                    fraudClearanceConfirmed: !!lineActionModal.rcnFraudClearanceConfirmed,
+                    paymentReference: (lineActionModal.rcnPaymentReference || '').trim() || null,
+                    notes: `CustomerList|Reconnect|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                };
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                const entity = createRes?.data?.content?.data;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                lineActionModal.rcnRequiresBackOffice =
+                    String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                    || lineActionModal.rcnRequiresBackOffice;
+                if (lineActionModal.rcnRequiresBackOffice) {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد RCN.',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: opId,
+                        updatedById: uid,
+                    });
+                    if (confirmRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                            response: confirmRes,
+                        });
+                    }
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'success', title: 'تم إعادة التفعيل', timer: 1800, showConfirmButton: false });
+                    }
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360ReconnectModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
+        };
+
+        const submitRefund = async () => {
+            const sub = lineActionModal.sub;
+            const reason = (lineActionModal.rfdRefundReason || '').trim();
+            const amt = Number(lineActionModal.rfdRefundAmount);
+            if (!sub || !reason || !amt || amt <= 0) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'أكمل بيانات الاسترداد' });
+                return;
+            }
+            if (lineActionModal.rfdRequiresBackOffice && !lineActionModal.rfdIdentityFile) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: 'ارفع وثيقة الاعتماد' });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const body = {
+                    kind: 11,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    refundType: (lineActionModal.rfdRefundType || '').trim(),
+                    refundMethod: (lineActionModal.rfdRefundMethod || '').trim(),
+                    refundReason: reason,
+                    refundAmount: amt,
+                    notes: `CustomerList|Refund|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                };
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                const entity = createRes?.data?.content?.data;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                lineActionModal.rfdRequiresBackOffice =
+                    String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                    || !!entity?.requiresDualApproval
+                    || lineActionModal.rfdRequiresBackOffice;
+                if (lineActionModal.rfdRequiresBackOffice) {
+                    const form = new FormData();
+                    form.append('id', opId);
+                    form.append('updatedById', uid || '');
+                    form.append('file', lineActionModal.rfdIdentityFile);
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد الاسترداد (RFD-).',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: opId,
+                        updatedById: uid,
+                    });
+                    if (confirmRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                            response: confirmRes,
+                        });
+                    }
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'success', title: 'تم تنفيذ الاسترداد', timer: 1800, showConfirmButton: false });
+                    }
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360RefundModal');
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineProcessing[key] = false;
+                lineActionModal.busy = false;
+            }
+        };
+
+        const submitBadDebt = async () => {
+            const sub = lineActionModal.sub;
+            if (!sub) return;
+            if (lineActionModal.bdrCollectionAction === 'PaymentRecorded') {
+                if (!(lineActionModal.bdrPaymentReference || '').trim()) {
+                    if (window.Swal) Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
+                    return;
+                }
+                if (!(Number(lineActionModal.bdrCollectedAmount) > 0)) {
+                    if (window.Swal) Swal.fire({ icon: 'warning', title: 'المبلغ المحصّل مطلوب' });
+                    return;
+                }
+            }
+            await loadListBadDebtEligibility();
+            if (
+                lineActionModal.bdrEligibility
+                && !lineActionModal.bdrEligibility.allowed
+                && !lineActionModal.bdrEligibility.Allowed
+            ) {
+                const msg =
+                    lineActionModal.bdrEligibility.messageAr || lineActionModal.bdrEligibility.MessageAr || '';
+                if (window.Swal) Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
+                return;
+            }
+            const key = sub.id || '__line__';
+            if (lineProcessing[key]) return;
+            lineProcessing[key] = true;
+            lineActionModal.busy = true;
+            const uid = StorageManager.getUserId();
+            try {
+                const body = {
+                    kind: 12,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdnAssetId: sub.msisdnAssetId || null,
+                    collectionAction: (lineActionModal.bdrCollectionAction || '').trim(),
+                    dunningStage: (lineActionModal.bdrDunningStage || '').trim(),
+                    collectedAmount: lineActionModal.bdrCollectedAmount
+                        ? Number(lineActionModal.bdrCollectedAmount)
+                        : null,
+                    writeOffAmount: lineActionModal.bdrWriteOffAmount
+                        ? Number(lineActionModal.bdrWriteOffAmount)
+                        : null,
+                    paymentReference: (lineActionModal.bdrPaymentReference || '').trim() || null,
+                    notes: `CustomerList|BadDebt|${sub.msisdn || '—'}`,
+                    createdById: uid,
+                };
+                const createRes = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
+                if (createRes?.data?.code !== 200) {
+                    throw Object.assign(new Error(createRes?.data?.message || 'فشل'), { response: createRes });
+                }
+                const opId = createRes?.data?.content?.data?.id;
+                if (!opId) throw new Error('لم يُرجع معرّف العملية');
+                lineActionModal.bdrRequiresBackOffice =
+                    String(createRes?.data?.content?.data?.approvalLevelRequired || '').toLowerCase() ===
+                        'backoffice'
+                    || lineActionModal.bdrRequiresBackOffice;
+                if (lineActionModal.bdrRequiresBackOffice) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الإرسال للباك أوفيس',
+                            text: 'الطلب بانتظار اعتماد التحصيل (BDR-).',
+                            timer: 2800,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: opId,
+                        updatedById: uid,
+                    });
+                    if (confirmRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(confirmRes?.data?.message || 'فشل التأكيد'), {
+                            response: confirmRes,
+                        });
+                    }
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'success', title: 'تم تسجيل التحصيل', timer: 1800, showConfirmButton: false });
+                    }
+                }
+                await loadCustomer360(state.id);
+                hideBsModal('C360BadDebtModal');
             } catch (e) {
                 showLineActionError(e);
             } finally {
@@ -3102,7 +3651,20 @@ const App = {
             openSimSwapModal,
             openChangeNumberModal,
             openTerminationModal,
+            openSuspensionModal,
+            openReconnectModal,
+            openRefundModal,
+            openBadDebtModal,
             openTakeOverModal,
+            submitSuspension,
+            submitReconnect,
+            submitRefund,
+            submitBadDebt,
+            onSusTypeChangeList,
+            loadListReconnectEligibility,
+            loadListBadDebtEligibility,
+            onRefundTypeChangeList,
+            onRefundIdentityFileChange,
             submitNewLineActivation,
             submitMigrate,
             submitSimSwap,
@@ -3116,6 +3678,8 @@ const App = {
             onTerminationTypeChangeList,
             onTerminationIdentityFileChange,
             isLineTerminated,
+            isLineSuspended,
+            goToC360Wizard,
             searchTakeoverTarget,
             selectTakeoverTarget,
             openSupportTicketModal: async () => {

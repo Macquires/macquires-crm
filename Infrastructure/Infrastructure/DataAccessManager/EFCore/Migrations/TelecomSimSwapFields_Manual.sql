@@ -19,13 +19,21 @@ IF COL_LENGTH('dbo.TelecomOperationRequest', 'IsLostOrStolenReport') IS NULL
 
 BEGIN
 
-    ALTER TABLE dbo.TelecomOperationRequest ADD IsLostOrStolenReport bit NULL;
+    ALTER TABLE dbo.TelecomOperationRequest ADD IsLostOrStolenReport bit NOT NULL
+        CONSTRAINT DF_TelecomOp_IsLostOrStolen DEFAULT 0;
 
 END
 
 GO
 
-UPDATE dbo.TelecomOperationRequest SET IsLostOrStolenReport = 0 WHERE IsLostOrStolenReport IS NULL;
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID(N'dbo.TelecomOperationRequest')
+      AND name = N'IsLostOrStolenReport' AND is_nullable = 1)
+BEGIN
+    UPDATE dbo.TelecomOperationRequest SET IsLostOrStolenReport = 0 WHERE IsLostOrStolenReport IS NULL;
+    ALTER TABLE dbo.TelecomOperationRequest ALTER COLUMN IsLostOrStolenReport bit NOT NULL;
+END
 
 GO
 

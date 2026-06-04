@@ -49,6 +49,11 @@
         "title": "Terminate line",
         "sub": "TRM"
       },
+      "badDebt": {
+        "aria": "Open collections and bad debt recovery wizard",
+        "title": "Collections",
+        "sub": "BDR"
+      },
       "addpackage": {
         "aria": "Open add package wizard",
         "title": "Add package",
@@ -122,6 +127,7 @@
         "simswap": "SIM swap",
         "changeNumber": "Change MSISDN (CNR)",
         "termination": "Line termination (TRM)",
+        "badDebt": "Bad debt recovery (BDR)",
         "addpackage": "Add package or service"
       }
     },
@@ -161,6 +167,7 @@
       "approveSuspension": "Approve SUS suspension",
       "approveReconnect": "Approve RCN reconnect",
       "approveRefund": "Approve RFD refund",
+      "approveCollection": "Approve BDR collection",
       "approveSecureOp": "Review & approve",
       "thNumber": "#",
       "thKind": "Type",
@@ -584,6 +591,34 @@
       "identityRequired": "Document / admin decision",
       "pendingBackOffice": "Pending back-office approval.",
       "draftHint": "TRM draft — complete documents then confirm."
+    },
+    "badDebt": {
+      "currentMsisdn": "Collection line",
+      "collectionAction": "Collection action",
+      "actionPayment": "Record payment",
+      "actionPaymentPlan": "Payment plan",
+      "actionDunning": "Dunning escalation",
+      "actionAgency": "Agency referral",
+      "actionWriteOffPartial": "Partial write-off",
+      "actionWriteOffFull": "Full write-off",
+      "dunningStage": "Dunning stage",
+      "collectedAmount": "Collected amount (SYP)",
+      "writeOffAmount": "Write-off amount (SYP)",
+      "paymentReference": "Payment reference",
+      "agencyReference": "Agency reference",
+      "paymentPlanMonths": "Plan months",
+      "balanceSnapshot": "CBS balance snapshot",
+      "matrixTitle": "VAL-16 eligibility matrix",
+      "matrixLoading": "Checking eligibility…",
+      "boHint": "VAL-16-05: Write-off / agency referral requires financial back-office approval.",
+      "collectionApproval": "Prior financial approval (demo)"
+    },
+    "badDebtModal": {
+      "title": "Approve collection / write-off (BDR)",
+      "approve": "Approve & run CBS",
+      "action": "Action",
+      "balance": "Balance snapshot",
+      "writeOff": "Write-off amount"
     },
     "reconnect": {
       "currentMsisdn": "Suspended line",

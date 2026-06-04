@@ -459,6 +459,58 @@ public class TelecomController : BaseApiController
     }
 
     [Authorize]
+    [HttpGet("GetBadDebtEligibility")]
+    public async Task<ActionResult<ApiSuccessResult<GetBadDebtEligibilityResult>>> GetBadDebtEligibilityAsync(
+        [FromQuery] string subscriberProfileId,
+        [FromQuery] string msisdnAssetId,
+        CancellationToken cancellationToken,
+        [FromQuery] string? collectionAction = null,
+        [FromQuery] string? dunningStage = null,
+        [FromQuery] string? paymentReference = null,
+        [FromQuery] decimal? collectedAmount = null,
+        [FromQuery] decimal? writeOffAmount = null,
+        [FromQuery] bool collectionApprovalConfirmed = false)
+    {
+        var response = await _sender.Send(
+            new GetBadDebtEligibilityRequest
+            {
+                SubscriberProfileId = subscriberProfileId,
+                MsisdnAssetId = msisdnAssetId,
+                CollectionAction = collectionAction,
+                DunningStage = dunningStage,
+                PaymentReference = paymentReference,
+                CollectedAmount = collectedAmount,
+                WriteOffAmount = writeOffAmount,
+                CollectionApprovalConfirmed = collectionApprovalConfirmed,
+            },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetBadDebtEligibilityResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetBadDebtEligibilityAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
+    [HttpGet("GetBadDebtKpis")]
+    public async Task<ActionResult<ApiSuccessResult<GetBadDebtKpisResult>>> GetBadDebtKpisAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null)
+    {
+        var response = await _sender.Send(
+            new GetBadDebtKpisRequest { FromUtc = fromUtc, ToUtc = toUtc },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetBadDebtKpisResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetBadDebtKpisAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
     [HttpGet("GetRefundKpis")]
     public async Task<ActionResult<ApiSuccessResult<GetRefundKpisResult>>> GetRefundKpisAsync(
         CancellationToken cancellationToken,

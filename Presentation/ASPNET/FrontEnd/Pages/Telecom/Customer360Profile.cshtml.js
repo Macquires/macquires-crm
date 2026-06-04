@@ -14,6 +14,10 @@ const PERM = {
     changeNumber: 'telecom.line.change_number_request',
     termination: 'telecom.line.termination_request',
     reconnect: 'telecom.line.reconnect_request',
+    suspension: 'telecom.line.suspension_request',
+    refund: 'telecom.line.refund_request',
+    deviceSale: 'telecom.device.sell_request',
+    collection: 'telecom.line.collection_request',
     network: 'telecom.network.hlrresync',
     networkLegacy: ['telecom.line.simswap_request', 'telecom.line.simswap', 'telecom.line.activate'],
     takeover: 'customer.update',
@@ -31,6 +35,11 @@ const WIZARD_TITLES = {
     changeGsm: 'تحويل نوع الخط CGT',
     changeNumber: 'تغيير رقم الخط CNR',
     termination: 'إنهاء خط TRM',
+    suspension: 'حظر مؤقت SUS',
+    reconnect: 'إعادة تفعيل RCN',
+    refund: 'استرداد RFD',
+    badDebt: 'تحصيل BDR',
+    deviceSale: 'بيع جهاز DEV',
 };
 
 const isPremiumMsisdnCategory = (cat) => [1, 2, 3, 'Silver', 'Gold', 'Platinum'].includes(cat);
@@ -44,6 +53,11 @@ const wizardKindToApi = (k) => {
     if (k === 'changeGsm') return 6;
     if (k === 'changeNumber') return 5;
     if (k === 'termination') return 7;
+    if (k === 'suspension') return 8;
+    if (k === 'reconnect') return 9;
+    if (k === 'deviceSale') return 10;
+    if (k === 'refund') return 11;
+    if (k === 'badDebt') return 12;
     return 0;
 };
 
@@ -117,6 +131,46 @@ const Customer360ProfileApp = {
                 primarySubscriberProfileId: '',
                 primaryMsisdnAssetId: '',
                 primaryLabel: '',
+                susSuspensionType: 'CustomerRequest',
+                susSuspensionReason: '',
+                susBarringLevel: 'Full',
+                susAutoReconnectEnabled: false,
+                susEndDateLocal: '',
+                susRequiresBackOffice: false,
+                rcnReconnectReason: '',
+                rcnClearanceType: 'Customer',
+                rcnPaymentReference: '',
+                rcnFraudClearanceConfirmed: false,
+                rcnRequiresBackOffice: false,
+                rcnEligibility: null,
+                rcnEligibilityBusy: false,
+                rfdRefundType: 'Deposit',
+                rfdRefundMethod: 'CreditNote',
+                rfdRefundAmount: '',
+                rfdRefundReason: '',
+                rfdDepositSnapshot: null,
+                rfdWalletSnapshot: null,
+                rfdRequiresBackOffice: false,
+                bdrCollectionAction: 'PaymentRecorded',
+                bdrDunningStage: 'Reminder1',
+                bdrCollectedAmount: '',
+                bdrWriteOffAmount: '',
+                bdrPaymentReference: '',
+                bdrAgencyReference: '',
+                bdrPaymentPlanMonths: '',
+                bdrRequiresBackOffice: false,
+                bdrEligibility: null,
+                bdrEligibilityBusy: false,
+                devInventoryId: '',
+                devSaleType: 'Cash',
+                devInstallmentPlanId: '',
+                devDownPayment: '',
+                devPaymentReference: '',
+                devPaymentChannel: 0,
+                devDevices: [],
+                devPlans: [],
+                devRequiresFinance: false,
+                devFinancingPreview: '',
                 takeoverSearchNationalId: '',
                 takeoverSearchPhone: '',
                 takeoverResults: [],
@@ -194,11 +248,35 @@ const Customer360ProfileApp = {
                 PERM.reconnect,
                 'telecom.line.reconnect',
             ]),
+            collection: StorageManager.hasAnyPermission(perms.value, [
+                PERM.collection,
+                'telecom.line.collection',
+                'telecom.line.collection_request',
+            ]),
+            suspension: StorageManager.hasAnyPermission(perms.value, [
+                PERM.suspension,
+                'telecom.line.suspension',
+                'telecom.line.suspension_request',
+            ]),
+            refund: StorageManager.hasAnyPermission(perms.value, [
+                PERM.refund,
+                'telecom.line.refund',
+                'telecom.line.refund_request',
+            ]),
+            deviceSale: StorageManager.hasAnyPermission(perms.value, [
+                PERM.deviceSale,
+                'telecom.device.sell',
+                'telecom.device.sell_request',
+            ]),
         }));
 
         const canRecharge = Vue.computed(() => {
             const roles = StorageManager.getUserRoles?.() || [];
-            return roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r));
+            const perms = StorageManager.getUserPermissions?.() || [];
+            return (
+                StorageManager.hasAnyPermission?.(perms, ['telecom.line.recharge']) ||
+                roles.some((r) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(r))
+            );
         });
 
         const normalizeSub = (s) => ({
@@ -254,6 +332,10 @@ const Customer360ProfileApp = {
             return st === 'suspended' || st === 'suspendedinbound' || st === 'suspendedoutbound';
         });
 
+        const selectedLineActive = Vue.computed(
+            () => !selectedLineTerminated.value && !selectedLineSuspended.value
+        );
+
         const lineOptions = Vue.computed(() => {
             return allSubscriptions.value.map((s) => ({
                 key: `${s.subscriberProfileId}|${s.msisdn}|${s.msisdnAssetId}`,
@@ -277,6 +359,35 @@ const Customer360ProfileApp = {
                 msisdnAssetId: s.msisdnAssetId,
             };
         };
+
+        const selectedSubscription = Vue.computed(() => {
+            const line = parseSelectedLine();
+            if (!line) return null;
+            return (
+                allSubscriptions.value.find(
+                    (s) =>
+                        (line.msisdnAssetId && s.msisdnAssetId === line.msisdnAssetId) ||
+                        (line.msisdn && s.msisdn === line.msisdn)
+                ) || null
+            );
+        });
+
+        const selectedLineOutstandingBalance = Vue.computed(() => {
+            const sub = selectedSubscription.value;
+            if (!sub?.id) return null;
+            const w = state.lineWallets[sub.id];
+            const raw = w?.outstandingBalance ?? w?.OutstandingBalance;
+            if (raw === undefined || raw === null || raw === '') return null;
+            const n = Number(raw);
+            return Number.isFinite(n) ? n : null;
+        });
+
+        const selectedLineCollectionEligible = Vue.computed(() => {
+            if (selectedLineTerminated.value) return false;
+            const outstanding = selectedLineOutstandingBalance.value;
+            if (outstanding != null && outstanding < 0) return true;
+            return selectedLineSuspended.value;
+        });
 
         const ensureLineSelected = () => {
             if (!state.prov.selectedLineKey && lineOptions.value.length) {
@@ -874,6 +985,11 @@ const Customer360ProfileApp = {
             if (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) return true;
             if (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) return true;
             if (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) return true;
+            if (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) return true;
+            if (state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) return true;
+            if (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) return true;
+            if (state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) return true;
+            if (state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance) return true;
             return state.wizard.confirmed;
         });
 
@@ -929,6 +1045,46 @@ const Customer360ProfileApp = {
                 trmTerminationReason: '',
                 trmRetentionOfferOutcome: 'Declined',
                 trmRequiresBackOffice: false,
+                susSuspensionType: 'CustomerRequest',
+                susSuspensionReason: '',
+                susBarringLevel: 'Full',
+                susAutoReconnectEnabled: false,
+                susEndDateLocal: '',
+                susRequiresBackOffice: false,
+                rcnReconnectReason: '',
+                rcnClearanceType: 'Customer',
+                rcnPaymentReference: '',
+                rcnFraudClearanceConfirmed: false,
+                rcnRequiresBackOffice: false,
+                rcnEligibility: null,
+                rcnEligibilityBusy: false,
+                rfdRefundType: 'Deposit',
+                rfdRefundMethod: 'CreditNote',
+                rfdRefundAmount: '',
+                rfdRefundReason: '',
+                rfdDepositSnapshot: null,
+                rfdWalletSnapshot: null,
+                rfdRequiresBackOffice: false,
+                bdrCollectionAction: 'PaymentRecorded',
+                bdrDunningStage: 'Reminder1',
+                bdrCollectedAmount: '',
+                bdrWriteOffAmount: '',
+                bdrPaymentReference: '',
+                bdrAgencyReference: '',
+                bdrPaymentPlanMonths: '',
+                bdrRequiresBackOffice: false,
+                bdrEligibility: null,
+                bdrEligibilityBusy: false,
+                devInventoryId: '',
+                devSaleType: 'Cash',
+                devInstallmentPlanId: '',
+                devDownPayment: '',
+                devPaymentReference: '',
+                devPaymentChannel: 0,
+                devDevices: [],
+                devPlans: [],
+                devRequiresFinance: false,
+                devFinancingPreview: '',
                 poolNumbers: [],
                 offerings: [],
                 poolBusy: false,
@@ -954,6 +1110,143 @@ const Customer360ProfileApp = {
                 paymentBusy: false,
                 operationCorrelationId: '',
             };
+        };
+
+        const onSusTypeChange = () => {
+            const ty = (state.wizard.susSuspensionType || '').trim();
+            state.wizard.susRequiresBackOffice = ty === 'Fraud' || ty === 'Regulatory';
+        };
+
+        const loadReconnectEligibility = async () => {
+            const pid = (state.wizard.primarySubscriberProfileId || '').trim();
+            const assetId = (state.wizard.primaryMsisdnAssetId || '').trim();
+            if (!pid || !assetId) {
+                state.wizard.rcnEligibility = null;
+                return;
+            }
+            state.wizard.rcnEligibilityBusy = true;
+            try {
+                const qs = new URLSearchParams({
+                    subscriberProfileId: pid,
+                    msisdnAssetId: assetId,
+                    reconnectReason: (state.wizard.rcnReconnectReason || 'CustomerRequest').trim(),
+                    clearanceType: (state.wizard.rcnClearanceType || 'Customer').trim(),
+                    fraudClearanceConfirmed: String(!!state.wizard.rcnFraudClearanceConfirmed),
+                });
+                const pay = (state.wizard.rcnPaymentReference || '').trim();
+                if (pay) qs.set('paymentReference', pay);
+                const res = await AxiosManager.get('/Telecom/GetReconnectEligibility?' + qs.toString(), {});
+                const d = res?.data?.content?.data ?? res?.data?.content?.Data ?? null;
+                state.wizard.rcnEligibility = d;
+                if (d) {
+                    state.wizard.rcnRequiresBackOffice =
+                        !!d.requiresBackOfficeApproval || !!d.RequiresBackOfficeApproval;
+                }
+            } catch {
+                state.wizard.rcnEligibility = null;
+            } finally {
+                state.wizard.rcnEligibilityBusy = false;
+            }
+        };
+
+        const onRcnClearanceChange = () => {
+            loadReconnectEligibility();
+        };
+
+        const loadBadDebtEligibility = async () => {
+            const pid = (state.wizard.primarySubscriberProfileId || '').trim();
+            const assetId = (state.wizard.primaryMsisdnAssetId || '').trim();
+            if (!pid || !assetId) {
+                state.wizard.bdrEligibility = null;
+                return;
+            }
+            state.wizard.bdrEligibilityBusy = true;
+            try {
+                const qs = new URLSearchParams({
+                    subscriberProfileId: pid,
+                    msisdnAssetId: assetId,
+                    collectionAction: (state.wizard.bdrCollectionAction || 'PaymentRecorded').trim(),
+                    dunningStage: (state.wizard.bdrDunningStage || 'Reminder1').trim(),
+                });
+                const pay = (state.wizard.bdrPaymentReference || '').trim();
+                if (pay) qs.set('paymentReference', pay);
+                const col = Number(state.wizard.bdrCollectedAmount);
+                if (col > 0) qs.set('collectedAmount', String(col));
+                const wo = Number(state.wizard.bdrWriteOffAmount);
+                if (wo > 0) qs.set('writeOffAmount', String(wo));
+                const res = await AxiosManager.get('/Telecom/GetBadDebtEligibility?' + qs.toString(), {});
+                const d = res?.data?.content?.data ?? res?.data?.content?.Data ?? null;
+                state.wizard.bdrEligibility = d;
+                if (d) {
+                    state.wizard.bdrRequiresBackOffice =
+                        !!d.requiresBackOfficeApproval || !!d.RequiresBackOfficeApproval;
+                }
+            } catch {
+                state.wizard.bdrEligibility = null;
+            } finally {
+                state.wizard.bdrEligibilityBusy = false;
+            }
+        };
+
+        const onBdrActionChange = () => {
+            loadBadDebtEligibility();
+        };
+
+        const onRefundTypeChange = async () => {
+            state.wizard.rfdRequiresBackOffice = state.wizard.rfdRefundType === 'SyriatelCash';
+        };
+
+        const loadDeviceWizardCatalog = async () => {
+            try {
+                const [devRes, planRes] = await Promise.all([
+                    AxiosManager.get('/Telecom/GetDeviceInventoryList?status=Available', {}),
+                    AxiosManager.get('/Telecom/GetInstallmentPlanList', {}),
+                ]);
+                state.wizard.devDevices = devRes?.data?.content?.data ?? devRes?.data?.content?.Data ?? [];
+                state.wizard.devPlans = planRes?.data?.content?.data ?? planRes?.data?.content?.Data ?? [];
+            } catch {
+                state.wizard.devDevices = [];
+                state.wizard.devPlans = [];
+            }
+        };
+
+        const onDevicePicked = () => {
+            const row = (state.wizard.devDevices || []).find(
+                (d) => String(d.id ?? d.Id) === String(state.wizard.devInventoryId)
+            );
+            if (row) {
+                state.wizard.devDownPayment = String(row.listPrice ?? row.ListPrice ?? '');
+            }
+        };
+
+        const recordDeviceDownPaymentC360 = async () => {
+            if (!state.wizard.createdOperationId) return;
+            const amount = Number(state.wizard.devDownPayment);
+            const ref = (state.wizard.devPaymentReference || '').trim();
+            if (!amount || !ref) {
+                Swal.fire({ icon: 'warning', title: 'أدخل مبلغ الدفع ومرجع الدفع' });
+                return;
+            }
+            state.wizard.paymentBusy = true;
+            try {
+                const res = await AxiosManager.post('/Telecom/RecordDeviceDownPayment', {
+                    operationId: state.wizard.createdOperationId,
+                    amountPaid: amount,
+                    paymentChannel: Number(state.wizard.devPaymentChannel) || 0,
+                    paymentReference: ref,
+                    updatedById: StorageManager.getUserId(),
+                });
+                if (res?.data?.code === 200) {
+                    state.wizard.documentMarkedUploaded = true;
+                    Swal.fire({ icon: 'success', title: 'تم تسجيل الدفع', timer: 1200, showConfirmButton: false });
+                } else {
+                    throw Object.assign(new Error(res?.data?.message || 'فشل'), { response: res });
+                }
+            } catch (e) {
+                toastError(e, 'تعذّر تسجيل دفع الجهاز');
+            } finally {
+                state.wizard.paymentBusy = false;
+            }
         };
 
         const onWizardIdentityFileChange = (ev) => {
@@ -1152,18 +1445,18 @@ const Customer360ProfileApp = {
 
         const pollOperationAfterConfirm = async (operationId) => {
             const terminal = new Set([3, 4, 'Completed', 'Failed']);
-            const intervalMs =
-                state.wizard.kind === 'changeGsm'
-                || state.wizard.kind === 'changeNumber'
-                || state.wizard.kind === 'termination'
-                    ? 2000
-                    : 1200;
-            const maxPolls =
-                state.wizard.kind === 'changeGsm'
-                || state.wizard.kind === 'changeNumber'
-                || state.wizard.kind === 'termination'
-                    ? 15
-                    : 10;
+            const slowKinds = [
+                'changeGsm',
+                'changeNumber',
+                'termination',
+                'suspension',
+                'reconnect',
+                'refund',
+                'badDebt',
+                'deviceSale',
+            ];
+            const intervalMs = slowKinds.includes(state.wizard.kind) ? 2000 : 1200;
+            const maxPolls = slowKinds.includes(state.wizard.kind) ? 15 : 10;
             for (let i = 0; i < maxPolls; i++) {
                 await new Promise((r) => setTimeout(r, intervalMs));
                 try {
@@ -1229,28 +1522,12 @@ const Customer360ProfileApp = {
                 state.wizard.cnRequiresBackOffice = false;
                 await loadWizardChangeNumberPool();
             }
-        };
-
-        const openReconnectHub = () => {
-            if (!can.value.reconnect) {
-                Swal.fire({ icon: 'info', title: 'لا توجد صلاحية لإعادة التفعيل' });
-                return;
+            if (state.wizard.kind === 'reconnect') {
+                await loadReconnectEligibility();
             }
-            if (!requireLine()) return;
-            const line = parseSelectedLine();
-            if (!line?.subscriberProfileId || !line?.msisdnAssetId) {
-                Swal.fire({ icon: 'warning', title: 'اختر خطاً موقوفاً أولاً' });
-                return;
+            if (state.wizard.kind === 'badDebt') {
+                await loadBadDebtEligibility();
             }
-            const cid = state.profile?.core?.id || state.profile?.core?.Id || '';
-            const qs = new URLSearchParams({
-                wizard: 'reconnect',
-                subscriberProfileId: line.subscriberProfileId,
-                msisdnAssetId: line.msisdnAssetId,
-                msisdn: line.msisdn || '',
-            });
-            if (cid) qs.set('customerId', cid);
-            window.location.href = '/Telecom/TelecomHub?' + qs.toString();
         };
 
         const openProvisioningWizard = async (kind) => {
@@ -1260,6 +1537,11 @@ const Customer360ProfileApp = {
                 changeGsm: () => can.value.changeGsm,
                 changeNumber: () => can.value.changeNumber,
                 termination: () => can.value.termination && !selectedLineTerminated.value,
+                suspension: () => can.value.suspension && selectedLineActive.value,
+                reconnect: () => can.value.reconnect && selectedLineSuspended.value,
+                refund: () => can.value.refund && !selectedLineTerminated.value,
+                badDebt: () => can.value.collection && selectedLineCollectionEligible.value,
+                deviceSale: () => can.value.deviceSale,
                 addpackage: () => can.value.provisioning,
                 simswap: () => can.value.network,
                 activate: () => can.value.network,
@@ -1294,6 +1576,14 @@ const Customer360ProfileApp = {
                 await loadWizardChangeNumberPool();
             } else if (kind === 'termination') {
                 onTerminationTypeChange();
+            } else if (kind === 'suspension') {
+                onSusTypeChange();
+            } else if (kind === 'reconnect') {
+                await loadReconnectEligibility();
+            } else if (kind === 'badDebt') {
+                await loadBadDebtEligibility();
+            } else if (kind === 'deviceSale') {
+                await loadDeviceWizardCatalog();
             } else if (kind === 'addpackage') {
                 await loadWizardVasCatalog();
             }
@@ -1452,6 +1742,81 @@ const Customer360ProfileApp = {
                     return false;
                 }
             }
+            if (k === 'suspension') {
+                if (!(state.wizard.susSuspensionReason || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'سبب الحظر مطلوب' });
+                    return false;
+                }
+                if (state.wizard.susAutoReconnectEnabled && !(state.wizard.susEndDateLocal || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'تاريخ انتهاء الحظر مطلوب' });
+                    return false;
+                }
+                onSusTypeChange();
+            }
+            if (k === 'reconnect') {
+                if (!(state.wizard.rcnReconnectReason || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'سبب إعادة التفعيل مطلوب' });
+                    return false;
+                }
+                if (state.wizard.rcnClearanceType === 'Payment' && !(state.wizard.rcnPaymentReference || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
+                    return false;
+                }
+                await loadReconnectEligibility();
+                if (state.wizard.rcnEligibility && !state.wizard.rcnEligibility.allowed && !state.wizard.rcnEligibility.Allowed) {
+                    const msg = state.wizard.rcnEligibility.messageAr || state.wizard.rcnEligibility.MessageAr || '';
+                    Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
+                    return false;
+                }
+            }
+            if (k === 'refund') {
+                if (!(state.wizard.rfdRefundReason || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'سبب الاسترداد مطلوب' });
+                    return false;
+                }
+                const amt = Number(state.wizard.rfdRefundAmount);
+                if (!amt || amt <= 0) {
+                    Swal.fire({ icon: 'warning', title: 'مبلغ الاسترداد مطلوب' });
+                    return false;
+                }
+            }
+            if (k === 'badDebt') {
+                if (state.wizard.bdrCollectionAction === 'PaymentRecorded') {
+                    if (!(state.wizard.bdrPaymentReference || '').trim()) {
+                        Swal.fire({ icon: 'warning', title: 'مرجع الدفع مطلوب' });
+                        return false;
+                    }
+                    const col = Number(state.wizard.bdrCollectedAmount);
+                    if (!col || col <= 0) {
+                        Swal.fire({ icon: 'warning', title: 'المبلغ المحصّل مطلوب' });
+                        return false;
+                    }
+                }
+                if (
+                    (state.wizard.bdrCollectionAction === 'WriteOffPartial'
+                        || state.wizard.bdrCollectionAction === 'WriteOffFull')
+                    && !(Number(state.wizard.bdrWriteOffAmount) > 0)
+                ) {
+                    Swal.fire({ icon: 'warning', title: 'مبلغ الشطب مطلوب' });
+                    return false;
+                }
+                await loadBadDebtEligibility();
+                if (state.wizard.bdrEligibility && !state.wizard.bdrEligibility.allowed && !state.wizard.bdrEligibility.Allowed) {
+                    const msg = state.wizard.bdrEligibility.messageAr || state.wizard.bdrEligibility.MessageAr || '';
+                    Swal.fire({ icon: 'error', title: 'غير مسموح', text: msg });
+                    return false;
+                }
+            }
+            if (k === 'deviceSale') {
+                if (!(state.wizard.devInventoryId || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'اختر جهازاً من المخزون' });
+                    return false;
+                }
+                if (state.wizard.devSaleType === 'Installment' && !(state.wizard.devInstallmentPlanId || '').trim()) {
+                    Swal.fire({ icon: 'warning', title: 'اختر خطة التقسيط' });
+                    return false;
+                }
+            }
             return true;
         };
 
@@ -1515,6 +1880,49 @@ const Customer360ProfileApp = {
                 body.activationChannel = Number(state.wizard.activationChannel) || 0;
                 const dc = (state.wizard.dealerCode || '').trim();
                 if (dc) body.dealerCode = dc;
+            } else if (k === 'suspension') {
+                body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
+                body.suspensionType = (state.wizard.susSuspensionType || '').trim() || null;
+                body.suspensionReason = (state.wizard.susSuspensionReason || '').trim() || null;
+                body.barringLevel = (state.wizard.susBarringLevel || 'Full').trim();
+                body.autoReconnectEnabled = !!state.wizard.susAutoReconnectEnabled;
+                body.suspensionEndDateUtc =
+                    state.wizard.susAutoReconnectEnabled && state.wizard.susEndDateLocal
+                        ? new Date(state.wizard.susEndDateLocal).toISOString()
+                        : null;
+            } else if (k === 'reconnect') {
+                body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
+                body.reconnectReason = (state.wizard.rcnReconnectReason || '').trim() || null;
+                body.clearanceType = (state.wizard.rcnClearanceType || '').trim() || null;
+                body.fraudClearanceConfirmed = !!state.wizard.rcnFraudClearanceConfirmed;
+                body.paymentReference = (state.wizard.rcnPaymentReference || '').trim() || null;
+            } else if (k === 'refund') {
+                body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
+                body.refundType = (state.wizard.rfdRefundType || '').trim() || null;
+                body.refundMethod = (state.wizard.rfdRefundMethod || '').trim() || null;
+                body.refundReason = (state.wizard.rfdRefundReason || '').trim() || null;
+                body.refundAmount = state.wizard.rfdRefundAmount ? Number(state.wizard.rfdRefundAmount) : null;
+            } else if (k === 'badDebt') {
+                body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
+                body.collectionAction = (state.wizard.bdrCollectionAction || '').trim() || null;
+                body.dunningStage = (state.wizard.bdrDunningStage || '').trim() || null;
+                body.collectedAmount = state.wizard.bdrCollectedAmount
+                    ? Number(state.wizard.bdrCollectedAmount)
+                    : null;
+                body.writeOffAmount = state.wizard.bdrWriteOffAmount
+                    ? Number(state.wizard.bdrWriteOffAmount)
+                    : null;
+                body.paymentReference = (state.wizard.bdrPaymentReference || '').trim() || null;
+                body.agencyReference = (state.wizard.bdrAgencyReference || '').trim() || null;
+                body.paymentPlanMonths = state.wizard.bdrPaymentPlanMonths
+                    ? Number(state.wizard.bdrPaymentPlanMonths)
+                    : null;
+            } else if (k === 'deviceSale') {
+                body.deviceInventoryId = state.wizard.devInventoryId || null;
+                body.deviceSaleType = state.wizard.devSaleType === 'Installment' ? 1 : 0;
+                if (state.wizard.devSaleType === 'Installment') {
+                    body.deviceInstallmentPlanId = state.wizard.devInstallmentPlanId || null;
+                }
             }
             return body;
         };
@@ -1667,6 +2075,42 @@ const Customer360ProfileApp = {
                             String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
                             || state.wizard.trmRequiresBackOffice;
                     }
+                    if (state.wizard.kind === 'suspension') {
+                        state.wizard.susRequiresBackOffice =
+                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                            || state.wizard.susRequiresBackOffice;
+                    }
+                    if (state.wizard.kind === 'reconnect') {
+                        state.wizard.rcnRequiresBackOffice =
+                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                            || state.wizard.rcnRequiresBackOffice;
+                    }
+                    if (state.wizard.kind === 'refund') {
+                        state.wizard.rfdRequiresBackOffice =
+                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                            || !!entity.requiresDualApproval;
+                        state.wizard.rfdDepositSnapshot =
+                            entity.depositBalanceSnapshot ?? entity.DepositBalanceSnapshot ?? null;
+                        state.wizard.rfdWalletSnapshot =
+                            entity.walletBalanceSnapshot ?? entity.WalletBalanceSnapshot ?? null;
+                    }
+                    if (state.wizard.kind === 'badDebt') {
+                        state.wizard.bdrRequiresBackOffice =
+                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
+                            || state.wizard.bdrRequiresBackOffice;
+                        if (state.wizard.bdrRequiresBackOffice) {
+                            state.wizard.documentMarkedUploaded = true;
+                        }
+                    }
+                    if (state.wizard.kind === 'deviceSale') {
+                        state.wizard.devRequiresFinance =
+                            !!entity.deviceApprovalLevelRequired || !!entity.approvalLevelRequired;
+                        state.wizard.devFinancingPreview = entity.deviceFinancingNoteAr || entity.notes || '';
+                        state.wizard.devDownPayment = String(
+                            entity.deviceDownPaymentAmount ?? state.wizard.devDownPayment ?? ''
+                        );
+                        state.wizard.documentMarkedUploaded = state.wizard.devSaleType === 'Cash';
+                    }
                     Swal.fire({
                         icon: 'success',
                         title: 'تم إنشاء المسودة',
@@ -1705,6 +2149,10 @@ const Customer360ProfileApp = {
                 Swal.fire({ icon: 'warning', title: 'ارفع الوثيقة / القرار الإداري' });
                 return;
             }
+            if (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice && !state.wizard.identityFile) {
+                Swal.fire({ icon: 'warning', title: 'ارفع وثيقة الاعتماد' });
+                return;
+            }
             state.wizard.uploadBusy = true;
             try {
                 const uid = StorageManager.getUserId();
@@ -1713,7 +2161,8 @@ const Customer360ProfileApp = {
                     (state.wizard.kind === 'takeover'
                         || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen)
                         || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
-                        || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice))
+                        || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
+                        || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice))
                     && state.wizard.identityFile
                 ) {
                     const form = new FormData();
@@ -1736,6 +2185,7 @@ const Customer360ProfileApp = {
                         || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen)
                         || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
                         || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
+                        || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
                             ? 'تم الإرسال للباك أوفيس'
                             : 'تم تسجيل الوثيقة';
                     Swal.fire({ icon: 'success', title, timer: 1400, showConfirmButton: false });
@@ -1805,6 +2255,14 @@ const Customer360ProfileApp = {
                 const params = new URLSearchParams(window.location.search);
                 state.customerId = params.get('customerId') || '';
                 await loadProfile();
+                const deepWizard = (params.get('wizard') || '').trim();
+                const deepLineKey = (params.get('lineKey') || '').trim();
+                if (deepLineKey) {
+                    state.prov.selectedLineKey = deepLineKey;
+                }
+                if (deepWizard) {
+                    await openProvisioningWizard(deepWizard);
+                }
             } catch (e) {
                 console.error('Customer360Profile init:', e);
                 state.loadError = 'غير مصرّح أو انتهت الجلسة.';
@@ -1819,8 +2277,18 @@ const Customer360ProfileApp = {
             can,
             selectedLineTerminated,
             selectedLineSuspended,
-            openReconnectHub,
+            selectedLineActive,
+            selectedLineCollectionEligible,
+            selectedLineOutstandingBalance,
             onTerminationTypeChange,
+            onSusTypeChange,
+            onRcnClearanceChange,
+            onBdrActionChange,
+            onRefundTypeChange,
+            loadReconnectEligibility,
+            loadBadDebtEligibility,
+            onDevicePicked,
+            recordDeviceDownPaymentC360,
             canRecharge,
             formatDt,
             formatDateOnly,

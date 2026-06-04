@@ -2603,6 +2603,98 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetBadDebtEligibilityAsync",
+    "RelativePath": "api/Telecom/GetBadDebtEligibility",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "collectionAction",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "dunningStage",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "paymentReference",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "collectedAmount",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "writeOffAmount",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "collectionApprovalConfirmed",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetBadDebtEligibilityResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetBadDebtKpisAsync",
+    "RelativePath": "api/Telecom/GetBadDebtKpis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetBadDebtKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "GetBillingIntegrationLogListAsync",
     "RelativePath": "api/Telecom/GetBillingIntegrationLogList",
     "HttpMethod": "GET",
@@ -3116,6 +3208,62 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetPaymentTransactionListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetReconnectEligibilityAsync",
+    "RelativePath": "api/Telecom/GetReconnectEligibility",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "reconnectReason",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "clearanceType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "paymentReference",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "fraudClearanceConfirmed",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "sourceSuspensionOperationId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetReconnectEligibilityResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",

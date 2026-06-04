@@ -32,7 +32,9 @@ public enum TelecomOperationKind
     /// <summary>§14 Device sales &amp; installment (DEV-).</summary>
     DeviceSale = 10,
     /// <summary>§15 Deposit / wallet refund settlement (RFD-).</summary>
-    DepositRefundSettlement = 11
+    DepositRefundSettlement = 11,
+    /// <summary>§16 Collections, dunning &amp; bad debt recovery (BDR-).</summary>
+    BadDebtRecovery = 12
 }
 
 public enum TelecomOperationStatus

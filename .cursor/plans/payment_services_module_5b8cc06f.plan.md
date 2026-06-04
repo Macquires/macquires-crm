@@ -1,28 +1,67 @@
 ---
 name: Payment Services Module
-overview: تقييم وضع قسم 12 (Recharge, Voucher & Payment Services) في macquires-crm (~35% اليوم) وخطة Full-Stack لرفعه إلى ~85%+ عبر كيان معاملات دفع موحّد، توسيع بوابة الدفع/CBS، VAL-12، إشعارات، audit، KPIs — مع إعادة توجيه الشحن الحالي من Customer 360.
+overview: "§12 Recharge, Voucher & Payment — **منفّذ Full-Stack ديمو (~82%)** عبر `TelecomPaymentTransaction` + orchestrator + 360/List/Hub + BO KPIs/عكس."
 todos:
   - id: p1-fullstack-foundation
-    content: "P1 Full-Stack: BE ledger/orchestrator/API + FE recharge modal 360/List (gateway ref, confirm, receipt)"
-    status: pending
+    content: "P1: PAY- ledger + PaymentServicesOrchestrator + Create/Confirm API + 360/List شحن (gateway ref + receipt)"
+    status: completed
   - id: p2-fullstack-voucher
-    content: "P2 Full-Stack: BE ValidateVoucher + SMS | FE voucher fields + Hub API migration"
-    status: pending
+    content: "P2: ValidateVoucher + Redeem + SMS (PaymentServicesNotificationHandler) + voucher في List/Hub/360"
+    status: completed
   - id: p3-fullstack-reversal
-    content: "P3 Full-Stack: BE reverse/audit/fraud | FE Finance reverse UI + fallout"
-    status: pending
+    content: "P3: ReversePayment + CBS ReverseRecharge + audit + fraud velocity (VAL-12-04) + BO عكس"
+    status: completed
   - id: p4-fullstack-kpis
-    content: "P4 Full-Stack: BE KPIs/tests | FE BackOffice card + E2E acceptance"
-    status: pending
+    content: "P4: GetPaymentServicesKpis + BO panel + tests + RechargeCustomer360Line → orchestrator"
+    status: completed
 isProject: false
 ---
 
-# خطة بناء Payment Services (ص 12 + ص 70) — Full-Stack
+# Payment Services (Blueprint §12 + §70)
 
-راجع الملف الكامل في [.cursor/plans/payment_services_module_5b8cc06f.plan.md](.cursor/plans/payment_services_module_5b8cc06f.plan.md) — نسخة العمل داخل المستودع.
+**الحالة:** ✅ **مكتمل ديمو** (~82%) — الخطة كانت `pending` بينما الكود منفّذ؛ تمت مزامنة التوثيق والاختبارات.
 
-**قاعدة:** Backend + Frontend + API في كل سبرنت.
+## المعمارية
 
-**الوضع الحالي:** ~35% — شحن محلي في 360/List، CBS mock منفصل في Hub، لا voucher/reversal/KPIs دفع.
+| طبقة | مسار |
+|------|------|
+| Ledger | `TelecomPaymentTransaction`, `TelecomPaymentAuditLog` |
+| Orchestrator | `PaymentServicesOrchestrator` — Draft → Gateway → CBS Recharge → balance |
+| VAL-12 | `PaymentServicesEligibilityChecker` + `PaymentServicesFraudTicketService` |
+| Reversal | `PaymentServicesReversalService` + `ReversePaymentTransaction` |
+| SMS | `PaymentServicesNotificationHandler` |
+| Legacy bridge | `RechargeCustomer360Line` يستدعي orchestrator (Create + Confirm) |
 
-**الهدف:** ~85–88% بعد 4 سبرنتات.
+## API (`TelecomController`)
+
+- `POST ValidateVoucher`
+- `POST CreatePaymentTransaction` / `ConfirmPaymentTransaction`
+- `POST ReversePaymentTransaction` (Management / BackOffice / Admin)
+- `GET GetPaymentTransactionList` / `Detail` / `GetPaymentServicesKpis`
+
+## UI
+
+- **Customer 360** + **Customer List:** `executeListPaymentFlow` — محفظة أو قسيمة
+- **Telecom Hub:** نفس مسار Create/Confirm
+- **Back Office:** `#boPaymentServicesPanel` — KPIs + جدول + عكس
+
+## SQL يدوي
+
+- `Infrastructure/.../Migrations/TelecomPaymentServices_Manual.sql`
+- `TelecomPaymentServices_P3_Manual.sql`
+- `TelecomPaymentRechargePermission_Manual.sql` (صلاحية `telecom.line.recharge`)
+
+## اختبارات
+
+- `PaymentServicesEligibilityTests.cs`
+- `GetPaymentServicesKpisHandlerTests.cs`
+
+## متبقّي (~18%)
+
+- بوابة دفع HTTP إنتاجية (اليوم `PaymentGatewayMockIntegration`)
+- فواتير / disputes / settlement batch
+- Playwright E2E
+
+## تحقق يدوي
+
+راجع `docs/TELECOM_E2E_SMOKE_AR.md` — قسم Payment Services.

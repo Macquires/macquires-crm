@@ -99,6 +99,7 @@ public static class DI
         serviceProvider.GetRequiredService<TelecomCustomer360EnrichmentSeeder>().EnsureEnrichedAsync().Wait();
 
         serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureHeroReconnectDemoAsync().Wait();
+        serviceProvider.GetRequiredService<TelecomSyriatelSeeder>().EnsureHeroBadDebtDemoAsync().Wait();
 
         serviceProvider.GetRequiredService<OrgUnitSeeder>().GenerateDataAsync().Wait();
         serviceProvider.GetRequiredService<StrategicMisDemoSeeder>().GenerateDataAsync().Wait();

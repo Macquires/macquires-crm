@@ -16,7 +16,8 @@ public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T> w
             .IsRequired(true);
         builder.Property(e => e.IsDeleted)
             .HasDefaultValue(false)
-            .IsRequired(true);
+            .IsRequired(true)
+            .HasNullableBitAsBool();
         builder.Property(e => e.CreatedAtUtc)
             .IsRequired(false);
         builder.Property(e => e.CreatedById)

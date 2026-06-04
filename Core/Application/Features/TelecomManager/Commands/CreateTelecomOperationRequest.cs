@@ -16,6 +16,7 @@ using Application.Common.Telecom.SimSwap;
 using Application.Common.Telecom.TakeOver;
 using Application.Common.Telecom.DeviceSales;
 using Application.Common.Telecom.Refund;
+using Application.Common.Telecom.BadDebt;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -41,6 +42,7 @@ public static class TelecomNumberSequence
         TelecomOperationKind.Reconnect => ("TelecomOp_Reconnect", "RCN-"),
         TelecomOperationKind.DeviceSale => ("TelecomOp_DeviceSale", "DEV-"),
         TelecomOperationKind.DepositRefundSettlement => ("TelecomOp_Refund", "RFD-"),
+        TelecomOperationKind.BadDebtRecovery => ("TelecomOp_BadDebt", "BDR-"),
         _ => ("TelecomOp_Generic", "TEL-")
     };
 }
@@ -162,6 +164,23 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
     public decimal? RefundAmount { get; init; }
 
     public string? RefundMethod { get; init; }
+
+    /// <summary>§16 BDR.</summary>
+    public string? CollectionAction { get; init; }
+
+    public string? DunningStage { get; init; }
+
+    public decimal? CollectedAmount { get; init; }
+
+    public decimal? WriteOffAmount { get; init; }
+
+    public string? AgencyReference { get; init; }
+
+    public int? PaymentPlanMonths { get; init; }
+
+    public string? CollectionNote { get; init; }
+
+    public bool CollectionApprovalConfirmed { get; init; }
 }
 
 public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTelecomOperationRequest>
@@ -298,6 +317,26 @@ public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTe
         RuleFor(x => x.RefundAmount)
             .GreaterThan(0)
             .When(x => x.Kind == TelecomOperationKind.DepositRefundSettlement);
+        RuleFor(x => x.MsisdnAssetId)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.BadDebtRecovery);
+        RuleFor(x => x.CollectionAction)
+            .NotEmpty()
+            .MaximumLength(32)
+            .When(x => x.Kind == TelecomOperationKind.BadDebtRecovery);
+        RuleFor(x => x.PaymentReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.BadDebtRecovery
+                       && string.Equals(x.CollectionAction, BadDebtWellKnown.PaymentRecorded, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.CollectedAmount)
+            .GreaterThan(0)
+            .When(x => x.Kind == TelecomOperationKind.BadDebtRecovery
+                       && string.Equals(x.CollectionAction, BadDebtWellKnown.PaymentRecorded, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.WriteOffAmount)
+            .GreaterThan(0)
+            .When(x => x.Kind == TelecomOperationKind.BadDebtRecovery
+                       && (string.Equals(x.CollectionAction, BadDebtWellKnown.WriteOffPartial, StringComparison.OrdinalIgnoreCase)
+                           || string.Equals(x.CollectionAction, BadDebtWellKnown.WriteOffFull, StringComparison.OrdinalIgnoreCase)));
     }
 }
 
@@ -322,6 +361,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
     private readonly IPermissionEvaluator _permissions;
     private readonly IDeviceSalesEligibilityChecker _deviceSalesEligibility;
     private readonly IRefundEligibilityChecker _refundEligibility;
+    private readonly IBadDebtEligibilityChecker _badDebtEligibility;
     private readonly ICommandRepository<DeviceInventory> _deviceInventoryRepository;
 
     public CreateTelecomOperationRequestHandler(
@@ -344,6 +384,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         IPermissionEvaluator permissions,
         IDeviceSalesEligibilityChecker deviceSalesEligibility,
         IRefundEligibilityChecker refundEligibility,
+        IBadDebtEligibilityChecker badDebtEligibility,
         ICommandRepository<DeviceInventory> deviceInventoryRepository)
     {
         _repository = repository;
@@ -365,6 +406,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         _permissions = permissions;
         _deviceSalesEligibility = deviceSalesEligibility;
         _refundEligibility = refundEligibility;
+        _badDebtEligibility = badDebtEligibility;
         _deviceInventoryRepository = deviceInventoryRepository;
     }
 
@@ -515,6 +557,29 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             if (!deviceSalesEligibility.Allowed)
             {
                 throw new BusinessRuleViolationException(deviceSalesEligibility.MessageAr);
+            }
+        }
+
+        BadDebtEligibilityResult? badDebtEligibility = null;
+        if (request.Kind == TelecomOperationKind.BadDebtRecovery)
+        {
+            await EnsureBadDebtCreatePermissionAsync(request.CreatedById, cancellationToken);
+
+            badDebtEligibility = await _badDebtEligibility.ValidateForCreateAsync(
+                request.SubscriberProfileId,
+                request.MsisdnAssetId!,
+                request.CollectionAction!,
+                request.DunningStage,
+                request.PaymentReference,
+                request.CollectedAmount,
+                request.WriteOffAmount,
+                request.CollectionApprovalConfirmed,
+                excludeOperationId: null,
+                cancellationToken: cancellationToken);
+
+            if (!badDebtEligibility.Allowed)
+            {
+                throw new BusinessRuleViolationException(badDebtEligibility.MessageAr);
             }
         }
 
@@ -826,6 +891,43 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             }
 
             entity.Notes = AppendRefundAudit(entity.Notes, refundEligibility);
+        }
+
+        if (request.Kind == TelecomOperationKind.BadDebtRecovery && badDebtEligibility != null)
+        {
+            entity.CollectionAction = request.CollectionAction!.Trim();
+            entity.DunningStage = string.IsNullOrWhiteSpace(request.DunningStage)
+                ? BadDebtWellKnown.Reminder1
+                : request.DunningStage.Trim();
+            entity.PriorDunningStage = entity.DunningStage;
+            entity.OutstandingBalanceSnapshot = badDebtEligibility.OutstandingBalanceSnapshot;
+            entity.CollectedAmount = request.CollectedAmount;
+            entity.WriteOffAmount = request.WriteOffAmount;
+            entity.AgencyReference = string.IsNullOrWhiteSpace(request.AgencyReference)
+                ? null
+                : request.AgencyReference.Trim();
+            entity.PaymentPlanMonths = request.PaymentPlanMonths;
+            entity.CollectionNote = string.IsNullOrWhiteSpace(request.CollectionNote)
+                ? null
+                : request.CollectionNote.Trim();
+            entity.PaymentReference = string.IsNullOrWhiteSpace(request.PaymentReference)
+                ? null
+                : request.PaymentReference.Trim();
+            entity.FraudClearanceConfirmed = request.CollectionApprovalConfirmed;
+            entity.CollectionSettlementStatus = BadDebtWellKnown.SettlementPending;
+            entity.ProvisioningResult = "Pending";
+            if (request.PaymentPlanMonths is > 0)
+            {
+                entity.NextDunningDueUtc = DateTime.UtcNow.AddMonths(request.PaymentPlanMonths.Value);
+            }
+
+            if (badDebtEligibility.RequiresBackOfficeApproval)
+            {
+                entity.ApprovalLevelRequired = "BackOffice";
+                entity.Status = TelecomOperationStatus.PendingDocuments;
+            }
+
+            entity.Notes = AppendBadDebtAudit(entity.Notes, badDebtEligibility);
         }
 
         if (request.Kind == TelecomOperationKind.Reconnect && reconnectEligibility != null)
@@ -1203,6 +1305,42 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
     {
         var stamp =
             $"RCN|msisdn={eligibility.Msisdn ?? "—"}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
+        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
+    }
+
+    private async Task EnsureBadDebtCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب التحصيل.");
+        }
+
+        string[] keys =
+        [
+            PermissionCatalog.TelecomLineCollectionRequest,
+            PermissionCatalog.TelecomLineCollection,
+            PermissionCatalog.TelecomLineCollectionApprove,
+            PermissionCatalog.TelecomLineCollectionManage,
+            PermissionCatalog.CustomerUpdate,
+            PermissionCatalog.TelecomCustomerProvisioning,
+        ];
+
+        foreach (var key in keys)
+        {
+            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
+            {
+                return;
+            }
+        }
+
+        throw new BusinessRuleViolationException(
+            "ليس لديك صلاحية إنشاء طلب التحصيل (telecom.line.collection_request).");
+    }
+
+    private static string? AppendBadDebtAudit(string? notes, BadDebtEligibilityResult eligibility)
+    {
+        var stamp =
+            $"BDR|msisdn={eligibility.Msisdn ?? "—"}|balance={eligibility.OutstandingBalanceSnapshot:N0}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
         return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
     }
 

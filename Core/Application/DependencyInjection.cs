@@ -15,6 +15,7 @@ using Application.Common.Telecom.SimSwap;
 using Application.Common.Telecom.TakeOver;
 using Application.Common.Telecom.DeviceSales;
 using Application.Common.Telecom.Refund;
+using Application.Common.Telecom.BadDebt;
 using Domain.Services;
 using FluentValidation;
 using MediatR;
@@ -68,6 +69,8 @@ public static class DependencyInjection
         services.AddScoped<IDeviceSaleCompletionService, DeviceSaleCompletionService>();
         services.AddScoped<IRefundEligibilityChecker, RefundEligibilityChecker>();
         services.AddScoped<IRefundCompletionService, RefundCompletionService>();
+        services.AddScoped<IBadDebtEligibilityChecker, BadDebtEligibilityChecker>();
+        services.AddScoped<IBadDebtCompletionService, BadDebtCompletionService>();
         services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
         services.AddSingleton<VasMsisdnLock>();
         services.AddScoped<ISubscriberAccessAuditService, SubscriberAccessAuditService>();

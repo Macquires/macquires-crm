@@ -867,4 +867,61 @@ public class TelecomSyriatelSeeder
             .Select(c => c.Id)
             .FirstOrDefaultAsync();
     }
+
+    /// <summary>
+    /// Idempotent §16 demo: pending write-off BDR on debt hero line (0939000002 / مازن المديون).
+    /// Runs after <see cref="EnsureHeroReconnectDemoAsync"/> so billing suspension exists.
+    /// </summary>
+    public async Task EnsureHeroBadDebtDemoAsync()
+    {
+        var assetRow = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            .Where(m => m.Msisdn == TelecomDemoMsisdn.DebtSubscriber)
+            .Select(m => new { m.Id, m.SubscriberProfileId })
+            .FirstOrDefaultAsync();
+
+        if (assetRow?.SubscriberProfileId == null)
+        {
+            return;
+        }
+
+        var hasOpenBdr = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .AnyAsync(o => o.Kind == TelecomOperationKind.BadDebtRecovery
+                           && o.MsisdnAssetId == assetRow.Id
+                           && o.Status == TelecomOperationStatus.PendingDocuments);
+
+        if (hasOpenBdr)
+        {
+            return;
+        }
+
+        var demoNow = DateTime.UtcNow;
+        var bdr = new TelecomOperationRequest
+        {
+            Kind = TelecomOperationKind.BadDebtRecovery,
+            Number = _numberSequenceService.GenerateNumber("TelecomOp_BadDebt", "BDR-", "", useDate: false),
+            CorrelationId = Guid.CreateVersion7().ToString(),
+            Status = TelecomOperationStatus.PendingDocuments,
+            DocumentStatus = TelecomDocumentStatus.Uploaded,
+            SubscriberProfileId = assetRow.SubscriberProfileId,
+            MsisdnAssetId = assetRow.Id,
+            CollectionAction = "WriteOffPartial",
+            DunningStage = "WriteOffPending",
+            PriorDunningStage = "Reminder2",
+            OutstandingBalanceSnapshot = -15_000m,
+            WriteOffAmount = 10_000m,
+            CollectionNote = "ديمو BDR: شطب جزئي معلّق — اعتماد باك أوفيس.",
+            CollectionSettlementStatus = "Pending",
+            ApprovalLevelRequired = "BackOffice",
+            ProvisioningResult = "Pending",
+            Notes = "BDR|demo=WriteOffPartial|balance=-15000|bo=true",
+            IsLostOrStolenReport = false,
+            FraudClearanceConfirmed = false,
+            AutoReconnectEnabled = false,
+            NotificationSuppressed = false,
+            CreatedAtUtc = demoNow.AddHours(-2),
+        };
+
+        await _operationRepository.CreateAsync(bdr);
+        await _unitOfWork.SaveAsync();
+    }
 }

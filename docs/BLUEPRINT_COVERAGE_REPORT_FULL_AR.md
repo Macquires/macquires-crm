@@ -2,7 +2,7 @@
 ## Blueprint Coverage & Gap Analysis — Macquires CRM vs Syriatel MoM & Executive Design Edition
 
 **الإصدار:** 1.0  
-**التاريخ:** 2026-05-20  
+**التاريخ:** 2026-06-04 (تحديث تغطية SUS/RCN/RFD/BDR/DEV + Customer List modals)  
 **المُعد:** فريق Macquires — Enterprise Architecture  
 **الجمهور:** لجنة سيريتل (حسام رضوان، عمار، أحمد الشوا، PMO، التشغيل، الهندسة)  
 **المستودع:** `macquires-crm`  
@@ -30,8 +30,8 @@
 
 | المقياس | النسبة | المعنى للجنة |
 |---------|--------|--------------|
-| **المطابقة الإجمالية المرجّحة (BSS إنتاجي)** | **~43%** | نصف scope الـ Blueprint التشغيلي مغطّى بعمق حقيقي |
-| **16 موديول MoM سيريتل (متوسط)** | **~48%** | متطلبات محضر الاجتماع مغطاة جزئياً إلى قوياً |
+| **المطابقة الإجمالية المرجّحة (BSS إنتاجي)** | **~46%** | lifecycle ops (SUS/RCN/RFD/BDR/DEV/TRM) مربوطة؛ HTTP integrations ما زالت Mock |
+| **16 موديول MoM سيريتل (متوسط)** | **~54%** | SUS/RFD/DEV/BDR/RCN مربوطة UI+workflow؛ CBS/HLR ما زال Mock |
 | **Part 3 — 22 نطاق Blueprint** | **~49%** | الوظائف التفصيلية في مستند Macquires Executive |
 | **النضج المعماري (Architectural Maturity)** | **~85%** | Clean Architecture, CQRS, RBAC, Audit — جاهز للتوسع |
 | **جاهزية POC/Demo** | **~70%** | Customer 360, Hub, تفعيل خط, Mock CBS/HLR قابل للعرض |
@@ -54,7 +54,7 @@
 ### المحور الثاني: التغطية الوظيفية (~48% لـ MoM)
 
 مسارات **البيع والتفعيل ونقل الملكية وتبديل الشريحة والـ 360** موجودة ومربوطة بالواجهة.  
-مسارات **الإيقاف، إعادة التفعيل، الإنهاء، الدفع الكامل، الأجهزة، التحصيل، الالتزامات** غائبة أو على مستوى domain methods فقط.
+مسارات **الشحن/القسائم (PAY-)**، **SUS/RCN/RFD/BDR/DEV** منفّذة Full-Stack ديمو. ما زال ضعيفاً: **فواتير/disputes، الالتزامات، MNP، Payment Gateway HTTP إنتاجي**.
 
 ### المحور الثالث: نجاح مرحلة POC
 
@@ -122,35 +122,34 @@
 
 ## B.2 — خدمات الدفع وتسوية الفواتير (Payment Services)
 
-**نسبة التغطية: 32%** | **الحالة: جزئي ضعيف**
+**نسبة التغطية: ~82%** | **الحالة: جزئي قوي (Full-Stack ديمو)**
 
-### 1) الوضع الحالي بالكود
+### 1) الوضع الحالي
 
-- `RechargeCustomer360Line.cs` — شحن من Customer 360
-- `HuaweiCbsBillingIntegration.cs` — `GetOutstandingBalanceAsync` (mock)
-- `HuaweiCbsMockController.cs` — QueryBalance/Recharge demo API
-- `Customer360WalletBuilder.cs` — محفظة demo
-- `BillingIntegrationLog` — سجل محاولات فقط
+| طبقة | Evidence |
+|------|----------|
+| Ledger | `TelecomPaymentTransaction` (PAY-) + `TelecomPaymentAuditLog` |
+| Orchestrator | `PaymentServicesOrchestrator` — Draft → Gateway → CBS `RechargeAsync` |
+| VAL-12 | `PaymentServicesEligibilityChecker`, velocity fraud → `FraudPayment` ticket |
+| Voucher | `ValidateVoucher` + redeem عبر `IPaymentGatewayIntegration` |
+| Reversal | `PaymentServicesReversalService` + BO «عكس» (120 دقيقة) |
+| SMS | `PaymentServicesNotificationHandler` |
+| API/UI | 360 + List + Hub + `boPaymentServicesPanel` |
+| Legacy | `RechargeCustomer360Line` → orchestrator |
+| RBAC | `telecom.line.recharge` |
 
-### 2) الربط الفني CBS / HLR
+### 2) CBS / Gateway
 
-- **Recharge:** لمس CBS mock؛ **لا HLR**
-- **Balance inquiry:** mock deterministic (MSISDN ينتهي بـ 9 = دين)
-- **لا Payment Gateway** ولا OCS charging حقيقي
+- Mock CBS + Mock Gateway — **لا HTTP إنتاجي**
 
-### 3) الفجوات
+### 3) متبقّي (~18%)
 
-- لا فواتير (invoice entity)، لا disputes، لا settlement batch
-- لا voucher validation
-- لا convergent billing (جهاز + خط)
+- Invoice / disputes / settlement batch · convergent billing
 
-### 4) خارطة الطريق
+### 4) Roadmap
 
-| الأولوية | البند |
-|----------|-------|
-| **Quick Win** | توحيد recharge عبر `IBillingSystemIntegration` مع audit موحّد |
-| **Medium** | Payment gateway abstraction + invoice inquiry DTO |
-| **Long-Term** | BillingAccount entity + transaction ledger |
+| **مكتمل ديمو** | PAY + voucher + reverse + KPIs |
+| **Long-Term** | Invoice + OCS HTTP |
 
 ---
 
@@ -331,28 +330,32 @@
 
 ## B.9 — الحظر المؤقت (Temporary Suspension / Barring)
 
-**نسبة التغطية: 25%** | **الحالة: جزئي ضعيف**
+**نسبة التغطية: ~72%** | **الحالة: جزئي قوي (Full-Stack ديمو)**
 
 ### 1) الوضع الحالي
 
-- `SubscriberProfile.Suspend()`, `SuspendInbound()`, `SuspendOutbound()`
-- `MsisdnPoolStatus.Suspended`, `SimStatus.Suspended`
-- `ResyncSubscriberFromHlr` قد يستدعي Suspend
-- **لا** TelecomOperation للحظر من UI
+| طبقة | Evidence |
+|------|----------|
+| Kind | `TelecomOperationKind.TemporarySuspension = 7` |
+| Matrix | `SuspensionEligibilityChecker`, `SuspensionWellKnown` (Fraud/Regulatory → BO) |
+| Workflow | `ApplyTemporarySuspensionAsync`, CBS bar + HLR barring في orchestrator |
+| API/KPI | `GetSuspensionKpis`, BO panel |
+| UI | Hub SUS، **Customer360 wizard**، **CustomerList inline modal** `C360SuspensionModal` |
+| Tests | `SuspensionEligibilityIntegrationTests`, `GetSuspensionKpisHandlerTests` |
 
 ### 2) CBS / HLR
 
-- **لا** orchestrated barring — لا أمر HLR suspend subscriber
+- Mock adapters — نفس نمط RCN/TRM
 
-### 3) الفجوات
+### 3) متبقّي (~28%)
 
-- Blueprint: fraud/billing/customer-request suspension — **لا مسارات منفصلة**
-- لا Grace Period → Barred state machine على العملية
+- Grace Period state machine مستقل
+- E2E Playwright
 
 ### 4) Roadmap
 
-| **Quick Win** | `Suspension` operation + HLR + CBS bar |
-| **Medium** | Inbound-only vs full bar UI |
+| **مكتمل ديمو** | SUS kind + matrix + BO + 360 + List |
+| **لاحقاً** | Production HLR barring contracts |
 
 ---
 
@@ -388,51 +391,63 @@
 
 ## B.11 — بيع الأجهزة والراوترات (Selling Devices)
 
-**نسبة التغطية: 5%** | **الحالة: غائب**
+**نسبة التغطية: ~68%** | **الحالة: جزئي قوي (ديمو)**
 
 ### 1) الوضع الحالي
 
-- **لا** Device entity, installment plan, stock للأجهزة
-- `Product.Physical` flag على منتج ERP legacy — **لا retail device flow**
-- Blueprint Device Financing matrix — **غائب**
+| طبقة | Evidence |
+|------|----------|
+| Domain | `DeviceInstallmentContract`, `DeviceInstallmentScheduleLine`, `TelecomDeviceCatalogItem` |
+| Kind | `TelecomOperationKind.DeviceSale = 10` |
+| Completion | `DeviceSaleCompletionService.FulfillAsync` — عقد + جدول أقساط |
+| Delinquency | `DeviceInstallmentDelinquencyHostedService` (VAL-14-04) + `EnqueueDeviceInstallmentCollectionsAsync` |
+| UI | Hub DEV، Customer360 wizard، BO KPI `loadDeviceSaleKpis` |
+| Tests | `DeviceSalesEligibilityTests`, `DeviceSaleCompletionTests` |
 
 ### 2) CBS / HLR
 
-- **لا**
+- Mock device charge على CBS — **لا** مخزون أجهزة ERP حي
 
-### 3) الفجوات
+### 3) متبقّي (~32%)
 
-- كامل الموديول
+- كتالوج أجهزة إنتاجي + مخزون فروع
+- بوابة دفع للدفعة الأولى
 
 ### 4) Roadmap
 
-| **Long-Term** | Device catalog + installment + CBS device charge + CRM order line |
+| **Medium** | HTTP CBS device SKU + stock sync |
+| **Long-Term** | Dealer device quota |
 
 ---
 
 ## B.12 — استرداد التأمينات وكاش سيريتل (Refund & Deposit)
 
-**نسبة التغطية: 15%** | **الحالة: حد أدنى**
+**نسبة التغطية: ~70%** | **الحالة: جزئي قوي — **Kind 11 (RFD-)** وليس مسار `TelecomPaymentTransaction`**
 
 ### 1) الوضع الحالي
 
-- `Customer360WalletBuilder` — عرض demo
-- `ReverseProvisionAsync` — **compensation** وليس refund عميل
-- `PrepaidBalance` على SubscriberProfile — static
+| طبقة | Evidence |
+|------|----------|
+| Kind | `TelecomOperationKind.Refund = 11` — Deposit / Wallet / Overpayment / Syriatel Cash |
+| Eligibility | `RefundEligibilityChecker` — Syriatel Cash → BO + وثيقة |
+| Workflow | `ApplyRefundAsync`, CBS credit note (mock) |
+| UI | Hub + **Customer360** + **CustomerList** `C360RefundModal` |
+| Tests | `RefundEligibilityTests` |
+| **غير منفّذ** | خطة `refund_settlement_§15` على `TelecomPaymentTransaction` + `RefundSettlement` |
 
 ### 2) CBS / HLR
 
-- Reverse على CBS mock عند فشل HLR — **ليس refund user-initiated**
+- CBS credit / wallet credit عبر orchestrator (mock)
 
-### 3) الفجوات
+### 3) متبقّي (~30%)
 
-- لا refund approval workflow
-- لا Syriatel Cash wallet integration
+- تكامل Syriatel Cash HTTP حقيقي
+- مسار settlement على PAY إن طُلب من اللجنة
 
 ### 4) Roadmap
 
-| **Medium** | Refund operation kind + CBS credit note |
-| **Long-Term** | Wallet ledger entity |
+| **مكتمل ديمو** | RFD Kind 11 end-to-end |
+| **Long-Term** | Wallet ledger + PAY settlement (اختياري) |
 
 ---
 
@@ -450,7 +465,8 @@
 | Confirm + Fraud Audit | `FraudClearanceConfirmed` في `TelecomActivationWorkflow` |
 | CBS/HLR | `ApplyReconnectAsync`, `CbsUnbarSubscriber`, compensator |
 | Hub + BO Modal | `TelecomHub.cshtml(.js)`, `canApproveSecureOp` لـ kind 8/9 |
-| Customer 360 | كرت RCN في `Customer360Profile` + deep-link للـ Hub |
+| Customer 360 | wizard RCN كامل (أهلية + BO) — ليس Hub-only |
+| Customer List | `C360ReconnectModal` inline |
 | Tests | `ReconnectEligibilityIntegrationTests.cs` |
 | Demo Seed | `EnsureHeroReconnectDemoAsync` (0939000091 Fraud، 0939000002 Billing) |
 
@@ -472,25 +488,36 @@
 
 ## B.14 — تحصيل الديون المعدومة (Bad Debt Recovery)
 
-**نسبة التغطية: 10%** | **الحالة: حد أدنى**
+**نسبة التغطية: ~75%** | **الحالة: مسار تشغيلي كامل (ديمو)**
 
 ### 1) الوضع الحالي
 
-- `GetOutstandingBalanceAsync` mock
-- TakeOver blocks negative balance
-- **لا** dunning stages, collection cases, write-off
+| طبقة | Evidence |
+|------|----------|
+| Domain | `TelecomOperationKind.BadDebtRecovery = 12`، حقول §16 على `TelecomOperationRequest` |
+| Matrix VAL-16 | `BadDebtEligibilityMatrix.cs`, `BadDebtEligibilityChecker.cs` |
+| API | `GET /Telecom/GetBadDebtEligibility`, `GET /Telecom/GetBadDebtKpis` |
+| Workflow | `ApplyBadDebtRecoveryAsync`, `BadDebtCompletionService` (CBS mock) |
+| UI | Hub tile BDR، wizard + BO modal kind 12، Customer360 كرت تحصيل |
+| RBAC | `telecom.line.collection_*` |
+| CBS | `CbsPostCollectionPayment`, `CbsPostWriteOff`, `CbsDunningNotify`؛ ذمة `0939000002` = **-15,000** |
+| Tests | `BadDebtEligibilityIntegrationTests.cs` |
+| Demo | `EnsureHeroBadDebtDemoAsync` + `TelecomBadDebt_HeroDemoPatch_Manual.sql` |
 
 ### 2) CBS / HLR
 
-- **لا** collection API
+- Mock CBS لتحصيل/شطب/تذكير؛ HardBar يعلّق profile محلياً
+- **لا** محرك dunning مجدول (HostedService) — Long-Term
 
-### 3) الفجوات
+### 3) الفجوات المتبقية
 
-- Blueprint Collections/Dunning domain — **غائب**
+- كيان `CollectionCase` مستقل
+- تكامل وكالة تحصيل خارجية حقيقية
+- SMS قوالب إنتاجية (قالب ديمو واحد)
 
 ### 4) Roadmap
 
-| **Long-Term** | Dunning engine + collection agency handoff + HLR bar on default |
+| **Long-Term** | Dunning scheduler + agency API + HLR bar تلقائي على default |
 
 ---
 
@@ -561,23 +588,23 @@
 | # | الموديول | % | الحالة | Roadmap dominant |
 |---|----------|---|--------|------------------|
 | 1 | بيع خط جديد | 72% | جزئي قوي | Medium (HTTP CBS/HLR) |
-| 2 | الدفع والفواتير | 32% | جزئي ضعيف | Long |
+| 2 | الدفع والفواتير | 82% | جزئي قوي | Medium (HTTP gateway) |
 | 3 | تغيير نوع الخط | 40% | جزئي ضعيف | Medium |
 | 4 | نقل الملكية | 68% | جزئي قوي | Medium |
 | 5 | الالتزامات | 15% | حد أدنى | Long |
 | 6 | تبديل شريحة | ~90% | جاهز ديمو | OTP/eSIM (Long) |
 | 7 | تغيير الرقم | 25% | جزئي ضعيف | Long |
-| 8 | إنهاء الخط | 20% | جزئي ضعيف | Quick |
-| 9 | الحظر المؤقت | 25% | جزئي ضعيف | Quick |
-| 10 | VAS والعروض | 60% | جزئي قوي | Medium |
-| 11 | بيع الأجهزة | 5% | غائب | Long |
-| 12 | استرداد التأمينات | 15% | حد أدنى | Long |
-| 13 | إعادة التفعيل | 75% | مكتمل §9 Full-Stack | Evidence |
-| 14 | الديون المعدومة | 10% | حد أدنى | Long |
+| 8 | إنهاء الخط | 75% | تشغيلي ديمو | Medium |
+| 9 | الحظر المؤقت | 72% | جزئي قوي | Medium (HTTP) |
+| 10 | VAS والعروض | 78% | جزئي قوي | Medium |
+| 11 | بيع الأجهزة | 68% | جزئي قوي | Medium |
+| 12 | استرداد التأمينات | 70% | RFD Kind 11 | Medium (Cash HTTP) |
+| 13 | إعادة التفعيل | 78% | Full-Stack + List modal | Evidence |
+| 14 | الديون المعدومة | 75% | BDR Full-Stack | Long (scheduler) |
 | 15 | تحديث بيانات العميل | 70% | جزئي قوي | Medium |
 | 16 | التقارير | 50% | جزئي قوي | Medium |
 
-**المتوسط الحسابي: ~48%**
+**المتوسط الحسابي: ~54%**
 
 ---
 
@@ -692,15 +719,15 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 | 5 | MSISDN Lifecycle | 70% |
 | 6 | Change GSM / Service Technology | 40% |
 | 7 | Transfer of Ownership | 68% |
-| 8 | Suspension & Barring | 25% |
-| 9 | Reconnect / Reactivation | 75% |
+| 8 | Suspension & Barring | 72% |
+| 9 | Reconnect / Reactivation | 78% |
 | 10 | Service Termination | ~75% |
 | 11 | Product Catalog & Subscription | ~78% |
-| 12 | Recharge, Voucher & Payment | 35% |
+| 12 | Recharge, Voucher & Payment | 82% |
 | 13 | Billing Inquiry & Dispute | 25% |
-| 14 | Device Sales & Installment | 5% |
-| 15 | Refund, Deposit & Wallet | 15% |
-| 16 | Collections, Dunning & Bad Debt | 10% |
+| 14 | Device Sales & Installment | 68% |
+| 15 | Refund, Deposit & Wallet | 70% |
+| 16 | Collections, Dunning & Bad Debt | 75% |
 | 17 | Complaint, Case & SLA | 45% |
 | 18 | Dealer, Branch & Retail | 20% |
 | 19 | Revenue Assurance & Fraud | 15% |
@@ -747,7 +774,7 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 
 ## Quick Wins (1–2 sprint) — رفع ~5–10% إجمالي
 
-1. `Suspension` + `Reconnect` + `Termination` كـ `TelecomOperationKind` جديدة
+1. ~~`Suspension` + `Reconnect` + `Termination` كـ `TelecomOperationKind`~~ ✅ (Kinds 7–12 + UI)
 2. SLA fields على `TelecomTechnicalTicket` (DueAtUtc, Breached)
 3. ~~Lost/Stolen → quarantine on SimSwap~~ ✅ (S1–S4)
 4. Consent flag على Customer
@@ -762,8 +789,8 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 
 ## Long-Term (program)
 
-1. Device sales + installment
-2. Collections / Dunning / Bad debt
+1. ~~Device sales + installment~~ ✅ ديمو (DEV + VAL-14-04)
+2. ~~Collections / Dunning / Bad debt~~ ✅ BDR Kind 12 + تذاكر تحصيل
 3. Dealer quota + reconciliation
 4. Revenue Assurance + Fraud scoring engine
 5. CDR + real ARPU/Churn
@@ -776,7 +803,7 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 | السؤال | الإجابة |
 |--------|---------|
 | هل الكود على خط Blueprint/MoM؟ | **نعم** — نفس المحور (360 → عمليات → CBS/HLR) |
-| نسبة 16 MoM | **~48%** |
+| نسبة 16 MoM | **~54%** |
 | Selling Line | **~72%** — الأقوى للديمو |
 | المعمارية | **~85%** — نقطة قوة للجنة |
 | BSS إنتاجي كامل | **~35–43%** — يحتاج HTTP integrations + lifecycle ops |

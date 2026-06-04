@@ -508,10 +508,25 @@
                         <i class="bi bi-phone-vibrate c360-action-icon" style="color:var(--sys-brand-red)"></i>
                         <span class="small fw-semibold d-block">إنهاء خط TRM</span>
                     </button>
-                    <button v-if="selectedLineSuspended" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.reconnect }" :disabled="!can.reconnect || state.isProvisioningInFlight" @@click="openReconnectHub">
+                    <button v-if="selectedLineActive" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.suspension }" :disabled="!can.suspension || state.isProvisioningInFlight" @@click="openProvisioningWizard('suspension')">
+                        <i class="bi bi-slash-circle c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">حظر مؤقت SUS</span>
+                    </button>
+                    <button v-if="selectedLineSuspended" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.reconnect }" :disabled="!can.reconnect || state.isProvisioningInFlight" @@click="openProvisioningWizard('reconnect')">
                         <i class="bi bi-arrow-repeat c360-action-icon" style="color:var(--sys-brand-red)"></i>
                         <span class="small fw-semibold d-block">إعادة تفعيل RCN</span>
-                        <span class="text-muted" style="font-size:0.7rem;">خط موقوف — معرض</span>
+                    </button>
+                    <button v-if="selectedLineCollectionEligible" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.collection }" :disabled="!can.collection || state.isProvisioningInFlight" @@click="openProvisioningWizard('badDebt')">
+                        <i class="bi bi-cash-coin c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">تحصيل ديون BDR</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.refund || selectedLineTerminated }" :disabled="!can.refund || selectedLineTerminated || state.isProvisioningInFlight" @@click="openProvisioningWizard('refund')">
+                        <i class="bi bi-wallet2 c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">استرداد RFD</span>
+                    </button>
+                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.deviceSale }" :disabled="!can.deviceSale || state.isProvisioningInFlight" @@click="openProvisioningWizard('deviceSale')">
+                        <i class="bi bi-phone c360-action-icon" style="color:var(--sys-text-muted)"></i>
+                        <span class="small fw-semibold d-block">بيع جهاز DEV</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('activate')">
                         <i class="bi bi-reception-4 c360-action-icon" style="color:var(--sys-text-muted)"></i>
@@ -918,6 +933,133 @@
                                 <option v-for="v in state.wizard.vasCatalog" :key="v.serviceCode" :value="v.serviceCode">{{ v.nameAr }} ({{ v.serviceCode }})</option>
                             </select>
                         </div>
+                        <div v-if="state.wizard.kind === 'suspension'" class="mb-3">
+                            <p class="small text-muted mb-2">الخط: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
+                            <label class="form-label small fw-semibold">نوع الحظر *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.susSuspensionType" @@change="onSusTypeChange">
+                                <option value="CustomerRequest">طلب عميل</option>
+                                <option value="Billing">فواتير</option>
+                                <option value="Fraud">احتيال</option>
+                                <option value="Regulatory">تنظيمي</option>
+                                <option value="Operational">تشغيلي</option>
+                            </select>
+                            <label class="form-label small fw-semibold">مستوى الحظر *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.susBarringLevel">
+                                <option value="Full">كامل</option>
+                                <option value="InboundOnly">وارد فقط</option>
+                                <option value="OutboundOnly">صادر فقط</option>
+                            </select>
+                            <label class="form-label small fw-semibold">سبب الحظر *</label>
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.susSuspensionReason" />
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="c360SusAuto" v-model="state.wizard.susAutoReconnectEnabled" />
+                                <label class="form-check-label small" for="c360SusAuto">إعادة اتصال تلقائية</label>
+                            </div>
+                            <input v-if="state.wizard.susAutoReconnectEnabled" type="datetime-local" class="form-control form-control-sm mb-2" v-model="state.wizard.susEndDateLocal" />
+                            <div v-if="state.wizard.susRequiresBackOffice" class="alert alert-warning py-2 small mb-0">يتطلب اعتماد الباك أوفيس.</div>
+                        </div>
+                        <div v-if="state.wizard.kind === 'reconnect'" class="mb-3">
+                            <p class="small text-muted mb-2">الخط: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
+                            <label class="form-label small fw-semibold">نوع التسوية *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.rcnClearanceType" @@change="onRcnClearanceChange">
+                                <option value="Customer">عميل</option>
+                                <option value="Payment">دفع</option>
+                                <option value="Fraud">احتيال</option>
+                                <option value="Regulatory">تنظيمي</option>
+                                <option value="Operational">تشغيلي</option>
+                            </select>
+                            <label class="form-label small fw-semibold">سبب إعادة التفعيل *</label>
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnReconnectReason" @@blur="onRcnClearanceChange" />
+                            <label v-if="state.wizard.rcnClearanceType === 'Payment'" class="form-label small fw-semibold">مرجع الدفع *</label>
+                            <input v-if="state.wizard.rcnClearanceType === 'Payment'" type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnPaymentReference" @@blur="onRcnClearanceChange" />
+                            <div v-if="state.wizard.rcnEligibilityBusy" class="alert alert-light py-2 small mb-2">جاري فحص الأهلية…</div>
+                            <div v-else-if="state.wizard.rcnEligibility" class="alert py-2 small mb-2" :class="(state.wizard.rcnEligibility.allowed || state.wizard.rcnEligibility.Allowed) ? ((state.wizard.rcnEligibility.requiresBackOfficeApproval || state.wizard.rcnEligibility.RequiresBackOfficeApproval) ? 'alert-warning' : 'alert-success') : 'alert-danger'">
+                                {{ state.wizard.rcnEligibility.messageAr || state.wizard.rcnEligibility.MessageAr }}
+                            </div>
+                            <div v-if="state.wizard.rcnRequiresBackOffice" class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="c360RcnFraud" v-model="state.wizard.rcnFraudClearanceConfirmed" @@change="onRcnClearanceChange" />
+                                <label class="form-check-label small" for="c360RcnFraud">تأكيد تسوية احتيال (BO)</label>
+                            </div>
+                        </div>
+                        <div v-if="state.wizard.kind === 'refund'" class="mb-3">
+                            <label class="form-label small fw-semibold">نوع الاسترداد *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.rfdRefundType" @@change="onRefundTypeChange">
+                                <option value="Deposit">تأمين</option>
+                                <option value="WalletBalance">محفظة</option>
+                                <option value="Overpayment">زيادة دفع</option>
+                                <option value="SyriatelCash">Syriatel Cash</option>
+                            </select>
+                            <label class="form-label small fw-semibold">طريقة التسوية *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.rfdRefundMethod">
+                                <option value="CreditNote">إشعار دائن</option>
+                                <option value="WalletCredit">محفظة</option>
+                                <option value="BankTransfer">تحويل بنكي</option>
+                                <option value="Cash">نقد</option>
+                            </select>
+                            <label class="form-label small fw-semibold">المبلغ *</label>
+                            <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.rfdRefundAmount" />
+                            <label class="form-label small fw-semibold">السبب *</label>
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rfdRefundReason" />
+                            <div v-if="state.wizard.rfdRequiresBackOffice" class="alert alert-warning py-2 small mb-2">يتطلب اعتماد الباك أوفيس.</div>
+                            <div v-if="state.wizard.rfdRequiresBackOffice">
+                                <label class="form-label small">وثيقة *</label>
+                                <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
+                            </div>
+                        </div>
+                        <div v-if="state.wizard.kind === 'badDebt'" class="mb-3">
+                            <label class="form-label small fw-semibold">إجراء التحصيل *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.bdrCollectionAction" @@change="onBdrActionChange">
+                                <option value="PaymentRecorded">تسجيل دفعة</option>
+                                <option value="PaymentPlan">خطة سداد</option>
+                                <option value="DunningEscalation">تصعيد تذكير</option>
+                                <option value="AgencyReferral">إحالة وكالة</option>
+                                <option value="WriteOffPartial">شطب جزئي</option>
+                                <option value="WriteOffFull">شطب كامل</option>
+                            </select>
+                            <label class="form-label small">مرحلة التذكير</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.bdrDunningStage" @@change="onBdrActionChange">
+                                <option value="Reminder1">Reminder1</option>
+                                <option value="Reminder2">Reminder2</option>
+                                <option value="SoftBar">SoftBar</option>
+                                <option value="HardBar">HardBar</option>
+                            </select>
+                            <div v-if="state.wizard.bdrCollectionAction === 'PaymentRecorded'">
+                                <label class="form-label small">مرجع الدفع *</label>
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrPaymentReference" @@blur="onBdrActionChange" />
+                                <label class="form-label small">المبلغ المحصّل *</label>
+                                <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrCollectedAmount" @@blur="onBdrActionChange" />
+                            </div>
+                            <div v-if="state.wizard.bdrCollectionAction === 'WriteOffPartial' || state.wizard.bdrCollectionAction === 'WriteOffFull'">
+                                <label class="form-label small">مبلغ الشطب *</label>
+                                <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrWriteOffAmount" @@blur="onBdrActionChange" />
+                            </div>
+                            <div v-if="state.wizard.bdrEligibilityBusy" class="alert alert-light py-2 small mb-2">جاري فحص الأهلية…</div>
+                            <div v-else-if="state.wizard.bdrEligibility" class="alert py-2 small mb-2" :class="(state.wizard.bdrEligibility.allowed || state.wizard.bdrEligibility.Allowed) ? 'alert-success' : 'alert-danger'">
+                                {{ state.wizard.bdrEligibility.messageAr || state.wizard.bdrEligibility.MessageAr }}
+                            </div>
+                        </div>
+                        <div v-if="state.wizard.kind === 'deviceSale'" class="mb-3">
+                            <label class="form-label small fw-semibold">الجهاز *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInventoryId" @@change="onDevicePicked">
+                                <option value="">— اختر IMEI —</option>
+                                <option v-for="d in state.wizard.devDevices" :key="d.id || d.Id" :value="d.id || d.Id">
+                                    {{ d.imei || d.Imei }} — {{ d.model || d.Model }}
+                                </option>
+                            </select>
+                            <label class="form-label small fw-semibold">نوع البيع *</label>
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.devSaleType">
+                                <option value="Cash">نقد</option>
+                                <option value="Installment">تقسيط</option>
+                            </select>
+                            <div v-if="state.wizard.devSaleType === 'Installment'">
+                                <label class="form-label small">خطة التقسيط *</label>
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInstallmentPlanId">
+                                    <option value="">—</option>
+                                    <option v-for="p in state.wizard.devPlans" :key="p.id || p.Id" :value="p.id || p.Id">{{ p.nameAr || p.NameAr }}</option>
+                                </select>
+                            </div>
+                            <p v-if="state.wizard.devFinancingPreview" class="small text-muted mb-2">{{ state.wizard.devFinancingPreview }}</p>
+                        </div>
                         <div v-if="state.wizard.kind === 'simswap'" class="mb-3">
                             <label class="form-label small fw-semibold">سبب التبديل <span class="text-danger">*</span></label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.simReplacementReason">
@@ -1018,10 +1160,16 @@
                             </div>
                             <p v-if="state.wizard.kind === 'activate' && state.wizard.paymentRecorded" class="small text-success mb-2">تم تثبيت الدفع.</p>
                             <p v-if="state.wizard.operationCorrelationId" class="small text-muted font-monospace mb-2" dir="ltr">Correlation: {{ state.wizard.operationCorrelationId }}</p>
-                            <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover' && !(state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) && !(state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) && !(state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy || (state.wizard.kind === 'activate' && activateRequiredDeposit > 0 && !state.wizard.paymentRecorded)" @@click="submitWizardConfirmCbs">
+                            <div v-if="state.wizard.kind === 'deviceSale' && state.wizard.createdOperationId && state.wizard.devSaleType !== 'Cash' && !state.wizard.documentMarkedUploaded" class="border rounded p-2 mb-2 bg-white">
+                                <label class="form-label small">مقدّم + مرجع دفع</label>
+                                <input type="number" class="form-control form-control-sm mb-1" v-model="state.wizard.devDownPayment" placeholder="المبلغ" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.devPaymentReference" placeholder="مرجع الدفع" />
+                                <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.wizard.paymentBusy" @@click="recordDeviceDownPaymentC360">تسجيل الدفع</button>
+                            </div>
+                            <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover' && !(state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) && !(state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) && !(state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) && !(state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) && !(state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) && !(state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) && !(state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) && !(state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance)" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy || (state.wizard.kind === 'activate' && activateRequiredDeposit > 0 && !state.wizard.paymentRecorded) || (state.wizard.kind === 'deviceSale' && state.wizard.devSaleType === 'Installment' && !state.wizard.documentMarkedUploaded)" @@click="submitWizardConfirmCbs">
                                 <span v-if="state.wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>تأكيد CBS
                             </button>
-                            <p v-if="(state.wizard.kind === 'takeover' || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)) && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
+                            <p v-if="(state.wizard.kind === 'takeover' || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) || (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) || (state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) || (state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) || (state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance)) && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
                                 بانتظار اعتماد الباك أوفيس من مركز Telecom Hub.
                             </p>
                             <p v-if="state.wizard.confirmed" class="small text-success mb-0">{{ state.wizard.confirmStatusHint || 'تم التأكيد والتنفيذ.' }}</p>

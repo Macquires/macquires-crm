@@ -69,6 +69,11 @@
         "title": "استرداد مالي",
         "sub": "RFD"
       },
+      "badDebt": {
+        "aria": "فتح معالج تحصيل الديون والتذكير",
+        "title": "تحصيل ديون",
+        "sub": "BDR"
+      },
       "addpackage": {
         "aria": "فتح معالج إضافة باقة",
         "title": "إضافة باقة",
@@ -146,6 +151,7 @@
         "suspension": "حظر خط مؤقت (SUS)",
         "reconnect": "إعادة تفعيل خط (RCN)",
         "refund": "استرداد تأمين / محفظة (RFD)",
+        "badDebt": "تحصيل ديون معدومة (BDR)",
         "deviceSale": "بيع جهاز (DEV)",
         "addpackage": "إضافة باقة أو خدمة"
       }
@@ -186,6 +192,7 @@
       "approveSuspension": "اعتماد حظر SUS",
       "approveReconnect": "اعتماد إعادة تفعيل RCN",
       "approveRefund": "اعتماد استرداد RFD",
+      "approveCollection": "اعتماد تحصيل BDR",
       "approveSecureOp": "مراجعة واعتماد",
       "thNumber": "الرقم",
       "thKind": "النوع",
@@ -649,6 +656,34 @@
       "matrixDenied": "مرفوض",
       "lastSuspension": "آخر حظر",
       "matrixCode": "رمز التحقق"
+    },
+    "badDebt": {
+      "currentMsisdn": "خط التحصيل",
+      "collectionAction": "إجراء التحصيل",
+      "actionPayment": "تسجيل دفعة",
+      "actionPaymentPlan": "خطة سداد",
+      "actionDunning": "تصعيد تذكير",
+      "actionAgency": "إحالة وكالة",
+      "actionWriteOffPartial": "شطب جزئي",
+      "actionWriteOffFull": "شطب كامل",
+      "dunningStage": "مرحلة التذكير",
+      "collectedAmount": "مبلغ التحصيل (ل.س)",
+      "writeOffAmount": "مبلغ الشطب (ل.س)",
+      "paymentReference": "مرجع الدفع",
+      "agencyReference": "مرجع الوكالة",
+      "paymentPlanMonths": "أشهر الخطة",
+      "balanceSnapshot": "لقطة الذمة CBS",
+      "matrixTitle": "مصفوفة VAL-16",
+      "matrixLoading": "جاري فحص الأهلية…",
+      "boHint": "VAL-16-05: الشطب/الوكالة تتطلب اعتماد الإدارة المالية بالباك أوفيس.",
+      "collectionApproval": "اعتماد مالي مسبق (ديمو)"
+    },
+    "badDebtModal": {
+      "title": "اعتماد تحصيل / شطب (BDR)",
+      "approve": "اعتماد وتنفيذ CBS",
+      "action": "الإجراء",
+      "balance": "لقطة الذمة",
+      "writeOff": "مبلغ الشطب"
     },
     "reconnectModal": {
       "title": "اعتماد إعادة تفعيل (RCN)",

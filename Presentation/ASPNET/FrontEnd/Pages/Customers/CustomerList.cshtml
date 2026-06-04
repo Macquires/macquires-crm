@@ -279,6 +279,11 @@
                                                                     <li v-if="gridAccess.canMigrateLine"><a class="dropdown-item" href="#" v-on:click.prevent="openMigrateModal(sub)">ترحيل الباقة</a></li>
                                                                     <li v-if="gridAccess.canSimSwapLine"><a class="dropdown-item" href="#" v-on:click.prevent="openSimSwapModal(sub)">تبديل الشريحة</a></li>
                                                                     <li v-if="gridAccess.canChangeNumberLine"><a class="dropdown-item" href="#" v-on:click.prevent="openChangeNumberModal(sub)">تغيير رقم الخط</a></li>
+                                                                    <li v-if="gridAccess.canSuspensionLine && !isLineTerminated(sub) && !isLineSuspended(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openSuspensionModal(sub)">حظر مؤقت (SUS)</a></li>
+                                                                    <li v-if="gridAccess.canReconnectLine && isLineSuspended(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openReconnectModal(sub)">إعادة تفعيل (RCN)</a></li>
+                                                                    <li v-if="gridAccess.canCollectionLine && !isLineTerminated(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openBadDebtModal(sub)">تحصيل (BDR)</a></li>
+                                                                    <li v-if="gridAccess.canRefundLine && !isLineTerminated(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openRefundModal(sub)">استرداد (RFD)</a></li>
+                                                                    <li v-if="gridAccess.canDeviceSaleLine"><a class="dropdown-item" href="#" v-on:click.prevent="goToC360Wizard(sub, 'deviceSale')">بيع جهاز (DEV)</a></li>
                                                                     <li v-if="gridAccess.canTerminateLine && !isLineTerminated(sub)"><a class="dropdown-item text-danger" href="#" v-on:click.prevent="openTerminationModal(sub)">إنهاء الخط (TRM)</a></li>
                                                                     <li v-if="gridAccess.canTakeOverLine"><a class="dropdown-item" href="#" v-on:click.prevent="openTakeOverModal(sub)">نقل الملكية</a></li>
                                                                 </ul>
@@ -765,6 +770,100 @@
                     <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy || !lineActionModal.takeoverTargetProfileId || !lineActionModal.takeoverIdentityFile" v-on:click="submitTakeOver">
                         <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>رفع الهوية وإرسال للتدقيق
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360SuspensionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title text-danger">حظر مؤقت (SUS)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">الخط: {{ lineActionModal.sub?.msisdn }}</p>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.susSuspensionType" v-on:change="onSusTypeChangeList" :disabled="lineActionModal.busy">
+                        <option value="CustomerRequest">طلب عميل</option><option value="Billing">فواتير</option><option value="Fraud">احتيال</option><option value="Regulatory">تنظيمي</option><option value="Operational">تشغيلي</option>
+                    </select>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.susBarringLevel" :disabled="lineActionModal.busy">
+                        <option value="Full">حظر كامل</option><option value="InboundOnly">وارد</option><option value="OutboundOnly">صادر</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.susSuspensionReason" placeholder="سبب الحظر *" :disabled="lineActionModal.busy" />
+                    <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="susAutoList" v-model="lineActionModal.susAutoReconnectEnabled" /><label class="form-check-label small" for="susAutoList">إعادة اتصال تلقائية</label></div>
+                    <input v-if="lineActionModal.susAutoReconnectEnabled" type="datetime-local" class="form-control form-control-sm mb-2" v-model="lineActionModal.susEndDateLocal" />
+                    <div v-if="lineActionModal.susRequiresBackOffice" class="alert alert-warning py-2 small mb-0">يتطلب اعتماد الباك أوفيس.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitSuspension"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.susRequiresBackOffice ? 'إرسال للباك أوفيس' : 'تأكيد الحظر' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360ReconnectModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title text-danger">إعادة تفعيل (RCN)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">الخط: {{ lineActionModal.sub?.msisdn }}</p>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rcnClearanceType" v-on:change="loadListReconnectEligibility" :disabled="lineActionModal.busy">
+                        <option value="Customer">عميل</option><option value="Payment">دفع</option><option value="Fraud">احتيال</option><option value="Regulatory">تنظيمي</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnReconnectReason" placeholder="سبب إعادة التفعيل *" v-on:blur="loadListReconnectEligibility" />
+                    <input v-if="lineActionModal.rcnClearanceType === 'Payment'" type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnPaymentReference" placeholder="مرجع الدفع *" v-on:blur="loadListReconnectEligibility" />
+                    <div v-if="lineActionModal.rcnEligibilityBusy" class="small text-muted">جاري فحص الأهلية…</div>
+                    <div v-else-if="lineActionModal.rcnEligibility" class="alert py-2 small mb-2" :class="(lineActionModal.rcnEligibility.allowed || lineActionModal.rcnEligibility.Allowed) ? 'alert-success' : 'alert-danger'">{{ lineActionModal.rcnEligibility.messageAr || lineActionModal.rcnEligibility.MessageAr }}</div>
+                    <div v-if="lineActionModal.rcnRequiresBackOffice" class="form-check mb-0"><input class="form-check-input" type="checkbox" id="rcnFraudList" v-model="lineActionModal.rcnFraudClearanceConfirmed" v-on:change="loadListReconnectEligibility" /><label class="form-check-label small" for="rcnFraudList">تسوية احتيال (BO)</label></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitReconnect"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.rcnRequiresBackOffice ? 'إرسال للباك أوفيس' : 'تأكيد التفعيل' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360RefundModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">استرداد (RFD)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rfdRefundType" v-on:change="onRefundTypeChangeList">
+                        <option value="Deposit">تأمين</option><option value="WalletBalance">محفظة</option><option value="Overpayment">زيادة دفع</option><option value="SyriatelCash">Syriatel Cash</option>
+                    </select>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rfdRefundMethod">
+                        <option value="CreditNote">إشعار دائن</option><option value="WalletCredit">محفظة</option><option value="BankTransfer">تحويل</option><option value="Cash">نقد</option>
+                    </select>
+                    <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.rfdRefundAmount" placeholder="المبلغ *" />
+                    <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rfdRefundReason" placeholder="السبب *" />
+                    <div v-if="lineActionModal.rfdRequiresBackOffice"><input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onRefundIdentityFileChange" :disabled="lineActionModal.busy" /></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitRefund"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.rfdRequiresBackOffice ? 'إرسال للباك أوفيس' : 'تأكيد الاسترداد' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360BadDebtModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">تحصيل (BDR)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bdrCollectionAction" v-on:change="loadListBadDebtEligibility">
+                        <option value="PaymentRecorded">تسجيل دفعة</option><option value="DunningEscalation">تصعيد</option><option value="WriteOffPartial">شطب جزئي</option><option value="WriteOffFull">شطب كامل</option>
+                    </select>
+                    <div v-if="lineActionModal.bdrCollectionAction === 'PaymentRecorded'">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrPaymentReference" placeholder="مرجع الدفع" v-on:blur="loadListBadDebtEligibility" />
+                        <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrCollectedAmount" placeholder="المبلغ المحصّل" v-on:blur="loadListBadDebtEligibility" />
+                    </div>
+                    <div v-if="lineActionModal.bdrEligibilityBusy" class="small text-muted">جاري فحص الأهلية…</div>
+                    <div v-else-if="lineActionModal.bdrEligibility" class="alert py-2 small mb-0" :class="(lineActionModal.bdrEligibility.allowed || lineActionModal.bdrEligibility.Allowed) ? 'alert-success' : 'alert-danger'">{{ lineActionModal.bdrEligibility.messageAr || lineActionModal.bdrEligibility.MessageAr }}</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">إلغاء</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitBadDebt"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.bdrRequiresBackOffice ? 'إرسال للباك أوفيس' : 'تأكيد التحصيل' }}</button>
                 </div>
             </div>
         </div>

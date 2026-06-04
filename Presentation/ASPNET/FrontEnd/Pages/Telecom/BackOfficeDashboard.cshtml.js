@@ -919,6 +919,57 @@
         }
     }
 
+    async function loadDeviceSaleKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetDeviceSaleKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('devKpiVolume', pick(c, 'totalVolume', 'TotalVolume'));
+            set('devKpiCompleted', pick(c, 'completedCount', 'CompletedCount'));
+            set('devKpiFailed', pick(c, 'failedCount', 'FailedCount'));
+            set('devKpiCompletion', `${pick(c, 'completionRatePercent', 'CompletionRatePercent') ?? 0}%`);
+            set('devKpiFallout', `${pick(c, 'falloutRatePercent', 'FalloutRatePercent') ?? 0}%`);
+            set('devKpiInstallment', pick(c, 'installmentCount', 'InstallmentCount'));
+            set('devKpiCash', pick(c, 'cashCount', 'CashCount'));
+            set('devKpiOverrides', pick(c, 'manualOverrideCount', 'ManualOverrideCount'));
+            const rejections = c.rejectionReasons ?? c.RejectionReasons ?? [];
+            set(
+                'devKpiRejections',
+                rejections.length
+                    ? rejections.map((r) => `${r.reason ?? r.Reason} (${r.count ?? r.Count})`).join(' · ')
+                    : '—'
+            );
+        } catch (e) {
+            console.warn('DeviceSale KPIs', e);
+        }
+    }
+
+    async function loadBadDebtKpis() {
+        try {
+            const res = await AxiosManager.get('/Telecom/GetBadDebtKpis', {});
+            const c = res?.data?.content ?? res?.data?.Content ?? {};
+            const set = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = v ?? '—';
+            };
+            set('bdrKpiTotal', pick(c, 'totalToday', 'TotalToday'));
+            set('bdrKpiCompleted', pick(c, 'completedToday', 'CompletedToday'));
+            set('bdrKpiFailed', pick(c, 'failedToday', 'FailedToday'));
+            set('bdrKpiPending', pick(c, 'pendingBackOffice', 'PendingBackOffice'));
+            const col = pick(c, 'collectedAmountToday', 'CollectedAmountToday');
+            const wo = pick(c, 'writeOffAmountToday', 'WriteOffAmountToday');
+            set('bdrKpiCollected', col != null && col !== '' ? `${col} ل.س` : '—');
+            set('bdrKpiWriteOff', wo != null && wo !== '' ? `${wo} ل.س` : '—');
+            set('bdrKpiPlans', pick(c, 'paymentPlansToday', 'PaymentPlansToday'));
+            set('bdrKpiFailRate', `${pick(c, 'failureRatePercent', 'FailureRatePercent') ?? 0}%`);
+        } catch (e) {
+            console.warn('BadDebt KPIs', e);
+        }
+    }
+
     async function loadRefundKpis() {
         try {
             const res = await AxiosManager.get('/Telecom/GetRefundKpis', {});
@@ -1201,6 +1252,8 @@
             loadOfferSubscriptionKpis();
             loadTerminationKpis();
             loadRefundKpis();
+            loadDeviceSaleKpis();
+            loadBadDebtKpis();
             loadSuspensionKpis();
             loadReconnectKpis();
             loadSimSwapKpis();

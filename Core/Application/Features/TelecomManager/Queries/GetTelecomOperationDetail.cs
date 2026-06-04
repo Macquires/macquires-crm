@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Telecom;
 using Application.Common.Telecom.Reconnect;
+using Application.Common.Telecom.BadDebt;
 using Application.Common.Telecom.Suspension;
 using Domain.Entities;
 using Domain.Enums;
@@ -72,6 +73,15 @@ public record GetTelecomOperationDetailDto
     public string? SourceSuspensionTypeLabelAr { get; init; }
     public bool FraudClearanceConfirmed { get; init; }
     public string? FraudClearanceByUserId { get; init; }
+    public string? CollectionAction { get; init; }
+    public string? CollectionActionLabelAr { get; init; }
+    public string? DunningStage { get; init; }
+    public decimal? OutstandingBalanceSnapshot { get; init; }
+    public decimal? CollectedAmount { get; init; }
+    public decimal? WriteOffAmount { get; init; }
+    public string? AgencyReference { get; init; }
+    public string? CollectionSettlementStatus { get; init; }
+    public string? CollectionNote { get; init; }
 }
 
 public record TelecomOperationAuditTrailItemDto(
@@ -192,6 +202,15 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 SourceSuspensionTypeLabelAr = SuspensionTypeLabelAr(sourceSuspensionType),
                 FraudClearanceConfirmed = op.FraudClearanceConfirmed,
                 FraudClearanceByUserId = op.FraudClearanceByUserId,
+                CollectionAction = op.CollectionAction,
+                CollectionActionLabelAr = CollectionActionLabelAr(op.CollectionAction),
+                DunningStage = op.DunningStage,
+                OutstandingBalanceSnapshot = op.OutstandingBalanceSnapshot,
+                CollectedAmount = op.CollectedAmount,
+                WriteOffAmount = op.WriteOffAmount,
+                AgencyReference = op.AgencyReference,
+                CollectionSettlementStatus = op.CollectionSettlementStatus,
+                CollectionNote = op.CollectionNote,
                 AuditTrail = op.AuditLogs
                     .OrderBy(a => a.OccurredAtUtc)
                     .Select(a => new TelecomOperationAuditTrailItemDto(
@@ -336,6 +355,46 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
         }
 
         return "طلب عميل";
+    }
+
+    private static string? CollectionActionLabelAr(string? action)
+    {
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            return null;
+        }
+
+        if (string.Equals(action, BadDebtWellKnown.PaymentRecorded, StringComparison.OrdinalIgnoreCase))
+        {
+            return "تسجيل دفعة تحصيل";
+        }
+
+        if (string.Equals(action, BadDebtWellKnown.PaymentPlan, StringComparison.OrdinalIgnoreCase))
+        {
+            return "خطة سداد";
+        }
+
+        if (string.Equals(action, BadDebtWellKnown.DunningEscalation, StringComparison.OrdinalIgnoreCase))
+        {
+            return "تصعيد تذكير";
+        }
+
+        if (string.Equals(action, BadDebtWellKnown.AgencyReferral, StringComparison.OrdinalIgnoreCase))
+        {
+            return "إحالة وكالة";
+        }
+
+        if (string.Equals(action, BadDebtWellKnown.WriteOffPartial, StringComparison.OrdinalIgnoreCase))
+        {
+            return "شطب جزئي";
+        }
+
+        if (string.Equals(action, BadDebtWellKnown.WriteOffFull, StringComparison.OrdinalIgnoreCase))
+        {
+            return "شطب كامل";
+        }
+
+        return action;
     }
 
     private static string? DepositPolicyLabelAr(DepositTransferPolicy? policy) => policy switch

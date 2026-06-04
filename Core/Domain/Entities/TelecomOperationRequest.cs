@@ -232,5 +232,30 @@ public class TelecomOperationRequest : BaseEntity
 
     public bool RequiresDualApproval { get; set; }
 
+    /// <summary>§16 BDR — PaymentRecorded, PaymentPlan, DunningEscalation, AgencyReferral, WriteOffPartial, WriteOffFull.</summary>
+    public string? CollectionAction { get; set; }
+
+    /// <summary>§16 — Reminder1, Reminder2, SoftBar, HardBar, Agency, WriteOffPending, Settled.</summary>
+    public string? DunningStage { get; set; }
+
+    public string? PriorDunningStage { get; set; }
+
+    public decimal? OutstandingBalanceSnapshot { get; set; }
+
+    public decimal? CollectedAmount { get; set; }
+
+    public decimal? WriteOffAmount { get; set; }
+
+    public string? AgencyReference { get; set; }
+
+    public int? PaymentPlanMonths { get; set; }
+
+    public DateTime? NextDunningDueUtc { get; set; }
+
+    public string? CollectionNote { get; set; }
+
+    /// <summary>§16 — Pending, Completed, Failed (CBS settlement).</summary>
+    public string? CollectionSettlementStatus { get; set; }
+
     public ICollection<TelecomOperationAuditLog> AuditLogs { get; set; } = new List<TelecomOperationAuditLog>();
 }

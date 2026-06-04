@@ -192,4 +192,64 @@ public sealed class TechnicalTicketQueueIngestionService : ITechnicalTicketQueue
         await _unitOfWork.SaveAsync(cancellationToken);
         return entity;
     }
+
+    public async Task<TelecomTechnicalTicket?> EnqueueDeviceInstallmentCollectionsAsync(
+        TelecomOperationRequest operation,
+        string contractNumber,
+        string message,
+        CancellationToken cancellationToken = default)
+    {
+        var msisdn = await ResolveMsisdnAsync(operation, cancellationToken);
+        if (string.IsNullOrEmpty(msisdn))
+        {
+            return null;
+        }
+
+        var payloadKey = operation.Id;
+        var openExists = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
+            .AnyAsync(
+                t => (t.Status == TechnicalTicketStatus.Open || t.Status == TechnicalTicketStatus.InProgress)
+                     && t.TicketCategory == TechnicalTicketCategory.Collections
+                     && t.PayloadJson != null
+                     && t.PayloadJson.Contains(payloadKey),
+                cancellationToken);
+        if (openExists)
+        {
+            return null;
+        }
+
+        var customerId = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
+            .Where(p => p.Id == operation.SubscriberProfileId)
+            .Select(p => p.CustomerId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            telecomOperationRequestId = operation.Id,
+            contractNumber,
+            delinquency = true,
+            message,
+        });
+
+        var entity = new TelecomTechnicalTicket
+        {
+            CreatedById = "system-collections",
+            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            Msisdn = msisdn,
+            CustomerId = customerId,
+            SubscriberProfileId = operation.SubscriberProfileId,
+            TicketCategory = TechnicalTicketCategory.Collections,
+            IssueType = TechnicalTicketIssueType.Billing,
+            Priority = TechnicalTicketPriority.High,
+            Status = TechnicalTicketStatus.Open,
+            Notes = $"تحصيل تقسيط جهاز — عقد {contractNumber} | {message}",
+            PayloadJson = payload,
+            OpenedByUserId = "system-collections",
+            CreatedByChannel = TechnicalTicketCreatedByChannel.ShowroomAgent,
+        };
+
+        await _ticketRepository.CreateAsync(entity, cancellationToken);
+        await _unitOfWork.SaveAsync(cancellationToken);
+        return entity;
+    }
 }

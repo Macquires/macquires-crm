@@ -303,9 +303,9 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
     {
         await Task.Delay(500, cancellationToken);
 
-        if (msisdn == "0931112223")
+        if (msisdn == "0931112223" || msisdn == "0939000002")
         {
-            return -50m;
+            return -15_000m;
         }
 
         if (msisdn?.EndsWith("9") == true)
@@ -340,6 +340,7 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             TelecomOperationKind.Migration => TelecomBssOperations.CbsChangePrimaryOffer,
             TelecomOperationKind.TemporarySuspension => TelecomBssOperations.CbsBarSubscriber,
             TelecomOperationKind.Reconnect => TelecomBssOperations.CbsUnbarSubscriber,
+            TelecomOperationKind.BadDebtRecovery => request.ProductServiceCode ?? TelecomBssOperations.CbsPostCollectionPayment,
             _ => $"CbsProvision_{request.Kind}",
         };
 
@@ -393,6 +394,13 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         if (request.Kind == TelecomOperationKind.Reconnect)
         {
             return $"{TelecomBssOperations.CbsUnbarSubscriber} MSISDN={request.Msisdn} (attempt {attempt})";
+        }
+
+        if (request.Kind == TelecomOperationKind.BadDebtRecovery)
+        {
+            var op = request.ProductServiceCode ?? TelecomBssOperations.CbsPostCollectionPayment;
+            var amt = request.InitialDeposit.HasValue ? $" amount={request.InitialDeposit.Value:0.##}" : string.Empty;
+            return $"{op} MSISDN={request.Msisdn}{amt} (attempt {attempt})";
         }
 
         if (request.Kind != TelecomOperationKind.NewActivation)
