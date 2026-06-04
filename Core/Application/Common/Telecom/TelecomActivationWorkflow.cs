@@ -306,6 +306,15 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
                 return Fail(entity, "رقم الخط غير محدد في طلب إعادة التفعيل.");
             }
 
+            if (string.Equals(entity.ApprovalLevelRequired, "BackOffice", StringComparison.OrdinalIgnoreCase)
+                && !entity.FraudClearanceConfirmed
+                && !string.IsNullOrWhiteSpace(actorUserId))
+            {
+                entity.FraudClearanceConfirmed = true;
+                entity.FraudClearanceByUserId = actorUserId;
+                _operationRepository.Update(entity);
+            }
+
             var reconnectCheck = await _reconnectEligibility.ValidateForConfirmAsync(entity, cancellationToken);
             if (!reconnectCheck.Allowed)
             {

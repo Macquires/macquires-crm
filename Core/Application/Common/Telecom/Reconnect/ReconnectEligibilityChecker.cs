@@ -62,65 +62,9 @@ public sealed class ReconnectEligibilityChecker : IReconnectEligibilityChecker
             .FirstOrDefaultAsync(p => p.Id == profileId, cancellationToken)
             ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
 
-        if (profile.OperationalStatus == SubscriberOperationalStatus.Terminated)
-        {
-            return Deny(
-                "VAL-09-05: الخط ملغي نهائياً — يرجى استخدام مسار تفعيل خط جديد.",
-                profile.CustomerId,
-                null,
-                assetId,
-                null,
-                false,
-                "RequiresNewActivation");
-        }
-
-        if (profile.Customer?.Status == CustomerStatus.Blacklisted)
-        {
-            return Deny(
-                "VAL-09-01: إعادة التفعيل مرفوضة — العميل على القائمة السوداء.",
-                profile.CustomerId,
-                null,
-                assetId,
-                null,
-                false,
-                "Blacklisted");
-        }
-
-        if (profile.OperationalStatus == SubscriberOperationalStatus.Active)
-        {
-            return Deny("VAL-09-01: الخط نشط مسبقاً.", profile.CustomerId, null, assetId, null, false, "AlreadyActive");
-        }
-
-        if (profile.OperationalStatus is not (
-            SubscriberOperationalStatus.Suspended
-            or SubscriberOperationalStatus.SuspendedInbound
-            or SubscriberOperationalStatus.SuspendedOutbound))
-        {
-            return Deny(
-                $"VAL-09-01: لا يمكن إعادة التفعيل — حالة المشترك {profile.OperationalStatus}.",
-                profile.CustomerId,
-                null,
-                assetId,
-                null,
-                false,
-                "NotSuspended");
-        }
-
         var asset = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
             .FirstOrDefaultAsync(m => m.Id == assetId, cancellationToken)
             ?? throw new BusinessRuleViolationException("رقم الخط غير موجود.");
-
-        if (asset.PoolStatus != MsisdnPoolStatus.Suspended)
-        {
-            return Deny(
-                $"VAL-09-01: حالة الرقم {asset.PoolStatus} — يتوقع Suspended.",
-                profile.CustomerId,
-                asset.Msisdn,
-                assetId,
-                null,
-                false,
-                "MsisdnNotSuspended");
-        }
 
         var sourceOpId = await ResolveSourceSuspensionOperationIdAsync(
             assetId,
@@ -134,67 +78,45 @@ public sealed class ReconnectEligibilityChecker : IReconnectEligibilityChecker
                 .Select(o => o.SuspensionType)
                 .FirstOrDefaultAsync(cancellationToken);
 
-        if (string.Equals(lastSuspensionType, SuspensionWellKnown.Billing, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(clearance, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase))
+        var outstandingBalance = 0m;
+        if (!string.IsNullOrEmpty(asset.Msisdn))
         {
-            if (string.IsNullOrWhiteSpace(paymentReference))
-            {
-                return Deny(
-                    "VAL-09-02: مرجع الدفع مطلوب لتسوية حظر الفواتير.",
-                    profile.CustomerId,
-                    asset.Msisdn,
-                    assetId,
-                    sourceOpId,
-                    false,
-                    "PaymentReferenceRequired");
-            }
-
-            if (!string.IsNullOrEmpty(asset.Msisdn))
-            {
-                var balance = await _billing.GetOutstandingBalanceAsync(asset.Msisdn, cancellationToken);
-                if (balance < 0)
-                {
-                    return Deny(
-                        $"VAL-09-02: ذمم مالية بقيمة {-balance:N0} ل.س — يجب التسوية قبل إعادة التفعيل.",
-                        profile.CustomerId,
-                        asset.Msisdn,
-                        assetId,
-                        sourceOpId,
-                        false,
-                        "OutstandingDebt");
-                }
-            }
+            outstandingBalance = await _billing.GetOutstandingBalanceAsync(asset.Msisdn, cancellationToken);
         }
 
-        var requiresBo = string.Equals(lastSuspensionType, SuspensionWellKnown.Fraud, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(clearance, ReconnectWellKnown.Fraud, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(lastSuspensionType, SuspensionWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase);
+        var matrix = ReconnectEligibilityMatrix.Evaluate(new ReconnectEligibilityMatrixInput(
+            profile.OperationalStatus,
+            profile.Customer?.Status,
+            asset.PoolStatus,
+            lastSuspensionType,
+            clearance,
+            !string.IsNullOrWhiteSpace(paymentReference),
+            outstandingBalance,
+            fraudClearanceConfirmed));
 
-        if (requiresBo && !fraudClearanceConfirmed)
+        if (!matrix.Allowed)
         {
             return Deny(
-                "VAL-09-03: إزالة حظر الاحتيال/التنظيمي تتطلب اعتماد الباك أوفيس وتأكيد التسوية.",
+                matrix.MessageAr,
                 profile.CustomerId,
                 asset.Msisdn,
                 assetId,
                 sourceOpId,
-                true,
-                "FraudClearanceRequired");
+                matrix.RequiresBackOfficeApproval,
+                matrix.ValidationCode);
         }
 
         await EnsureNoBlockingOperationAsync(assetId, excludeOperationId, cancellationToken);
 
         return new ReconnectEligibilityResult(
             true,
-            requiresBo
-                ? "إعادة التفعيل مسموحة — بانتظار اعتماد الباك أوفيس."
-                : "إعادة التفعيل مسموحة.",
+            matrix.MessageAr,
             profile.CustomerId,
             asset.Msisdn,
             assetId,
             sourceOpId,
-            requiresBo,
-            requiresBo ? "BackOfficePending" : "Allowed");
+            matrix.RequiresBackOfficeApproval,
+            matrix.ValidationCode);
     }
 
     public async Task<ReconnectEligibilityResult> ValidateForConfirmAsync(

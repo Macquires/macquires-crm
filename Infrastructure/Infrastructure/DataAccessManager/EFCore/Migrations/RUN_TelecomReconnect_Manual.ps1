@@ -9,7 +9,8 @@ $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $scripts = @(
     "TelecomReconnectFields_Manual.sql",
-    "TelecomReconnectPermissions_Manual.sql"
+    "TelecomReconnectPermissions_Manual.sql",
+    "TelecomReconnect_HeroDemoPatch_Manual.sql"
 )
 
 foreach ($name in $scripts) {

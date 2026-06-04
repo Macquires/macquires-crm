@@ -508,6 +508,11 @@
                         <i class="bi bi-phone-vibrate c360-action-icon" style="color:var(--sys-brand-red)"></i>
                         <span class="small fw-semibold d-block">إنهاء خط TRM</span>
                     </button>
+                    <button v-if="selectedLineSuspended" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.reconnect }" :disabled="!can.reconnect || state.isProvisioningInFlight" @@click="openReconnectHub">
+                        <i class="bi bi-arrow-repeat c360-action-icon" style="color:var(--sys-brand-red)"></i>
+                        <span class="small fw-semibold d-block">إعادة تفعيل RCN</span>
+                        <span class="text-muted" style="font-size:0.7rem;">خط موقوف — معرض</span>
+                    </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.network }" :disabled="!can.network || state.isProvisioningInFlight" @@click="openProvisioningWizard('activate')">
                         <i class="bi bi-reception-4 c360-action-icon" style="color:var(--sys-text-muted)"></i>
                         <span class="small fw-semibold d-block">تفعيل خط جديد</span>

@@ -776,6 +776,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             if (suspensionEligibility.RequiresBackOfficeApproval)
             {
                 entity.ApprovalLevelRequired = "BackOffice";
+                entity.Status = TelecomOperationStatus.PendingDocuments;
             }
 
             entity.Notes = AppendSuspensionAudit(entity.Notes, suspensionEligibility);
@@ -836,6 +837,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             if (reconnectEligibility.RequiresBackOfficeApproval)
             {
                 entity.ApprovalLevelRequired = "BackOffice";
+                entity.Status = TelecomOperationStatus.PendingDocuments;
             }
 
             entity.Notes = AppendReconnectAudit(entity.Notes, reconnectEligibility);

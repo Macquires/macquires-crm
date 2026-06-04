@@ -183,6 +183,8 @@
       "approveSimSwap": "اعتماد SIM Swap",
       "approveChangeNumber": "اعتماد تغيير رقم CNR",
       "approveTermination": "اعتماد إنهاء TRM",
+      "approveSuspension": "اعتماد حظر SUS",
+      "approveReconnect": "اعتماد إعادة تفعيل RCN",
       "approveRefund": "اعتماد استرداد RFD",
       "approveSecureOp": "مراجعة واعتماد",
       "thNumber": "الرقم",
@@ -639,7 +641,27 @@
       "reconnectReason": "سبب إعادة التفعيل",
       "paymentReference": "مرجع الدفع",
       "fraudClearance": "تأكيد تسوية الاحتيال (مشرف)",
-      "boHint": "VAL-09-03: يتطلب اعتماد الباك أوفيس."
+      "boHint": "VAL-09-03: يتطلب اعتماد الباك أوفيس.",
+      "matrixTitle": "مصفوفة الأهلية (§9)",
+      "matrixLoading": "جاري فحص الأهلية…",
+      "matrixAllowed": "مسموح — معرض",
+      "matrixBo": "يتطلب اعتماد باك أوفيس",
+      "matrixDenied": "مرفوض",
+      "lastSuspension": "آخر حظر",
+      "matrixCode": "رمز التحقق"
+    },
+    "reconnectModal": {
+      "title": "اعتماد إعادة تفعيل (RCN)",
+      "approve": "اعتماد وتفعيل الخط",
+      "clearance": "نوع التسوية",
+      "reason": "سبب إعادة التفعيل",
+      "sourceSuspension": "حظر سابق"
+    },
+    "suspensionModal": {
+      "title": "اعتماد حظر خط (SUS)",
+      "approve": "اعتماد وتنفيذ الحظر",
+      "type": "نوع الحظر",
+      "reason": "سبب الحظر"
     },
     "refundModal": {
       "title": "اعتماد استرداد مالي (RFD)",

@@ -206,4 +206,6 @@ public static class TelecomDemoMsisdn
 {
     public const string Hero = "0939000001";
     public const string DebtSubscriber = "0939000002";
+    /// <summary>Secondary hero line — suspended (Fraud) for RCN §9 demo.</summary>
+    public const string ReconnectFraudDemo = "0939000091";
 }

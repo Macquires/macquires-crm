@@ -409,6 +409,38 @@ public class TelecomController : BaseApiController
     }
 
     [Authorize]
+    [HttpGet("GetReconnectEligibility")]
+    public async Task<ActionResult<ApiSuccessResult<GetReconnectEligibilityResult>>> GetReconnectEligibilityAsync(
+        [FromQuery] string subscriberProfileId,
+        [FromQuery] string msisdnAssetId,
+        CancellationToken cancellationToken,
+        [FromQuery] string? reconnectReason = null,
+        [FromQuery] string? clearanceType = null,
+        [FromQuery] string? paymentReference = null,
+        [FromQuery] bool fraudClearanceConfirmed = false,
+        [FromQuery] string? sourceSuspensionOperationId = null)
+    {
+        var response = await _sender.Send(
+            new GetReconnectEligibilityRequest
+            {
+                SubscriberProfileId = subscriberProfileId,
+                MsisdnAssetId = msisdnAssetId,
+                ReconnectReason = reconnectReason,
+                ClearanceType = clearanceType,
+                PaymentReference = paymentReference,
+                FraudClearanceConfirmed = fraudClearanceConfirmed,
+                SourceSuspensionOperationId = sourceSuspensionOperationId,
+            },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetReconnectEligibilityResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetReconnectEligibilityAsync),
+            Content = response,
+        });
+    }
+
+    [Authorize]
     [HttpGet("GetReconnectKpis")]
     public async Task<ActionResult<ApiSuccessResult<GetReconnectKpisResult>>> GetReconnectKpisAsync(
         CancellationToken cancellationToken,

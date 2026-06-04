@@ -336,6 +336,8 @@ function createTelecomApp() {
                 state.wizard.rcnPaymentReference = '';
                 state.wizard.rcnFraudClearanceConfirmed = false;
                 state.wizard.rcnRequiresBackOffice = false;
+                state.wizard.rcnEligibilityBusy = false;
+                state.wizard.rcnEligibility = null;
                 state.wizard.rfdRefundType = 'Deposit';
                 state.wizard.rfdRefundMethod = 'CreditNote';
                 state.wizard.rfdRefundAmount = '';
@@ -492,6 +494,8 @@ function createTelecomApp() {
                 if (Number(o?.kind) === 3) return t('telecom.ops.approveSimSwap');
                 if (Number(o?.kind) === 5) return t('telecom.ops.approveChangeNumber');
                 if (Number(o?.kind) === 7) return t('telecom.ops.approveTermination');
+                if (Number(o?.kind) === 8) return t('telecom.ops.approveSuspension');
+                if (Number(o?.kind) === 9) return t('telecom.ops.approveReconnect');
                 if (Number(o?.kind) === 11) return t('telecom.ops.approveRefund');
                 return t('telecom.ops.approveTakeOver');
             };
@@ -513,6 +517,12 @@ function createTelecomApp() {
                 if (k === 7) {
                     return hubPermissions.value.canApproveTermination;
                 }
+                if (k === 8) {
+                    return hubPermissions.value.canApproveSuspension;
+                }
+                if (k === 9) {
+                    return hubPermissions.value.canApproveReconnect;
+                }
                 if (k === 11) {
                     return hubPermissions.value.canApproveRefund;
                 }
@@ -529,6 +539,12 @@ function createTelecomApp() {
                 if (Number(state.takeOverApproval.kind) === 7) {
                     return t('telecom.terminationModal.title');
                 }
+                if (Number(state.takeOverApproval.kind) === 8) {
+                    return t('telecom.suspensionModal.title');
+                }
+                if (Number(state.takeOverApproval.kind) === 9) {
+                    return t('telecom.reconnectModal.title');
+                }
                 if (Number(state.takeOverApproval.kind) === 11) {
                     return t('telecom.refundModal.title');
                 }
@@ -544,6 +560,12 @@ function createTelecomApp() {
                 }
                 if (Number(state.takeOverApproval.kind) === 7) {
                     return t('telecom.terminationModal.approve');
+                }
+                if (Number(state.takeOverApproval.kind) === 8) {
+                    return t('telecom.suspensionModal.approve');
+                }
+                if (Number(state.takeOverApproval.kind) === 9) {
+                    return t('telecom.reconnectModal.approve');
                 }
                 if (Number(state.takeOverApproval.kind) === 11) {
                     return t('telecom.refundModal.approve');
@@ -1091,6 +1113,46 @@ function createTelecomApp() {
                 if (state.wizard.kind === 'changeGsm') {
                     loadChangeGsmEligibleTargets();
                 }
+                if (state.wizard.kind === 'reconnect') {
+                    loadReconnectEligibility();
+                }
+            };
+
+            const loadReconnectEligibility = async () => {
+                const pid = (state.wizard.primarySubscriberProfileId || '').trim();
+                const assetId = (state.wizard.primaryMsisdnAssetId || '').trim();
+                if (!pid || !assetId) {
+                    state.wizard.rcnEligibility = null;
+                    return;
+                }
+                state.wizard.rcnEligibilityBusy = true;
+                try {
+                    const qs = new URLSearchParams({
+                        subscriberProfileId: pid,
+                        msisdnAssetId: assetId,
+                        reconnectReason: (state.wizard.rcnReconnectReason || 'CustomerRequest').trim(),
+                        clearanceType: (state.wizard.rcnClearanceType || 'Customer').trim(),
+                        fraudClearanceConfirmed: String(!!state.wizard.rcnFraudClearanceConfirmed),
+                    });
+                    const pay = (state.wizard.rcnPaymentReference || '').trim();
+                    if (pay) qs.set('paymentReference', pay);
+                    const res = await AxiosManager.get('/Telecom/GetReconnectEligibility?' + qs.toString(), {});
+                    const d = res?.data?.content?.data ?? res?.data?.content?.Data ?? null;
+                    state.wizard.rcnEligibility = d;
+                    if (d) {
+                        state.wizard.rcnRequiresBackOffice =
+                            !!d.requiresBackOfficeApproval || !!d.RequiresBackOfficeApproval;
+                    }
+                } catch (e) {
+                    state.wizard.rcnEligibility = null;
+                    console.warn('Reconnect eligibility', e);
+                } finally {
+                    state.wizard.rcnEligibilityBusy = false;
+                }
+            };
+
+            const onRcnClearanceChange = () => {
+                loadReconnectEligibility();
             };
 
             const clearWizardPrimary = () => {
@@ -1260,7 +1322,7 @@ function createTelecomApp() {
             const wizardSubmitBusy = Vue.computed(() => state.wizard.submitBusy);
             const wizardUploadBusy = Vue.computed(() => state.wizard.uploadBusy);
 
-            const validateWizardBeforeCreateDraft = () => {
+            const validateWizardBeforeCreateDraft = async () => {
                 if (!(state.wizard.primarySubscriberProfileId || '').trim()) {
                     if (window.Swal) {
                         Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: t('telecom.swal.incompleteText') });
@@ -1369,7 +1431,12 @@ function createTelecomApp() {
                         if (window.Swal) Swal.fire({ icon: 'warning', title: t('telecom.swal.incompleteTitle'), text: t('telecom.reconnect.paymentReference') });
                         return false;
                     }
-                    state.wizard.rcnRequiresBackOffice = state.wizard.rcnClearanceType === 'Fraud';
+                    await loadReconnectEligibility();
+                    if (state.wizard.rcnEligibility && !state.wizard.rcnEligibility.allowed && !state.wizard.rcnEligibility.Allowed) {
+                        const msg = state.wizard.rcnEligibility.messageAr || state.wizard.rcnEligibility.MessageAr || '';
+                        if (window.Swal) Swal.fire({ icon: 'error', title: t('telecom.swal.notAllowedTitle'), text: msg });
+                        return false;
+                    }
                 }
 
                 if (state.wizard.kind === 'termination') {
@@ -1475,9 +1542,9 @@ function createTelecomApp() {
                 return true;
             };
 
-            const wizardStepNext = () => {
+            const wizardStepNext = async () => {
                 if (state.wizard.step === 1) {
-                    if (!validateWizardBeforeCreateDraft()) return;
+                    if (!(await validateWizardBeforeCreateDraft())) return;
                     state.wizard.step = 2;
                     return;
                 }
@@ -1577,7 +1644,7 @@ function createTelecomApp() {
             };
 
             const submitCreateOperation = async () => {
-                if (!validateWizardBeforeCreateDraft()) return;
+                if (!(await validateWizardBeforeCreateDraft())) return;
                 if (state.wizard.kind === 'addpackage') {
                     await submitVasFromHub();
                     return;
@@ -2380,6 +2447,21 @@ function createTelecomApp() {
                             state.wizard.migrationTargetProductId = prodParam;
                             state.preloadedProductId = prodParam;
                         }
+                        const deepProfile = params.get('subscriberProfileId');
+                        const deepAsset = params.get('msisdnAssetId');
+                        const deepMsisdn = params.get('msisdn');
+                        const deepCustomer = params.get('customerId');
+                        if (deepProfile && deepAsset) {
+                            state.wizard.primarySubscriberProfileId = deepProfile;
+                            state.wizard.primaryMsisdnAssetId = deepAsset;
+                            state.wizard.customerId = deepCustomer || state.wizard.customerId || '';
+                            state.wizard.primaryLabel = deepMsisdn
+                                ? `${deepMsisdn} (Msisdn)`
+                                : state.wizard.primaryLabel;
+                            if (wizParam === 'reconnect') {
+                                await loadReconnectEligibility();
+                            }
+                        }
                     }
 
                     if (params.get('entry') === 'subscriber') {
@@ -2477,6 +2559,8 @@ function createTelecomApp() {
                 isTerminationBoPending,
                 onTerminationTypeChange,
                 onRefundTypeChange,
+                loadReconnectEligibility,
+                onRcnClearanceChange,
                 loadChangeNumberPool,
                 onChangeNumberTargetPicked,
                 secureOpApproveLabel,

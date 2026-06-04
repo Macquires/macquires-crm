@@ -1,6 +1,8 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Telecom;
+using Application.Common.Telecom.Reconnect;
+using Application.Common.Telecom.Suspension;
 using Domain.Entities;
 using Domain.Enums;
 using MediatR;
@@ -60,6 +62,16 @@ public record GetTelecomOperationDetailDto
     public decimal? FinalBillAmount { get; init; }
     public string? RetentionOfferOutcome { get; init; }
     public string? DeprovisionStatus { get; init; }
+    public string? SuspensionType { get; init; }
+    public string? SuspensionReason { get; init; }
+    public string? ReconnectReason { get; init; }
+    public string? ClearanceType { get; init; }
+    public string? ClearanceTypeLabelAr { get; init; }
+    public string? SourceSuspensionOperationId { get; init; }
+    public string? SourceSuspensionType { get; init; }
+    public string? SourceSuspensionTypeLabelAr { get; init; }
+    public bool FraudClearanceConfirmed { get; init; }
+    public string? FraudClearanceByUserId { get; init; }
 }
 
 public record TelecomOperationAuditTrailItemDto(
@@ -113,6 +125,9 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
         var priorSimIccid = await ResolveSimIccidAsync(_context, op.PriorSimInventoryId, cancellationToken);
         var priorMsisdn = await ResolveMsisdnAsync(_context, op.PriorMsisdnAssetId ?? op.MsisdnAssetId, cancellationToken);
         var targetMsisdn = await ResolveMsisdnAsync(_context, op.TargetMsisdnAssetId, cancellationToken);
+        var sourceSuspensionType = await ResolveSourceSuspensionTypeAsync(
+            op.SourceSuspensionOperationId,
+            cancellationToken);
 
         return new GetTelecomOperationDetailResult
         {
@@ -167,6 +182,16 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 FinalBillAmount = op.FinalBillAmount,
                 RetentionOfferOutcome = op.RetentionOfferOutcome,
                 DeprovisionStatus = op.DeprovisionStatus,
+                SuspensionType = op.SuspensionType,
+                SuspensionReason = op.SuspensionReason,
+                ReconnectReason = op.ReconnectReason,
+                ClearanceType = op.ClearanceType,
+                ClearanceTypeLabelAr = ClearanceTypeLabelAr(op.ClearanceType),
+                SourceSuspensionOperationId = op.SourceSuspensionOperationId,
+                SourceSuspensionType = sourceSuspensionType,
+                SourceSuspensionTypeLabelAr = SuspensionTypeLabelAr(sourceSuspensionType),
+                FraudClearanceConfirmed = op.FraudClearanceConfirmed,
+                FraudClearanceByUserId = op.FraudClearanceByUserId,
                 AuditTrail = op.AuditLogs
                     .OrderBy(a => a.OccurredAtUtc)
                     .Select(a => new TelecomOperationAuditTrailItemDto(
@@ -236,6 +261,81 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
             .Where(s => !s.IsDeleted && s.Id == simInventoryId)
             .Select(s => s.Iccid)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<string?> ResolveSourceSuspensionTypeAsync(
+        string? sourceSuspensionOperationId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(sourceSuspensionOperationId))
+        {
+            return null;
+        }
+
+        return await _context.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .Where(o => o.Id == sourceSuspensionOperationId)
+            .Select(o => o.SuspensionType)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static string? ClearanceTypeLabelAr(string? clearanceType)
+    {
+        if (string.IsNullOrWhiteSpace(clearanceType))
+        {
+            return null;
+        }
+
+        if (string.Equals(clearanceType, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase))
+        {
+            return "تسوية مالية";
+        }
+
+        if (string.Equals(clearanceType, ReconnectWellKnown.Fraud, StringComparison.OrdinalIgnoreCase))
+        {
+            return "إزالة حظر احتيال";
+        }
+
+        if (string.Equals(clearanceType, ReconnectWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase))
+        {
+            return "تنظيمي";
+        }
+
+        if (string.Equals(clearanceType, ReconnectWellKnown.Operational, StringComparison.OrdinalIgnoreCase))
+        {
+            return "تشغيلي";
+        }
+
+        return "طلب عميل";
+    }
+
+    private static string? SuspensionTypeLabelAr(string? suspensionType)
+    {
+        if (string.IsNullOrWhiteSpace(suspensionType))
+        {
+            return null;
+        }
+
+        if (string.Equals(suspensionType, SuspensionWellKnown.Billing, StringComparison.OrdinalIgnoreCase))
+        {
+            return "حظر فواتير";
+        }
+
+        if (string.Equals(suspensionType, SuspensionWellKnown.Fraud, StringComparison.OrdinalIgnoreCase))
+        {
+            return "حظر احتيال";
+        }
+
+        if (string.Equals(suspensionType, SuspensionWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase))
+        {
+            return "حظر تنظيمي";
+        }
+
+        if (string.Equals(suspensionType, SuspensionWellKnown.Operational, StringComparison.OrdinalIgnoreCase))
+        {
+            return "حظر تشغيلي";
+        }
+
+        return "طلب عميل";
     }
 
     private static string? DepositPolicyLabelAr(DepositTransferPolicy? policy) => policy switch

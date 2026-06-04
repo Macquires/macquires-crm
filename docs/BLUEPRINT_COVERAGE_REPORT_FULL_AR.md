@@ -438,27 +438,35 @@
 
 ## B.13 — إعادة تفعيل الخط المحظور (Reconnect / Reactivation)
 
-**نسبة التغطية: 20%** | **الحالة: جزئي ضعيف**
+**نسبة التغطية: 75%** | **الحالة: مكتمل تشغيلياً (Full-Stack §9)**
 
-### 1) الوضع الحالي
+### 1) الوضع الحالي (Evidence)
 
-- `SubscriberProfile.Activate()` domain method
-- Blueprint Reconnect matrix — **غير مُنفَّذ كعملية**
-- **لا** UI «إعادة تفعيل»
+| مسار | دليل |
+|------|------|
+| Matrix + VAL-09 | `ReconnectEligibilityMatrix.cs`, `ReconnectEligibilityChecker.cs` |
+| API Pre-check | `GET /Telecom/GetReconnectEligibility` |
+| Create → BO Queue | `PendingDocuments` عند `RequiresBackOfficeApproval` في `CreateTelecomOperationRequest` |
+| Confirm + Fraud Audit | `FraudClearanceConfirmed` في `TelecomActivationWorkflow` |
+| CBS/HLR | `ApplyReconnectAsync`, `CbsUnbarSubscriber`, compensator |
+| Hub + BO Modal | `TelecomHub.cshtml(.js)`, `canApproveSecureOp` لـ kind 8/9 |
+| Customer 360 | كرت RCN في `Customer360Profile` + deep-link للـ Hub |
+| Tests | `ReconnectEligibilityIntegrationTests.cs` |
+| Demo Seed | `EnsureHeroReconnectDemoAsync` (0939000091 Fraud، 0939000002 Billing) |
 
 ### 2) CBS / HLR
 
-- **لا** CBS unbar + HLR reactivate subscriber
+- CBS unbar + HLR reactivate عبر orchestrator (mock/production adapters)
 
-### 3) الفجوات
+### 3) متبقّي (~25%)
 
-- لا فحص paid balance قبل reconnect (matrix في Blueprint)
-- لا fraud clearance path
+- E2E Playwright لمسار الـ cinematic walkthrough
+- Production HTTP adapters (خارج نطاق الديمو)
 
 ### 4) Roadmap
 
-| **Quick Win** | `Reconnect` operation kind mirroring Suspension |
-| **Medium** | Decision matrix from Blueprint as validator rules |
+| **مكتمل** | `Reconnect` kind 9 + Matrix + BO queue + 360 |
+| **لاحقاً** | E2E automation + live CBS/HLR contracts |
 
 ---
 
@@ -564,7 +572,7 @@
 | 10 | VAS والعروض | 60% | جزئي قوي | Medium |
 | 11 | بيع الأجهزة | 5% | غائب | Long |
 | 12 | استرداد التأمينات | 15% | حد أدنى | Long |
-| 13 | إعادة التفعيل | 20% | جزئي ضعيف | Quick |
+| 13 | إعادة التفعيل | 75% | مكتمل §9 Full-Stack | Evidence |
 | 14 | الديون المعدومة | 10% | حد أدنى | Long |
 | 15 | تحديث بيانات العميل | 70% | جزئي قوي | Medium |
 | 16 | التقارير | 50% | جزئي قوي | Medium |
@@ -685,7 +693,7 @@ DB ✓ → CBS ✓ → HLR ✗ (hard fail)
 | 6 | Change GSM / Service Technology | 40% |
 | 7 | Transfer of Ownership | 68% |
 | 8 | Suspension & Barring | 25% |
-| 9 | Reconnect / Reactivation | 20% |
+| 9 | Reconnect / Reactivation | 75% |
 | 10 | Service Termination | ~75% |
 | 11 | Product Catalog & Subscription | ~78% |
 | 12 | Recharge, Voucher & Payment | 35% |

@@ -158,6 +158,9 @@
       "approveSimSwap": "Approve SIM swap",
       "approveChangeNumber": "Approve CNR change number",
       "approveTermination": "Approve TRM termination",
+      "approveSuspension": "Approve SUS suspension",
+      "approveReconnect": "Approve RCN reconnect",
+      "approveRefund": "Approve RFD refund",
       "approveSecureOp": "Review & approve",
       "thNumber": "#",
       "thKind": "Type",
@@ -581,6 +584,38 @@
       "identityRequired": "Document / admin decision",
       "pendingBackOffice": "Pending back-office approval.",
       "draftHint": "TRM draft — complete documents then confirm."
+    },
+    "reconnect": {
+      "currentMsisdn": "Suspended line",
+      "clearanceType": "Clearance type",
+      "clearanceCustomer": "Customer request",
+      "clearancePayment": "Payment settlement",
+      "clearanceFraud": "Fraud clearance",
+      "clearanceRegulatory": "Regulatory",
+      "reconnectReason": "Reconnect reason",
+      "paymentReference": "Payment reference",
+      "fraudClearance": "Fraud clearance confirmed (supervisor)",
+      "boHint": "VAL-09-03: Back-office approval required.",
+      "matrixTitle": "Eligibility matrix (§9)",
+      "matrixLoading": "Checking eligibility…",
+      "matrixAllowed": "Allowed — showroom",
+      "matrixBo": "Back-office approval required",
+      "matrixDenied": "Denied",
+      "lastSuspension": "Last suspension",
+      "matrixCode": "Validation code"
+    },
+    "reconnectModal": {
+      "title": "Approve reconnect (RCN)",
+      "approve": "Approve & reactivate line",
+      "clearance": "Clearance type",
+      "reason": "Reconnect reason",
+      "sourceSuspension": "Prior suspension"
+    },
+    "suspensionModal": {
+      "title": "Approve suspension (SUS)",
+      "approve": "Approve & suspend",
+      "type": "Suspension type",
+      "reason": "Reason"
     },
     "terminationModal": {
       "title": "Approve line termination (TRM)",

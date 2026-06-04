@@ -13,6 +13,7 @@ const PERM = {
     changeGsm: 'telecom.line.change_gsm',
     changeNumber: 'telecom.line.change_number_request',
     termination: 'telecom.line.termination_request',
+    reconnect: 'telecom.line.reconnect_request',
     network: 'telecom.network.hlrresync',
     networkLegacy: ['telecom.line.simswap_request', 'telecom.line.simswap', 'telecom.line.activate'],
     takeover: 'customer.update',
@@ -44,7 +45,6 @@ const wizardKindToApi = (k) => {
     if (k === 'changeNumber') return 5;
     if (k === 'termination') return 7;
     return 0;
-};
 };
 
 const ISSUE = { 0: 'شبكة', 1: 'فوترة', 2: 'حظر شريحة', 3: 'تفعيل' };
@@ -190,6 +190,10 @@ const Customer360ProfileApp = {
             changeGsm: StorageManager.hasAnyPermission(perms.value, [PERM.changeGsm]),
             changeNumber: StorageManager.hasAnyPermission(perms.value, [PERM.changeNumber]),
             termination: StorageManager.hasAnyPermission(perms.value, [PERM.termination]),
+            reconnect: StorageManager.hasAnyPermission(perms.value, [
+                PERM.reconnect,
+                'telecom.line.reconnect',
+            ]),
         }));
 
         const canRecharge = Vue.computed(() => {
@@ -238,6 +242,16 @@ const Customer360ProfileApp = {
                     (s) => `${s.subscriberProfileId}|${s.msisdn}|${s.msisdnAssetId}` === key
                 ) || allSubscriptions.value[0];
             return String(sub?.profileOperationalStatus || '').toLowerCase() === 'terminated';
+        });
+
+        const selectedLineSuspended = Vue.computed(() => {
+            const key = state.prov.selectedLineKey;
+            const sub =
+                allSubscriptions.value.find(
+                    (s) => `${s.subscriberProfileId}|${s.msisdn}|${s.msisdnAssetId}` === key
+                ) || allSubscriptions.value[0];
+            const st = String(sub?.profileOperationalStatus || '').toLowerCase();
+            return st === 'suspended' || st === 'suspendedinbound' || st === 'suspendedoutbound';
         });
 
         const lineOptions = Vue.computed(() => {
@@ -1217,6 +1231,28 @@ const Customer360ProfileApp = {
             }
         };
 
+        const openReconnectHub = () => {
+            if (!can.value.reconnect) {
+                Swal.fire({ icon: 'info', title: 'لا توجد صلاحية لإعادة التفعيل' });
+                return;
+            }
+            if (!requireLine()) return;
+            const line = parseSelectedLine();
+            if (!line?.subscriberProfileId || !line?.msisdnAssetId) {
+                Swal.fire({ icon: 'warning', title: 'اختر خطاً موقوفاً أولاً' });
+                return;
+            }
+            const cid = state.profile?.core?.id || state.profile?.core?.Id || '';
+            const qs = new URLSearchParams({
+                wizard: 'reconnect',
+                subscriberProfileId: line.subscriberProfileId,
+                msisdnAssetId: line.msisdnAssetId,
+                msisdn: line.msisdn || '',
+            });
+            if (cid) qs.set('customerId', cid);
+            window.location.href = '/Telecom/TelecomHub?' + qs.toString();
+        };
+
         const openProvisioningWizard = async (kind) => {
             const permMap = {
                 takeover: () => can.value.takeover,
@@ -1782,6 +1818,8 @@ const Customer360ProfileApp = {
             tabs: TABS,
             can,
             selectedLineTerminated,
+            selectedLineSuspended,
+            openReconnectHub,
             onTerminationTypeChange,
             canRecharge,
             formatDt,

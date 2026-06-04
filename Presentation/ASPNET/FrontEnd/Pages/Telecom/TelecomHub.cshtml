@@ -393,7 +393,7 @@
                                 <div class="col-12" v-if="wizard.kind === 'reconnect'">
                                     <p class="small text-muted mb-2">{{ t('telecom.reconnect.currentMsisdn') }}: <strong class="font-monospace" dir="ltr">{{ wizard.primaryLabel }}</strong></p>
                                     <label class="form-label small">{{ t('telecom.reconnect.clearanceType') }} *</label>
-                                    <select class="form-select form-select-sm mb-2" v-model="wizard.rcnClearanceType">
+                                    <select class="form-select form-select-sm mb-2" v-model="wizard.rcnClearanceType" @@change="onRcnClearanceChange">
                                         <option value="Customer">{{ t('telecom.reconnect.clearanceCustomer') }}</option>
                                         <option value="Payment">{{ t('telecom.reconnect.clearancePayment') }}</option>
                                         <option value="Fraud">{{ t('telecom.reconnect.clearanceFraud') }}</option>
@@ -402,7 +402,16 @@
                                     <label class="form-label small">{{ t('telecom.reconnect.reconnectReason') }} *</label>
                                     <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnReconnectReason" />
                                     <label v-if="wizard.rcnClearanceType === 'Payment'" class="form-label small">{{ t('telecom.reconnect.paymentReference') }} *</label>
-                                    <input v-if="wizard.rcnClearanceType === 'Payment'" type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnPaymentReference" />
+                                    <input v-if="wizard.rcnClearanceType === 'Payment'" type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnPaymentReference" @@blur="onRcnClearanceChange" />
+                                    <div v-if="wizard.rcnEligibilityBusy" class="alert alert-light py-2 small mb-2">{{ t('telecom.reconnect.matrixLoading') }}</div>
+                                    <div v-else-if="wizard.rcnEligibility" class="alert py-2 small mb-2" :class="(wizard.rcnEligibility.allowed || wizard.rcnEligibility.Allowed) ? ((wizard.rcnEligibility.requiresBackOfficeApproval || wizard.rcnEligibility.RequiresBackOfficeApproval) ? 'alert-warning' : 'alert-success') : 'alert-danger'">
+                                        <strong>{{ t('telecom.reconnect.matrixTitle') }}:</strong>
+                                        {{ wizard.rcnEligibility.messageAr || wizard.rcnEligibility.MessageAr }}
+                                        <span v-if="wizard.rcnEligibility.lastSuspensionType || wizard.rcnEligibility.LastSuspensionType" class="d-block mt-1 text-muted">
+                                            {{ t('telecom.reconnect.lastSuspension') }}: {{ wizard.rcnEligibility.lastSuspensionType || wizard.rcnEligibility.LastSuspensionType }}
+                                        </span>
+                                        <span class="d-block mt-1 font-monospace text-muted">{{ wizard.rcnEligibility.validationCode || wizard.rcnEligibility.ValidationCode }}</span>
+                                    </div>
                                     <div v-if="wizard.rcnRequiresBackOffice" class="form-check mb-2">
                                         <input class="form-check-input" type="checkbox" id="rcnFraudClear" v-model="wizard.rcnFraudClearanceConfirmed" />
                                         <label class="form-check-label small" for="rcnFraudClear">{{ t('telecom.reconnect.fraudClearance') }}</label>
@@ -690,6 +699,34 @@
                                         <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.newOwner') }}</p>
                                         <p class="mb-0 fw-semibold text-success">{{ takeOverApproval.detail.newOwnerName || t('telecom.ops.dash') }}</p>
                                     </div>
+                                    <template v-if="takeOverApproval.kind === 8">
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.suspensionType">
+                                            <p class="small text-muted mb-1">{{ t('telecom.suspensionModal.type') }}</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.suspensionType }}</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.suspensionReason">
+                                            <p class="small text-muted mb-1">{{ t('telecom.suspensionModal.reason') }}</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.suspensionReason }}</p>
+                                        </div>
+                                    </template>
+                                    <template v-if="takeOverApproval.kind === 9">
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.clearanceTypeLabelAr || takeOverApproval.detail.clearanceType">
+                                            <p class="small text-muted mb-1">{{ t('telecom.reconnectModal.clearance') }}</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.clearanceTypeLabelAr || takeOverApproval.detail.clearanceType }}</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.reconnectReason">
+                                            <p class="small text-muted mb-1">{{ t('telecom.reconnectModal.reason') }}</p>
+                                            <p class="mb-0">{{ takeOverApproval.detail.reconnectReason }}</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.sourceSuspensionTypeLabelAr">
+                                            <p class="small text-muted mb-1">{{ t('telecom.reconnectModal.sourceSuspension') }}</p>
+                                            <p class="mb-0 fw-semibold text-danger">{{ takeOverApproval.detail.sourceSuspensionTypeLabelAr }}</p>
+                                        </div>
+                                        <div class="col-md-6" v-if="takeOverApproval.detail.paymentReference">
+                                            <p class="small text-muted mb-1">{{ t('telecom.reconnect.paymentReference') }}</p>
+                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.paymentReference }}</p>
+                                        </div>
+                                    </template>
                                     <template v-if="takeOverApproval.kind === 7">
                                         <div class="col-md-6" v-if="takeOverApproval.detail.terminationType">
                                             <p class="small text-muted mb-1">{{ t('telecom.terminationModal.type') }}</p>

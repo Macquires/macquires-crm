@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
 using Application.Common.Telecom;
+using Application.Common.Telecom.Suspension;
 using Application.Features.NumberSequenceManager;
 using Application.Features.TelecomManager.Commands;
 using Domain.Common;
@@ -274,7 +275,9 @@ public class TelecomSyriatelSeeder
     }
 
     private static bool IsWellKnownDemoMsisdn(string msisdn) =>
-        msisdn == TelecomDemoMsisdn.Hero || msisdn == TelecomDemoMsisdn.DebtSubscriber;
+        msisdn == TelecomDemoMsisdn.Hero
+        || msisdn == TelecomDemoMsisdn.DebtSubscriber
+        || msisdn == TelecomDemoMsisdn.ReconnectFraudDemo;
 
     private static string ResolvePrimaryMsisdn(Customer cust, Random rnd)
     {
@@ -678,5 +681,184 @@ public class TelecomSyriatelSeeder
             await _operationRepository.CreateAsync(tko);
             await _unitOfWork.SaveAsync();
         }
+    }
+
+    /// <summary>
+    /// Idempotent §9 demo: fraud-suspended secondary hero line + billing-suspended debt line with completed SUS.
+    /// </summary>
+    public async Task EnsureHeroReconnectDemoAsync()
+    {
+        await EnsureSuspendedReconnectDemoLineAsync(
+            TelecomDemoMsisdn.ReconnectFraudDemo,
+            "سعدون الشامي",
+            SuspensionWellKnown.Fraud,
+            "ديمو RCN: خط موقوف احتيال — يتطلب اعتماد باك أوفيس.");
+
+        await EnsureSuspendedReconnectDemoLineAsync(
+            TelecomDemoMsisdn.DebtSubscriber,
+            "مازن المديون",
+            SuspensionWellKnown.Billing,
+            "ديمو RCN: خط موقوف فواتير — مسار تسوية Payment بالمعرض.");
+    }
+
+    private async Task EnsureSuspendedReconnectDemoLineAsync(
+        string msisdn,
+        string customerNameContains,
+        string suspensionType,
+        string susNotes)
+    {
+        var customerId = await ResolveReconnectDemoCustomerIdAsync(msisdn, customerNameContains);
+        if (customerId == null)
+        {
+            return;
+        }
+
+        var assetRow = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            .Where(m => m.Msisdn == msisdn)
+            .Select(m => new { m.Id, m.SubscriberProfileId, m.PoolStatus })
+            .FirstOrDefaultAsync();
+
+        string profileId;
+        string assetId;
+
+        if (assetRow == null)
+        {
+            var profile = new SubscriberProfile
+            {
+                CustomerId = customerId,
+                ServiceLineType = ServiceLineType.Mobile,
+                OperationalStatus = SubscriberOperationalStatus.Suspended,
+                ActivationDateUtc = DateTime.UtcNow.AddDays(-400),
+            };
+            profile.Suspend();
+            await _profileRepository.CreateAsync(profile);
+            await _unitOfWork.SaveAsync();
+            profileId = profile.Id;
+
+            var productId = await _query.Product.AsNoTracking().IsDeletedEqualTo()
+                .Select(p => p.Id)
+                .FirstOrDefaultAsync();
+
+            var asset = new MsisdnAsset
+            {
+                Msisdn = msisdn,
+                SubscriberProfileId = profileId,
+                ProductId = productId,
+                Category = MsisdnCategory.Normal,
+            };
+            asset.TransitionTo(MsisdnPoolStatus.Active);
+            asset.TransitionTo(MsisdnPoolStatus.Suspended);
+            await _msisdnRepository.CreateAsync(asset);
+            await _unitOfWork.SaveAsync();
+            assetId = asset.Id;
+
+            if (productId != null)
+            {
+                await _subscriptionRepository.CreateAsync(new TelecomSubscription
+                {
+                    SubscriberProfileId = profileId,
+                    MsisdnAssetId = assetId,
+                    ProductId = productId,
+                    SubscriptionTypeId = TelecomSubscriptionTypeWellKnownIds.Prepaid,
+                    DocumentStatus = TelecomDocumentStatus.Verified,
+                    IsPrimaryLine = msisdn != TelecomDemoMsisdn.ReconnectFraudDemo,
+                });
+                await _unitOfWork.SaveAsync();
+            }
+        }
+        else
+        {
+            profileId = assetRow.SubscriberProfileId!;
+            assetId = assetRow.Id;
+
+            var profile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
+            if (profile != null
+                && profile.OperationalStatus is not (
+                    SubscriberOperationalStatus.Suspended
+                    or SubscriberOperationalStatus.SuspendedInbound
+                    or SubscriberOperationalStatus.SuspendedOutbound
+                    or SubscriberOperationalStatus.Terminated))
+            {
+                profile.Suspend();
+                _profileRepository.Update(profile);
+            }
+
+            var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
+            if (asset != null && asset.PoolStatus == MsisdnPoolStatus.Active)
+            {
+                asset.TransitionTo(MsisdnPoolStatus.Suspended);
+                _msisdnRepository.Update(asset);
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+
+        var hasCompletedSus = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .AnyAsync(o => o.Kind == TelecomOperationKind.TemporarySuspension
+                           && o.MsisdnAssetId == assetId
+                           && o.Status == TelecomOperationStatus.Completed
+                           && o.SuspensionType == suspensionType);
+
+        if (hasCompletedSus)
+        {
+            return;
+        }
+
+        var demoNow = DateTime.UtcNow;
+        var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.TemporarySuspension);
+        var sus = new TelecomOperationRequest
+        {
+            Kind = TelecomOperationKind.TemporarySuspension,
+            Number = _numberSequenceService.GenerateNumber(entityName, prefix, "", useDate: false),
+            Status = TelecomOperationStatus.Completed,
+            DocumentStatus = TelecomDocumentStatus.Verified,
+            SubscriberProfileId = profileId,
+            MsisdnAssetId = assetId,
+            SuspensionType = suspensionType,
+            SuspensionReason = susNotes,
+            BarringLevel = SuspensionWellKnown.BarringFull,
+            SuspensionStartDateUtc = demoNow.AddDays(-14),
+            BarStatus = "Active",
+            ConfirmedAtUtc = demoNow.AddDays(-14),
+            CreatedAtUtc = demoNow.AddDays(-15),
+            Notes = susNotes,
+            IsLostOrStolenReport = false,
+            FraudClearanceConfirmed = false,
+            AutoReconnectEnabled = false,
+            NotificationSuppressed = false,
+        };
+
+        if (SuspensionWellKnown.IsBackOfficeType(suspensionType))
+        {
+            sus.ApprovalLevelRequired = "BackOffice";
+        }
+
+        await _operationRepository.CreateAsync(sus);
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task<string?> ResolveReconnectDemoCustomerIdAsync(string msisdn, string customerNameContains)
+    {
+        if (msisdn == TelecomDemoMsisdn.ReconnectFraudDemo)
+        {
+            var fromHero = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+                .Where(m => m.Msisdn == TelecomDemoMsisdn.Hero)
+                .Join(
+                    _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo(),
+                    m => m.SubscriberProfileId,
+                    p => p.Id,
+                    (_, p) => p.CustomerId)
+                .FirstOrDefaultAsync();
+
+            if (!string.IsNullOrEmpty(fromHero))
+            {
+                return fromHero;
+            }
+        }
+
+        return await _query.Customer.AsNoTracking().IsDeletedEqualTo()
+            .Where(c => c.DisplayName.Contains(customerNameContains))
+            .Select(c => c.Id)
+            .FirstOrDefaultAsync();
     }
 }
