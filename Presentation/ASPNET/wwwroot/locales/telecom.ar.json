@@ -19,6 +19,11 @@
     },
     "quickPathsAria": "مسارات التشغيل السريعة",
     "tiles": {
+      "newCustomer": {
+        "aria": "فتح معالج إضافة مشترك جديد",
+        "title": "مشترك جديد",
+        "sub": "POS · سريع"
+      },
       "activate": {
         "aria": "فتح معالج تفعيل خط جديد",
         "title": "تفعيل",
@@ -90,6 +95,102 @@
         "sub": "تذكرة دعم"
       }
     },
+    "customerWizard": {
+      "heading": "إضافة مشترك جديد — معالج POS",
+      "steps": {
+        "verify": "تحقق",
+        "data": "بيانات المشترك",
+        "done": "تم"
+      },
+      "step1Help": "تحقّق من عدم وجود مشترك مسبقاً قبل الإنشاء. يمكنك البحث بالهوية أو السجل التجاري أو الموبايل، أو الضغط «مشترك جديد» للمتابعة مباشرة.",
+      "step2Help": "عبّئ الحقول الإلزامية (*) ثم احفظ. باقي الأقسام (بيانات إضافية، تواصل، سوشال، جهات اتصال) اختيارية — افتحها فقط إذا بدك تدخلها.",
+      "identitySearch": "الهوية الوطنية / السجل التجاري",
+      "identitySearchPh": "فرد: 10 أرقام · شركة: CR-…",
+      "identitySearchHint1": "فرد: الهوية الوطنية كاملة (10 أرقام). شركة/بنك: السجل التجاري (بحث جزئي مسموح).",
+      "identitySearchHint2": "يمكنك أيضاً البحث بالموبايل في الحقل الثاني.",
+      "nationalId": "الهوية الوطنية",
+      "nationalIdPh": "10 أرقام",
+      "phone": "موبايل / MSISDN",
+      "phonePh": "09…",
+      "searchBtn": "بحث",
+      "newBtn": "مشترك جديد",
+      "noResults": "لا يوجد مطابق — يمكنك إنشاء مشترك جديد.",
+      "searchHintMin": "أدخل هوية (10 أرقام) أو سجل تجاري أو موبايل (حرفين على الأقل) للبحث.",
+      "activateExisting": "تفعيل خط جديد",
+      "backToSearch": "رجوع للبحث",
+      "subscriberType": "نوع المشترك",
+      "individual": "فرد",
+      "corporate": "شركة / بنك",
+      "subscriberName": "اسم المشترك",
+      "companyName": "اسم الشركة",
+      "commercialReg": "السجل التجاري",
+      "customerGroup": "مجموعة العملاء",
+      "customerCategory": "تصنيف العميل",
+      "selectGroup": "اختر المجموعة",
+      "selectCategory": "اختر التصنيف",
+      "dateOfBirth": "تاريخ الميلاد",
+      "taxNumber": "الرقم الضريبي",
+      "authorizedSignatory": "المفوض بالتوقيع",
+      "description": "ملاحظات",
+      "sectionAddress": "العنوان",
+      "street": "الشارع",
+      "city": "المدينة",
+      "citySelect": "— اختر المدينة —",
+      "addressState": "المحافظة",
+      "zipCode": "الرمز البريدي",
+      "country": "الدولة",
+      "sectionContact": "التواصل",
+      "sectionContactHint": "الجوال والبريد اختياريان — كثير مشتركين ما عندهم إيميل أو خط ثانٍ.",
+      "sectionIndividualExtra": "بيانات إضافية للفرد",
+      "sectionContactExtra": "قنوات تواصل إضافية",
+      "sectionSocial": "وسائل التواصل الاجتماعي",
+      "sectionContacts": "جهات اتصال",
+      "sectionContactsHint": "كل صف يُحفظ فقط إذا عبّيت الاسم والمسمى والجوال والبريد معاً.",
+      "nationality": "الجنسية",
+      "nationalityPh": "مثال: سورية",
+      "gender": "الجنس",
+      "genderUnknown": "— غير محدد —",
+      "genderMale": "ذكر",
+      "genderFemale": "أنثى",
+      "occupation": "المهنة",
+      "fax": "فاكس",
+      "website": "الموقع الإلكتروني",
+      "whatsApp": "واتساب",
+      "linkedIn": "LinkedIn",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "twitterX": "X (تويتر)",
+      "tikTok": "TikTok",
+      "contactRow": "جهة اتصال",
+      "contactName": "الاسم",
+      "contactJobTitle": "المسمى الوظيفي",
+      "contactPhone": "الجوال",
+      "contactEmail": "البريد",
+      "contactNotes": "ملاحظات",
+      "optional": "اختياري",
+      "email": "البريد الإلكتروني",
+      "saveBtn": "حفظ المشترك",
+      "savedOk": "تم حفظ المشترك بنجاح",
+      "savedNumber": "رقم المشترك:",
+      "finishBtn": "إنهاء",
+      "activateBtn": "تفعيل اشتراك جديد",
+      "activatePrefilled": "المشترك جاهز للتفعيل:",
+      "activateDenied": "ليس لديك صلاحية فتح معالج التفعيل.",
+      "profileFail": "تعذّر تجهيز ملف المشترك للتفعيل.",
+      "saveNoId": "تم الحفظ دون معرّف عميل — راجع الدعم.",
+      "errName": "الاسم مطلوب.",
+      "errNationalId": "الهوية الوطنية (10 أرقام) مطلوبة.",
+      "errCommercialReg": "السجل التجاري مطلوب (4 أحرف على الأقل).",
+      "errGroup": "مجموعة العملاء مطلوبة.",
+      "errCategory": "تصنيف العميل مطلوب.",
+      "errStreet": "الشارع مطلوب.",
+      "errCity": "المدينة مطلوبة.",
+      "errState": "المحافظة مطلوبة.",
+      "errZip": "الرمز البريدي مطلوب.",
+      "errCountry": "الدولة مطلوبة.",
+      "errPhone": "رقم الجوال مطلوب.",
+      "errEmail": "البريد الإلكتروني مطلوب."
+    },
     "wizard": {
       "heading": "المعالج — {title}",
       "closeAria": "إغلاق المعالج",
@@ -125,11 +226,56 @@
         "otherRequiredHint": "عند اختيار «أخرى» يجب إدخال وصف واضح للباقة المستهدفة.",
         "options": {
           "OTHER": "أخرى — إدخال يدوي"
+        },
+        "offerCard": {
+          "price": "السعر",
+          "priceLabel": "السعر: {price}",
+          "voice": "الدقائق",
+          "data": "الإنترنت",
+          "sms": "الرسائل"
         }
+      },
+      "lineType": {
+        "label": "نوع الخط",
+        "hint": "اسأل الزبون عن نوع الاشتراك (شحن، فاتورة، ميكس…) — اختيارك بيفلتر الأرقام والباقات تلقائياً.",
+        "placeholder": "— اختر نوع الخط —",
+        "required": "حدد نوع الخط من القائمة قبل اختيار الرقم والباقة.",
+        "selectFirst": "اختر نوع الخط أولاً لتصفية الأرقام والباقات.",
+        "selectedHint": "العروض والأرقام معروضة لنوع الخط: {type}"
       },
       "activateIccid": "ICCID الشريحة (ربط ثلاثي)",
       "activateIccidHint": "ICCID مكوّن من 19 رقماً من عدة الشريحة — مطلوب للتفعيل.",
-      "activateMsisdnRequired": "اختر رقم خط متاحاً من نتائج البحث قبل المتابعة.",
+      "activateIccidLockedHint": "يُعبَّأ تلقائياً من المخزون (ربط ثلاثي: الرقم + الشريحة). لا يمكن لموظف نقطة البيع تعديله يدوياً.",
+      "activateMsisdnLabel": "رقم الخط (MSISDN)",
+      "activateMsisdnHint": "بعد تحديد نوع الخط: اترك الحقل فاضياً واضغط بحث لاستعراض الأرقام المتوافقة — أو اكتب بادئة (مثل 0933) للتصفية.",
+      "activateMsisdnPh": "09… (اختياري — بادئة للتصفية)",
+      "activateMsisdnRequired": "اختر رقم خط متاحاً من المستودع قبل المتابعة.",
+      "msisdnPicker": {
+        "title": "اختيار رقم متاح",
+        "subtitle": "استعرض أرقام المستودع المتاحة للبيع — مصنّفة حسب فئة التسعير.",
+        "browseTitle": "استعراض الأرقام المتاحة",
+        "prefixFilter": "تصفية البادئة",
+        "loading": "جاري تحميل المستودع…",
+        "empty": "لا توجد أرقام متاحة مطابقة — جرّب تاباً آخر أو غيّر البادئة.",
+        "emptyFiltered": "لا أرقام متاحة لنوع الخط المختار — جرّب نوعاً آخر أو حدّث المستودع.",
+        "colMsisdn": "MSISDN",
+        "colTier": "الفئة",
+        "colAction": "اختيار",
+        "selectBtn": "اختر",
+        "refresh": "تحديث",
+        "reservedHint": "محجوز",
+        "truncated": "يعرض أول",
+        "total": "إجمالي المطابق",
+        "categories": {
+          "all": "الكل",
+          "normal": "عادي",
+          "silver": "فضي",
+          "gold": "ذهبي",
+          "platinum": "ملكي"
+        }
+      },
+      "corporateSecondPartyHint": "العميل شركة — حدّد المستخدم الفعلي للخط (فرد) بالهوية أو السجل.",
+      "corporateSecondPartyRequired": "لتفعيل خط باسم شركة يجب اختيار الطرف الثاني (المستخدم الفعلي) من نتائج البحث.",
       "iccidRequired": "أدخل ICCID الشريحة (19 رقماً) للتفعيل.",
       "iccidInvalid": "يجب أن يكون ICCID 19 رقماً.",
       "simIccidLabel": "ICCID",
@@ -145,6 +291,21 @@
       "uploadBtn": "تأكيد استلام الوثيقة في الملف",
       "uploadBtnTakeOver": "رفع الهوية وإرسال للتدقيق",
       "uploaded": "تم تسجيل الوثيقة. يمكنك متابعة الطلب من الجدول أدناه حتى تكتمل المراجعة والتأكيد.",
+      "kycUpload": {
+        "title": "وثيقة الهوية (KYC)",
+        "dropHint": "اسحب ملف الهوية هنا أو انقر للاختيار",
+        "formats": "PDF, PNG, JPG — بحد أقصى 5 ميجابايت",
+        "uploading": "جاري رفع الوثيقة…",
+        "locked": "تم رفع الوثيقة وربطها بالطلب",
+        "linked": "وثيقة KYC مربوطة بالطلب",
+        "required": "ملف وثيقة KYC مطلوب.",
+        "badType": "يُسمح فقط بملفات PDF أو صور (JPG/PNG).",
+        "tooLarge": "حجم الملف يتجاوز 5 ميجابايت.",
+        "msisdnRequired": "اختر رقم MSISDN قبل رفع الوثيقة.",
+        "network": "فشل الاتصال أثناء رفع الوثيقة.",
+        "failed": "فشل رفع وثيقة KYC.",
+        "valAct12": "VAL-ACT-12: يجب رفع وثيقة KYC وربطها بالطلب قبل تأكيد التفعيل."
+      },
       "step3a": "تم حفظ الطلب برقم",
       "step3b": "بنجاح.",
       "step3c": "للمتابعة اليومية استخدم جدول «طلبات التليكوم» في هذه الصفحة؛ زر «تأكيد التنفيذ» يظهر لمن لهم صلاحية ويُنفَّذ على أول طلب جاهز للمراجعة.",
@@ -468,9 +629,11 @@
       "pageTitle": "سجل المشتركين (BSS)",
       "onboarding": {
         "title": "التحقق قبل الإضافة",
-        "hint": "ابحث بالرقم الوطني (على ملف مشترك) أو رقم الخط (MSISDN) لتفادي تكرار العميل؛ ثم اربط خطاً جديداً أو أنشئ عميلاً جديداً.",
-        "nationalId": "الرقم الوطني",
-        "nationalIdPh": "مثال: 01…",
+        "hint": "ابحث بالرقم الوطني (10 أرقام للأفراد) أو السجل التجاري (للشركات) أو رقم الموبايل/MSISDN؛ ثم اربط خطاً أو أنشئ مشتركاً جديداً.",
+        "nationalId": "الهوية / السجل التجاري",
+        "nationalIdPh": "فرد: 010… · شركة: CR-…",
+        "identitySearchHint1": "فرد: هوية وطنية كاملة (10 أرقام). شركة: سجل تجاري (بحث جزئي).",
+        "identitySearchHint2": "يمكنك أيضاً البحث بالموبايل/MSISDN في الحقل الثاني.",
         "msisdn": "رقم الخط / MSISDN",
         "msisdnPh": "09…",
         "search": "بحث",
@@ -509,7 +672,7 @@
       },
       "primaryLine": {
         "header": "الخط الأساسي (MSISDN / نوع الخط) — تعديل حساس",
-        "bootstrapHint": "أدخل MSISDN الجديد ونوع الخط؛ يُسجَّل ملف مشترك وخط بعد حفظ بيانات المشترك بنجاح.",
+        "bootstrapHint": "اختر رقماً متاحاً من مستودع الأرقام ونوع الخط؛ يُسجَّل ملف مشترك وخط بعد حفظ بيانات المشترك بنجاح.",
         "editHint": "يُحفظ مع بيانات المشترك: يُستدعى تحديث الطرف أولاً ثم تحديث الخط عند تغيّر أحد الحقلين.",
         "lineType": "نوع الخط"
       },
@@ -973,7 +1136,7 @@
           "channel": {
             "Customer_Care_Voice_AI": "ذكاء اصطناعي — كول سنتر",
             "Self_Care_App": "تطبيق العميل",
-            "Showroom_Agent": "معرض",
+            "Showroom_Agent": "نقطة البيع",
             "CallCenter_Agent": "كول سنتر"
           },
           "resultSuccess": "نجاح",
@@ -1050,7 +1213,7 @@
       "hubLink": "مركز العمليات",
       "gridTitle": "قائمة الأصول",
       "loading": "جاري تحميل المستودع…",
-      "showroomStock": "بضاعة في المعرض",
+      "showroomStock": "بضاعة نقطة البيع",
       "kpi": {
         "total": "إجمالي الأرقام",
         "available": "متاح",
@@ -1059,7 +1222,9 @@
         "quarantined": "حجر"
       },
       "filter": {
-        "suspended": "موقوف"
+        "suspended": "موقوف",
+        "lineTypeAll": "كل أنواع الخط",
+        "lineTypeHint": "نوع الخط مُثبّت على الرقم في المستودع (شحن → IN، فاتورة → CBS) حتى وهو متاح"
       },
       "columns": {
         "msisdn": "رقم الموبايل",
@@ -1067,6 +1232,7 @@
         "imsi": "IMSI",
         "status": "الحالة",
         "assignment": "الارتباط",
+        "lineType": "نوع الخط",
         "product": "الباقة / المنتج",
         "releaseDate": "فك الحجز / الحجر"
       },
@@ -1082,10 +1248,15 @@
         "emptyGrid": "لا توجد أرقام مطابقة"
       }
     },
+    "integrationDemoBanner": {
+      "title": "💡 بيئة ديمو تفاعلية",
+      "message": "البيانات المعروضة حالياً هي محاكاة ذكية (Mock Data) مهيأة بالكامل للتكامل المباشر والربط اللحظي مع نظام إدارة سلاسل الإمداد والمخازن المركزي (Oracle Fusion SCM / Inventory Management) الخاص بشركة سيريتل.",
+      "chip": "Oracle Fusion SCM"
+    },
     "deviceInventory": {
       "pageTitle": "مخزون الأجهزة (IMEI)",
       "title": "مخزون الأجهزة (IMEI)",
-      "subtitle": "إدارة أجهزة وموجهات المعرض — IMEI، الموديل، السعر، والحالة.",
+      "subtitle": "إدارة أجهزة وموجهات نقطة البيع — IMEI، الموديل، السعر، والحالة.",
       "hubLink": "مركز العمليات",
       "addTitle": "إضافة جهاز",
       "gridTitle": "قائمة الأجهزة",
@@ -1096,6 +1267,8 @@
         "sku": "SKU",
         "listPrice": "سعر القائمة (ل.س)",
         "branchId": "معرّف الفرع",
+        "branch": "الفرع",
+        "branchPlaceholder": "— اختر الفرع —",
         "add": "إضافة"
       },
       "kpi": {
@@ -1165,7 +1338,7 @@
       "reasonOther": "سبب آخر",
       "premiumFee": "رسوم الرقم المميز (ل.س)",
       "premiumHint": "الرقم مميز — يتطلب رسوماً أو اعتماد الباك أوفيس قبل التفعيل.",
-      "pendingBackOffice": "بانتظار اعتماد مالي من الباك أوفيس — لا يُنفَّذ فوراً من المعرض.",
+      "pendingBackOffice": "بانتظار اعتماد مالي من الباك أوفيس — لا يُنفَّذ فوراً من نقطة البيع.",
       "paymentDocHint": "ارفع إيصال الدفع أو موافقة المشرف.",
       "draftHint": "مسودة CNR- — اختر الرقم ثم أكمل الوثائق والتأكيد."
     },
@@ -1254,7 +1427,7 @@
       "boHint": "VAL-09-03: يتطلب اعتماد الباك أوفيس.",
       "matrixTitle": "مصفوفة الأهلية (§9)",
       "matrixLoading": "جاري فحص الأهلية…",
-      "matrixAllowed": "مسموح — معرض",
+      "matrixAllowed": "مسموح — نقطة البيع",
       "matrixBo": "يتطلب اعتماد باك أوفيس",
       "matrixDenied": "مرفوض",
       "lastSuspension": "آخر حظر",
@@ -1335,9 +1508,9 @@
       "reasonUpgrade": "ترقية (مثلاً 5G)",
       "reasonOther": "سبب آخر",
       "lostOrStolen": "بلاغ مفقودة / مسروقة",
-      "lostOrStolenHint": "يتطلب هوية واعتماد الباك أوفيس — لا يُنفَّذ فوراً من المعرض.",
+      "lostOrStolenHint": "يتطلب هوية واعتماد الباك أوفيس — لا يُنفَّذ فوراً من نقطة البيع.",
       "identityRequired": "إقرار / هوية المشترك",
-      "pendingBackOffice": "بانتظار اعتماد المشرف — لا يُبث على الشبكة من المعرض.",
+      "pendingBackOffice": "بانتظار اعتماد المشرف — لا يُبث على الشبكة من نقطة البيع.",
       "confirmStandard": "تأكيد التبديل",
       "confirmPending": "إرسال للباك أوفيس",
       "val0401": "VAL-04-01: الشريحة أو الخط غير صالح للتبديل.",
@@ -1353,7 +1526,7 @@
       "depositForfeit": "مصادرة",
       "depositRefund": "استرداد للمالك السابق",
       "identityRequired": "هوية المالك الجديد",
-      "pendingBackOffice": "بانتظار اعتماد الباك أوفيس — لا يُنفَّذ على الشبكة من المعرض.",
+      "pendingBackOffice": "بانتظار اعتماد الباك أوفيس — لا يُنفَّذ على الشبكة من نقطة البيع.",
       "val0702": "VAL-07-02: ذمم مالية معلقة تمنع نقل الملكية.",
       "val0705": "VAL-07-05: أحد الأطراف على القائمة السوداء.",
       "val0703": "VAL-07-03: يوجد طلب نقل ملكية مفتوح على نفس الخط.",
@@ -1385,6 +1558,7 @@
       "hero": {
         "activeLines": "{count} خط نشط",
         "tickets": "تذاكر",
+        "vas": "خدمات مضافة",
         "aiAgent": "وكيل الكول سنتر AI",
         "search": "بحث",
         "crmRegistry": "سجل CRM",
@@ -1446,9 +1620,15 @@
         "contactPhone": "الهاتف",
         "contactEmail": "البريد",
         "contactNotes": "ملاحظات",
+        "linkedIn": "LinkedIn",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "twitterX": "X (تويتر)",
+        "tikTok": "TikTok",
         "createdAt": "تاريخ الإنشاء",
         "updatedAt": "آخر تحديث",
-        "customerId": "معرّف العميل"
+        "customerId": "معرّف العميل",
+        "viewDocument": "عرض الوثيقة"
       },
       "enums": {
         "customerKind": {
@@ -1469,6 +1649,65 @@
           "SuspendedInbound": "موقوف وارد",
           "SuspendedOutbound": "موقوف صادر",
           "Deactivated": "معطّل"
+        },
+        "gender": {
+          "male": "ذكر",
+          "female": "أنثى",
+          "unknown": "غير محدد"
+        },
+        "legalStatus": {
+          "unknown": "غير محدد",
+          "soleProprietorship": "مؤسسة فردية",
+          "partnership": "شراكة",
+          "limitedLiability": "ذات مسؤولية محدودة",
+          "jointStock": "مساهمة",
+          "government": "حكومية"
+        },
+        "billingMode": {
+          "unified": "موحّد",
+          "separate": "منفصل"
+        },
+        "statusReason": {
+          "credit": "ائتمان",
+          "fraud": "احتيال",
+          "regulatory": "تنظيمي"
+        },
+        "subscriptionType": {
+          "prepaid": "مسبق الدفع",
+          "postpaid": "فاتورة",
+          "hybrid": "هجين"
+        },
+        "simType": {
+          "physical": "فيزيائية",
+          "esim": "eSIM"
+        },
+        "simStatus": {
+          "available": "متاحة",
+          "reserved": "محجوزة",
+          "active": "نشطة",
+          "suspended": "موقوفة",
+          "quarantined": "حجر"
+        },
+        "documentStatus": {
+          "uploaded": "مرفوع",
+          "verified": "موثّق",
+          "rejected": "مرفوض",
+          "missing": "ناقص"
+        },
+        "serviceLineType": {
+          "mobile": "موبايل",
+          "broadband": "إنترنت",
+          "fixedLine": "خط ثابت"
+        },
+        "units": {
+          "gb": "جيجا",
+          "sms": "رسالة",
+          "minutes": "دقيقة"
+        },
+        "bucket": {
+          "voice": "دقائق محلية",
+          "data": "بيانات الباقة",
+          "sms": "رسائل نصية"
         }
       },
       "provSuccess": "تم تسجيل العملية؛ جاري/اكتمل التزامن مع CBS وHLR",
@@ -1480,22 +1719,42 @@
       "actions": {
         "provisioningHub": "مركز التشغيل والتفعيل (Provisioning Hub)",
         "techSupport": "الدعم الفني",
-        "techSupportSub": "AI Voice Wizard",
+        "techSupportSub": "إعادة تزويد HLR",
+        "techSupportHlr": "إعادة تزويد HLR",
         "addPackage": "إضافة باقة / VAS",
         "changeGsm": "تحويل نوع الخط CGT",
-        "inFlight": "جاري التنفيذ على CBS/HLR…"
+        "inFlight": "جاري التنفيذ على CBS/HLR…",
+        "selectedLine": "الخط المحدد",
+        "pickLine": "اختر خطاً من الجدول أعلاه"
+      },
+      "hlrRemediation": {
+        "title": "استكشاف تعارض HLR",
+        "subtitle": "الـ CRM يعرض الخط نشطاً لكن HLR يُرجع حالة غير متزامنة — اختر إجراء الإنقاذ المناسب.",
+        "crmActive": "CRM: نشط",
+        "hlrState": "HLR",
+        "reprovision": "إعادة تزويد HLR",
+        "simSwap": "تبديل الشريحة (SIM Swap)",
+        "suspension": "حظر مؤقت (SUS)",
+        "reconnect": "إعادة تفعيل (RCN)",
+        "lastLog": "آخر سجل HLR",
+        "reprovisionOk": "تمت إعادة التزويد — HLR نشط الآن",
+        "checking": "جاري فحص HLR…"
       },
       "grid": {
+        "msisdn": "رقم الخط",
         "product": "الباقة / المنتج",
         "subscriptionType": "نوع الاشتراك",
         "status": "الحالة",
         "lineType": "نوع الخط",
+        "iccid": "ICCID",
+        "imsi": "IMSI",
         "simType": "نوع الشريحة",
         "simStatus": "حالة الشريحة",
         "documents": "الوثائق",
         "balanceLimit": "الرصيد / الحد",
         "loyalty": "الولاء",
-        "activation": "التفعيل"
+        "activation": "التفعيل",
+        "hlr": "HLR"
       },
       "profileTab": {
         "legal": "البيانات الشخصية والقانونية",
@@ -1505,13 +1764,16 @@
         "operation": "العملية",
         "result": "النتيجة",
         "time": "الوقت",
-        "noLogs": "لا سجلات."
+        "noLogs": "لا سجلات.",
+        "logOk": "نجاح",
+        "logRetry": "إعادة"
       },
       "servicesTab": {
         "activePlans": "الباقات والخطوط المفعّلة",
         "noSubs": "لا اشتراكات مسجّلة.",
         "currentBalance": "الرصيد الحالي (CBS)",
         "walletLoadFailed": "تعذّر تحميل الرصيد",
+        "noMsisdnForWallet": "لا يوجد رقم خط لاستعلام الرصيد.",
         "quotaTitle": "حصص الباقة والمتبقي",
         "noBuckets": "لا تفاصيل حصص لهذه الباقة.",
         "unlimited": "غير محدود",
@@ -1564,8 +1826,14 @@
         "amountPh": "المبلغ",
         "paymentRefPh": "مرجع الدفع",
         "recordPayment": "تثبيت الدفع",
+        "fetchFromCashier": "جلب من الكاشير",
+        "cashierFetched": "تم جلب بيانات الدفع من الكاشير.",
         "paymentDone": "تم تثبيت الدفع.",
         "confirmCbs": "تأكيد CBS",
+        "rechargeVia360Hint": "لشحن الرصيد لاحقاً (Top-up) استخدم Customer 360 أو قائمة العملاء — وليس هذا المعالج.",
+        "openCustomer360": "Customer 360",
+        "customer360IdMissing": "اختر العميل أولاً قبل فتح Customer 360.",
+        "customer360OpenedWithoutId": "تنبيه: تم فتح الصفحة بدون تحديد هوية العميل المستهدف.",
         "awaitBo": "بانتظار اعتماد الباك أوفيس من مركز Telecom Hub.",
         "confirmed": "تم التأكيد والتنفيذ.",
         "doneTitle": "تمت العملية",
@@ -1581,7 +1849,8 @@
         "package": "الباقة",
         "iccid": "ICCID",
         "activationChannel": "قناة التفعيل",
-        "channelShowroom": "معرض",
+        "channelShowroom": "نقطة البيع",
+        "channelShowroomLockedHint": "مساحة نقطة البيع — القناة مثبتة على نقطة البيع.",
         "channelDealer": "موزع",
         "channelDigital": "رقمي",
         "dealerCode": "كود الموزع",
@@ -1726,6 +1995,56 @@
       "thTime": "الوقت",
       "loading": "جاري التحميل…",
       "empty": "لا سجلات تكامل بعد.",
+      "prev": "السابق",
+      "next": "التالي",
+      "pageOf": "صفحة {page} من {total}"
+    },
+    "inIntegration": {
+      "title": "التكامل مع الشبكة الذكية (IN)",
+      "subtitle": "سجل تكامل Huawei IN التجريبي — رصيد المسبق الدفع، حصص الدقائق، وتزويد باقات الإنترنت.",
+      "hubLink": "مركز العمليات",
+      "refresh": "تحديث",
+      "noAccess": "ليس لديك صلاحية عرض سجل تكامل IN.",
+      "filterOp": "رقم طلب التشغيل",
+      "filterResult": "النتيجة",
+      "filterPageSize": "حجم الصفحة",
+      "filterAll": "— الكل —",
+      "search": "بحث",
+      "logTitle": "سجل تكامل IN (الشبكة الذكية — تجريبي)",
+      "totalRecords": "إجمالي السجلات",
+      "thOperation": "طلب التشغيل",
+      "thAttempt": "المحاولة",
+      "thTarget": "الهدف",
+      "thResult": "النتيجة",
+      "thMessage": "رسالة الشبكة",
+      "thTime": "الوقت",
+      "loading": "جاري التحميل…",
+      "empty": "لا سجلات تكامل IN بعد.",
+      "prev": "السابق",
+      "next": "التالي",
+      "pageOf": "صفحة {page} من {total}"
+    },
+    "hlrProvisioning": {
+      "title": "تزويد HLR / HSS",
+      "subtitle": "سجل تزويد الشبكة الأساسية HLR/HSS — ربط IMSI، أكواد الخدمات، وتفعيل بروفايل الشريحة.",
+      "hubLink": "مركز العمليات",
+      "refresh": "تحديث",
+      "noAccess": "ليس لديك صلاحية عرض سجل تزويد HLR.",
+      "filterOp": "رقم طلب التشغيل",
+      "filterResult": "النتيجة",
+      "filterPageSize": "حجم الصفحة",
+      "filterAll": "— الكل —",
+      "search": "بحث",
+      "logTitle": "سجل تزويد HLR / HSS (الشبكة الأساسية — تجريبي)",
+      "totalRecords": "إجمالي السجلات",
+      "thOperation": "طلب التشغيل",
+      "thAttempt": "المحاولة",
+      "thTarget": "الهدف",
+      "thResult": "النتيجة",
+      "thMessage": "رسالة الشبكة",
+      "thTime": "الوقت",
+      "loading": "جاري التحميل…",
+      "empty": "لا سجلات تزويد HLR بعد.",
       "prev": "السابق",
       "next": "التالي",
       "pageOf": "صفحة {page} من {total}"
@@ -1892,6 +2211,19 @@
       "response": "Response"
     },
     "administration": {
+      "index": {
+        "pageTitle": "الإدارة والنظام",
+        "subtitle": "مركز قيادة المنصة — للمسؤولين فقط.",
+        "users": "إدارة المستخدمين",
+        "branches": "إدارة الفروع",
+        "roles": "الأدوار والصلاحيات",
+        "globalSettings": "الإعدادات العامة",
+        "auditLog": "سجل الرقابة",
+        "integrationMonitor": "سجل ربط الشبكة والتكاملات",
+        "dashboardWidgets": "عناصر لوحة القيادة",
+        "operatorCompany": "بيانات المشغّل",
+        "numberSequences": "تسلسل الأرقام التشغيلي"
+      },
       "auditLog": {
         "pageTitle": "سجل الرقابة",
         "subtitle": "الصندوق الأسود — من فعل ماذا؟ ومتى؟ ومن أي جهاز؟",
@@ -1942,6 +2274,124 @@
           "StrategicReportViewed": "عرض تقرير استراتيجي",
           "PaymentServicesReverse": "عكس عملية دفع"
         }
+      },
+      "userList": {
+        "pageTitle": "إدارة المستخدمين",
+        "subtitle": "مركز عمليات الموظفين — Persona، المدير المباشر، والفرع.",
+        "linkBranches": "إدارة الفروع",
+        "linkBack": "← الإدارة والنظام",
+        "linkAudit": "سجل الرقابة",
+        "grid": {
+          "fullName": "الاسم",
+          "email": "البريد",
+          "persona": "Persona",
+          "roles": "الأدوار",
+          "manager": "المدير",
+          "orgUnit": "الوحدة",
+          "status": "الحالة",
+          "lastLogin": "آخر دخول",
+          "lastActivity": "آخر نشاط",
+          "blocked": "موقوف"
+        },
+        "online": {
+          "connected": "متصل",
+          "disconnected": "غير متصل"
+        },
+        "toolbar": {
+          "add": "إضافة",
+          "edit": "تعديل"
+        },
+        "modal": {
+          "addTitle": "إضافة مستخدم",
+          "editTitle": "تعديل مستخدم",
+          "close": "إغلاق",
+          "save": "حفظ",
+          "email": "البريد الإلكتروني",
+          "password": "كلمة المرور",
+          "confirmPassword": "تأكيد",
+          "firstName": "الاسم الأول",
+          "lastName": "اسم العائلة",
+          "persona": "Persona (المنيو)",
+          "manager": "المدير المباشر",
+          "orgUnit": "الوحدة التنظيمية",
+          "none": "— بدون —",
+          "blocked": "حساب موقوف",
+          "emailConfirmed": "البريد مؤكد",
+          "identityRoles": "أدوار Identity (Telecom)"
+        },
+        "messages": {
+          "roleUpdateFailed": "فشل تحديث الدور",
+          "nameRequired": "الاسم مطلوب",
+          "emailPasswordRequired": "البريد وكلمة المرور مطلوبان",
+          "saved": "تم الحفظ",
+          "saveFailed": "فشل الحفظ",
+          "error": "خطأ"
+        }
+      },
+      "roleList": {
+        "pageTitle": "الأدوار والصلاحيات",
+        "subtitle": "مصفوفة الصلاحيات (RBAC) — وضع Persona الصارم يحمي المسارات والأوامر الحساسة.",
+        "backLink": "← الإدارة والنظام",
+        "permissionsFor": "صلاحيات:",
+        "cloneRole": "نسخ الدور",
+        "saveMatrix": "حفظ المصفوفة",
+        "selectRoleHint": "اختر دوراً من القائمة لعرض وتعديل صلاحياته.",
+        "grid": {
+          "role": "الدور"
+        },
+        "clone": {
+          "title": "نسخ الدور",
+          "inputLabel": "اسم الدور الجديد",
+          "success": "تم نسخ الدور"
+        },
+        "messages": {
+          "saved": "تم حفظ الصلاحيات",
+          "saveFailed": "فشل الحفظ",
+          "error": "خطأ"
+        }
+      },
+      "branchList": {
+        "pageTitle": "إدارة الفروع",
+        "subtitle": "هيكل الفروع والوحدات التنظيمية — تعيين مدير كل فرع وربط الموظفين من",
+        "linkUsers": "إدارة المستخدمين",
+        "linkBack": "← الإدارة والنظام",
+        "grid": {
+          "nameAr": "الفرع",
+          "nameEn": "EN",
+          "parent": "الوحدة الأب",
+          "manager": "مدير الفرع",
+          "managerEmail": "بريد المدير",
+          "staff": "الموظفون",
+          "status": "الحالة"
+        },
+        "active": {
+          "active": "نشط",
+          "inactive": "موقوف"
+        },
+        "toolbar": {
+          "add": "إضافة فرع",
+          "edit": "تعديل"
+        },
+        "modal": {
+          "addTitle": "إضافة فرع",
+          "editTitle": "تعديل فرع",
+          "close": "إغلاق",
+          "save": "حفظ",
+          "nameAr": "اسم الفرع (عربي)",
+          "nameEn": "الاسم (إنجليزي)",
+          "parent": "الوحدة الأب",
+          "parentNone": "— بدون (مستوى أعلى) —",
+          "manager": "مدير الفرع",
+          "none": "— بدون —",
+          "active": "فرع نشط"
+        },
+        "messages": {
+          "nameRequired": "اسم الفرع مطلوب",
+          "selectBranch": "اختر فرعاً من الجدول",
+          "saved": "تم الحفظ",
+          "saveFailed": "فشل الحفظ",
+          "error": "خطأ"
+        }
       }
     },
     "defaultDashboard": {
@@ -1956,7 +2406,7 @@
       "cockpit": {
         "personaExecutive": "مؤشرات الأداء والتقارير التنفيذية",
         "personaCallCenter": "بحث سريع وحالة الشبكة",
-        "personaRetail": "تفعيل وبيع — صالة العرض",
+        "personaRetail": "تفعيل وبيع — نقطة البيع",
         "personaBackOffice": "موافقات وعمليات معلقة",
         "personaSysAdmin": "مراقبة المنصة والتكاملات",
         "dynamicSubtitle": "لوحة التشغيل الديناميكية",
@@ -2052,6 +2502,167 @@
       "colMsisdn": "MSISDN",
       "colStatus": "الحالة",
       "openProfile": "عرض الملف الكامل للمشترك"
+    },
+    "admin": {
+      "globalSettings": {
+        "pageTitle": "لوحة التحكم المركزية",
+        "pageSubtitle": "المدن، الأمان، الصيانة، الإشعارات، التكاملات، وقواعد أعمال Telecom — التغييرات تُطبَّق فوراً (cache قصير ~30 ثانية).",
+        "backAdmin": "← الإدارة والنظام",
+        "saveTab": "حفظ التاب",
+        "saveSuccess": "تم الحفظ",
+        "saveSuccessHint": "تُطبَّق التغييرات فوراً على الجلسات النشطة.",
+        "saveFailed": "فشل الحفظ",
+        "syncSummary": "مزامنة عمليات معلقة",
+        "close": "إغلاق",
+        "tabs": {
+          "cities": "المدن",
+          "security": "الأمان",
+          "maintenance": "الصيانة",
+          "notifications": "الإشعارات",
+          "integrations": "التكاملات",
+          "telecomLifecycle": "دورة الحياة",
+          "telecomActivation": "تفعيل خطوط",
+          "telecomFinancial": "مالية ومخاطر",
+          "telecomOperations": "توجيه العمليات"
+        },
+        "telecom": {
+          "saveHint": "تُطبَّق قواعد Telecom على العمليات الجديدة خلال ~30 ثانية (cache الباك إند).",
+          "lifecycle": {
+            "heading": "دورة حياة الخط والمخزون",
+            "intro": "مدة الحجر الصحي للأرقام والشرائح، وحجز MSISDN، وعتبة الحظر الطويل.",
+            "msisdnQuarantineDays": "حجر MSISDN (أيام)",
+            "msisdnQuarantineHint": "بعد الإنهاء أو تغيير الرقم قبل إعادة الرقم للتجمع.",
+            "simQuarantineDays": "حجر الشريحة (أيام)",
+            "simQuarantineHint": "بعد SIM Swap قبل إعادة ICCID للمستودع.",
+            "msisdnReservationHours": "مدة حجز الرقم (ساعات)",
+            "msisdnReservationHint": "انتهاء الحجز يُعيد الرقم إلى متاح.",
+            "suspensionLongReviewDays": "عتبة الحظر الطويل (أيام)",
+            "suspensionLongReviewHint": "أكثر من هذه المدة → تذكرة مراجعة Back-Office."
+          },
+          "activation": {
+            "heading": "تفعيل خط جديد (ACT)",
+            "intro": "حدود الخطوط التنظيمية وبوابات التحقق قبل التأكيد.",
+            "maxLinesIndividual": "حد الخطوط — فردي",
+            "maxLinesCorporate": "حد الخطوط — شركات",
+            "dealerCodeRequired": "رمز الموزع إلزامي لقناة Dealer",
+            "requireKyc": "KYC إلزامي قبل تأكيد التفعيل",
+            "requirePaymentRef": "مرجع دفع إلزامي عند وجود وديعة",
+            "channelLabelsSection": "تسميات قنوات التفعيل (Omnichannel)",
+            "channelLabelsIntro": "الأسماء الظاهرة لقنوات نقطة البيع / الموزع / الرقمي في المعالجات وتفاصيل العملية. الرموز الداخلية ثابتة للتدقيق.",
+            "channelPosAr": "قناة نقطة البيع — عربي",
+            "channelPosEn": "قناة نقطة البيع — إنجليزي",
+            "channelDealerAr": "قناة الموزع — عربي",
+            "channelDealerEn": "قناة الموزع — إنجليزي",
+            "channelDigitalAr": "القناة الرقمية — عربي",
+            "channelDigitalEn": "القناة الرقمية — إنجليزي"
+          },
+          "financial": {
+            "heading": "المالية والمخاطر (RFD / TRM)",
+            "refundSection": "الاسترداد (RFD)",
+            "refundIntro": "عتبة الاعتماد المزدوج وطرق الدفع عالية المخاطر.",
+            "dualApprovalThreshold": "عتبة الاعتماد المزدوج (ل.س)",
+            "dualApprovalHint": "أي استرداد أعلى من هذه القيمة يتطلب موافقة مزدوجة / BO.",
+            "highRiskMethods": "طرق دفع عالية المخاطر",
+            "terminationSection": "إنهاء الخط (TRM)",
+            "defaultFinalBill": "الفاتورة النهائية الافتراضية (ل.س)",
+            "csvHint": "قيم مفصولة بفاصلة (مثال: Fraud,Regulatory,Collections)"
+          },
+          "operations": {
+            "heading": "توجيه العمليات وقواعد BO",
+            "intro": "أنواع العمليات التي تُوجَّه لـ Back-Office، وفئات الأرقام المميزة، وعتبات بيع الأجهزة.",
+            "trmBackOfficeTypes": "إنهاء — أنواع BO (CSV)",
+            "susBackOfficeTypes": "حظر — أنواع BO (CSV)",
+            "premiumCategories": "تغيير رقم — فئات مميزة (CSV)",
+            "tkoDepositPolicy": "نقل ملكية — سياسة الإيداع الافتراضية",
+            "trmCorporateBo": "إنهاء الشركات → BO دائماً",
+            "trmVoluntaryRetention": "إنهاء طوعي يتطلب نتيجة عرض الاحتفاظ",
+            "susCorporateBo": "حظر الشركات → BO دائماً",
+            "simLostStolenBo": "SIM مفقودة/مسروقة → BO",
+            "cnrBlockQuarantine": "منع اختيار رقم في حجر صحي",
+            "tkoAlwaysBo": "نقل الملكية (TKO) → BO دائماً",
+            "deviceSalesSection": "بيع الأجهزة بالتقسيط",
+            "creditLow": "حد ائتمان منخفض",
+            "creditGood": "حد ائتمان جيد",
+            "dpReject": "دفعة أولى — رفض %",
+            "dpVip": "دفعة VIP %",
+            "dpLow": "دفعة منخفض %",
+            "dpGood": "دفعة جيد %"
+          }
+        },
+        "cities": {
+          "hint": "الدولة ثابتة: سوريا — أضف أو عدّل المدن والمحافظات. الحفظ لكل مدينة من نافذة التعديل.",
+          "colCity": "المدينة",
+          "colGovernorate": "المحافظة",
+          "colSort": "الترتيب",
+          "colActive": "نشطة",
+          "colCreated": "تاريخ الإنشاء",
+          "add": "إضافة",
+          "edit": "تعديل",
+          "delete": "حذف",
+          "modalAdd": "إضافة مدينة",
+          "modalEdit": "تعديل مدينة",
+          "modalDelete": "حذف مدينة",
+          "fieldName": "اسم المدينة",
+          "fieldGovernorate": "المحافظة",
+          "fieldSort": "ترتيب العرض",
+          "fieldActive": "نشطة",
+          "confirmDelete": "تأكيد الحذف",
+          "errName": "اسم المدينة مطلوب.",
+          "errGovernorate": "المحافظة مطلوبة.",
+          "saved": "تم حفظ المدينة",
+          "deleted": "تم حذف المدينة"
+        },
+        "security": {
+          "heading": "الأمان",
+          "strictPersona": "Strict Persona Mode — الحاكم العسكري",
+          "strictPersonaHint": "عند التفعيل: Persona تمنع المسارات والأوامر خارج حدود الموظف حتى لو الدور يسمح.",
+          "jwtMinutes": "مدة JWT (دقائق)",
+          "jwtHint": "قد يتطلب إعادة تسجيل الدخول بعد الحفظ."
+        },
+        "maintenance": {
+          "heading": "وضع الصيانة",
+          "enable": "تفعيل وضع الصيانة",
+          "msgAr": "رسالة (عربي)",
+          "msgEn": "Message (English)",
+          "bypassIps": "عناوين IP المستثناة",
+          "bypassHint": "عنوان واحد في كل سطر أو مفصولة بفاصلة (مكتب العمليات، VPN، التطوير)."
+        },
+        "notifications": {
+          "heading": "إشعارات المشتركين (SMS)",
+          "intro": "مستقلة عن قاطع بوابة SMS — تتحكم بإرسال الرسائل للمشتركين دون إيقاف التكامل بالكامل.",
+          "customerOps": "تفعيل SMS لعمليات المشتركين",
+          "customerOpsHint": "عند الإيقاف: لا تُرسل رسائل اكتمال العمليات (توفير تكلفة الإرسال).",
+          "welcome": "تفعيل رسالة الترحيب عند التفعيل",
+          "welcomeAr": "قالب الترحيب (عربي)",
+          "welcomeEn": "Welcome template (English)",
+          "templateHint": "استخدم {Msisdn} لإدراج رقم الخط."
+        },
+        "integrations": {
+          "heading": "التكاملات (طوارئ)",
+          "demoVersion": "وضعية العرض التجريبي (Demo Version)",
+          "demoVersionHint": "عند التفعيل، تُعرض شاشات مخزون الأجهزة والأرقام/الشرائح مؤشراً علوياً يوضح أن البيانات محاكاة (Mock Data) مهيأة للتكامل مع Oracle Fusion SCM. أوقفه في بيئة الإنتاج الحية.",
+          "circuitBreaker": "قاطع Circuit Breaker",
+          "monitorLink": "سجل التكاملات",
+          "legendOn": "تشغيل حي — عند الحفظ تُزامَن العمليات المعلقة فوراً مع الشبكة.",
+          "legendOff": "طوارئ Fallback — العمل يكمل محلياً والسجل يظهر FALLBACK_MODE.",
+          "saveHint": "عند إعادة تشغيل التكامل يُزامَن الطابور المعلق تلقائياً.",
+          "huaweiTitle": "Huawei CBS",
+          "huaweiHint": "فوترة وتفعيل على نظام الفوترة المركزي.",
+          "inTitle": "Huawei IN",
+          "inHint": "شحن لحظي — رصيد، top-up، وحجر دورة الحياة لخطوط Prepaid.",
+          "inConfigHeading": "Huawei IN — إعدادات البوابة",
+          "inConfigHint": "تُستخدم لمحاكاة زمن الاستجابة، المهلة، والخصم اللحظي على خطوط الشحن.",
+          "inGatewayUrl": "عنوان البوابة (Gateway URL)",
+          "inTimeoutMs": "المهلة (مللي ثانية)",
+          "inSimulateDeduction": "محاكاة الخصم اللحظي",
+          "hlrTitle": "HLR / الشبكة",
+          "hlrHint": "تفعيل، SIM Swap، Migration على الأبراج.",
+          "smsTitle": "SMS Gateway",
+          "smsHint": "بوابة الإرسال — يجب أن تكون ON ليصل أي SMS للشبكة.",
+          "badgeOn": "تشغيل حي (ON)",
+          "badgeOff": "طوارئ Fallback (OFF)"
+        }
+      }
     }
   }
 }

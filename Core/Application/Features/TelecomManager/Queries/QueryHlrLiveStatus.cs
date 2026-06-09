@@ -10,6 +10,7 @@ namespace Application.Features.TelecomManager.Queries;
 public class QueryHlrLiveStatusRequest : IRequest<HlrLiveStatusResult>
 {
     public string SubscriberProfileId { get; init; } = "";
+    public string? Msisdn { get; init; }
 }
 
 public class QueryHlrLiveStatusHandler : IRequestHandler<QueryHlrLiveStatusRequest, HlrLiveStatusResult>
@@ -25,11 +26,34 @@ public class QueryHlrLiveStatusHandler : IRequestHandler<QueryHlrLiveStatusReque
 
     public async Task<HlrLiveStatusResult> Handle(QueryHlrLiveStatusRequest request, CancellationToken cancellationToken)
     {
-        var profile = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
-            .FirstOrDefaultAsync(p => p.Id == request.SubscriberProfileId, cancellationToken)
-            ?? throw new InvalidOperationException("Subscriber profile not found.");
+        Domain.Entities.SubscriberProfile? profile = null;
+        var msisdnQuery = string.IsNullOrWhiteSpace(request.Msisdn)
+            ? null
+            : Application.Common.Telecom.TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(request.Msisdn);
 
-        var msisdn = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+        if (!string.IsNullOrWhiteSpace(request.SubscriberProfileId))
+        {
+            profile = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
+                .FirstOrDefaultAsync(p => p.Id == request.SubscriberProfileId, cancellationToken)
+                ?? throw new InvalidOperationException("Subscriber profile not found.");
+        }
+        else if (!string.IsNullOrEmpty(msisdnQuery))
+        {
+            profile = await (
+                from p in _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
+                join s in _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo() on p.Id equals s.SubscriberProfileId
+                join m in _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo() on s.MsisdnAssetId equals m.Id
+                where m.Msisdn == msisdnQuery
+                select p)
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? throw new InvalidOperationException("Subscriber profile not found for MSISDN.");
+        }
+        else
+        {
+            throw new InvalidOperationException("SubscriberProfileId or MSISDN is required.");
+        }
+
+        var msisdn = msisdnQuery ?? await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
             .Where(s => s.SubscriberProfileId == profile.Id)
             .Select(s => s.MsisdnAsset!.Msisdn)
             .FirstOrDefaultAsync(cancellationToken);

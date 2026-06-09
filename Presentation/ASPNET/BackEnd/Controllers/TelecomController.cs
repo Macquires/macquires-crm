@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Application.Common;
 using Application.Common.Integrations;
 using Application.Common.Telecom;
 using Domain.Entities;
@@ -23,19 +24,25 @@ public class TelecomController : BaseApiController
     private readonly IChargingSystemIntegration _charging;
     private readonly ISmsGatewayIntegration _sms;
     private readonly ITelecomOperationDocumentStore _operationDocuments;
+    private readonly IKycDocumentStorageService _kycDocumentStorage;
     private readonly IQueryContext _query;
+    private readonly ILogger<TelecomController> _logger;
 
     public TelecomController(
         ISender sender,
         IChargingSystemIntegration charging,
         ISmsGatewayIntegration sms,
         ITelecomOperationDocumentStore operationDocuments,
-        IQueryContext query) : base(sender)
+        IKycDocumentStorageService kycDocumentStorage,
+        IQueryContext query,
+        ILogger<TelecomController> logger) : base(sender)
     {
         _charging = charging;
         _sms = sms;
         _operationDocuments = operationDocuments;
+        _kycDocumentStorage = kycDocumentStorage;
         _query = query;
+        _logger = logger;
     }
 
     [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
@@ -49,6 +56,21 @@ public class TelecomController : BaseApiController
         {
             Code = StatusCodes.Status200OK,
             Message = nameof(ReserveMsisdnForCustomerAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("ReleaseMsisdnReservation")]
+    public async Task<ActionResult<ApiSuccessResult<ReleaseMsisdnReservationResult>>> ReleaseMsisdnReservationAsync(
+        ReleaseMsisdnReservationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ReleaseMsisdnReservationResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ReleaseMsisdnReservationAsync),
             Content = response
         });
     }
@@ -114,6 +136,85 @@ public class TelecomController : BaseApiController
         });
     }
 
+    [Authorize(Roles = TelecomRoles.RolesUploadDocument)]
+    [HttpPost("UploadKycDocument")]
+    [RequestSizeLimit(5_242_880)]
+    public async Task<ActionResult<UploadKycDocumentResponse>> UploadKycDocumentAsync(
+        [FromForm] string msisdn,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        const int maxBytes = 5 * 1024 * 1024;
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".png", ".jpg", ".jpeg"
+        };
+
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ToKycUploadResponse(false, TelecomUserMessages.KycFileRequired));
+            }
+
+            if (file.Length > maxBytes)
+            {
+                return BadRequest(ToKycUploadResponse(false, TelecomUserMessages.KycFileTooLarge));
+            }
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext) || !allowedExtensions.Contains(ext))
+            {
+                return BadRequest(ToKycUploadResponse(false, TelecomUserMessages.KycFileTypeInvalid));
+            }
+
+            var msisdnValue = (msisdn ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(msisdnValue))
+            {
+                return BadRequest(ToKycUploadResponse(false, TelecomUserMessages.KycMsisdnRequired));
+            }
+
+            await using var stream = file.OpenReadStream();
+            var documentReferenceId = await _kycDocumentStorage.StoreKycDocumentAsync(
+                msisdnValue,
+                file.FileName,
+                stream,
+                file.ContentType ?? "application/octet-stream",
+                cancellationToken);
+
+            _logger.LogInformation(
+                "KYC document uploaded for MSISDN {Msisdn}, reference {DocumentReferenceId}.",
+                msisdnValue,
+                documentReferenceId);
+
+            return Ok(new UploadKycDocumentResponse
+            {
+                Success = true,
+                DocumentReferenceId = documentReferenceId
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "UploadKycDocument failed for MSISDN {Msisdn}.", msisdn);
+            return StatusCode(StatusCodes.Status500InternalServerError, new UploadKycDocumentResponse
+            {
+                Success = false,
+                Message = ex.Message,
+                MessageAr = ex.Message,
+                MessageEn = ex.Message
+            });
+        }
+    }
+
+    private static UploadKycDocumentResponse ToKycUploadResponse(bool success, BilingualUserMessage message) =>
+        new()
+        {
+            Success = success,
+            Message = message.ResolveForCurrentCulture(),
+            MessageAr = message.Ar,
+            MessageEn = message.En
+        };
+
     [Authorize(Roles = TelecomRoles.RolesConfirmOperation)]
     [HttpPost("ConfirmTelecomOperation")]
     public async Task<ActionResult<ApiSuccessResult<ConfirmTelecomOperationRequestResult>>> ConfirmTelecomOperationAsync(
@@ -125,6 +226,21 @@ public class TelecomController : BaseApiController
         {
             Code = StatusCodes.Status200OK,
             Message = nameof(ConfirmTelecomOperationAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [HttpPost("FetchCashierPayment")]
+    public async Task<ActionResult<ApiSuccessResult<FetchCashierPaymentResult>>> FetchCashierPaymentAsync(
+        FetchCashierPaymentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<FetchCashierPaymentResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(FetchCashierPaymentAsync),
             Content = response
         });
     }
@@ -761,15 +877,46 @@ public class TelecomController : BaseApiController
     [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
     [HttpGet("QueryHlrLiveStatus")]
     public async Task<ActionResult<ApiSuccessResult<HlrLiveStatusResult>>> QueryHlrLiveStatusAsync(
-        [FromQuery] string subscriberProfileId,
+        [FromQuery] string? subscriberProfileId,
+        [FromQuery] string? msisdn,
         CancellationToken cancellationToken)
     {
-        var response = await _sender.Send(new QueryHlrLiveStatusRequest { SubscriberProfileId = subscriberProfileId }, cancellationToken);
+        var response = await _sender.Send(
+            new QueryHlrLiveStatusRequest { SubscriberProfileId = subscriberProfileId ?? "", Msisdn = msisdn },
+            cancellationToken);
         return Ok(new ApiSuccessResult<HlrLiveStatusResult>
         {
             Code = StatusCodes.Status200OK,
             Message = nameof(QueryHlrLiveStatusAsync),
             Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("CheckHlrStatus")]
+    public Task<ActionResult<ApiSuccessResult<HlrLiveStatusResult>>> CheckHlrStatusAsync(
+        [FromQuery] string? msisdn,
+        [FromQuery] string? subscriberProfileId,
+        CancellationToken cancellationToken) =>
+        QueryHlrLiveStatusAsync(subscriberProfileId, msisdn, cancellationToken);
+
+    [Authorize(Roles = TelecomRoles.RolesConfirmOperation)]
+    [HttpPost("ReprovisionSubscriberToHlr")]
+    public async Task<ActionResult<ApiSuccessResult<HlrReprovisionResult>>> ReprovisionSubscriberToHlrAsync(
+        ReprovisionSubscriberToHlrRequest request,
+        CancellationToken cancellationToken)
+    {
+        var cmd = new ReprovisionSubscriberToHlrRequest
+        {
+            SubscriberProfileId = request.SubscriberProfileId,
+            ActorUserId = request.ActorUserId ?? User.FindFirstValue(ClaimTypes.NameIdentifier),
+        };
+        var response = await _sender.Send(cmd, cancellationToken);
+        return Ok(new ApiSuccessResult<HlrReprovisionResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ReprovisionSubscriberToHlrAsync),
+            Content = response,
         });
     }
 
@@ -834,6 +981,22 @@ public class TelecomController : BaseApiController
         });
     }
 
+    /// <summary>Ensures a <see cref="SubscriberProfile"/> exists for POS onboarding before selling-line activation.</summary>
+    [Authorize(Roles = TelecomRoles.RolesMutateCustomerPrimaryLine)]
+    [HttpPost("EnsureSubscriberProfileForCustomer")]
+    public async Task<ActionResult<ApiSuccessResult<EnsureSubscriberProfileForCustomerResult>>> EnsureSubscriberProfileForCustomerAsync(
+        EnsureSubscriberProfileForCustomerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<EnsureSubscriberProfileForCustomerResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(EnsureSubscriberProfileForCustomerAsync),
+            Content = response
+        });
+    }
+
     [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
     [HttpGet("GetTelecomOperationList")]
     public async Task<ActionResult<ApiSuccessResult<GetTelecomOperationListResult>>> GetTelecomOperationListAsync(
@@ -845,6 +1008,20 @@ public class TelecomController : BaseApiController
         {
             Code = StatusCodes.Status200OK,
             Message = nameof(GetTelecomOperationListAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetActivationChannelLabels")]
+    public async Task<ActionResult<ApiSuccessResult<GetActivationChannelLabelsResult>>> GetActivationChannelLabelsAsync(
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetActivationChannelLabelsRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetActivationChannelLabelsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetActivationChannelLabelsAsync),
             Content = response
         });
     }
@@ -864,7 +1041,7 @@ public class TelecomController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesConfirmOperation)]
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
     [HttpGet("DownloadTelecomOperationIdentityDocument")]
     public async Task<IActionResult> DownloadTelecomOperationIdentityDocumentAsync(
         [FromQuery] string id,
@@ -891,6 +1068,91 @@ public class TelecomController : BaseApiController
         };
 
         return PhysicalFile(path, contentType, enableRangeProcessing: true);
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("DownloadKycDocument")]
+    public async Task<IActionResult> DownloadKycDocumentAsync(
+        [FromQuery] string id,
+        CancellationToken cancellationToken)
+    {
+        var referenceId = await _query.TelecomOperationRequest
+            .AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Id == id)
+            .Select(o => o.KycDocumentReferenceId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(referenceId))
+        {
+            return NotFound();
+        }
+
+        var opened = await _kycDocumentStorage.TryOpenKycDocumentAsync(referenceId, cancellationToken);
+        if (opened == null)
+        {
+            return NotFound();
+        }
+
+        var (stream, contentType) = opened.Value;
+        return File(stream, contentType, enableRangeProcessing: true);
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetInIntegrationLogList")]
+    public async Task<ActionResult<ApiSuccessResult<GetInIntegrationLogListResult>>> GetInIntegrationLogListAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string? telecomOperationRequestId = null,
+        [FromQuery] string? operationNumber = null,
+        [FromQuery] bool? success = null,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 25,
+        [FromQuery] bool isDeleted = false)
+    {
+        var response = await _sender.Send(new GetInIntegrationLogListRequest
+        {
+            TelecomOperationRequestId = telecomOperationRequestId,
+            OperationNumber = operationNumber,
+            Success = success,
+            Skip = skip,
+            Take = take,
+            IsDeleted = isDeleted
+        }, cancellationToken);
+
+        return Ok(new ApiSuccessResult<GetInIntegrationLogListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetInIntegrationLogListAsync),
+            Content = response
+        });
+    }
+
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetHlrProvisioningLogList")]
+    public async Task<ActionResult<ApiSuccessResult<GetHlrProvisioningLogListResult>>> GetHlrProvisioningLogListAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string? telecomOperationRequestId = null,
+        [FromQuery] string? operationNumber = null,
+        [FromQuery] bool? success = null,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 25,
+        [FromQuery] bool isDeleted = false)
+    {
+        var response = await _sender.Send(new GetHlrProvisioningLogListRequest
+        {
+            TelecomOperationRequestId = telecomOperationRequestId,
+            OperationNumber = operationNumber,
+            Success = success,
+            Skip = skip,
+            Take = take,
+            IsDeleted = isDeleted
+        }, cancellationToken);
+
+        return Ok(new ApiSuccessResult<GetHlrProvisioningLogListResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetHlrProvisioningLogListAsync),
+            Content = response
+        });
     }
 
     [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
@@ -936,6 +1198,20 @@ public class TelecomController : BaseApiController
         });
     }
 
+    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [HttpGet("GetIntegrationEnvironmentContext")]
+    public async Task<ActionResult<ApiSuccessResult<GetIntegrationEnvironmentContextResult>>> GetIntegrationEnvironmentContextAsync(
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(new GetIntegrationEnvironmentContextRequest(), cancellationToken);
+        return Ok(new ApiSuccessResult<GetIntegrationEnvironmentContextResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetIntegrationEnvironmentContextAsync),
+            Content = response,
+        });
+    }
+
     [HttpGet("GetIntegrationLogList")]
     public async Task<ActionResult<ApiSuccessResult<GetIntegrationLogListResult>>> GetIntegrationLogListAsync(
         [FromQuery] GetIntegrationLogListRequest request,
@@ -955,9 +1231,15 @@ public class TelecomController : BaseApiController
     public async Task<ActionResult<ApiSuccessResult<GetMsisdnAssetPoolListResult>>> GetMsisdnAssetPoolListAsync(
         CancellationToken cancellationToken,
         [FromQuery] bool isDeleted = false,
-        [FromQuery] string? status = null)
+        [FromQuery] string? status = null,
+        [FromQuery] string? subscriptionTypeId = null)
     {
-        var response = await _sender.Send(new GetMsisdnAssetPoolListRequest { IsDeleted = isDeleted, Status = status }, cancellationToken);
+        var response = await _sender.Send(new GetMsisdnAssetPoolListRequest
+        {
+            IsDeleted = isDeleted,
+            Status = status,
+            SubscriptionTypeId = subscriptionTypeId,
+        }, cancellationToken);
         return Ok(new ApiSuccessResult<GetMsisdnAssetPoolListResult>
         {
             Code = StatusCodes.Status200OK,
@@ -1087,4 +1369,13 @@ public class TelecomController : BaseApiController
             Content = r
         });
     }
+}
+
+public sealed class UploadKycDocumentResponse
+{
+    public bool Success { get; init; }
+    public string? DocumentReferenceId { get; init; }
+    public string? Message { get; init; }
+    public string? MessageAr { get; init; }
+    public string? MessageEn { get; init; }
 }

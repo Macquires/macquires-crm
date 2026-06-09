@@ -8,6 +8,7 @@ public static class TelecomBssOperations
     public const string CbsReverseAccount = "CbsReverseAccount";
     public const string CbsRechargeTopUp = "CbsRechargeTopUp";
     public const string HlrCreateSubscriber = "HlrCreateSubscriber";
+    public const string HlrReprovisionSubscriber = "HlrReprovisionSubscriber";
     public const string HlrDeactivateSubscriber = "HlrDeactivateSubscriber";
     public const string HlrSimProfileUpdate = "HlrSimProfileUpdate";
     public const string CbsChangeServiceType = "ChangeServiceType";

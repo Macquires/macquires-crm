@@ -57,9 +57,6 @@ internal static class DemoSyrianTelecomCatalog
         new("BUSINESS_PRO_50", "بزنس برو 50", 1200, "POSTPAID"),
         new("BIZ_STANDARD", "بزنس ستاندرد", 850, "POSTPAID"),
         new("FLEET_CORP", "أسطول الشركات", 2500, "POSTPAID"),
-        new("ADSL_HOME", "ADSL منزلي", 65, null),
-        new("FIBER_100", "فايبر 100 ميجا", 95, null),
-        new("FIXED_VOICE", "خط ثابت منزلي", 55, null),
         new("HW_ROUTER_5G", "راوتر 5G", 0, null),
         new("HW_WINGLE", "وينجل 4G", 0, null),
         new("SRV_ACTIVATION", "رسوم تفعيل خط", 25, null),
@@ -140,15 +137,6 @@ internal static class DemoSyrianTelecomCatalog
         new("FLEET_CORP", "أسطول الشركات", "Corporate Fleet", "إدارة مركزية لخطوط المؤسسات.", "FLEET_CORP", "POSTPAID", 24, PaymentType.Postpaid, null,
             [(ServiceComponentType.Voice, "3000 دقيقة مشتركة", 3000m, "minutes", false), (ServiceComponentType.Data, "500 جيجا مشتركة", 500m, "GB", false), (ServiceComponentType.International, "500 دقيقة دولية", 500m, "minutes", false)],
             [(PricePlanType.Monthly, 250000m, 25000m, 30, true)]),
-        new("ADSL_HOME", "ADSL منزلي", "Home ADSL", "إنترنت منزلي ADSL.", "ADSL_HOME", "POSTPAID", 25, PaymentType.Postpaid, null,
-            [(ServiceComponentType.Data, "20 ميجا تنزيل", 20m, "Mbps", false)],
-            [(PricePlanType.Monthly, 65000m, 10000m, 30, true)]),
-        new("FIBER_100", "فايبر 100", "Fiber 100", "ألياف بصرية 100 ميجا.", "FIBER_100", "POSTPAID", 26, PaymentType.Postpaid, null,
-            [(ServiceComponentType.Data, "100 ميجا", 100m, "Mbps", false), (ServiceComponentType.Equipment, "مودم فايبر", 1m, "unit", false)],
-            [(PricePlanType.Monthly, 95000m, 15000m, 30, true)]),
-        new("FIXED_VOICE", "خط ثابت منزلي", "Fixed Line", "هاتف ثابت + مكالمات محلية.", "FIXED_VOICE", "POSTPAID", 27, PaymentType.Postpaid, null,
-            [(ServiceComponentType.Voice, "مكالمات محلية غير محدودة", null, "minutes", true)],
-            [(PricePlanType.Monthly, 55000m, 5000m, 30, true)]),
     ];
 
     public static readonly VasDef[] VasServices =

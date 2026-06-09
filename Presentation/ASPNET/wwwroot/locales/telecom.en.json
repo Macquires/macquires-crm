@@ -19,6 +19,11 @@
     },
     "quickPathsAria": "Quick operational paths",
     "tiles": {
+      "newCustomer": {
+        "aria": "Open new subscriber onboarding wizard",
+        "title": "New subscriber",
+        "sub": "POS · quick"
+      },
       "activate": {
         "aria": "Open new line activation wizard",
         "title": "Activate",
@@ -90,6 +95,102 @@
         "sub": "Ticket"
       }
     },
+    "customerWizard": {
+      "heading": "New subscriber — POS wizard",
+      "steps": {
+        "verify": "Verify",
+        "data": "Subscriber data",
+        "done": "Done"
+      },
+      "step1Help": "Check for an existing subscriber before creating one. Search by national ID, commercial registry, or mobile—or click «New subscriber» to continue.",
+      "step2Help": "Fill required fields (*) then save. Extra sections (individual details, contact, social, contact persons) are optional — open only if you need them.",
+      "identitySearch": "National ID / commercial registry",
+      "identitySearchPh": "Individual: 10 digits · Corp: CR-…",
+      "identitySearchHint1": "Individual: full 10-digit national ID. Corporate/bank: commercial registry (partial match OK).",
+      "identitySearchHint2": "You can also search by mobile in the second field.",
+      "nationalId": "National ID",
+      "nationalIdPh": "10 digits",
+      "phone": "Mobile / MSISDN",
+      "phonePh": "09…",
+      "searchBtn": "Search",
+      "newBtn": "New subscriber",
+      "noResults": "No match — you can create a new subscriber.",
+      "searchHintMin": "Enter national ID (10 digits), commercial registry, or mobile (at least 2 characters) to search.",
+      "activateExisting": "Activate new line",
+      "backToSearch": "Back to search",
+      "subscriberType": "Subscriber type",
+      "individual": "Individual",
+      "corporate": "Corporate / bank",
+      "subscriberName": "Subscriber name",
+      "companyName": "Company name",
+      "commercialReg": "Commercial registration",
+      "customerGroup": "Customer group",
+      "customerCategory": "Customer category",
+      "selectGroup": "Select group",
+      "selectCategory": "Select category",
+      "dateOfBirth": "Date of birth",
+      "taxNumber": "Tax ID",
+      "authorizedSignatory": "Authorized signatory",
+      "description": "Notes",
+      "sectionAddress": "Address",
+      "street": "Street",
+      "city": "City",
+      "citySelect": "— Select city —",
+      "addressState": "State / governorate",
+      "zipCode": "Zip code",
+      "country": "Country",
+      "sectionContact": "Contact",
+      "sectionContactHint": "Mobile and email are optional — many subscribers have neither.",
+      "sectionIndividualExtra": "Additional individual details",
+      "sectionContactExtra": "Additional contact channels",
+      "sectionSocial": "Social media",
+      "sectionContacts": "Contact persons",
+      "sectionContactsHint": "Each row is saved only when name, job title, phone, and email are all filled.",
+      "nationality": "Nationality",
+      "nationalityPh": "e.g. Syrian",
+      "gender": "Gender",
+      "genderUnknown": "— not specified —",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "occupation": "Occupation",
+      "fax": "Fax",
+      "website": "Website",
+      "whatsApp": "WhatsApp",
+      "linkedIn": "LinkedIn",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "twitterX": "X (Twitter)",
+      "tikTok": "TikTok",
+      "contactRow": "Contact",
+      "contactName": "Name",
+      "contactJobTitle": "Job title",
+      "contactPhone": "Phone",
+      "contactEmail": "Email",
+      "contactNotes": "Notes",
+      "optional": "optional",
+      "email": "Email",
+      "saveBtn": "Save subscriber",
+      "savedOk": "Subscriber saved successfully",
+      "savedNumber": "Subscriber number:",
+      "finishBtn": "Finish",
+      "activateBtn": "Activate new subscription",
+      "activatePrefilled": "Subscriber ready for activation:",
+      "activateDenied": "You do not have permission to open the activation wizard.",
+      "profileFail": "Could not prepare subscriber profile for activation.",
+      "saveNoId": "Saved without customer id — contact support.",
+      "errName": "Name is required.",
+      "errNationalId": "National ID (10 digits) is required.",
+      "errCommercialReg": "Commercial registration is required (at least 4 characters).",
+      "errGroup": "Customer group is required.",
+      "errCategory": "Customer category is required.",
+      "errStreet": "Street is required.",
+      "errCity": "City is required.",
+      "errState": "State is required.",
+      "errZip": "Zip code is required.",
+      "errCountry": "Country is required.",
+      "errPhone": "Phone number is required.",
+      "errEmail": "Email is required."
+    },
     "wizard": {
       "heading": "Wizard — {title}",
       "closeAria": "Close wizard",
@@ -125,11 +226,56 @@
         "otherRequiredHint": "When you choose “Other”, enter a clear description of the target plan.",
         "options": {
           "OTHER": "Other — manual entry"
+        },
+        "offerCard": {
+          "price": "Price",
+          "priceLabel": "Price: {price}",
+          "voice": "Voice",
+          "data": "Data",
+          "sms": "SMS"
         }
       },
       "activateIccid": "SIM ICCID (triple binding)",
+      "lineType": {
+        "label": "Line type",
+        "hint": "Ask the customer for the subscription type (prepaid, postpaid, hybrid…). Your choice filters numbers and offers automatically.",
+        "placeholder": "— Select line type —",
+        "required": "Select a line type from the catalog before choosing a number and plan.",
+        "selectFirst": "Select line type first to filter numbers and offers.",
+        "selectedHint": "Numbers and offers shown for line type: {type}"
+      },
       "activateIccidHint": "19-digit ICCID from the SIM kit — required for activation.",
-      "activateMsisdnRequired": "Select an available MSISDN from the search results before continuing.",
+      "activateIccidLockedHint": "Filled automatically from inventory triple-binding (MSISDN + SIM kit). POS staff cannot edit this field.",
+      "activateMsisdnLabel": "Line number (MSISDN)",
+      "activateMsisdnHint": "After line type is set: leave empty and click Search to browse matching numbers — or type a prefix (e.g. 0933) to filter.",
+      "activateMsisdnPh": "09… (optional prefix filter)",
+      "activateMsisdnRequired": "Select an available MSISDN from the pool before continuing.",
+      "msisdnPicker": {
+        "title": "Select available number",
+        "subtitle": "Browse POS-available MSISDNs — grouped by pricing tier.",
+        "browseTitle": "Browse available numbers",
+        "prefixFilter": "Prefix filter",
+        "loading": "Loading number pool…",
+        "empty": "No matching available numbers — try another tab or change the prefix.",
+        "emptyFiltered": "No numbers available for the selected line type — try another type or refresh the pool.",
+        "colMsisdn": "MSISDN",
+        "colTier": "Tier",
+        "colAction": "Action",
+        "selectBtn": "Select",
+        "refresh": "Refresh",
+        "reservedHint": "Reserved",
+        "truncated": "Showing first",
+        "total": "Matches",
+        "categories": {
+          "all": "All",
+          "normal": "Standard",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        }
+      },
+      "corporateSecondPartyHint": "Corporate account — pick the actual line user (individual) by national ID or registry.",
+      "corporateSecondPartyRequired": "For corporate activation you must select the second party (actual user) from search results.",
       "iccidRequired": "Enter the 19-digit SIM ICCID for activation.",
       "iccidInvalid": "ICCID must be 19 digits.",
       "simIccidLabel": "ICCID",
@@ -145,6 +291,21 @@
       "uploadBtn": "Confirm document on file",
       "uploadBtnTakeOver": "Upload ID and send for review",
       "uploaded": "Document recorded. You can follow the request in the table until review and confirmation are finished.",
+      "kycUpload": {
+        "title": "Identity document (KYC)",
+        "dropHint": "Drag the ID file here or click to browse",
+        "formats": "PDF, PNG, JPG — max 5 MB",
+        "uploading": "Uploading document…",
+        "locked": "Document uploaded and linked to the request",
+        "linked": "KYC document linked to the request",
+        "required": "KYC document file is required.",
+        "badType": "Only PDF or image files (JPG/PNG) are allowed.",
+        "tooLarge": "File size exceeds 5 MB.",
+        "msisdnRequired": "Select an MSISDN before uploading the document.",
+        "network": "Network error while uploading the document.",
+        "failed": "KYC document upload failed.",
+        "valAct12": "VAL-ACT-12: A KYC document must be uploaded and linked before activation confirmation."
+      },
       "step3a": "The request was saved as",
       "step3b": "successfully.",
       "step3c": "For day-to-day work use the “Telecom requests” table on this page; “Confirm execution” runs for authorised roles on the first request that is ready for review.",
@@ -468,9 +629,11 @@
       "pageTitle": "Subscriber registry (BSS)",
       "onboarding": {
         "title": "Pre-add verification",
-        "hint": "Search by national ID (on an existing subscriber profile) or MSISDN to avoid duplicate customers; then link a new line or create a new customer.",
-        "nationalId": "National ID",
-        "nationalIdPh": "e.g. 01…",
+        "hint": "Search by national ID (10 digits for individuals), commercial registry (corporate), or mobile/MSISDN; then link a line or create a new subscriber.",
+        "nationalId": "National ID / commercial registry",
+        "nationalIdPh": "Individual: 010… · Corp: CR-…",
+        "identitySearchHint1": "Individual: full 10-digit national ID. Corporate: commercial registry (partial OK).",
+        "identitySearchHint2": "You can also search by mobile/MSISDN in the second field.",
         "msisdn": "MSISDN",
         "msisdnPh": "09…",
         "search": "Search",
@@ -509,7 +672,7 @@
       },
       "primaryLine": {
         "header": "Primary line (MSISDN / line type) — sensitive",
-        "bootstrapHint": "Enter the new MSISDN and line type; subscriber profile and line are created after the subscriber record is saved.",
+        "bootstrapHint": "Choose an available MSISDN from inventory and line type; subscriber profile and line are created after the subscriber record is saved.",
         "editHint": "Saved with subscriber data: party is updated first, then the line when either field changes.",
         "lineType": "Line type"
       },
@@ -973,7 +1136,7 @@
           "channel": {
             "Customer_Care_Voice_AI": "AI — call center",
             "Self_Care_App": "Self-care app",
-            "Showroom_Agent": "Showroom",
+            "Showroom_Agent": "POS",
             "CallCenter_Agent": "Call center"
           },
           "resultSuccess": "Success",
@@ -1050,7 +1213,7 @@
       "hubLink": "Network operations center",
       "gridTitle": "Asset list",
       "loading": "Loading inventory…",
-      "showroomStock": "Showroom stock",
+      "showroomStock": "POS stock",
       "kpi": {
         "total": "Total MSISDNs",
         "available": "Available",
@@ -1059,7 +1222,9 @@
         "quarantined": "Quarantined"
       },
       "filter": {
-        "suspended": "Suspended"
+        "suspended": "Suspended",
+        "lineTypeAll": "All line types",
+        "lineTypeHint": "Line type is stamped on each MSISDN in the pool (prepaid → IN, postpaid → CBS) even when available"
       },
       "columns": {
         "msisdn": "MSISDN",
@@ -1067,6 +1232,7 @@
         "imsi": "IMSI",
         "status": "Status",
         "assignment": "Assignment",
+        "lineType": "Line type",
         "product": "Package / product",
         "releaseDate": "Release / quarantine"
       },
@@ -1082,10 +1248,15 @@
         "emptyGrid": "No matching numbers"
       }
     },
+    "integrationDemoBanner": {
+      "title": "💡 Interactive Demo Environment",
+      "message": "The data displayed is a high-fidelity Simulation (Mock Data), fully architected for seamless real-time integration with Syriatel's central Oracle Fusion SCM / Inventory Management core modules.",
+      "chip": "Oracle Fusion SCM"
+    },
     "deviceInventory": {
       "pageTitle": "Device inventory (IMEI)",
       "title": "Device inventory (IMEI)",
-      "subtitle": "Manage showroom devices and routers — IMEI, model, price, and status.",
+      "subtitle": "Manage POS devices and routers — IMEI, model, price, and status.",
       "hubLink": "Operations hub",
       "addTitle": "Add device",
       "gridTitle": "Device list",
@@ -1096,6 +1267,8 @@
         "sku": "SKU",
         "listPrice": "List price (SYP)",
         "branchId": "Branch ID",
+        "branch": "Branch",
+        "branchPlaceholder": "— Select branch —",
         "add": "Add"
       },
       "kpi": {
@@ -1208,9 +1381,9 @@
       "reasonUpgrade": "Upgrade (e.g. 5G)",
       "reasonOther": "Other",
       "lostOrStolen": "Lost / stolen report",
-      "lostOrStolenHint": "Requires ID and Back Office approval — not executed immediately from showroom.",
+      "lostOrStolenHint": "Requires ID and Back Office approval — not executed immediately from POS.",
       "identityRequired": "Subscriber ID / declaration",
-      "pendingBackOffice": "Awaiting supervisor approval — no network provisioning from showroom.",
+      "pendingBackOffice": "Awaiting supervisor approval — no network provisioning from POS.",
       "confirmStandard": "Confirm SIM swap",
       "confirmPending": "Submit to Back Office",
       "val0401": "VAL-04-01: SIM or line is not eligible for swap.",
@@ -1227,7 +1400,7 @@
       "reasonOther": "Other",
       "premiumFee": "Premium fee (SYP)",
       "premiumHint": "Premium number — fee or Back Office approval required before activation.",
-      "pendingBackOffice": "Awaiting financial Back Office approval — not executed immediately from showroom.",
+      "pendingBackOffice": "Awaiting financial Back Office approval — not executed immediately from POS.",
       "paymentDocHint": "Upload payment receipt or supervisor approval.",
       "draftHint": "CNR- draft — pick number then complete documents and confirm."
     },
@@ -1304,7 +1477,7 @@
       "boHint": "VAL-09-03: Back-office approval required.",
       "matrixTitle": "Eligibility matrix (§9)",
       "matrixLoading": "Checking eligibility…",
-      "matrixAllowed": "Allowed — showroom",
+      "matrixAllowed": "Allowed — POS",
       "matrixBo": "Back-office approval required",
       "matrixDenied": "Denied",
       "lastSuspension": "Last suspension",
@@ -1346,7 +1519,7 @@
       "depositForfeit": "Forfeit",
       "depositRefund": "Refund previous owner",
       "identityRequired": "New owner ID document",
-      "pendingBackOffice": "Awaiting Back Office approval — showroom cannot provision on network.",
+      "pendingBackOffice": "Awaiting Back Office approval — POS cannot provision on network.",
       "val0702": "VAL-07-02: Outstanding debt blocks transfer.",
       "val0705": "VAL-07-05: Party is blacklisted.",
       "val0703": "VAL-07-03: Another open transfer exists on this line.",
@@ -1378,6 +1551,7 @@
       "hero": {
         "activeLines": "{count} active line(s)",
         "tickets": "Tickets",
+        "vas": "VAS",
         "aiAgent": "Call center AI agent",
         "search": "Search",
         "crmRegistry": "CRM registry",
@@ -1439,9 +1613,15 @@
         "contactPhone": "Phone",
         "contactEmail": "Email",
         "contactNotes": "Notes",
+        "linkedIn": "LinkedIn",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "twitterX": "X (Twitter)",
+        "tikTok": "TikTok",
         "createdAt": "Created at",
         "updatedAt": "Last updated",
-        "customerId": "Customer ID"
+        "customerId": "Customer ID",
+        "viewDocument": "View document"
       },
       "enums": {
         "customerKind": {
@@ -1462,6 +1642,65 @@
           "SuspendedInbound": "Inbound suspended",
           "SuspendedOutbound": "Outbound suspended",
           "Deactivated": "Deactivated"
+        },
+        "gender": {
+          "male": "Male",
+          "female": "Female",
+          "unknown": "Not specified"
+        },
+        "legalStatus": {
+          "unknown": "Not specified",
+          "soleProprietorship": "Sole proprietorship",
+          "partnership": "Partnership",
+          "limitedLiability": "Limited liability",
+          "jointStock": "Joint stock",
+          "government": "Government"
+        },
+        "billingMode": {
+          "unified": "Unified billing",
+          "separate": "Separate billing"
+        },
+        "statusReason": {
+          "credit": "Credit",
+          "fraud": "Fraud",
+          "regulatory": "Regulatory"
+        },
+        "subscriptionType": {
+          "prepaid": "Prepaid",
+          "postpaid": "Postpaid",
+          "hybrid": "Hybrid"
+        },
+        "simType": {
+          "physical": "Physical SIM",
+          "esim": "eSIM"
+        },
+        "simStatus": {
+          "available": "Available",
+          "reserved": "Reserved",
+          "active": "Active",
+          "suspended": "Suspended",
+          "quarantined": "Quarantined"
+        },
+        "documentStatus": {
+          "uploaded": "Uploaded",
+          "verified": "Verified",
+          "rejected": "Rejected",
+          "missing": "Missing"
+        },
+        "serviceLineType": {
+          "mobile": "Mobile",
+          "broadband": "Broadband",
+          "fixedLine": "Fixed line"
+        },
+        "units": {
+          "gb": "GB",
+          "sms": "SMS",
+          "minutes": "min"
+        },
+        "bucket": {
+          "voice": "Local minutes",
+          "data": "Data bundle",
+          "sms": "Text messages"
         }
       },
       "provSuccess": "Operation recorded; CBS/HLR sync in progress or completed",
@@ -1472,23 +1711,44 @@
       "limitPrefix": "Limit:",
       "actions": {
         "provisioningHub": "Provisioning & activation hub",
+        "technicalSupport": "Technical support",
         "techSupport": "Technical support",
-        "techSupportSub": "AI voice wizard",
+        "techSupportSub": "HLR reprovision",
+        "techSupportHlr": "HLR reprovision",
         "addPackage": "Add package / VAS",
         "changeGsm": "Change line type (CGT)",
-        "inFlight": "Executing on CBS/HLR…"
+        "inFlight": "Executing on CBS/HLR…",
+        "selectedLine": "Selected line",
+        "pickLine": "Pick a line from the table above"
+      },
+      "hlrRemediation": {
+        "title": "HLR desync troubleshooting",
+        "subtitle": "CRM shows Active but HLR reports a mismatched state — choose a remediation action.",
+        "crmActive": "CRM: Active",
+        "hlrState": "HLR",
+        "reprovision": "HLR reprovision",
+        "simSwap": "SIM swap",
+        "suspension": "Temporary suspension (SUS)",
+        "reconnect": "Reconnect (RCN)",
+        "lastLog": "Latest HLR log",
+        "reprovisionOk": "Reprovision complete — HLR is Active",
+        "checking": "Querying HLR…"
       },
       "grid": {
+        "msisdn": "MSISDN",
         "product": "Plan / product",
         "subscriptionType": "Subscription type",
         "status": "Status",
         "lineType": "Line type",
+        "iccid": "ICCID",
+        "imsi": "IMSI",
         "simType": "SIM type",
         "simStatus": "SIM status",
         "documents": "Documents",
         "balanceLimit": "Balance / limit",
         "loyalty": "Loyalty",
-        "activation": "Activation"
+        "activation": "Activation",
+        "hlr": "HLR"
       },
       "profileTab": {
         "legal": "Personal & legal data",
@@ -1498,13 +1758,16 @@
         "operation": "Operation",
         "result": "Result",
         "time": "Time",
-        "noLogs": "No records."
+        "noLogs": "No records.",
+        "logOk": "OK",
+        "logRetry": "Retry"
       },
       "servicesTab": {
         "activePlans": "Active plans & lines",
         "noSubs": "No subscriptions on file.",
         "currentBalance": "Current balance (CBS)",
         "walletLoadFailed": "Could not load balance",
+        "noMsisdnForWallet": "No line number for balance inquiry.",
         "quotaTitle": "Plan quotas & remaining",
         "noBuckets": "No quota details for this plan.",
         "unlimited": "Unlimited",
@@ -1557,8 +1820,14 @@
         "amountPh": "Amount",
         "paymentRefPh": "Payment reference",
         "recordPayment": "Record payment",
+        "fetchFromCashier": "Fetch from cashier",
+        "cashierFetched": "Payment loaded from cashier.",
         "paymentDone": "Payment recorded.",
         "confirmCbs": "Confirm CBS",
+        "rechargeVia360Hint": "For later top-up/recharge use Customer 360 or Customer List — not this activation wizard.",
+        "openCustomer360": "Customer 360",
+        "customer360IdMissing": "Select a customer before opening Customer 360.",
+        "customer360OpenedWithoutId": "This page was opened without a target customer id.",
         "awaitBo": "Awaiting back-office approval from Telecom Hub.",
         "confirmed": "Confirmed and executed.",
         "doneTitle": "Operation completed",
@@ -1574,7 +1843,8 @@
         "package": "Package",
         "iccid": "ICCID",
         "activationChannel": "Activation channel",
-        "channelShowroom": "Showroom",
+        "channelShowroom": "POS",
+        "channelShowroomLockedHint": "POS workspace — channel is fixed to POS.",
         "channelDealer": "Dealer",
         "channelDigital": "Digital",
         "dealerCode": "Dealer code",
@@ -1719,6 +1989,56 @@
       "thTime": "Time",
       "loading": "Loading…",
       "empty": "No integration records yet.",
+      "prev": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}"
+    },
+    "inIntegration": {
+      "title": "IN integration",
+      "subtitle": "Huawei IN mock integration log — prepaid balance, voice quota, and data bundle provisioning.",
+      "hubLink": "Operations hub",
+      "refresh": "Refresh",
+      "noAccess": "You do not have permission to view the IN integration log.",
+      "filterOp": "Operation request #",
+      "filterResult": "Result",
+      "filterPageSize": "Page size",
+      "filterAll": "— All —",
+      "search": "Search",
+      "logTitle": "IN integration log (Intelligent Network mock)",
+      "totalRecords": "Total records",
+      "thOperation": "Operation",
+      "thAttempt": "Attempt",
+      "thTarget": "Target",
+      "thResult": "Result",
+      "thMessage": "Network message",
+      "thTime": "Time",
+      "loading": "Loading…",
+      "empty": "No IN integration records yet.",
+      "prev": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}"
+    },
+    "hlrProvisioning": {
+      "title": "HLR provisioning",
+      "subtitle": "HLR / HSS core network provisioning log — IMSI mapping, service codes, and SIM profile activation.",
+      "hubLink": "Operations hub",
+      "refresh": "Refresh",
+      "noAccess": "You do not have permission to view the HLR provisioning log.",
+      "filterOp": "Operation request #",
+      "filterResult": "Result",
+      "filterPageSize": "Page size",
+      "filterAll": "— All —",
+      "search": "Search",
+      "logTitle": "HLR / HSS provisioning log (Core Network mock)",
+      "totalRecords": "Total records",
+      "thOperation": "Operation",
+      "thAttempt": "Attempt",
+      "thTarget": "Target",
+      "thResult": "Result",
+      "thMessage": "Network message",
+      "thTime": "Time",
+      "loading": "Loading…",
+      "empty": "No HLR provisioning records yet.",
       "prev": "Previous",
       "next": "Next",
       "pageOf": "Page {page} of {total}"
@@ -1885,6 +2205,19 @@
       "response": "Response"
     },
     "administration": {
+      "index": {
+        "pageTitle": "Governance & system",
+        "subtitle": "Platform command center — administrators only.",
+        "users": "User management",
+        "branches": "Branch management",
+        "roles": "Roles & permissions",
+        "globalSettings": "Global settings",
+        "auditLog": "Audit trail",
+        "integrationMonitor": "Network integration log",
+        "dashboardWidgets": "Dashboard widgets",
+        "operatorCompany": "Operator company profile",
+        "numberSequences": "Operational numbering"
+      },
       "auditLog": {
         "pageTitle": "Audit trail",
         "subtitle": "Black box — who did what, when, and from which device?",
@@ -1935,6 +2268,124 @@
           "StrategicReportViewed": "Strategic report viewed",
           "PaymentServicesReverse": "Payment reversal"
         }
+      },
+      "userList": {
+        "pageTitle": "User management",
+        "subtitle": "Staff operations hub — Persona, line manager, and branch.",
+        "linkBranches": "Branch management",
+        "linkBack": "← Governance & system",
+        "linkAudit": "Audit trail",
+        "grid": {
+          "fullName": "Name",
+          "email": "Email",
+          "persona": "Persona",
+          "roles": "Roles",
+          "manager": "Manager",
+          "orgUnit": "Org unit",
+          "status": "Status",
+          "lastLogin": "Last sign-in",
+          "lastActivity": "Last activity",
+          "blocked": "Blocked"
+        },
+        "online": {
+          "connected": "Online",
+          "disconnected": "Offline"
+        },
+        "toolbar": {
+          "add": "Add",
+          "edit": "Edit"
+        },
+        "modal": {
+          "addTitle": "Add user",
+          "editTitle": "Edit user",
+          "close": "Close",
+          "save": "Save",
+          "email": "Email",
+          "password": "Password",
+          "confirmPassword": "Confirm",
+          "firstName": "First name",
+          "lastName": "Last name",
+          "persona": "Persona (menu)",
+          "manager": "Line manager",
+          "orgUnit": "Org unit",
+          "none": "— None —",
+          "blocked": "Account blocked",
+          "emailConfirmed": "Email confirmed",
+          "identityRoles": "Identity roles (Telecom)"
+        },
+        "messages": {
+          "roleUpdateFailed": "Could not update role",
+          "nameRequired": "Name is required",
+          "emailPasswordRequired": "Email and password are required",
+          "saved": "Saved",
+          "saveFailed": "Save failed",
+          "error": "Error"
+        }
+      },
+      "roleList": {
+        "pageTitle": "Roles & permissions",
+        "subtitle": "RBAC matrix — strict Persona mode protects sensitive routes and commands.",
+        "backLink": "← Governance & system",
+        "permissionsFor": "Permissions:",
+        "cloneRole": "Clone role",
+        "saveMatrix": "Save matrix",
+        "selectRoleHint": "Select a role from the list to view and edit its permissions.",
+        "grid": {
+          "role": "Role"
+        },
+        "clone": {
+          "title": "Clone role",
+          "inputLabel": "New role name",
+          "success": "Role cloned"
+        },
+        "messages": {
+          "saved": "Permissions saved",
+          "saveFailed": "Save failed",
+          "error": "Error"
+        }
+      },
+      "branchList": {
+        "pageTitle": "Branch management",
+        "subtitle": "Branch and org structure — assign branch managers and link staff from",
+        "linkUsers": "User management",
+        "linkBack": "← Governance & system",
+        "grid": {
+          "nameAr": "Branch",
+          "nameEn": "EN",
+          "parent": "Parent unit",
+          "manager": "Branch manager",
+          "managerEmail": "Manager email",
+          "staff": "Staff",
+          "status": "Status"
+        },
+        "active": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "toolbar": {
+          "add": "Add branch",
+          "edit": "Edit"
+        },
+        "modal": {
+          "addTitle": "Add branch",
+          "editTitle": "Edit branch",
+          "close": "Close",
+          "save": "Save",
+          "nameAr": "Branch name (Arabic)",
+          "nameEn": "Name (English)",
+          "parent": "Parent unit",
+          "parentNone": "— None (top level) —",
+          "manager": "Branch manager",
+          "none": "— None —",
+          "active": "Active branch"
+        },
+        "messages": {
+          "nameRequired": "Branch name is required",
+          "selectBranch": "Select a branch from the grid",
+          "saved": "Saved",
+          "saveFailed": "Save failed",
+          "error": "Error"
+        }
       }
     },
     "defaultDashboard": {
@@ -1949,7 +2400,7 @@
       "cockpit": {
         "personaExecutive": "Performance KPIs and executive reports",
         "personaCallCenter": "Quick search and network status",
-        "personaRetail": "Activation and sales — retail showroom",
+        "personaRetail": "Activation and sales — retail POS",
         "personaBackOffice": "Approvals and pending operations",
         "personaSysAdmin": "Platform and integration monitoring",
         "dynamicSubtitle": "Dynamic operations dashboard",
@@ -2045,6 +2496,167 @@
       "colMsisdn": "MSISDN",
       "colStatus": "Status",
       "openProfile": "Open full subscriber profile"
+    },
+    "admin": {
+      "globalSettings": {
+        "pageTitle": "Central control panel",
+        "pageSubtitle": "Cities, security, maintenance, notifications, integrations, and Telecom business rules — changes apply within ~30s (backend cache).",
+        "backAdmin": "← Administration",
+        "saveTab": "Save tab",
+        "saveSuccess": "Saved",
+        "saveSuccessHint": "Changes apply immediately to active sessions.",
+        "saveFailed": "Save failed",
+        "syncSummary": "Pending sync",
+        "close": "Close",
+        "tabs": {
+          "cities": "Cities",
+          "security": "Security",
+          "maintenance": "Maintenance",
+          "notifications": "Notifications",
+          "integrations": "Integrations",
+          "telecomLifecycle": "Lifecycle",
+          "telecomActivation": "Activation",
+          "telecomFinancial": "Financial",
+          "telecomOperations": "Operations"
+        },
+        "telecom": {
+          "saveHint": "Telecom rules apply to new operations within ~30 seconds (backend cache).",
+          "lifecycle": {
+            "heading": "Line lifecycle & inventory",
+            "intro": "Quarantine durations, MSISDN reservation TTL, and long-suspension review threshold.",
+            "msisdnQuarantineDays": "MSISDN quarantine (days)",
+            "msisdnQuarantineHint": "After termination or number change before returning to the pool.",
+            "simQuarantineDays": "SIM quarantine (days)",
+            "simQuarantineHint": "After SIM swap before ICCID returns to stock.",
+            "msisdnReservationHours": "MSISDN reservation (hours)",
+            "msisdnReservationHint": "Expired reservation releases the number to available.",
+            "suspensionLongReviewDays": "Long suspension threshold (days)",
+            "suspensionLongReviewHint": "Beyond this duration triggers a Back-Office review ticket."
+          },
+          "activation": {
+            "heading": "New line activation (ACT)",
+            "intro": "Regulatory line caps and validation gates before confirm.",
+            "maxLinesIndividual": "Max lines — individual",
+            "maxLinesCorporate": "Max lines — corporate",
+            "dealerCodeRequired": "Dealer code required for Dealer channel",
+            "requireKyc": "KYC required before activation confirm",
+            "requirePaymentRef": "Payment reference required when deposit is due",
+            "channelLabelsSection": "Activation channel labels (Omnichannel)",
+            "channelLabelsIntro": "Display names for POS / Dealer / Digital channels across wizards and operation detail. Internal codes stay fixed for audit.",
+            "channelPosAr": "POS channel — Arabic",
+            "channelPosEn": "POS channel — English",
+            "channelDealerAr": "Dealer channel — Arabic",
+            "channelDealerEn": "Dealer channel — English",
+            "channelDigitalAr": "Digital channel — Arabic",
+            "channelDigitalEn": "Digital channel — English"
+          },
+          "financial": {
+            "heading": "Financial & risk (RFD / TRM)",
+            "refundSection": "Refunds (RFD)",
+            "refundIntro": "Dual-approval threshold and high-risk payout methods.",
+            "dualApprovalThreshold": "Dual-approval threshold (SYP)",
+            "dualApprovalHint": "Refunds above this amount require dual approval / BO.",
+            "highRiskMethods": "High-risk refund methods",
+            "terminationSection": "Termination (TRM)",
+            "defaultFinalBill": "Default final bill amount (SYP)",
+            "csvHint": "Comma-separated values (e.g. Fraud,Regulatory,Collections)"
+          },
+          "operations": {
+            "heading": "Operations routing & BO rules",
+            "intro": "Back-office routing lists, premium number categories, and device financing thresholds.",
+            "trmBackOfficeTypes": "Termination — BO types (CSV)",
+            "susBackOfficeTypes": "Suspension — BO types (CSV)",
+            "premiumCategories": "Change number — premium categories (CSV)",
+            "tkoDepositPolicy": "Take-over — default deposit policy",
+            "trmCorporateBo": "Corporate termination → always BO",
+            "trmVoluntaryRetention": "Voluntary termination requires retention outcome",
+            "susCorporateBo": "Corporate suspension → always BO",
+            "simLostStolenBo": "Lost/stolen SIM → BO",
+            "cnrBlockQuarantine": "Block quarantined MSISDN as change target",
+            "tkoAlwaysBo": "Take-over (TKO) → always BO",
+            "deviceSalesSection": "Device installment sales",
+            "creditLow": "Low credit score threshold",
+            "creditGood": "Good credit score threshold",
+            "dpReject": "Down payment — reject %",
+            "dpVip": "VIP down payment %",
+            "dpLow": "Low down payment %",
+            "dpGood": "Good down payment %"
+          }
+        },
+        "cities": {
+          "hint": "Country is fixed: Syria — manage cities and governorates. Each city saves from its edit dialog.",
+          "colCity": "City",
+          "colGovernorate": "Governorate",
+          "colSort": "Sort",
+          "colActive": "Active",
+          "colCreated": "Created",
+          "add": "Add",
+          "edit": "Edit",
+          "delete": "Delete",
+          "modalAdd": "Add city",
+          "modalEdit": "Edit city",
+          "modalDelete": "Delete city",
+          "fieldName": "City name",
+          "fieldGovernorate": "Governorate",
+          "fieldSort": "Sort order",
+          "fieldActive": "Active",
+          "confirmDelete": "Confirm delete",
+          "errName": "City name is required.",
+          "errGovernorate": "Governorate is required.",
+          "saved": "City saved",
+          "deleted": "City deleted"
+        },
+        "security": {
+          "heading": "Security",
+          "strictPersona": "Strict Persona Mode",
+          "strictPersonaHint": "When enabled, persona blocks routes and commands outside the employee boundary even if the role allows them.",
+          "jwtMinutes": "JWT lifetime (minutes)",
+          "jwtHint": "May require re-login after save."
+        },
+        "maintenance": {
+          "heading": "Maintenance mode",
+          "enable": "Enable maintenance mode",
+          "msgAr": "Message (Arabic)",
+          "msgEn": "Message (English)",
+          "bypassIps": "Bypass IP addresses",
+          "bypassHint": "One IP per line or comma-separated (NOC, VPN, dev)."
+        },
+        "notifications": {
+          "heading": "Subscriber notifications (SMS)",
+          "intro": "Separate from the SMS gateway circuit breaker — controls customer messages without disabling the integration entirely.",
+          "customerOps": "Enable customer operation SMS",
+          "customerOpsHint": "When off, no completion SMS is sent (saves gateway cost).",
+          "welcome": "Enable welcome SMS on activation",
+          "welcomeAr": "Welcome template (Arabic)",
+          "welcomeEn": "Welcome template (English)",
+          "templateHint": "Use {Msisdn} for the line number."
+        },
+        "integrations": {
+          "heading": "Integrations (emergency)",
+          "demoVersion": "Demo version mode",
+          "demoVersionHint": "When enabled, device and MSISDN/SIM inventory screens show a top banner stating data is Mock Data architected for Oracle Fusion SCM integration. Disable in live production.",
+          "circuitBreaker": "Circuit breaker",
+          "monitorLink": "Integration log",
+          "legendOn": "Live — saving ON flushes pending operations to the network.",
+          "legendOff": "Emergency fallback — work continues locally; logs show FALLBACK_MODE.",
+          "saveHint": "Turning integrations back ON syncs the pending queue automatically.",
+          "huaweiTitle": "Huawei CBS",
+          "huaweiHint": "Billing and activation on the central billing system.",
+          "inTitle": "Huawei IN",
+          "inHint": "Real-time prepaid — balance, top-up, and lifecycle locks.",
+          "inConfigHeading": "Huawei IN — gateway settings",
+          "inConfigHint": "Controls simulated latency, timeout, and real-time deduction for prepaid lines.",
+          "inGatewayUrl": "Gateway URL",
+          "inTimeoutMs": "Timeout (ms)",
+          "inSimulateDeduction": "Simulate real-time deduction",
+          "hlrTitle": "HLR / network",
+          "hlrHint": "Activation, SIM swap, migration on core network.",
+          "smsTitle": "SMS gateway",
+          "smsHint": "Send gateway — must be ON for any SMS to reach the network.",
+          "badgeOn": "Live (ON)",
+          "badgeOff": "Fallback (OFF)"
+        }
+      }
     }
   }
 }

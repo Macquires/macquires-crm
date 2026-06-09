@@ -1,3 +1,78 @@
+function parseProductOfferingDetail(res) {
+    const c = res?.data?.content ?? res?.content ?? {};
+    return {
+        id: c.id ?? c.Id ?? '',
+        name: c.name ?? c.Name ?? '',
+        nameEn: c.nameEn ?? c.NameEn ?? '',
+        code: c.code ?? c.Code ?? c.serviceIdSocCode ?? c.ServiceIdSocCode ?? '',
+        description: c.description ?? c.Description ?? '',
+        shortDescription: c.shortDescription ?? c.ShortDescription ?? '',
+        voiceMinutesLimit: c.voiceMinutesLimit ?? c.VoiceMinutesLimit,
+        speedQuotaLimitGb: c.speedQuotaLimitGb ?? c.SpeedQuotaLimitGb,
+        iconClass: c.iconClass ?? c.IconClass ?? 'bi-box-seam',
+        badgeColor: c.badgeColor ?? c.BadgeColor ?? 'primary',
+        components: Array.isArray(c.components) ? c.components : c.Components ?? [],
+        pricePlans: Array.isArray(c.pricePlans) ? c.pricePlans : c.PricePlans ?? [],
+    };
+}
+
+function offerDetailDisplayName(detail, lang) {
+    if (!detail) return '';
+    const ar = (detail.name || '').trim();
+    const en = (detail.nameEn || '').trim();
+    return lang === 'ar' ? ar || en : en || ar;
+}
+
+function offerDefaultMonthlyPrice(detail) {
+    const plans = detail?.pricePlans || [];
+    const def = plans.find((p) => p.isDefault || p.IsDefault) || plans[0];
+    if (!def) return null;
+    const price = Number(def.price ?? def.Price);
+    return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function offerComponentByType(detail, type) {
+    return (detail?.components || []).find((c) => (c.componentType ?? c.ComponentType) === type);
+}
+
+function formatOfferQuotaLine(comp, lang) {
+    if (!comp) return '';
+    if (comp.isUnlimited || comp.IsUnlimited) return lang === 'ar' ? 'بلا حدود' : 'Unlimited';
+    const q = comp.quota ?? comp.Quota;
+    const u = String(comp.quotaUnit ?? comp.QuotaUnit ?? '').toLowerCase();
+    const type = comp.componentType ?? comp.ComponentType;
+    if (lang === 'en') {
+        if (type === 0 || u === 'minutes') return `${q} local minutes`;
+        if (type === 1 || u === 'gb') return `${q} GB`;
+        if (type === 2 || u === 'sms') return `${q} SMS`;
+        const label = comp.label ?? comp.Label;
+        return label || `${q ?? ''} ${u}`.trim();
+    }
+    const label = comp.label ?? comp.Label;
+    if (label) return label;
+    if (type === 0 || u === 'minutes') return `${q} دقيقة محلية`;
+    if (type === 1 || u === 'gb') return `${q} جيجا`;
+    if (type === 2 || u === 'sms') return `${q} رسالة`;
+    return `${q ?? ''} ${u}`.trim();
+}
+
+function offerDetailSummaryText(detail, lang) {
+    if (!detail) return '';
+    if (lang === 'ar') {
+        return (detail.shortDescription || detail.description || '').trim();
+    }
+    return '';
+}
+
+function formatMoneyOffer(n, lang) {
+    if (n == null || isNaN(n)) return '—';
+    try {
+        return new Intl.NumberFormat(lang === 'ar' ? 'ar-SY' : 'en-US', { maximumFractionDigits: 0 }).format(n);
+    } catch {
+        return String(n);
+    }
+}
+
 const telecomT = (key, fallback) => {
     try {
         const raw = String(key);
@@ -50,6 +125,8 @@ const PERM = {
 const isPremiumMsisdnCategory = (cat) => [1, 2, 3, 'Silver', 'Gold', 'Platinum'].includes(cat);
 
 const contentLocale = () => {
+    const fromI18n = window.TelecomI18n?.getLang?.();
+    if (fromI18n) return fromI18n;
     const lang = (document.documentElement.lang || 'en').toLowerCase();
     return lang.startsWith('en') ? 'en' : 'ar';
 };
@@ -107,6 +184,13 @@ const Customer360ProfileApp = {
     setup() {
         const localeTick = Vue.ref(0);
 
+        const t360 = (key, fallback = '') => {
+            localeTick.value;
+            return telecomT(key, fallback);
+        };
+
+        const uiLang = () => contentLocale();
+
         const ui = Vue.computed(() => {
             localeTick.value;
             const f = (k, fb = '') => telecomT(`fields.${k}`, fb);
@@ -118,6 +202,7 @@ const Customer360ProfileApp = {
                 hero: {
                     activeLines: h('activeLines', '{count} lines'),
                     tickets: h('tickets', 'Tickets'),
+                    vas: h('vas', 'VAS'),
                     aiAgent: h('aiAgent', 'AI agent'),
                     search: h('search', 'Search'),
                     crmRegistry: h('crmRegistry', 'CRM'),
@@ -142,19 +227,36 @@ const Customer360ProfileApp = {
                     provisioningHub: telecomT('actions.provisioningHub', 'Provisioning hub'),
                     techSupport: telecomT('actions.techSupport', 'Support'),
                     techSupportSub: telecomT('actions.techSupportSub', 'AI'),
+                    addPackage: telecomT('actions.addPackage', 'Add package / VAS'),
+                    changeGsm: telecomT('actions.changeGsm', 'Change line type (CGT)'),
+                    simSwap: telecomT('lineActions.simSwap', 'SIM swap'),
+                    takeOver: telecomT('lineActions.takeOver', 'Transfer ownership'),
+                    migrate: telecomT('lineActions.migrate', 'Migrate package'),
+                    changeNumber: telecomT('lineActions.changeNumber', 'Change MSISDN (CNR)'),
+                    terminate: telecomT('lineActions.terminate', 'Terminate line (TRM)'),
+                    suspension: telecomT('lineActions.suspension', 'Temporary suspension (SUS)'),
+                    reconnect: telecomT('lineActions.reconnect', 'Reconnect (RCN)'),
+                    collection: telecomT('lineActions.collection', 'Collections (BDR)'),
+                    refund: telecomT('lineActions.refund', 'Refund (RFD)'),
+                    deviceSale: telecomT('lineActions.deviceSale', 'Device sale (DEV)'),
+                    newLine: telecomT('lineActions.newLine', 'Activate new line'),
                     inFlight: telecomT('actions.inFlight', 'Processing…'),
                 },
                 grid: {
+                    msisdn: telecomT('grid.msisdn', 'MSISDN'),
                     product: telecomT('grid.product', 'Plan'),
                     subscriptionType: telecomT('grid.subscriptionType', 'Type'),
                     status: telecomT('grid.status', 'Status'),
                     lineType: telecomT('grid.lineType', 'Line type'),
+                    iccid: telecomT('grid.iccid', 'ICCID'),
+                    imsi: telecomT('grid.imsi', 'IMSI'),
                     simType: telecomT('grid.simType', 'SIM type'),
                     simStatus: telecomT('grid.simStatus', 'SIM status'),
                     documents: telecomT('grid.documents', 'Documents'),
                     balanceLimit: telecomT('grid.balanceLimit', 'Balance'),
                     loyalty: telecomT('grid.loyalty', 'Loyalty'),
                     activation: telecomT('grid.activation', 'Activation'),
+                    hlr: telecomT('grid.hlr', 'HLR'),
                 },
                 profileTab: {
                     legal: telecomT('profileTab.legal', 'Legal'),
@@ -165,6 +267,8 @@ const Customer360ProfileApp = {
                     result: telecomT('profileTab.result', 'Result'),
                     time: telecomT('profileTab.time', 'Time'),
                     noLogs: telecomT('profileTab.noLogs', 'Empty'),
+                    logOk: telecomT('profileTab.logOk', 'OK'),
+                    logRetry: telecomT('profileTab.logRetry', 'Retry'),
                 },
                 servicesTab: {
                     activePlans: telecomT('servicesTab.activePlans', 'Plans'),
@@ -173,6 +277,7 @@ const Customer360ProfileApp = {
                     walletLoadFailed: telecomT('servicesTab.walletLoadFailed', ''),
                     quotaTitle: telecomT('servicesTab.quotaTitle', 'Quotas'),
                     noBuckets: telecomT('servicesTab.noBuckets', ''),
+                    noMsisdnForWallet: telecomT('servicesTab.noMsisdnForWallet', ''),
                     unlimited: telecomT('servicesTab.unlimited', 'Unlimited'),
                     vasTitle: telecomT('servicesTab.vasTitle', 'VAS'),
                     activateService: telecomT('servicesTab.activateService', 'Activate'),
@@ -223,6 +328,8 @@ const Customer360ProfileApp = {
                     amountPh: telecomT('wizardUi.amountPh', 'Amount'),
                     paymentRefPh: telecomT('wizardUi.paymentRefPh', 'Ref'),
                     recordPayment: telecomT('wizardUi.recordPayment', 'Pay'),
+                    fetchFromCashier: telecomT('wizardUi.fetchFromCashier', 'Fetch from cashier'),
+                    cashierFetched: telecomT('wizardUi.cashierFetched', 'Loaded from cashier'),
                     paymentDone: telecomT('wizardUi.paymentDone', 'Paid'),
                     confirmCbs: telecomT('wizardUi.confirmCbs', 'CBS'),
                     awaitBo: telecomT('wizardUi.awaitBo', 'BO'),
@@ -240,7 +347,8 @@ const Customer360ProfileApp = {
                     package: telecomT('wizardUi.package', 'Package'),
                     iccid: telecomT('wizardUi.iccid', 'ICCID'),
                     activationChannel: telecomT('wizardUi.activationChannel', 'Channel'),
-                    channelShowroom: telecomT('wizardUi.channelShowroom', 'Showroom'),
+                    channelShowroom: telecomT('wizardUi.channelShowroom', 'POS'),
+                    channelShowroomLockedHint: telecomT('wizardUi.channelShowroomLockedHint', ''),
                     channelDealer: telecomT('wizardUi.channelDealer', 'Dealer'),
                     channelDigital: telecomT('wizardUi.channelDigital', 'Digital'),
                     dealerCode: telecomT('wizardUi.dealerCode', 'Dealer'),
@@ -288,9 +396,15 @@ const Customer360ProfileApp = {
                     contactPhone: f('contactPhone'),
                     contactEmail: f('contactEmail'),
                     contactNotes: f('contactNotes'),
+                    linkedIn: f('linkedIn'),
+                    facebook: f('facebook'),
+                    instagram: f('instagram'),
+                    twitterX: f('twitterX'),
+                    tikTok: f('tikTok'),
                     createdAt: f('createdAt'),
                     updatedAt: f('updatedAt'),
                     customerId: f('customerId'),
+                    viewDocument: f('viewDocument'),
                 },
             };
         });
@@ -317,6 +431,8 @@ const Customer360ProfileApp = {
             rechargeBusy: '',
             hlrBusy: '',
             hlrBySub: {},
+            hlrRemediationBusy: '',
+            lastHlrLog: '',
             aiSim: { msisdn: '', transcript: '', busy: false },
             opBusy: null,
             isProvisioningInFlight: false,
@@ -389,6 +505,8 @@ const Customer360ProfileApp = {
                 cgtOffers: [],
                 cgtOffersBusy: false,
                 selectedOfferingId: '',
+                offerDetail: null,
+                offerDetailBusy: false,
                 vasCatalog: [],
                 catalogBusy: false,
                 selectedVasCode: '',
@@ -487,7 +605,9 @@ const Customer360ProfileApp = {
             productName: s.productName ?? s.ProductName,
             productOfferingId: s.productOfferingId ?? s.ProductOfferingId,
             productOfferingName: s.productOfferingName ?? s.ProductOfferingName,
+            productOfferingNameEn: s.productOfferingNameEn ?? s.ProductOfferingNameEn,
             subscriptionTypeName: s.subscriptionTypeName ?? s.SubscriptionTypeName,
+            subscriptionTypeNameEn: s.subscriptionTypeNameEn ?? s.SubscriptionTypeNameEn,
             subscriptionTypeCode: s.subscriptionTypeCode ?? s.SubscriptionTypeCode,
             simType: s.simType ?? s.SimType,
             iccid: s.iccid ?? s.Iccid,
@@ -504,6 +624,8 @@ const Customer360ProfileApp = {
             churnRiskScore: s.churnRiskScore ?? s.ChurnRiskScore,
             simStatus: s.simStatus ?? s.SimStatus,
             createdAtUtc: s.createdAtUtc ?? s.CreatedAtUtc,
+            documentOperationId: s.documentOperationId ?? s.DocumentOperationId ?? '',
+            documentSource: s.documentSource ?? s.DocumentSource ?? '',
         });
 
         const allSubscriptions = Vue.computed(() =>
@@ -537,7 +659,7 @@ const Customer360ProfileApp = {
         const lineOptions = Vue.computed(() => {
             return allSubscriptions.value.map((s) => ({
                 key: `${s.subscriberProfileId}|${s.msisdn}|${s.msisdnAssetId}`,
-                label: `${s.msisdn || '—'} · ${s.productOfferingName || s.productName || telecomT('lineDefault', 'Line')}`,
+                label: `${s.msisdn || '—'} · ${productOfferingDisplayName(s) || t360('lineDefault', 'Line')}`,
                 subscriberProfileId: s.subscriberProfileId,
                 msisdn: s.msisdn,
                 msisdnAssetId: s.msisdnAssetId,
@@ -587,10 +709,51 @@ const Customer360ProfileApp = {
             return selectedLineSuspended.value;
         });
 
+        const lineKey = (sub) =>
+            `${sub.subscriberProfileId}|${sub.msisdn}|${sub.msisdnAssetId}`;
+
         const ensureLineSelected = () => {
             if (!state.prov.selectedLineKey && lineOptions.value.length) {
                 state.prov.selectedLineKey = lineOptions.value[0].key;
             }
+        };
+
+        const isRowSelected = (sub) => state.prov.selectedLineKey === lineKey(sub);
+
+        const normalizeHlrState = (raw) => String(raw || '').trim().toUpperCase();
+
+        const isHlrRemediationState = (hlrState) => {
+            const s = normalizeHlrState(hlrState);
+            return ['INACTIVE', 'NOT_PROVISIONED', 'SUSPENDED', 'ERROR'].includes(s);
+        };
+
+        const hlrDataForSub = (sub) => state.hlrBySub[sub?.id] || null;
+
+        const hlrNeedsRemediation = (sub) => {
+            const data = hlrDataForSub(sub);
+            if (!data) return false;
+            if (data.differsFromCrm) return true;
+            return isHlrRemediationState(data.hlrSubscriberState);
+        };
+
+        const selectedHlrNeedsRemediation = Vue.computed(() => {
+            const sub = selectedSubscription.value;
+            return sub ? hlrNeedsRemediation(sub) : false;
+        });
+
+        const selectedHlrSnapshot = Vue.computed(() => {
+            const sub = selectedSubscription.value;
+            if (!sub) return null;
+            return hlrDataForSub(sub);
+        });
+
+        const hlrStatusBtnClass = (sub) => {
+            const data = hlrDataForSub(sub);
+            if (!data) return 'btn-outline-secondary';
+            const s = normalizeHlrState(data.hlrSubscriberState);
+            if (s === 'ACTIVE') return 'btn-outline-success';
+            if (isHlrRemediationState(s) || data.differsFromCrm) return 'btn-outline-danger';
+            return 'btn-outline-warning';
         };
 
         const getModal = (id, ref) => {
@@ -647,30 +810,191 @@ const Customer360ProfileApp = {
 
         const resolveCustomerKindLabel = (core) => {
             if (!core) return '—';
-            const label = core.customerKindLabel ?? core.CustomerKindLabel;
-            if (label) return label;
+            localeTick.value;
             const raw = core.customerKind ?? core.CustomerKind;
             const s = String(raw ?? '').toLowerCase();
             if (s === 'corporate' || raw === 1 || raw === '1')
-                return telecomT('enums.customerKind.corporate', 'Corporate');
+                return t360('enums.customerKind.corporate', 'Corporate');
             if (s === 'individual' || raw === 0 || raw === '0')
-                return telecomT('enums.customerKind.individual', 'Individual');
+                return t360('enums.customerKind.individual', 'Individual');
             return '—';
         };
 
         const customerKindLabel = Vue.computed(() => resolveCustomerKindLabel(state.profile?.core));
 
         const customerStatusLabel = Vue.computed(() => {
+            localeTick.value;
             const core = state.profile?.core;
-            const label = core?.statusLabel ?? core?.StatusLabel;
-            if (label) return label;
             const s = core?.status ?? core?.Status;
-            if (s === 0 || s === 'Active') return telecomT('enums.customerStatus.active', 'Active');
-            if (s === 1 || s === 'Suspended') return telecomT('enums.customerStatus.suspended', 'Suspended');
-            if (s === 2 || s === 'Closed') return telecomT('enums.customerStatus.closed', 'Closed');
-            if (s === 3 || s === 'Blacklisted') return telecomT('enums.customerStatus.blacklisted', 'Blacklisted');
+            if (s === 0 || s === 'Active' || String(s).toLowerCase() === 'active')
+                return t360('enums.customerStatus.active', 'Active');
+            if (s === 1 || s === 'Suspended' || String(s).toLowerCase() === 'suspended')
+                return t360('enums.customerStatus.suspended', 'Suspended');
+            if (s === 2 || s === 'Closed' || String(s).toLowerCase() === 'closed')
+                return t360('enums.customerStatus.closed', 'Closed');
+            if (s === 3 || s === 'Blacklisted' || String(s).toLowerCase() === 'blacklisted')
+                return t360('enums.customerStatus.blacklisted', 'Blacklisted');
             return String(s ?? '—');
         });
+
+        const localizedGenderLabel = () => {
+            localeTick.value;
+            const core = state.profile?.core;
+            const g = core?.gender ?? core?.Gender;
+            if (g === 1 || g === 'Male') return t360('enums.gender.male', 'Male');
+            if (g === 2 || g === 'Female') return t360('enums.gender.female', 'Female');
+            return t360('enums.gender.unknown', '—');
+        };
+
+        const localizedLegalStatusLabel = () => {
+            localeTick.value;
+            const core = state.profile?.core;
+            const ls = core?.legalStatus ?? core?.LegalStatus;
+            const map = {
+                0: 'unknown',
+                1: 'soleProprietorship',
+                2: 'partnership',
+                3: 'limitedLiability',
+                4: 'jointStock',
+                5: 'government',
+            };
+            const key = map[Number(ls)];
+            if (key) return t360(`enums.legalStatus.${key}`, core?.legalStatusLabel ?? '—');
+            return core?.legalStatusLabel ?? core?.LegalStatusLabel ?? '—';
+        };
+
+        const localizedBillingModeLabel = () => {
+            localeTick.value;
+            const core = state.profile?.core;
+            const mode = core?.billingConsolidationMode ?? core?.BillingConsolidationMode;
+            if (mode === 1 || String(mode).toLowerCase() === 'unified')
+                return t360('enums.billingMode.unified', 'Unified');
+            if (mode === 0 || String(mode).toLowerCase() === 'separate')
+                return t360('enums.billingMode.separate', 'Separate');
+            return core?.billingConsolidationModeLabel ?? core?.BillingConsolidationModeLabel ?? '—';
+        };
+
+        const localizedStatusReasonLabel = () => {
+            localeTick.value;
+            const core = state.profile?.core;
+            const code = core?.statusReasonCode ?? core?.StatusReasonCode;
+            if (code === 1 || String(code).toLowerCase() === 'credit')
+                return t360('enums.statusReason.credit', 'Credit');
+            if (code === 2 || String(code).toLowerCase() === 'fraud')
+                return t360('enums.statusReason.fraud', 'Fraud');
+            if (code === 3 || String(code).toLowerCase() === 'regulatory')
+                return t360('enums.statusReason.regulatory', 'Regulatory');
+            return core?.statusReasonCodeLabel ?? core?.StatusReasonCodeLabel ?? '—';
+        };
+
+        const subscriptionTypeLabel = (sub) => {
+            localeTick.value;
+            if (!sub) return '—';
+            const code = String(sub.subscriptionTypeCode || '').trim().toLowerCase();
+            if (code) {
+                const hit = t360(`enums.subscriptionType.${code}`, '');
+                if (hit) return hit;
+            }
+            return uiLang() === 'en'
+                ? sub.subscriptionTypeNameEn || sub.subscriptionTypeName || sub.subscriptionTypeCode || '—'
+                : sub.subscriptionTypeName || sub.subscriptionTypeNameEn || sub.subscriptionTypeCode || '—';
+        };
+
+        const productOfferingDisplayName = (sub) => {
+            if (!sub) return '—';
+            localeTick.value;
+            const ar = (sub.productOfferingName || sub.productName || '').trim();
+            const en = (sub.productOfferingNameEn || '').trim();
+            return uiLang() === 'en' ? en || ar || '—' : ar || en || '—';
+        };
+
+        const subscriptionMetaLine = (sub) => {
+            localeTick.value;
+            const type = subscriptionTypeLabel(sub);
+            const sim = simTypeLabel(sub?.simType);
+            return `${type} · ${sim}`;
+        };
+
+        const simTypeLabel = (raw) => {
+            localeTick.value;
+            const v = String(raw || '').trim().toLowerCase();
+            if (!v) return t360('enums.simType.physical', 'Physical');
+            if (v === 'esim' || v.includes('esim')) return t360('enums.simType.esim', 'eSIM');
+            if (v === 'physical' || v.includes('فيزي')) return t360('enums.simType.physical', 'Physical');
+            return raw;
+        };
+
+        const simStatusLabel = (raw) => {
+            localeTick.value;
+            const v = String(raw || '').trim().toLowerCase();
+            const map = {
+                available: 'available',
+                reserved: 'reserved',
+                active: 'active',
+                suspended: 'suspended',
+                quarantined: 'quarantined',
+                متاحة: 'available',
+                محجوزة: 'reserved',
+                نشطة: 'active',
+                موقوفة: 'suspended',
+                حجر: 'quarantined',
+            };
+            const key = map[v];
+            return key ? t360(`enums.simStatus.${key}`, raw) : raw || '—';
+        };
+
+        const documentStatusLabel = (sub) => {
+            localeTick.value;
+            const raw = String(sub?.documentStatusLabel || '').trim().toLowerCase();
+            const map = {
+                uploaded: 'uploaded',
+                verified: 'verified',
+                rejected: 'rejected',
+                missing: 'missing',
+                مرفوع: 'uploaded',
+                'موثّق': 'verified',
+                موثق: 'verified',
+                مرفوض: 'rejected',
+                ناقص: 'missing',
+            };
+            const key = map[raw];
+            return key ? t360(`enums.documentStatus.${key}`, sub?.documentStatusLabel) : sub?.documentStatusLabel || '—';
+        };
+
+        const serviceLineTypeLabel = (sub) => {
+            localeTick.value;
+            const raw = String(sub?.serviceLineTypeLabel || '').trim().toLowerCase();
+            if (!raw || raw === 'mobile' || raw === 'موبايل') {
+                return t360('enums.serviceLineType.mobile', 'Mobile');
+            }
+            return sub?.serviceLineTypeLabel || t360('enums.serviceLineType.mobile', 'Mobile');
+        };
+
+        const apiBaseUrl = () => {
+            const base = typeof AxiosManager !== 'undefined' && AxiosManager.getBaseUrl ? AxiosManager.getBaseUrl() : '/api';
+            return (base || '/api').replace(/\/$/, '');
+        };
+
+        const subscriptionDocumentUrl = (sub) => {
+            const opId = (sub?.documentOperationId || '').trim();
+            if (!opId) return '';
+            const source = String(sub?.documentSource || '').toLowerCase();
+            const path =
+                source === 'kyc'
+                    ? '/Telecom/DownloadKycDocument'
+                    : '/Telecom/DownloadTelecomOperationIdentityDocument';
+            const token = StorageManager.getAccessToken?.();
+            const q = `id=${encodeURIComponent(opId)}${token ? `&access_token=${encodeURIComponent(token)}` : ''}`;
+            return `${apiBaseUrl()}${path}?${q}`;
+        };
+
+        const walletErrorMessage = (wallet) => {
+            localeTick.value;
+            if (!wallet) return '';
+            const code = wallet.errorMessage ?? wallet.ErrorMessage;
+            if (code === 'noMsisdnForWallet') return t360('servicesTab.noMsisdnForWallet', '');
+            return code || t360('servicesTab.walletLoadFailed', '');
+        };
 
         const coreField = (key, raw = false) => {
             const core = state.profile?.core;
@@ -703,9 +1027,10 @@ const Customer360ProfileApp = {
         });
 
         const operationalStatusLabel = (s) => {
+            localeTick.value;
             if (!s) return '—';
             const key = String(s).replace(/\s/g, '');
-            return telecomT(`enums.operational.${key}`, s);
+            return t360(`enums.operational.${key}`, s);
         };
 
         const mappedTickets = Vue.computed(() =>
@@ -765,25 +1090,56 @@ const Customer360ProfileApp = {
             if (val == null || val === '') return '—';
             const n = Number(val);
             if (Number.isNaN(n)) return String(val);
-            return n.toLocaleString('ar-SY', { maximumFractionDigits: 2 });
+            const loc = uiLang() === 'en' ? 'en-US' : 'ar-SY';
+            return n.toLocaleString(loc, { maximumFractionDigits: 2 });
+        };
+
+        const formatBucketUnit = (unit) => {
+            localeTick.value;
+            const u = String(unit || '').trim().toLowerCase();
+            if (!u) return '';
+            if (u === 'gb') return t360('enums.units.gb', 'GB');
+            if (u === 'sms') return t360('enums.units.sms', 'SMS');
+            if (u === 'minutes' || u === 'minute' || u === 'دقيقة' || u === 'دقائق')
+                return t360('enums.units.minutes', 'min');
+            return unit;
         };
 
         const bucketLabel = (b) => {
-            const label = b?.label ?? b?.Label;
-            if (label) return label;
+            localeTick.value;
             const t = b?.componentType ?? b?.ComponentType;
             const map = {
-                0: window.TelecomI18n?.t?.('customerList.c360.walletVoice') || 'Voice',
-                1: window.TelecomI18n?.t?.('customerList.c360.walletData') || 'Data',
-                2: window.TelecomI18n?.t?.('customerList.c360.walletSms') || 'SMS',
-                Voice: window.TelecomI18n?.t?.('customerList.c360.walletVoice') || 'Voice',
-                Data: window.TelecomI18n?.t?.('customerList.c360.walletData') || 'Data',
-                Sms: window.TelecomI18n?.t?.('customerList.c360.walletSms') || 'SMS',
+                0: t360('enums.bucket.voice', t360('customerList.c360.walletVoice', 'Voice')),
+                1: t360('enums.bucket.data', t360('customerList.c360.walletData', 'Data')),
+                2: t360('enums.bucket.sms', t360('customerList.c360.walletSms', 'SMS')),
+                Voice: t360('enums.bucket.voice', 'Voice'),
+                Data: t360('enums.bucket.data', 'Data'),
+                Sms: t360('enums.bucket.sms', 'SMS'),
             };
             return map[t] ?? String(t ?? '—');
         };
 
         const lineWallet = (subscriptionId) => state.lineWallets[subscriptionId] ?? null;
+
+        const subscriptionBalanceLine = (sub) => {
+            if (!sub) return { busy: false, balance: null, currency: null, limit: null };
+            if (state.lineWalletsBusy[sub.id]) return { busy: true, balance: null, currency: null, limit: null };
+            const w = lineWallet(sub.id);
+            if (w?.success) {
+                return {
+                    busy: false,
+                    balance: w.balance ?? w.Balance,
+                    currency: w.currency ?? w.Currency ?? 'SYP',
+                    limit: w.outstandingBalance ?? w.OutstandingBalance ?? null,
+                };
+            }
+            return {
+                busy: false,
+                balance: sub.prepaidBalance ?? null,
+                currency: t360('common.currencySuffix', 'SYP'),
+                limit: sub.postpaidCreditLimit ?? null,
+            };
+        };
 
         const loadLineWallets = async () => {
             if (!state.customerId) return;
@@ -1010,6 +1366,10 @@ const Customer360ProfileApp = {
                     state.aiSim.msisdn = primaryMsisdn() || state.aiSim.msisdn;
                     ensureLineSelected();
                     await loadCbs();
+                    const selected = selectedSubscription.value;
+                    if (selected) {
+                        await checkHlr(selected);
+                    }
                 }
             } catch (e) {
                 state.profile = null;
@@ -1021,32 +1381,133 @@ const Customer360ProfileApp = {
             }
         };
 
-        const checkHlr = async (sub) => {
+        const checkHlr = async (sub, { selectLine = false } = {}) => {
             const profileId = sub?.subscriberProfileId ?? sub?.SubscriberProfileId;
-            if (!profileId) return;
+            const msisdn = (sub?.msisdn || '').trim();
+            if (!profileId && !msisdn) return null;
+            if (selectLine) {
+                state.prov.selectedLineKey = lineKey(sub);
+            }
             state.hlrBusy = sub.id;
             try {
-                const res = await AxiosManager.get(
-                    '/Telecom/QueryHlrLiveStatus?subscriberProfileId=' +
-                        encodeURIComponent(profileId),
-                    {}
-                );
+                const q = msisdn
+                    ? 'msisdn=' + encodeURIComponent(msisdn)
+                    : 'subscriberProfileId=' + encodeURIComponent(profileId);
+                const res = await AxiosManager.get('/Telecom/CheckHlrStatus?' + q, {});
                 const content = res?.data?.content ?? res?.data?.Content ?? res?.data;
-                state.hlrBySub[sub.id] = {
+                const snapshot = {
                     hlrSubscriberState:
                         content?.hlrSubscriberState ?? content?.HlrSubscriberState ?? content?.message ?? '—',
                     differsFromCrm: !!(content?.differsFromCrm ?? content?.DiffersFromCrm),
                     isOnline: content?.isOnline ?? content?.IsOnline,
+                    crmOperationalStatus:
+                        content?.crmOperationalStatus ?? content?.CrmOperationalStatus ?? sub?.profileOperationalStatus,
                 };
+                state.hlrBySub[sub.id] = snapshot;
+                return snapshot;
             } catch (e) {
                 state.hlrBySub[sub.id] = {
-                    hlrSubscriberState: pickHttpErrorMessage(e) || 'Error',
+                    hlrSubscriberState: pickHttpErrorMessage(e) || 'ERROR',
                     differsFromCrm: false,
                 };
+                return null;
             } finally {
                 state.hlrBusy = '';
             }
         };
+
+        const selectSubscriptionRow = async (sub) => {
+            state.prov.selectedLineKey = lineKey(sub);
+            await checkHlr(sub);
+        };
+
+        const reprovisionSelectedHlr = async () => {
+            const sub = selectedSubscription.value;
+            const profileId = (sub?.subscriberProfileId || '').trim();
+            if (!profileId) {
+                Swal.fire({ icon: 'warning', title: telecomT('swal.noActiveLine', 'No line') });
+                return;
+            }
+            if (!can.value.network) {
+                Swal.fire({ icon: 'info', title: telecomT('swal.noPermission', 'No permission') });
+                return;
+            }
+            state.hlrRemediationBusy = 'reprovision';
+            try {
+                const res = await AxiosManager.post('/Telecom/ReprovisionSubscriberToHlr', {
+                    subscriberProfileId: profileId,
+                    actorUserId: StorageManager.getUserId(),
+                });
+                const body = res?.data?.content ?? res?.data?.Content ?? {};
+                if (body?.logEntry || body?.LogEntry) {
+                    state.lastHlrLog = body.logEntry || body.LogEntry;
+                }
+                await checkHlr(sub);
+                await loadCbs();
+                toastSuccess(
+                    body?.message || body?.Message || t360('hlrRemediation.reprovisionOk', 'HLR reprovisioned'),
+                    state.lastHlrLog
+                        ? `<p class="small font-monospace mb-0" dir="ltr">${state.lastHlrLog}</p>`
+                        : ''
+                );
+            } catch (e) {
+                toastError(e, telecomT('swal.hlrSyncFailed', 'HLR failed'));
+            } finally {
+                state.hlrRemediationBusy = '';
+            }
+        };
+
+        const quickSimSwapRemediation = async () => {
+            const sub = selectedSubscription.value;
+            if (!sub) return;
+            if (!can.value.network) {
+                Swal.fire({ icon: 'info', title: telecomT('swal.noPermission', 'No permission') });
+                return;
+            }
+            const { value: iccid, isConfirmed } = await Swal.fire({
+                title: ui.value.actions.simSwap,
+                input: 'text',
+                inputLabel: telecomT('wizardUi.iccid', 'ICCID'),
+                inputPlaceholder: '89963…',
+                showCancelButton: true,
+                confirmButtonText: telecomT('swal.confirm', 'Confirm'),
+                cancelButtonText: telecomT('swal.cancel', 'Cancel'),
+                inputValidator: (v) =>
+                    !v || String(v).trim().length < 10
+                        ? telecomT('wizardUi.iccid', 'ICCID required')
+                        : undefined,
+            });
+            if (!isConfirmed || !iccid) return;
+            state.hlrRemediationBusy = 'simswap';
+            try {
+                const res = await AxiosManager.post('/TelecomBackOffice/ExecuteTechnicalAction', {
+                    customerId: state.customerId,
+                    actionType: 'SIMSWAP',
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdn: sub.msisdn,
+                    simIccid: String(iccid).trim(),
+                    notes: 'Customer360 HLR remediation — SIM swap',
+                    actorUserId: StorageManager.getUserId(),
+                });
+                const body = res?.data?.content ?? res?.data?.Content ?? {};
+                state.lastHlrLog =
+                    body?.messageAr ||
+                    body?.MessageAr ||
+                    `SIMSWAP ${sub.msisdn} -> ICCID ${String(iccid).trim()}`;
+                await loadProfile(true);
+                await loadCbs();
+                const refreshed = allSubscriptions.value.find((s) => s.id === sub.id) || sub;
+                await checkHlr(refreshed);
+                toastSuccess(body?.messageAr || body?.MessageAr || telecomT('lineActions.success', 'Done'));
+            } catch (e) {
+                toastError(e, telecomT('lineActions.businessError', 'Failed'));
+            } finally {
+                state.hlrRemediationBusy = '';
+            }
+        };
+
+        const openRemediationSuspension = () => openProvisioningWizard('suspension');
+        const openRemediationReconnect = () => openProvisioningWizard('reconnect');
 
         const openAiWizard = () => {
             state.aiSim.msisdn = primaryMsisdn() || state.aiSim.msisdn;
@@ -1159,9 +1620,10 @@ const Customer360ProfileApp = {
         };
 
         const vasStatusLabel = (s) => {
+            localeTick.value;
             const v = String(s || '').toLowerCase();
-            if (v === 'active') return telecomT('vasStatus.active', 'Active');
-            if (v === 'suspended') return telecomT('vasStatus.suspended', 'Suspended');
+            if (v === 'active') return t360('vasStatus.active', 'Active');
+            if (v === 'suspended') return t360('vasStatus.suspended', 'Suspended');
             return s || '—';
         };
 
@@ -1186,13 +1648,104 @@ const Customer360ProfileApp = {
             return hit || k;
         });
 
+        const contentLang = () => (document.documentElement.lang === 'ar' ? 'ar' : 'en');
+
         const activateRequiredDeposit = Vue.computed(() => {
             if (state.wizard.kind !== 'activate') return 0;
+            const fromDetail = offerDefaultMonthlyPrice(state.wizard.offerDetail);
+            if (fromDetail != null) return fromDetail;
             const o = (state.wizard.offerings || []).find(
                 (x) => x.id === state.wizard.selectedOfferingId
             );
-            return Number(o?.unitPrice ?? o?.UnitPrice ?? 0) || 0;
+            return Number(o?.defaultPrice ?? o?.DefaultPrice ?? o?.unitPrice ?? o?.UnitPrice ?? 0) || 0;
         });
+
+        const wizardOfferDisplayName = Vue.computed(() => {
+            localeTick.value;
+            return offerDetailDisplayName(state.wizard.offerDetail, contentLang());
+        });
+
+        const wizardOfferMonthlyPrice = Vue.computed(() => {
+            localeTick.value;
+            const p = offerDefaultMonthlyPrice(state.wizard.offerDetail);
+            return p != null ? formatMoneyOffer(p, contentLang()) : null;
+        });
+
+        const wizardOfferVoiceLine = Vue.computed(() => {
+            localeTick.value;
+            const d = state.wizard.offerDetail;
+            if (!d) return '';
+            const c = offerComponentByType(d, 0);
+            if (c) return formatOfferQuotaLine(c, contentLang());
+            if (d.voiceMinutesLimit) {
+                return contentLang() === 'ar'
+                    ? `${d.voiceMinutesLimit} دقيقة`
+                    : `${d.voiceMinutesLimit} min`;
+            }
+            return '';
+        });
+
+        const wizardOfferDataLine = Vue.computed(() => {
+            localeTick.value;
+            const d = state.wizard.offerDetail;
+            if (!d) return '';
+            const c = offerComponentByType(d, 1);
+            if (c) return formatOfferQuotaLine(c, contentLang());
+            if (d.speedQuotaLimitGb) {
+                return contentLang() === 'ar'
+                    ? `${d.speedQuotaLimitGb} جيجا`
+                    : `${d.speedQuotaLimitGb} GB`;
+            }
+            return '';
+        });
+
+        const wizardOfferSmsLine = Vue.computed(() => {
+            localeTick.value;
+            const d = state.wizard.offerDetail;
+            if (!d) return '';
+            const c = offerComponentByType(d, 2);
+            return c ? formatOfferQuotaLine(c, contentLang()) : '';
+        });
+
+        const wizardOfferSummaryText = Vue.computed(() => {
+            localeTick.value;
+            return offerDetailSummaryText(state.wizard.offerDetail, contentLang());
+        });
+
+        const wizardOfferPriceLabel = Vue.computed(() => {
+            localeTick.value;
+            const p = wizardOfferMonthlyPrice.value;
+            if (!p) return '';
+            const tpl = telecomT('wizard.migrationOffers.offerCard.priceLabel', 'Price: {price}');
+            return tpl.replace('{price}', p);
+        });
+
+        const activateSimIccidLocked = Vue.computed(() => state.wizard.kind === 'activate');
+
+        const loadWizardOfferingDetail = async (offerId) => {
+            const id = (offerId || '').trim();
+            if (!id) {
+                state.wizard.offerDetail = null;
+                state.wizard.offerDetailBusy = false;
+                return;
+            }
+            state.wizard.offerDetailBusy = true;
+            try {
+                const res = await AxiosManager.get(
+                    `/ProductOffering/GetProductOfferingSingle?id=${encodeURIComponent(id)}`,
+                    {}
+                );
+                state.wizard.offerDetail = parseProductOfferingDetail(res);
+            } catch {
+                state.wizard.offerDetail = null;
+            } finally {
+                state.wizard.offerDetailBusy = false;
+            }
+        };
+
+        const onWizardOfferingChanged = async () => {
+            await loadWizardOfferingDetail(state.wizard.selectedOfferingId);
+        };
 
         const canWizardFinishStep2 = Vue.computed(() => {
             if (state.wizard.kind === 'addpackage') {
@@ -1251,6 +1804,8 @@ const Customer360ProfileApp = {
                 cgtOffers: [],
                 cgtOffersBusy: false,
                 selectedOfferingId: '',
+                offerDetail: null,
+                offerDetailBusy: false,
                 vasCatalog: [],
                 catalogBusy: false,
                 selectedVasCode: '',
@@ -1332,8 +1887,15 @@ const Customer360ProfileApp = {
                 paymentAmount: '',
                 paymentRecorded: false,
                 paymentBusy: false,
+                paymentCashierLocked: false,
+                cashierFetchBusy: false,
                 operationCorrelationId: '',
+                falloutTicketId: '',
+                falloutTicketNumber: '',
             };
+            if (kind === 'activate' && typeof ActivationChannelUi !== 'undefined') {
+                ActivationChannelUi.applyDefaults(state.wizard);
+            }
         };
 
         const onSusTypeChange = () => {
@@ -1673,6 +2235,9 @@ const Customer360ProfileApp = {
             state.wizard.selectedPoolMsisdn = row?.msisdn ?? row?.Msisdn ?? '';
             state.wizard.selectedPoolImsi =
                 row?.pairedImsi ?? row?.PairedImsi ?? row?.imsi ?? row?.Imsi ?? '';
+            state.wizard.simIccid = String(
+                row?.iccid ?? row?.Iccid ?? row?.pairedIccid ?? row?.PairedIccid ?? ''
+            ).trim();
         };
 
         const pollOperationAfterConfirm = async (operationId) => {
@@ -1700,6 +2265,10 @@ const Customer360ProfileApp = {
                     const st = data?.status ?? data?.Status;
                     state.wizard.operationCorrelationId =
                         data?.correlationId ?? data?.CorrelationId ?? '';
+                    state.wizard.falloutTicketId =
+                        data?.technicalTicketId ?? data?.TechnicalTicketId ?? '';
+                    state.wizard.falloutTicketNumber =
+                        data?.technicalTicketNumber ?? data?.TechnicalTicketNumber ?? '';
                     if (terminal.has(st)) {
                         return data?.statusLabelAr ?? data?.StatusLabelAr ?? '';
                     }
@@ -1739,6 +2308,10 @@ const Customer360ProfileApp = {
 
         const onWizardLineChanged = async () => {
             bindPrimaryFromLine();
+            const sub = selectedSubscription.value;
+            if (sub) {
+                await checkHlr(sub);
+            }
             if (state.wizard.kind === 'migrate') {
                 state.wizard.selectedOfferingId = '';
                 await loadWizardMigrationOffers();
@@ -1791,6 +2364,10 @@ const Customer360ProfileApp = {
                 return;
             }
             if (kind === 'activate') {
+                if (typeof ActivationChannelUi !== 'undefined') {
+                    await ActivationChannelUi.ensureLoaded();
+                    ActivationChannelUi.applyDefaults(state.wizard);
+                }
                 const subs = allSubscriptions.value;
                 const p = subs.find((s) => s.isPrimaryLine) || subs[0];
                 if (!p?.subscriberProfileId) {
@@ -1824,7 +2401,34 @@ const Customer360ProfileApp = {
             provWizardModal.show();
         };
 
-        const closeProvisioningWizard = () => {
+        const releaseMsisdnReservation = async (assetId) => {
+            const aid = (assetId || '').trim();
+            const cid = (state.customerId || '').trim();
+            if (!aid || !cid) return;
+            try {
+                await AxiosManager.post('/Telecom/ReleaseMsisdnReservation', {
+                    msisdnAssetId: aid,
+                    customerId: cid,
+                    releasedByUserId: StorageManager.getUserId(),
+                });
+            } catch {
+                /* best-effort */
+            }
+        };
+
+        const releaseWizardMsisdnReservationsIfAny = async () => {
+            if ((state.wizard.createdOperationId || '').trim()) return;
+            if (state.wizard.submitBusy || state.isProvisioningInFlight) return;
+            if (state.wizard.kind === 'activate' && state.wizard.msisdnAssetId) {
+                await releaseMsisdnReservation(state.wizard.msisdnAssetId);
+            }
+            if (state.wizard.kind === 'changeNumber' && state.wizard.cnTargetMsisdnAssetId) {
+                await releaseMsisdnReservation(state.wizard.cnTargetMsisdnAssetId);
+            }
+        };
+
+        const closeProvisioningWizard = async () => {
+            await releaseWizardMsisdnReservationsIfAny();
             provWizardModal?.hide();
             resetWizardState();
             state.wizard.kind = '';
@@ -2155,12 +2759,55 @@ const Customer360ProfileApp = {
             return body;
         };
 
+        const fetchPaymentFromCashier = async () => {
+            const ref = (state.wizard.paymentReference || '').trim();
+            if (!ref) {
+                Swal.fire({ icon: 'warning', title: telecomT('swal.paymentRefRequired', 'Payment ref required') });
+                return;
+            }
+            state.wizard.cashierFetchBusy = true;
+            try {
+                const res = await AxiosManager.post('/Telecom/FetchCashierPayment', {
+                    paymentReference: ref,
+                    operationId: state.wizard.createdOperationId || null,
+                    expectedAmount: activateRequiredDeposit.value > 0 ? activateRequiredDeposit.value : null,
+                });
+                const data = res?.data?.content?.data ?? res?.data?.content?.Data;
+                if (res?.data?.code === 200 && data) {
+                    const amt = data.amountPaid ?? data.AmountPaid;
+                    if (amt != null) state.wizard.paymentAmount = String(amt);
+                    const ch = data.paymentChannel ?? data.PaymentChannel;
+                    if (ch != null) state.wizard.paymentChannel = Number(ch);
+                    state.wizard.paymentReference = data.paymentReference ?? data.PaymentReference ?? ref;
+                    state.wizard.paymentCashierLocked = true;
+                    toastSuccess(data.messageAr ?? data.MessageAr ?? telecomT('wizardUi.cashierFetched', 'Loaded'));
+                } else {
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                        { response: res }
+                    );
+                }
+            } catch (e) {
+                toastError(e, telecomT('swal.genericFailed', 'Failed'));
+            } finally {
+                state.wizard.cashierFetchBusy = false;
+            }
+        };
+
         const submitWizardRecordPayment = async () => {
             if (!state.wizard.createdOperationId) return;
             const ref = (state.wizard.paymentReference || '').trim();
             const amt = Number(state.wizard.paymentAmount);
             if (!ref || !(amt > 0)) {
                 Swal.fire({ icon: 'warning', title: telecomT('swal.paymentAmountRequired', 'Payment required') });
+                return;
+            }
+            if (activateRequiredDeposit.value > 0 && !state.wizard.paymentCashierLocked) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: telecomT('wizardUi.fetchFromCashier', 'Fetch from cashier'),
+                    text: telecomT('wizardUi.cashierFetched', 'Load payment from cashier first'),
+                });
                 return;
             }
             state.wizard.paymentBusy = true;
@@ -2367,6 +3014,12 @@ const Customer360ProfileApp = {
                     );
                 }
             } catch (e) {
+                if (state.wizard.kind === 'activate' && state.wizard.msisdnAssetId) {
+                    await releaseMsisdnReservation(state.wizard.msisdnAssetId);
+                }
+                if (state.wizard.kind === 'changeNumber' && state.wizard.cnTargetMsisdnAssetId) {
+                    await releaseMsisdnReservation(state.wizard.cnTargetMsisdnAssetId);
+                }
                 toastError(e, telecomT('customerList.swal.operationFailed', 'Operation failed'));
             } finally {
                 state.wizard.submitBusy = false;
@@ -2494,8 +3147,13 @@ const Customer360ProfileApp = {
             } catch (_) { /* ignore */ }
         };
 
+        const currentUiLang = () => window.TelecomI18n?.getLang?.() || 'ar';
+
         Vue.onMounted(async () => {
             document.documentElement.addEventListener('syriatel-locale-changed', refreshPageI18n);
+            if (typeof ActivationChannelUi !== 'undefined') {
+                await ActivationChannelUi.ensureLoaded();
+            }
             try {
                 if (!StorageManager.getAccessToken?.()) {
                     window.location.href = '/Accounts/Login';
@@ -2514,6 +3172,22 @@ const Customer360ProfileApp = {
                 }
                 const params = new URLSearchParams(window.location.search);
                 state.customerId = params.get('customerId') || '';
+                if (!state.customerId) {
+                    const missingMsg = telecomT(
+                        'wizardUi.customer360OpenedWithoutId',
+                        'تنبيه: تم فتح الصفحة بدون تحديد هوية العميل المستهدف.'
+                    );
+                    if (typeof Swal !== 'undefined') {
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: telecomT('swal.incompleteTitle', 'Incomplete'),
+                            text: missingMsg,
+                            confirmButtonColor: '#c8102e',
+                        });
+                    }
+                    window.location.replace('/Telecom/TelecomHub');
+                    return;
+                }
                 await loadProfile();
                 await refreshPageI18n();
                 const deepWizard = (params.get('wizard') || '').trim();
@@ -2537,7 +3211,23 @@ const Customer360ProfileApp = {
             tabs,
             ui,
             telecomT,
+            t360,
             localeTick,
+            subscriptionTypeLabel,
+            productOfferingDisplayName,
+            subscriptionMetaLine,
+            simTypeLabel,
+            simStatusLabel,
+            documentStatusLabel,
+            subscriptionDocumentUrl,
+            subscriptionBalanceLine,
+            serviceLineTypeLabel,
+            walletErrorMessage,
+            formatBucketUnit,
+            localizedGenderLabel,
+            localizedLegalStatusLabel,
+            localizedBillingModeLabel,
+            localizedStatusReasonLabel,
             activeLinesLabel: Vue.computed(() => {
                 localeTick.value;
                 const tpl = telecomT('hero.activeLines', '{count} lines');
@@ -2573,6 +3263,16 @@ const Customer360ProfileApp = {
             subscriptionBadgeText,
             operationalStatusLabel,
             checkHlr,
+            selectSubscriptionRow,
+            isRowSelected,
+            hlrStatusBtnClass,
+            hlrNeedsRemediation,
+            selectedHlrNeedsRemediation,
+            selectedHlrSnapshot,
+            reprovisionSelectedHlr,
+            quickSimSwapRemediation,
+            openRemediationSuspension,
+            openRemediationReconnect,
             loadProfile,
             openAiWizard,
             simulateAiCall,
@@ -2591,6 +3291,7 @@ const Customer360ProfileApp = {
             operationalBadgeClass,
             vasBadgeClass,
             lineOptions,
+            selectedSubscription,
             wizardTitle,
             canWizardFinishStep2,
             activateRequiredDeposit,
@@ -2607,9 +3308,39 @@ const Customer360ProfileApp = {
             submitWizardCreateDraft,
             submitWizardMarkDocument,
             submitWizardRecordPayment,
+            fetchPaymentFromCashier,
             submitWizardConfirmCbs,
             onWizardIdentityFileChange,
             onActivateMsisdnChanged,
+            onWizardOfferingChanged,
+            wizardOfferDisplayName,
+            wizardOfferMonthlyPrice,
+            wizardOfferVoiceLine,
+            wizardOfferDataLine,
+            wizardOfferSmsLine,
+            wizardOfferSummaryText,
+            wizardOfferPriceLabel,
+            activateSimIccidLocked,
+            activationChannelUiMode: Vue.computed(() =>
+                typeof ActivationChannelUi !== 'undefined' ? ActivationChannelUi.resolveMode() : 'showroom'),
+            activationChannelLabels: Vue.computed(() => {
+                localeTick.value;
+                const loc = currentUiLang();
+                if (typeof ActivationChannelUi === 'undefined') {
+                    return { showroom: 'POS', dealer: 'Dealer' };
+                }
+                return {
+                    showroom: ActivationChannelUi.label(0, loc),
+                    dealer: ActivationChannelUi.label(1, loc),
+                };
+            }),
+            activationChannelLockedHint: Vue.computed(() => {
+                localeTick.value;
+                if (typeof ActivationChannelUi === 'undefined') {
+                    return telecomT('wizardUi.channelShowroomLockedHint', '');
+                }
+                return ActivationChannelUi.lockedHint(currentUiLang());
+            }),
         };
     },
 };
