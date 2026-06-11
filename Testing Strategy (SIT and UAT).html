@@ -114,7 +114,7 @@
 <div class="section-bar">Testing Strategy (SIT and UAT)</div>
 
 <div class="proposal-ready">
-  <p>Macquires will verify the Syriatel CRM in two controlled phases before production cutover. <strong>System Integration Testing (SIT)</strong> proves that the application correctly calls Syriatel’s core telecom interfaces (billing, network, SMS, payments) and handles failure modes. <strong>User Acceptance Testing (UAT)</strong> proves that business users can complete showroom and back-office journeys on realistic data with the correct roles and environments.</p>
+  <p>Macquires will verify the Syriatel CRM in two controlled phases before production cutover. <strong>System Integration Testing (SIT)</strong> proves that the application correctly calls Syriatel’s core telecom interfaces (billing, network, SMS, payments) and handles failure modes. <strong>User Acceptance Testing (UAT)</strong> proves that business users can complete Point of Service (POS) and back-office journeys on realistic data with the correct roles and environments.</p>
   <p><strong>Macquires will provide</strong> test plans, automated regression suites, integration observability built into the product, and clear entry/exit criteria for each phase. Syriatel participation is required for sandbox connectivity, test MSISDNs, and business sign-off scripts.</p>
 </div>
 
@@ -299,7 +299,7 @@ flowchart LR
 <p class="rfp-label">RFP — environments, seeding, roles, and workstations before business testing</p>
 
 <div class="proposal-ready">
-  <p><strong>Before Syriatel business users begin UAT</strong>, Macquires and Syriatel will jointly verify the prerequisites below. UAT uses a dedicated environment isolated from production, populated with representative subscriber data (migration rehearsal or controlled seed), and accounts that mirror real showroom, back-office, call-center, and management personas.</p>
+  <p><strong>Before Syriatel business users begin UAT</strong>, Macquires and Syriatel will jointly verify the prerequisites below. UAT uses a dedicated environment isolated from production, populated with representative subscriber data (migration rehearsal or controlled seed), and accounts that mirror real Point of Service (POS), back-office, call-center, and management personas.</p>
   <p><strong>Macquires will prepare</strong> UAT scripts per journey (activation, SIM swap, payment/recharge, refund, suspension, Customer 360 search). Syriatel will assign named testers per role and record pass/fail against acceptance criteria.</p>
 </div>
 
@@ -358,7 +358,7 @@ flowchart LR
     <tr><th>Persona / role</th><th>Typical UAT use</th><th>Seeded role name</th></tr>
   </thead>
   <tbody>
-    <tr><td>Showroom agent</td><td>Hub wizards, Customer 360, recharge, activation</td><td><code>TelecomShowroom</code></td></tr>
+    <tr><td>POS agent (Point of Service)</td><td>Hub wizards, Customer 360, recharge, activation</td><td><code>TelecomShowroom</code> <small>(demo seed name; business label = POS)</small></td></tr>
     <tr><td>Back office</td><td>Approvals, SIM swap BO, refunds, billing log review</td><td><code>TelecomBackOffice</code></td></tr>
     <tr><td>Call center</td><td>Search, technical tickets, read-only network query</td><td><code>TelecomCallCenter</code></td></tr>
     <tr><td>Management / MIS</td><td>Dashboards, strategic metrics (where permitted)</td><td><code>TelecomManagement</code></td></tr>
@@ -367,7 +367,17 @@ flowchart LR
 </table>
 
 <div class="proposal-ready">
-  <p>Additional permission checks validated in UAT include: PII reveal (<code>RolesViewDecryptedPII</code>), payment reversal, bulk import monitor, technical ticket resolve, and persona-filtered navigation (showroom users must not see back-office-only menus).</p>
+  <p>Additional permission checks validated in UAT include: PII reveal (<code>RolesViewDecryptedPII</code>), payment reversal, bulk import monitor, technical ticket resolve, and persona-filtered navigation (POS users must not see back-office-only menus).</p>
+</div>
+
+<div class="proposal-ready">
+  <p><strong>Operational governance (Syriatel):</strong> Syriatel's current operating model does not include separate POS Supervisor or Call Center Supervisor approval tiers. Sensitive cases (lost/stolen SIM, high-value refunds, financial clearance) route directly to <strong>Back-Office / Financial Clearance</strong> (<code>TelecomBackOffice</code>) after the POS or call-center agent captures the draft.</p>
+  <p lang="ar" dir="rtl"><strong>الحوكمة التشغيلية (سيريتل):</strong> الهيكل التشغيلي الحالي لسيريتل لا يتضمن أدوار «مشرف فرع» أو «مشرف مركز اتصال». الحالات الحساسة (شريحة مفقودة/مسروقة، استردادات عالية القيمة، التسوية المالية) تنتقل مباشرة إلى <strong>الباك أوفيس / التسوية المالية</strong> بعد أن ينشئ موظف نقطة الخدمة (POS) أو مركز الاتصال المسودة.</p>
+</div>
+
+<div class="proposal-ready">
+  <p><strong>Dynamic RBAC:</strong> Macquires CRM provides fully dynamic RBAC: Syriatel administrators can create, clone, and assign new roles and granular permissions from the administration console at any time—<strong>without backend code changes</strong>—when organizational needs evolve (e.g., a future branch approval officer or regional supervisor role).</p>
+  <p lang="ar" dir="rtl"><strong>RBAC ديناميكي:</strong> نظام الـ CRM مبني على RBAC ديناميكي بالكامل: إدارة سيريتل تقدر تنشئ وتستنسخ وتعيّن أدوار وصلاحيات جديدة من لوحة الإدارة في أي وقت — <strong>بدون تعديل كود بالخلفية</strong> — عند الحاجة التنظيمية مستقبلاً (مثلاً دور اعتماد فرع أو مشرف منطقة).</p>
 </div>
 
 <h2>Client workstations and access</h2>
@@ -382,7 +392,7 @@ flowchart LR
   <li><strong>Resolution:</strong> 1366×768 or higher (Telecom Hub and Back Office Dashboard are responsive but optimized for desktop).</li>
   <li><strong>Authentication:</strong> Each tester receives individual credentials (JWT session); shared accounts are not permitted for sign-off.</li>
   <li><strong>Locale:</strong> Arabic RTL UI validated; English where dual-language labels apply.</li>
-  <li><strong>Peripherals (showroom UAT):</strong> If document scan upload is tested, workstation file picker and PDF/image upload for identity documents on takeover/lost-SIM flows.</li>
+  <li><strong>Peripherals (POS UAT):</strong> If document scan upload is tested, workstation file picker and PDF/image upload for identity documents on takeover/lost-SIM flows.</li>
 </ul>
 
 <h2>UAT verification checklist (before testers start)</h2>

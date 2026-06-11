@@ -2,6 +2,7 @@ using Application.Common.Audit;
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Features.NumberSequenceManager;
 using Application.Features.TelecomManager.Commands;
@@ -36,6 +37,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
     private readonly NumberSequenceService _numberSequence;
     private readonly IUserAuditService _audit;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INationalIdSearchHashBackfillService _nationalIdBackfill;
 
     public TelecomCustomer360EnrichmentSeeder(
         DataContext context,
@@ -51,7 +53,8 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         ICommandRepository<TelecomTechnicalTicket> ticketRepository,
         NumberSequenceService numberSequence,
         IUserAuditService audit,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        INationalIdSearchHashBackfillService nationalIdBackfill)
     {
         _context = context;
         _query = query;
@@ -67,11 +70,16 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         _numberSequence = numberSequence;
         _audit = audit;
         _unitOfWork = unitOfWork;
+        _nationalIdBackfill = nationalIdBackfill;
     }
 
     public async Task EnsureEnrichedAsync()
     {
+        await _nationalIdBackfill.BackfillAllMissingAsync();
+
         var customers = await _context.Customer.Where(c => !c.IsDeleted).ToListAsync();
+
+        await SanitizeOperatorCreatedProfilesAsync(customers);
         if (customers.Count == 0)
         {
             return;
@@ -101,6 +109,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         for (var i = 0; i < customers.Count; i++)
         {
             var customer = customers[i];
+            if (IsOperatorCreatedCustomer(customer))
+            {
+                continue;
+            }
+
             var seed = StableHash(customer.Id);
             var rnd = new Random(seed);
 
@@ -111,6 +124,12 @@ public sealed class TelecomCustomer360EnrichmentSeeder
 
             EnrichPartyFields(customer, i, rnd);
             await EnsureContactsAsync(customer, rnd);
+            
+            // Save every 20 customers to avoid huge transactions but keep it fast
+            if (i % 20 == 0)
+            {
+                await _context.SaveChangesAsync();
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -120,6 +139,50 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         await EnsureTicketsAsync(customers);
         await EnsureOperationsAndBillingAsync(customers);
         await EnsureAuditTrailAsync(customers);
+    }
+
+    /// <summary>Removes demo wallet/loyalty fields wrongly applied before operator-skip was enforced.</summary>
+    private async Task SanitizeOperatorCreatedProfilesAsync(IReadOnlyList<Customer> customers)
+    {
+        foreach (var customer in customers.Where(IsOperatorCreatedCustomer))
+        {
+            var profiles = await _context.SubscriberProfile
+                .Where(p => !p.IsDeleted && p.CustomerId == customer.Id)
+                .ToListAsync();
+
+            foreach (var profile in profiles)
+            {
+                var hasPostedPayment = await _context.TelecomPaymentTransaction.AsNoTracking()
+                    .AnyAsync(p => !p.IsDeleted
+                                   && p.SubscriberProfileId == profile.Id
+                                   && p.Status == PaymentTransactionStatus.Completed);
+
+                if (hasPostedPayment)
+                {
+                    continue;
+                }
+
+                profile.PrepaidBalance = null;
+                profile.PostpaidCreditLimit = null;
+                profile.LoyaltyTier = null;
+                profile.LoyaltyPoints = 0;
+                profile.ChurnRiskScore = null;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>POS / Hub customers created by a real operator — keep only what they entered.</summary>
+    private static bool IsOperatorCreatedCustomer(Customer customer)
+    {
+        var createdBy = customer.CreatedById;
+        if (string.IsNullOrWhiteSpace(createdBy))
+        {
+            return false;
+        }
+
+        return !string.Equals(createdBy, SystemActor, StringComparison.OrdinalIgnoreCase);
     }
 
     private static int StableHash(string id)
@@ -235,9 +298,16 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         IReadOnlyList<TelecomValueAddedService> vasCatalog)
     {
         var rnd = new Random(20260519);
+        var i = 0;
         foreach (var customer in customers)
         {
+            if (IsOperatorCreatedCustomer(customer))
+            {
+                continue;
+            }
+
             var profiles = await _context.SubscriberProfile
+                .Include(p => p.Subscriptions)
                 .Where(p => !p.IsDeleted && p.CustomerId == customer.Id)
                 .ToListAsync();
 
@@ -253,9 +323,13 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             }
 
             // Profiles were loaded on DataContext — persist on the same tracker (not CommandContext).
-            await _context.SaveChangesAsync();
+            if (++i % 20 == 0)
+            {
+                await _context.SaveChangesAsync();
+            }
             await EnsureVasForCustomerAsync(customer.Id, vasCatalog, rnd);
         }
+        await _context.SaveChangesAsync();
     }
 
     private static void EnrichProfile(SubscriberProfile profile, Random rnd)
@@ -264,12 +338,43 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         profile.LoyaltyTier ??= rnd.Next(3) switch { 0 => "Platinum", 1 => "Gold", _ => "Silver" };
         profile.LoyaltyPoints = profile.LoyaltyPoints <= 0 ? rnd.Next(2000, 35000) : profile.LoyaltyPoints;
         profile.ChurnRiskScore ??= rnd.Next(5, 40);
-        profile.PrepaidBalance ??= rnd.Next(8000, 95000);
-        profile.PostpaidCreditLimit ??= rnd.Next(80000, 350000);
+
+        var subscriptionTypeId = profile.Subscriptions.FirstOrDefault()?.SubscriptionTypeId;
+        var isPrepaid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Prepaid;
+        var isPostpaid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Postpaid;
+        var isHybrid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Hybrid || subscriptionTypeId == null;
+
+        var isSuspended = profile.OperationalStatus is SubscriberOperationalStatus.Suspended
+            or SubscriberOperationalStatus.SuspendedInbound
+            or SubscriberOperationalStatus.SuspendedOutbound;
+
+        if (isSuspended)
+        {
+            if (isPostpaid)
+            {
+                profile.PrepaidBalance = null;
+                profile.PostpaidCreditLimit = -15000m; // GLOBAL HARDENING: Postpaid debt
+            }
+            else
+            {
+                profile.PrepaidBalance = 1500; // GLOBAL HARDENING: Prepaid positive balance
+                profile.PostpaidCreditLimit = null;
+            }
+        }
+        else
+        {
+            profile.PrepaidBalance = (isPrepaid || isHybrid) ? rnd.Next(8000, 95000) : null;
+            profile.PostpaidCreditLimit = (isPostpaid || isHybrid) ? rnd.Next(80000, 350000) : null;
+        }
+
         profile.LanguagePreference = profile.LanguagePreference == LanguagePreference.Arabic && rnd.Next(5) == 0
             ? LanguagePreference.English
             : LanguagePreference.Arabic;
-        profile.OperationalStatus = SubscriberOperationalStatus.Active;
+        
+        if (profile.OperationalStatus == SubscriberOperationalStatus.Pending)
+        {
+            profile.OperationalStatus = SubscriberOperationalStatus.Active;
+        }
     }
 
     private async Task CreateTelecomStackAsync(Customer customer, IReadOnlyList<string> productIds, Random rnd)
@@ -362,14 +467,24 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         }
 
         var subs = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => s.SubscriberProfile.CustomerId == customerId && s.MsisdnAssetId != null)
+            .Where(s => s.SubscriberProfile != null && s.SubscriberProfile.CustomerId == customerId && s.MsisdnAssetId != null)
             .Select(s => new { s.Id, Msisdn = s.MsisdnAsset!.Msisdn })
             .ToListAsync();
 
+        if (subs.Count == 0) return;
+
+        var subIds = subs.Select(s => s.Id).ToList();
+        var existingVas = await _query.SubscriberActiveService.AsNoTracking()
+            .Where(v => !v.IsDeleted && subIds.Contains(v.TelecomSubscriptionId))
+            .ToListAsync();
+
+        var existingBySub = existingVas.GroupBy(v => v.TelecomSubscriptionId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.TelecomValueAddedServiceId).ToHashSet());
+
         foreach (var sub in subs)
         {
-            var existingCount = await _query.SubscriberActiveService.AsNoTracking()
-                .CountAsync(v => !v.IsDeleted && v.TelecomSubscriptionId == sub.Id);
+            var existingSet = existingBySub.GetValueOrDefault(sub.Id) ?? new HashSet<string?>();
+            var existingCount = existingSet.Count;
 
             var target = Math.Min(5, vasCatalog.Count);
             if (existingCount >= target)
@@ -382,16 +497,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 .Select((v, i) => (v, i))
                 .OrderBy(x => (x.i + offset) % vasCatalog.Count)
                 .Select(x => x.v)
+                .Where(v => !existingSet.Contains(v.Id))
                 .Take(target - existingCount);
+
             foreach (var vas in picked)
             {
-                var dup = await _query.SubscriberActiveService.AnyAsync(
-                    v => !v.IsDeleted && v.TelecomSubscriptionId == sub.Id && v.TelecomValueAddedServiceId == vas.Id);
-                if (dup)
-                {
-                    continue;
-                }
-
                 await _vasActiveRepository.CreateAsync(new SubscriberActiveService
                 {
                     TelecomSubscriptionId = sub.Id,
@@ -418,12 +528,26 @@ public sealed class TelecomCustomer360EnrichmentSeeder
 
         // Load via CommandContext (same tracker as _subscriptionRepository) — avoids duplicate
         // tracking when stacks were just created in EnsureTelecomStacksAsync.
+        var operatorCustomerIds = await _context.Customer.AsNoTracking()
+            .Where(c => !c.IsDeleted
+                        && c.CreatedById != null
+                        && c.CreatedById != ""
+                        && c.CreatedById != SystemActor)
+            .Select(c => c.Id)
+            .ToHashSetAsync();
+
         var subs = await _subscriptionRepository.GetQuery()
+            .Include(s => s.SubscriberProfile)
             .Where(s => !s.IsDeleted && s.MsisdnAssetId != null)
             .ToListAsync();
 
         foreach (var sub in subs)
         {
+            if (sub.SubscriberProfile != null && operatorCustomerIds.Contains(sub.SubscriberProfile.CustomerId))
+            {
+                continue;
+            }
+
             var typeKey = sub.SubscriptionTypeId ?? string.Empty;
             var pool = productsByType.TryGetValue(typeKey, out var typed) && typed.Count > 0
                 ? typed
@@ -463,6 +587,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
 
         foreach (var customer in customers)
         {
+            if (IsOperatorCreatedCustomer(customer))
+            {
+                continue;
+            }
+
             var hasTicket = await _query.TelecomTechnicalTicket.AsNoTracking()
                 .AnyAsync(t => !t.IsDeleted && t.CustomerId == customer.Id);
             if (hasTicket)
@@ -471,7 +600,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             }
 
             var line = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-                .Where(s => s.SubscriberProfile.CustomerId == customer.Id && s.MsisdnAsset != null)
+                .Where(s => s.SubscriberProfile != null && s.SubscriberProfile.CustomerId == customer.Id && s.MsisdnAsset != null)
                 .OrderByDescending(s => s.IsPrimaryLine)
                 .Select(s => new
                 {
@@ -512,6 +641,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
     {
         foreach (var customer in customers)
         {
+            if (IsOperatorCreatedCustomer(customer))
+            {
+                continue;
+            }
+
             var profileIds = await _query.SubscriberProfile.AsNoTracking()
                 .Where(p => !p.IsDeleted && p.CustomerId == customer.Id)
                 .Select(p => p.Id)
@@ -574,18 +708,29 @@ public sealed class TelecomCustomer360EnrichmentSeeder
 
     private async Task EnsureAuditTrailAsync(IReadOnlyList<Customer> customers)
     {
+        var existingEntityIds = await _context.UserAuditLog.AsNoTracking()
+            .Where(x => !x.IsDeleted && x.EntityType == nameof(Customer))
+            .Select(x => x.EntityId)
+            .Distinct()
+            .ToListAsync();
+
+        var existingSet = new HashSet<string>(existingEntityIds.Where(id => id != null)!);
+
+        var i = 0;
         foreach (var customer in customers)
         {
-            var count = await _context.UserAuditLog.AsNoTracking()
-                .CountAsync(x => !x.IsDeleted && x.EntityType == nameof(Customer) && x.EntityId == customer.Id);
+            if (IsOperatorCreatedCustomer(customer))
+            {
+                continue;
+            }
 
-            if (count >= 3)
+            if (existingSet.Contains(customer.Id))
             {
                 continue;
             }
 
             var msisdn = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-                .Where(s => s.SubscriberProfile.CustomerId == customer.Id && s.MsisdnAsset != null)
+                .Where(s => s.SubscriberProfile != null && s.SubscriberProfile.CustomerId == customer.Id && s.MsisdnAsset != null)
                 .OrderByDescending(s => s.IsPrimaryLine)
                 .Select(s => s.MsisdnAsset!.Msisdn)
                 .FirstOrDefaultAsync();
@@ -597,19 +742,33 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 (UserAuditActionTypes.CustomerViewed, $"اطلاع على ملف 360 — {customer.DisplayName}"),
             };
 
-            foreach (var (action, summary) in actions.Skip(3 - count))
+            foreach (var (action, summary) in actions)
             {
-                await _audit.LogAsync(new UserAuditLogRequest
+                // GLOBAL HARDENING: Manual row creation to avoid SaveChangesAsync inside loop
+                var ip = "127.0.0.1";
+                var row = new UserAuditLog
                 {
+                    UserId = null,
                     ActorUserId = SystemActor,
                     ActionType = action,
                     EntityType = nameof(Customer),
                     EntityId = customer.Id,
                     SummaryAr = summary,
-                    Payload = AuditLogPayloadFactory.ProfileView(customer.Id, customer.DisplayName, msisdn ?? customer.PrimaryPhone),
-                    IpAddress = "127.0.0.1",
-                });
+                    PayloadJson = UserAuditJsonSerializer.Serialize(AuditLogPayloadFactory.ProfileView(customer.Id, customer.DisplayName, msisdn ?? customer.PrimaryPhone)),
+                    OccurredAtUtc = DateTime.UtcNow,
+                    IpAddress = ip,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedById = SystemActor,
+                    IsDeleted = false,
+                };
+                await _context.UserAuditLog.AddAsync(row);
+            }
+
+            if (++i % 20 == 0)
+            {
+                await _context.SaveChangesAsync();
             }
         }
+        await _context.SaveChangesAsync();
     }
 }

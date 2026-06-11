@@ -1,0 +1,58 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_Password123!"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:80"
+
+  simulator:
+    build:
+      context: .
+      dockerfile: Tools/NetworkSimulator/Dockerfile
+    ports:
+      - "5099:8080"
+
+  app:
+    build:
+      context: .
+      dockerfile: Presentation/ASPNET/Dockerfile
+    depends_on:
+      - sqlserver
+      - redis
+      - rabbitmq
+      - simulator
+      - seq
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=nSuite;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True"
+      Redis__ConnectionString: "redis:6379"
+      TelecomIntegrations__Mode: "Http"
+      TelecomIntegrations__SimulatorBaseUrl: "http://simulator:8080"
+      Database__UseEfMigrations: "false"
+    ports:
+      - "8080:8080"
+
+volumes:
+  sql_data:

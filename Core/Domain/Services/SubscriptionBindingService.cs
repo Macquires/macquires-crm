@@ -44,11 +44,13 @@ public sealed class SubscriptionBindingService : ISubscriptionBindingService
             MsisdnAssetId = context.MsisdnAsset.Id,
             ProductId = null,
             SubscriptionTypeId = TelecomSubscriptionTypeWellKnownIds.Prepaid,
-            DocumentStatus = TelecomDocumentStatus.Missing,
+            DocumentStatus = command.DocumentStatus,
             IsPrimaryLine = isPrimary
         };
 
         context.MsisdnAsset.SubscriberProfileId = profile.Id;
+        context.MsisdnAsset.PairedIccid = context.SimInventory.Iccid;
+        context.MsisdnAsset.PairedImsi = context.SimInventory.Imsi;
         context.MsisdnAsset.TransitionTo(MsisdnPoolStatus.Active);
 
         context.SimInventory.AssignToProfile(profile.Id);
@@ -105,7 +107,7 @@ public sealed class SubscriptionBindingService : ISubscriptionBindingService
 
     private static void ValidateSimAvailable(SimInventory sim, string msisdnAssetId)
     {
-        if (sim.Status != SimStatus.Available)
+        if (sim.Status is not (SimStatus.Available or SimStatus.Reserved))
         {
             throw new TelecomBindingRuleException("SimNotAvailable",
                 $"الشريحة غير متاحة (الحالة: {sim.Status}).");

@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ public class GetTechnicalTicketsResult
     public int ActiveOpenCount { get; init; }
 }
 
-public class GetTechnicalTicketsRequest : IRequest<GetTechnicalTicketsResult>
+public class GetTechnicalTicketsRequest : IRequest<GetTechnicalTicketsResult>, IRequirePermission
 {
     /// <summary>Dashboard quick queue: Open + InProgress only.</summary>
     public bool ActiveQueueOnly { get; init; }
@@ -36,9 +37,12 @@ public class GetTechnicalTicketsRequest : IRequest<GetTechnicalTicketsResult>
     public TechnicalTicketStatus? Status { get; init; }
     public string? Msisdn { get; init; }
     public string? CustomerId { get; init; }
+    public BackOfficeDomain? Domain { get; init; }
 
     /// <summary>When false and not ActiveQueueOnly, excludes Resolved only (legacy).</summary>
     public bool IncludeResolved { get; init; }
+
+    public string PermissionKey => PermissionCatalog.NetworkTechnicalView;
 }
 
 public class GetTechnicalTicketsHandler : IRequestHandler<GetTechnicalTicketsRequest, GetTechnicalTicketsResult>
@@ -78,6 +82,13 @@ public class GetTechnicalTicketsHandler : IRequestHandler<GetTechnicalTicketsReq
         {
             var customerId = request.CustomerId.Trim();
             q = q.Where(t => t.CustomerId == customerId);
+        }
+
+        if (request.Domain.HasValue && request.Domain.Value != BackOfficeDomain.NetworkAndTechnical)
+        {
+            // Technical tickets are primarily NetworkAndTechnical. 
+            // If another domain is requested, we return empty unless we have a mapping for it.
+            q = q.Where(t => false);
         }
 
         var activeCount = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()

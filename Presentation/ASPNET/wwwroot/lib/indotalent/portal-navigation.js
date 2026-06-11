@@ -5,7 +5,7 @@ const PortalNavigation = (function () {
     const PERSONA_LABELS_AR = {
         Executive: 'الإدارة العليا',
         CallCenter: 'مركز الاتصال',
-        Retail: 'المعرض',
+        Retail: 'نقطة البيع',
         BackOffice: 'العمليات',
         SysAdmin: 'الإدارة التقنية',
     };
@@ -13,7 +13,7 @@ const PortalNavigation = (function () {
     const PERSONA_LABELS_EN = {
         Executive: 'Executive',
         CallCenter: 'Call center',
-        Retail: 'Retail showroom',
+        Retail: 'Retail POS',
         BackOffice: 'Back office',
         SysAdmin: 'Technical administration',
     };
@@ -183,6 +183,10 @@ const PortalNavigation = (function () {
             }
             if (normalizePath(url) === currentPath) {
                 item.isSelected = true;
+                if (item.hasChild) {
+                    item.expanded = true;
+                    savedExpanded.add(item.id);
+                }
                 let parentId = item.pid;
                 while (parentId) {
                     const parent = parentMap[parentId];
@@ -311,12 +315,28 @@ const PortalNavigation = (function () {
             bodyHtml += renderNavLink(leaf, badges, currentPath);
         });
 
-        return `<div class="syr-nav-section syr-nav-accordion">
-            <button type="button" class="syr-nav-accordion-header" data-module-id="${mod.id}" aria-expanded="${expanded}">
+        const hubUrl = mod.navURL || mod.navUrl;
+        const hasHub = hubUrl && hubUrl !== '#';
+        const hubActive = hasHub && currentPath === normalizePath(hubUrl);
+
+        const headerInner = hasHub
+            ? `<a class="syr-nav-accordion-hub${hubActive ? ' active' : ''}" href="${hubUrl}">
+                <i class="bi ${modIcon} syr-nav-module-icon syr-duotone-lite"></i>
+                <span class="flex-grow-1 text-truncate">${mod.name || ''}</span>
+            </a>
+            <button type="button" class="syr-nav-accordion-toggle" data-module-id="${mod.id}" aria-expanded="${expanded}" aria-label="Toggle section">
+                <i class="bi ${chevron} syr-nav-chevron"></i>
+            </button>`
+            : `<button type="button" class="syr-nav-accordion-header syr-nav-accordion-header--solo" data-module-id="${mod.id}" aria-expanded="${expanded}">
                 <i class="bi ${modIcon} syr-nav-module-icon syr-duotone-lite"></i>
                 <span class="flex-grow-1 text-truncate text-start">${mod.name || ''}</span>
                 <i class="bi ${chevron} syr-nav-chevron"></i>
-            </button>
+            </button>`;
+
+        return `<div class="syr-nav-section syr-nav-accordion${hasHub ? ' syr-nav-accordion--hub' : ''}">
+            <div class="syr-nav-accordion-header-row${hubActive ? ' is-hub-active' : ''}" aria-expanded="${expanded}">
+                ${headerInner}
+            </div>
             <div class="syr-nav-accordion-body${expanded ? ' is-open' : ''}">
                 <div class="syr-nav-accordion-inner">${bodyHtml}</div>
             </div>
@@ -329,7 +349,10 @@ const PortalNavigation = (function () {
         }
         container.dataset.accordionBound = '1';
         container.addEventListener('click', function (e) {
-            const btn = e.target.closest('.syr-nav-accordion-header');
+            if (e.target.closest('a.syr-nav-accordion-hub')) {
+                return;
+            }
+            const btn = e.target.closest('.syr-nav-accordion-toggle, .syr-nav-accordion-header--solo');
             if (!btn) {
                 return;
             }

@@ -80,12 +80,14 @@ public class ProductController : BaseApiController
     public async Task<ActionResult<ApiSuccessResult<GetMigrationEligibleProductsResult>>> GetMigrationEligibleProductsAsync(
         CancellationToken cancellationToken,
         [FromQuery] string subscriberProfileId = "",
-        [FromQuery] string? msisdnAssetId = null)
+        [FromQuery] string? msisdnAssetId = null,
+        [FromQuery] string? targetSubscriptionTypeId = null)
     {
         var request = new GetMigrationEligibleProductsRequest
         {
             SubscriberProfileId = subscriberProfileId,
             MsisdnAssetId = msisdnAssetId,
+            TargetSubscriptionTypeId = targetSubscriptionTypeId,
         };
         var response = await _sender.Send(request, cancellationToken);
 

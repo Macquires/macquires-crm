@@ -7,9 +7,9 @@
     <div class="row mb-2">
         <div class="col-12">
             <p class="text-muted small mb-0">
-                هيكل الفروع والوحدات التنظيمية — تعيين مدير كل فرع وربط الموظفين من
-                <a href="/Administration/UserList">إدارة المستخدمين</a>.
-                <a href="/Administration">← الإدارة والنظام</a>
+                {{ t('subtitle') }}
+                <a href="/Administration/UserList">{{ t('linkUsers') }}</a>.
+                <a href="/Administration">{{ t('linkBack') }}</a>
             </p>
         </div>
     </div>
@@ -26,47 +26,47 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" v-text="state.mainTitle"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" :aria-label="t('modal.close')"></button>
                 </div>
                 <div class="modal-body">
                     <form id="BranchForm">
                         <div class="row mb-2">
                             <div class="col-md-6">
-                                <label class="form-label" for="NameAr">اسم الفرع (عربي)</label>
+                                <label class="form-label" for="NameAr">{{ t('modal.nameAr') }}</label>
                                 <input id="NameAr" class="form-control" v-model="state.nameAr" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="NameEn">الاسم (إنجليزي)</label>
+                                <label class="form-label" for="NameEn">{{ t('modal.nameEn') }}</label>
                                 <input id="NameEn" class="form-control" v-model="state.nameEn" />
                             </div>
                         </div>
                         <div class="row mb-2">
                             <div class="col-md-6">
-                                <label class="form-label" for="ParentId">الوحدة الأب</label>
+                                <label class="form-label" for="ParentId">{{ t('modal.parent') }}</label>
                                 <select id="ParentId" class="form-select" v-model="state.parentId">
-                                    <option value="">— بدون (مستوى أعلى) —</option>
-                                    <option v-for="o in parentOptions" :key="o.id" :value="o.id">{{ o.nameAr }}</option>
+                                    <option value="">{{ t('modal.parentNone') }}</option>
+                                    <option v-for="o in parentOptions" :key="o.id" :value="o.id">{{ branchLabel(o) }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="ManagerUserId">مدير الفرع</label>
+                                <label class="form-label" for="ManagerUserId">{{ t('modal.manager') }}</label>
                                 <select id="ManagerUserId" class="form-select" v-model="state.managerUserId">
-                                    <option value="">— بدون —</option>
+                                    <option value="">{{ t('modal.none') }}</option>
                                     <option v-for="m in state.managerOptions" :key="m.id" :value="m.id">{{ m.label }}</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="IsActive" v-model="state.isActive" />
-                            <label class="form-check-label" for="IsActive">فرع نشط</label>
+                            <label class="form-check-label" for="IsActive">{{ t('modal.active') }}</label>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('modal.close') }}</button>
                     <button type="button" class="btn btn-primary" v-on:click="handler.handleSubmit" v-bind:disabled="state.isSubmitting">
                         <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting"></span>
-                        حفظ
+                        {{ t('modal.save') }}
                     </button>
                 </div>
             </div>
@@ -75,5 +75,5 @@
 </div>
 
 @section scripts {
-    <script src="~/FrontEnd/Pages/Administration/BranchList.cshtml.js"></script>
+    <script src="~/FrontEnd/Pages/Administration/BranchList.cshtml.js" asp-append-version="true"></script>
 }

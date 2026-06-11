@@ -29,6 +29,7 @@ public class GetIntegrationHealthStatusHandler : IRequestHandler<GetIntegrationH
         CancellationToken cancellationToken)
     {
         var huawei = await _settings.GetBoolAsync(GlobalSettingKeys.IntegrationHuaweiEnabled, true, cancellationToken);
+        var intelligentNetwork = await _settings.GetBoolAsync(GlobalSettingKeys.IntegrationInEnabled, true, cancellationToken);
         var hlr = await _settings.GetBoolAsync(GlobalSettingKeys.IntegrationHlrEnabled, true, cancellationToken);
         var sms = await _settings.GetBoolAsync(GlobalSettingKeys.IntegrationSmsEnabled, true, cancellationToken);
 
@@ -37,6 +38,7 @@ public class GetIntegrationHealthStatusHandler : IRequestHandler<GetIntegrationH
             Items =
             [
                 Map("Huawei_CBS", "Huawei CBS", huawei),
+                Map("Huawei_IN", "Huawei IN", intelligentNetwork),
                 Map("Huawei_HLR", "HLR", hlr),
                 Map("SmsGateway", "SMS Gateway", sms),
             ],

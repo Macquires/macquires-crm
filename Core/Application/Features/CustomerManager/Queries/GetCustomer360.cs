@@ -48,7 +48,9 @@ public record Customer360SubscriptionDto(
     string? ProductName,
     string? ProductOfferingId,
     string? ProductOfferingName,
+    string? ProductOfferingNameEn,
     string? SubscriptionTypeName,
+    string? SubscriptionTypeNameEn,
     string? SubscriptionTypeCode,
     string? SimType,
     string? Iccid,
@@ -65,6 +67,9 @@ public record Customer360SubscriptionDto(
     string? SimStatus,
     string? Imsi,
     DateTime? CreatedAtUtc,
+    string? DocumentOperationId,
+    /// <summary>identity = operation document store; kyc = sovereign KYC vault.</summary>
+    string? DocumentSource,
     List<Customer360PackageComponentDto> PackageComponents);
 
 public class GetCustomer360Result
@@ -101,7 +106,10 @@ public class GetCustomer360Result
     public string? CustomerCategoryName { get; init; }
     public DateOnly? DateOfBirth { get; init; }
     public string? Nationality { get; init; }
+    public Gender? Gender { get; init; }
     public string? GenderLabel { get; init; }
+    public CompanyLegalStatus? LegalStatus { get; init; }
+    public BillingConsolidationMode? BillingConsolidationMode { get; init; }
     public string? Occupation { get; init; }
     public string? TaxNumber { get; init; }
     public string? AuthorizedSignatoryName { get; init; }
@@ -119,6 +127,12 @@ public class GetCustomer360Request : IRequest<GetCustomer360Result>
 {
     public string CustomerId { get; init; } = "";
 }
+
+internal sealed record SubscriptionDocumentContext(
+    string OperationId,
+    TelecomDocumentStatus DocumentStatus,
+    string? IdentityDocumentStorageKey,
+    string? KycDocumentReferenceId);
 
 public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetCustomer360Result>
 {
@@ -144,11 +158,14 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
         string? commercialRegistry = null;
         DateOnly? dateOfBirth = null;
         string? nationality = null;
+        Gender? gender = null;
         string? genderLabel = null;
         string? occupation = null;
         string? taxNumber = null;
         string? authorizedSignatory = null;
+        CompanyLegalStatus? legalStatus = null;
         string? legalStatusLabel = null;
+        BillingConsolidationMode? billingConsolidationMode = null;
         string? billingConsolidationLabel = null;
         string? parentCustomerName = null;
 
@@ -160,6 +177,7 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                 : "****";
             dateOfBirth = ind.DateOfBirth;
             nationality = ind.Nationality;
+            gender = ind.Gender;
             genderLabel = ind.Gender switch
             {
                 Gender.Male => "ذكر",
@@ -173,6 +191,7 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             commercialRegistry = corp.CommercialRegistryNumber;
             taxNumber = corp.TaxNumber;
             authorizedSignatory = corp.AuthorizedSignatoryName;
+            legalStatus = corp.LegalStatus;
             legalStatusLabel = corp.LegalStatus switch
             {
                 CompanyLegalStatus.SoleProprietorship => "مؤسسة فردية",
@@ -182,6 +201,7 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                 CompanyLegalStatus.Government => "حكومية",
                 _ => "غير محدد",
             };
+            billingConsolidationMode = corp.BillingConsolidationMode;
             billingConsolidationLabel = corp.BillingConsolidationMode switch
             {
                 BillingConsolidationMode.Unified => "موحّد",
@@ -204,16 +224,20 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
         var profileIds = profiles.Select(p => p.Id).ToList();
         var profileById = profiles.ToDictionary(p => p.Id);
 
-        var subscriptions = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => profileIds.Contains(s.SubscriberProfileId))
-            .Include(s => s.MsisdnAsset)
-            .Include(s => s.Product)
-            .Include(s => s.ProductOffering!)
-                .ThenInclude(o => o.Components)
-            .Include(s => s.SubscriptionTypeLookup)
-            .OrderByDescending(s => s.IsPrimaryLine)
-            .ThenBy(s => s.CreatedAtUtc)
-            .ToListAsync(cancellationToken);
+        var subscriptions = DeduplicateSubscriptionsByLine(
+            await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+                .Where(s => profileIds.Contains(s.SubscriberProfileId))
+                .Include(s => s.MsisdnAsset)
+                .Include(s => s.Product)
+                .Include(s => s.ProductOffering!)
+                    .ThenInclude(o => o.Components)
+                .Include(s => s.SubscriptionTypeLookup)
+                .AsSplitQuery()
+                .OrderByDescending(s => s.IsPrimaryLine)
+                .ThenBy(s => s.CreatedAtUtc)
+                .ToListAsync(cancellationToken))
+            .Where(s => !string.IsNullOrWhiteSpace(s.MsisdnAsset?.Msisdn))
+            .ToList();
 
         var productIds = subscriptions
             .Select(s => s.ProductId)
@@ -227,20 +251,27 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             .Distinct()
             .ToList();
 
-        var offeringsByProductId = productIds.Count == 0
-            ? new Dictionary<string, ProductOffering>()
-            : await _query.ProductOffering.AsNoTracking()
+        static bool OfferingIsUsable(ProductOffering? offering) => offering is { IsDeleted: false };
+
+        var needsOfferingByProduct = subscriptions.Any(s =>
+            string.IsNullOrEmpty(s.ProductOfferingId) && !string.IsNullOrEmpty(s.ProductId));
+        var needsOfferingById = subscriptions.Any(s =>
+            !string.IsNullOrEmpty(s.ProductOfferingId) && !OfferingIsUsable(s.ProductOffering));
+
+        var offeringsByProductId = needsOfferingByProduct && productIds.Count > 0
+            ? await _query.ProductOffering.AsNoTracking()
                 .Where(o => !o.IsDeleted && o.ProductId != null && productIds.Contains(o.ProductId))
                 .Include(o => o.Components)
                 .GroupBy(o => o.ProductId!)
-                .ToDictionaryAsync(g => g.Key, g => g.OrderBy(x => x.SortOrder).First(), cancellationToken);
+                .ToDictionaryAsync(g => g.Key, g => g.OrderBy(x => x.SortOrder).First(), cancellationToken)
+            : new Dictionary<string, ProductOffering>();
 
-        var offeringsById = offeringIds.Count == 0
-            ? new Dictionary<string, ProductOffering>()
-            : await _query.ProductOffering.AsNoTracking()
+        var offeringsById = needsOfferingById && offeringIds.Count > 0
+            ? await _query.ProductOffering.AsNoTracking()
                 .Where(o => !o.IsDeleted && offeringIds.Contains(o.Id))
                 .Include(o => o.Components)
-                .ToDictionaryAsync(o => o.Id, cancellationToken);
+                .ToDictionaryAsync(o => o.Id, cancellationToken)
+            : new Dictionary<string, ProductOffering>();
 
         var msisdnAssetIds = subscriptions
             .Select(s => s.MsisdnAssetId)
@@ -266,6 +297,39 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             : await _query.SimInventory.AsNoTracking()
                 .Where(s => operationSimIds.Contains(s.Id))
                 .ToDictionaryAsync(s => s.Id, cancellationToken);
+
+        var documentContextByMsisdnAssetId = msisdnAssetIds.Count == 0
+            ? new Dictionary<string, SubscriptionDocumentContext>()
+            : await (
+                from op in _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+                where op.MsisdnAssetId != null
+                      && msisdnAssetIds.Contains(op.MsisdnAssetId)
+                      && op.Kind == TelecomOperationKind.NewActivation
+                      && (op.DocumentStatus != TelecomDocumentStatus.Missing
+                          || op.KycDocumentReferenceId != null
+                          || op.IdentityDocumentStorageKey != null)
+                orderby op.CreatedAtUtc descending
+                select new
+                {
+                    op.MsisdnAssetId,
+                    op.Id,
+                    op.DocumentStatus,
+                    op.IdentityDocumentStorageKey,
+                    op.KycDocumentReferenceId,
+                })
+                .GroupBy(x => x.MsisdnAssetId!)
+                .ToDictionaryAsync(
+                    g => g.Key,
+                    g =>
+                    {
+                        var row = g.First();
+                        return new SubscriptionDocumentContext(
+                            row.Id,
+                            row.DocumentStatus,
+                            row.IdentityDocumentStorageKey,
+                            row.KycDocumentReferenceId);
+                    },
+                    cancellationToken);
 
         var iccidCandidates = new HashSet<string>(StringComparer.Ordinal);
         foreach (var sub in subscriptions)
@@ -294,6 +358,9 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                 .Where(s => iccidCandidates.Contains(s.Iccid))
                 .ToDictionaryAsync(s => s.Iccid, StringComparer.Ordinal, cancellationToken);
 
+        var simulateDemoWallet = Customer360WalletBuilder.ShouldSimulateDemoWallet(customer.CreatedById);
+
+        var primaryLineAssigned = false;
         var subscriptionDtos = subscriptions.Select(s =>
         {
             ProductOffering? offering = null;
@@ -343,7 +410,7 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             }
 
             var defaultSimStatus = MsisdnAssetKitResolver.DefaultSimStatusForProfile(profile?.OperationalStatus);
-            var simTypeLabel = MsisdnAssetKitResolver.SimTypeLabel(resolvedSim?.SimType ?? SimType.Physical);
+            var simTypeLabel = MsisdnAssetKitResolver.SimTypeCode(resolvedSim?.SimType ?? SimType.Physical);
             var simStatusLabel = resolvedSim != null
                 ? MsisdnAssetKitResolver.SimStatusLabel(resolvedSim.Status)
                 : defaultSimStatus.HasValue
@@ -362,22 +429,53 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                     c.SortOrder))
                 .ToList();
 
+            var documentStatus = s.DocumentStatus;
+            string? documentOperationId = null;
+            string? documentSource = null;
+            if (!string.IsNullOrEmpty(s.MsisdnAssetId)
+                && documentContextByMsisdnAssetId.TryGetValue(s.MsisdnAssetId, out var docCtx))
+            {
+                if (documentStatus == TelecomDocumentStatus.Missing)
+                {
+                    documentStatus = docCtx.DocumentStatus;
+                }
+
+                if (!string.IsNullOrWhiteSpace(docCtx.IdentityDocumentStorageKey))
+                {
+                    documentOperationId = docCtx.OperationId;
+                    documentSource = "identity";
+                }
+                else if (!string.IsNullOrWhiteSpace(docCtx.KycDocumentReferenceId))
+                {
+                    documentOperationId = docCtx.OperationId;
+                    documentSource = "kyc";
+                }
+            }
+
+            var isPrimaryLine = s.IsPrimaryLine && !primaryLineAssigned;
+            if (isPrimaryLine)
+            {
+                primaryLineAssigned = true;
+            }
+
             return new Customer360SubscriptionDto(
                 s.Id,
                 s.SubscriberProfileId,
                 asset?.Msisdn,
                 s.MsisdnAssetId,
-                s.IsPrimaryLine,
+                isPrimaryLine,
                 s.ProductId,
                 s.Product?.Name,
                 offering?.Id,
                 offering?.Name ?? offering?.NameEn,
+                offering?.NameEn ?? offering?.Name,
                 s.SubscriptionTypeLookup?.NameAr ?? s.SubscriptionTypeLookup?.Code,
+                s.SubscriptionTypeLookup?.NameEn ?? s.SubscriptionTypeLookup?.NameAr ?? s.SubscriptionTypeLookup?.Code,
                 s.SubscriptionTypeLookup?.Code,
                 simTypeLabel,
                 iccid,
                 profile?.OperationalStatus.ToString(),
-                s.DocumentStatus switch
+                documentStatus switch
                 {
                     TelecomDocumentStatus.Uploaded => "مرفوع",
                     TelecomDocumentStatus.Verified => "موثّق",
@@ -398,12 +496,14 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
                 profile?.ActivationDateUtc,
                 profile?.LoyaltyPoints ?? 0,
                 profile?.LoyaltyTier,
-                profile?.PrepaidBalance,
-                profile?.PostpaidCreditLimit,
+                simulateDemoWallet ? profile?.PrepaidBalance : profile?.PrepaidBalance ?? 0m,
+                simulateDemoWallet ? profile?.PostpaidCreditLimit : null,
                 profile?.ChurnRiskScore,
                 simStatusLabel,
                 imsi,
                 s.CreatedAtUtc,
+                documentOperationId,
+                documentSource,
                 packageComponents);
         }).ToList();
 
@@ -414,6 +514,7 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             .Include(o => o.MsisdnAsset)
             .Include(o => o.SubscriberProfile!).ThenInclude(p => p!.Customer)
             .Include(o => o.SecondarySubscriberProfile!).ThenInclude(p => p!.Customer)
+            .AsSplitQuery()
             .OrderByDescending(o => o.CreatedAtUtc)
             .Take(15)
             .ToListAsync(cancellationToken);
@@ -514,11 +615,14 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             CustomerCategoryName = customer.CustomerCategory?.Name,
             DateOfBirth = dateOfBirth,
             Nationality = nationality,
+            Gender = gender,
             GenderLabel = genderLabel,
             Occupation = occupation,
             TaxNumber = taxNumber,
             AuthorizedSignatoryName = authorizedSignatory,
+            LegalStatus = legalStatus,
             LegalStatusLabel = legalStatusLabel,
+            BillingConsolidationMode = billingConsolidationMode,
             BillingConsolidationModeLabel = billingConsolidationLabel,
             ParentCustomerDisplayName = parentCustomerName,
             CreatedAtUtc = customer.CreatedAtUtc,
@@ -527,5 +631,37 @@ public class GetCustomer360Handler : IRequestHandler<GetCustomer360Request, GetC
             ActiveSubscriptions = subscriptionDtos,
             RecentOperations = operations
         };
+    }
+
+    /// <summary>
+    /// One logical line per MSISDN asset — demo/reconnect seeders may leave stale subscription rows on old profiles.
+    /// </summary>
+    internal static List<TelecomSubscription> DeduplicateSubscriptionsByLine(IReadOnlyList<TelecomSubscription> subscriptions)
+    {
+        if (subscriptions.Count <= 1)
+        {
+            return subscriptions.ToList();
+        }
+
+        return subscriptions
+            .GroupBy(s => !string.IsNullOrEmpty(s.MsisdnAssetId) ? s.MsisdnAssetId : s.Id)
+            .Select(g =>
+            {
+                var canonicalProfileId = g
+                    .Select(x => x.MsisdnAsset?.SubscriberProfileId)
+                    .FirstOrDefault(id => !string.IsNullOrEmpty(id));
+
+                var candidates = !string.IsNullOrEmpty(canonicalProfileId)
+                    ? g.Where(s => s.SubscriberProfileId == canonicalProfileId).ToList()
+                    : g.ToList();
+
+                return candidates
+                    .OrderByDescending(s => s.IsPrimaryLine)
+                    .ThenByDescending(s => s.CreatedAtUtc ?? DateTime.MinValue)
+                    .First();
+            })
+            .OrderByDescending(s => s.IsPrimaryLine)
+            .ThenBy(s => s.CreatedAtUtc)
+            .ToList();
     }
 }

@@ -23,7 +23,8 @@ public static class Customer360WalletBuilder
     public static Customer360LineWalletDto Build(
         string? msisdn,
         decimal? crmPrepaidBalance,
-        IReadOnlyList<Customer360PackageComponentDto> packageComponents)
+        IReadOnlyList<Customer360PackageComponentDto> packageComponents,
+        bool simulateDemoUsage = true)
     {
         var normalized = NormalizeMsisdn(msisdn);
         if (string.IsNullOrEmpty(normalized))
@@ -33,36 +34,45 @@ public static class Customer360WalletBuilder
                 msisdn,
                 crmPrepaidBalance,
                 "SYP",
-                "لا يوجد رقم خط لاستعلام الرصيد.",
+                "noMsisdnForWallet",
                 []);
         }
 
-        var balance = crmPrepaidBalance ?? SimulateBalance(normalized);
+        var balance = crmPrepaidBalance
+            ?? (simulateDemoUsage ? SimulateBalance(normalized) : 0m);
         var components = packageComponents.Count > 0
             ? packageComponents
             : DefaultPackageComponents(normalized);
 
         var buckets = components
-            .Select(c => ToUsageBucket(c, normalized))
+            .Select(c => ToUsageBucket(c, normalized, simulateDemoUsage))
             .ToList();
 
         return new Customer360LineWalletDto(true, msisdn, balance, "SYP", null, buckets);
     }
+
+    /// <summary>
+    /// Demo wallet uses hash-based partial quota usage; operator-created lines show full quotas and zero balance until CBS/IN sync.
+    /// </summary>
+    public static bool ShouldSimulateDemoWallet(string? customerCreatedById) =>
+        string.IsNullOrWhiteSpace(customerCreatedById)
+        || string.Equals(customerCreatedById, "system-seed", StringComparison.OrdinalIgnoreCase);
 
     private static List<Customer360PackageComponentDto> DefaultPackageComponents(string msisdn)
     {
         var seed = Math.Abs(msisdn.GetHashCode(StringComparison.Ordinal));
         return
         [
-            new(ServiceComponentType.Data, "بيانات الباقة", 10 + seed % 15, "GB", false, 0),
-            new(ServiceComponentType.Voice, "دقائق محلية", 200 + seed % 400, "دقيقة", false, 1),
-            new(ServiceComponentType.Sms, "رسائل نصية", 50 + seed % 150, "SMS", false, 2),
+            new(ServiceComponentType.Data, null, 10 + seed % 15, "GB", false, 0),
+            new(ServiceComponentType.Voice, null, 200 + seed % 400, "minutes", false, 1),
+            new(ServiceComponentType.Sms, null, 50 + seed % 150, "SMS", false, 2),
         ];
     }
 
     private static Customer360UsageBucketDto ToUsageBucket(
         Customer360PackageComponentDto component,
-        string msisdn)
+        string msisdn,
+        bool simulateDemoUsage)
     {
         if (component.IsUnlimited)
         {
@@ -84,6 +94,18 @@ public static class Customer360WalletBuilder
                 component.Label,
                 0,
                 0,
+                component.QuotaUnit,
+                false,
+                0);
+        }
+
+        if (!simulateDemoUsage)
+        {
+            return new Customer360UsageBucketDto(
+                component.ComponentType,
+                component.Label,
+                included,
+                included,
                 component.QuotaUnit,
                 false,
                 0);

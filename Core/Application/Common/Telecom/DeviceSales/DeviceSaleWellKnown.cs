@@ -2,7 +2,7 @@ namespace Application.Common.Telecom.DeviceSales;
 
 public static class DeviceSaleWellKnown
 {
-    public const string ApprovalShowroom = "Showroom";
+    public const string ApprovalShowroom = "POS";
     public const string ApprovalSupervisor = "Supervisor";
     public const string ApprovalFinanceOfficer = "FinanceOfficer";
     public const string ApprovalManager = "Manager";

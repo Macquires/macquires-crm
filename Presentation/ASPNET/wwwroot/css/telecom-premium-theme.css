@@ -458,6 +458,47 @@ body.syr-tel-portal .form-card.telecom-premium-page {
     color: var(--sys-brand-red);
 }
 
+/* Global Settings — compact tab bar (single row) */
+.global-settings-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.15rem;
+}
+
+.global-settings-tabs .nav-item {
+    flex: 0 0 auto;
+}
+
+.global-settings-tabs .nav-link {
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.25;
+    padding: 0.35rem 0.55rem;
+    white-space: nowrap;
+    border-radius: 0.4rem;
+}
+
+.global-settings-tabs .nav-link i {
+    font-size: 0.78em;
+    vertical-align: -0.05em;
+}
+
+.global-settings-tabs .nav-link.active {
+    font-weight: 700;
+}
+
+@media (min-width: 1200px) {
+    .global-settings-tabs .nav-link {
+        font-size: 0.78rem;
+        padding: 0.4rem 0.65rem;
+    }
+}
+
 /* Global Settings — integrations section */
 .global-settings-integrations {
     border: 1px solid var(--sys-border);
@@ -579,6 +620,65 @@ body.syr-tel-portal .adminbody {
     padding-bottom: 1.25rem;
 }
 
+.telecom-wizard-reveal {
+    animation: telecomWizardReveal 0.28s ease-out;
+}
+
+@keyframes telecomWizardReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.msisdn-picker-modal .msisdn-picker-table-wrap {
+    max-height: min(52vh, 420px);
+    overflow: auto;
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+}
+
+.msisdn-picker-modal .msisdn-picker-row {
+    cursor: pointer;
+}
+
+.msisdn-picker-modal .msisdn-picker-row:hover {
+    background: rgba(var(--bs-danger-rgb), 0.04);
+}
+
+.msisdn-tier-tabs .nav-link {
+    font-size: 0.8rem;
+}
+
+.msisdn-tier-badge {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.msisdn-tier-normal {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.msisdn-tier-silver {
+    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+    color: #333;
+}
+
+.msisdn-tier-gold {
+    background: linear-gradient(135deg, #d4a017, #f5d76e);
+    color: #3d2e00;
+}
+
+.msisdn-tier-platinum {
+    background: linear-gradient(135deg, #5b6b8c, #9aa8c7);
+    color: #fff;
+}
+
 /* Grid panel: fixed viewport band; Syncfusion scrolls rows inside */
 .telecom-premium-page .telecom-grid-panel .grid-container {
     height: calc(100vh - 17.5rem);
@@ -680,6 +780,22 @@ body.syr-tel-portal .btn-outline-danger:hover {
 body.syr-tel-portal .bg-primary,
 body.syr-tel-portal .bg-danger {
     background-color: var(--sys-brand-red) !important;
+}
+
+/* Offer wizard cards: theme forces solid red on bg-primary/bg-danger — keep header text readable */
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary,
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger {
+    color: #fff !important;
+}
+
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary .wizard-offer-code,
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger .wizard-offer-code {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary .bi,
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger .bi {
+    color: #fff !important;
 }
 
 /* Status badges — semantic colors (success = green; others = Bootstrap defaults) */
@@ -912,4 +1028,83 @@ body.syr-tel-portal .sidebar.syr-sidebar::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
+}
+
+/* Integration demo environment indicator (inventory screens) */
+.telecom-demo-integration-banner {
+    animation: telecomDemoBannerFadeIn 0.55s ease-out;
+}
+
+@keyframes telecomDemoBannerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.telecom-demo-integration-banner__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.85rem 1rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(13, 110, 253, 0.22);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.07) 0%, rgba(255, 193, 7, 0.08) 100%);
+    box-shadow: 0 4px 18px rgba(13, 110, 253, 0.08);
+}
+
+.telecom-demo-integration-banner__icon {
+    flex: 0 0 auto;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: #0a58ca;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(13, 110, 253, 0.18);
+}
+
+.telecom-demo-integration-banner__body {
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.telecom-demo-integration-banner__title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #084298;
+    margin-bottom: 0.2rem;
+}
+
+.telecom-demo-integration-banner__text {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #1f3b63;
+}
+
+.telecom-demo-integration-banner__chip {
+    flex: 0 0 auto;
+    align-self: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.28rem 0.55rem;
+    border-radius: 999px;
+    color: #0a58ca;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+[dir="rtl"] .telecom-demo-integration-banner__inner {
+    text-align: right;
 }

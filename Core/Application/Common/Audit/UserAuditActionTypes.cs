@@ -20,6 +20,9 @@ public static class UserAuditActionTypes
     public const string CustomerUpdated = "CustomerUpdated";
 
     public const string TelecomOperationConfirmed = "TelecomOperationConfirmed";
+    public const string BackOfficeTelecomApproved = "BackOfficeTelecomApproved";
+    public const string BackOfficeTelecomRejected = "BackOfficeTelecomRejected";
+    public const string BackOfficeTicketClaimed = "BackOfficeTicketClaimed";
 
     public const string BulkImportStarted = "BulkImportStarted";
     public const string BulkImportExecuted = "BulkImportExecuted";

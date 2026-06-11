@@ -1,0 +1,141 @@
+@page "/Telecom/HlrProvisioning"
+@inject IHtmlLocalizer<SharedResources> L
+@{
+    ViewData["Title"] = L["Page_HlrProvisioningTitle"].Value;
+}
+
+<link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+
+<div id="app" v-cloak class="telecom-premium-page">
+    <div class="container-fluid py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <div>
+                <h1 class="h4 mb-1 fw-bold text-success">
+                    <i class="bi bi-hdd-network me-2"></i>
+                    <span data-telecom-i18n="hlrProvisioning.title">HLR provisioning</span>
+                </h1>
+                <p class="text-muted small mb-0" data-telecom-i18n="hlrProvisioning.subtitle">
+                    HLR / HSS core network provisioning log — IMSI mapping, service codes, and SIM profile activation.
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/Telecom/TelecomHub" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> <span data-telecom-i18n="hlrProvisioning.hubLink">Operations hub</span>
+                </a>
+                <button type="button" class="btn btn-success btn-sm" :disabled="state.loading" @@click="handler.refresh">
+                    <span v-if="state.loading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-arrow-clockwise me-1"></i>
+                    <span data-telecom-i18n="hlrProvisioning.refresh">Refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div v-if="!canAccess" class="alert alert-warning" data-telecom-i18n="hlrProvisioning.noAccess">
+            You do not have permission to view the HLR provisioning log.
+        </div>
+
+        <template v-else>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body py-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1" for="filterOpNumber" data-telecom-i18n="hlrProvisioning.filterOp">Operation request #</label>
+                            <input id="filterOpNumber" type="search" class="form-control form-control-sm"
+                                   v-model="state.filters.operationNumber" placeholder="ACT-0001, MGR-0001…"
+                                   @@keyup.enter="handler.search" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1" for="filterResult" data-telecom-i18n="hlrProvisioning.filterResult">Result</label>
+                            <select id="filterResult" class="form-select form-select-sm" v-model="state.filters.success">
+                                <option value="" data-telecom-i18n="hlrProvisioning.filterAll">— All —</option>
+                                <option value="true">OK</option>
+                                <option value="false">Pending / Retry</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-1" for="filterPageSize" data-telecom-i18n="hlrProvisioning.filterPageSize">Page size</label>
+                            <select id="filterPageSize" class="form-select form-select-sm" v-model.number="state.pageSize" @@change="handler.search">
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-telecom-primary btn-sm w-100" :disabled="state.loading" @@click="handler.search">
+                                <i class="bi bi-search me-1"></i> <span data-telecom-i18n="hlrProvisioning.search">Search</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3" aria-label="HLR provisioning log">
+                <div class="card-header bg-white border-bottom fw-semibold py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span data-telecom-i18n="hlrProvisioning.logTitle">HLR / HSS provisioning log (Core Network mock)</span>
+                    <span v-if="state.totalCount > 0" class="small text-muted fw-normal">
+                        <span data-telecom-i18n="hlrProvisioning.totalRecords">Total records</span>: <strong>{{ state.totalCount }}</strong>
+                    </span>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" data-telecom-i18n="hlrProvisioning.thOperation">Operation</th>
+                                <th scope="col" data-telecom-i18n="hlrProvisioning.thAttempt">Attempt</th>
+                                <th scope="col" data-telecom-i18n="hlrProvisioning.thTarget">Target</th>
+                                <th scope="col" data-telecom-i18n="hlrProvisioning.thResult">Result</th>
+                                <th scope="col" data-telecom-i18n="hlrProvisioning.thMessage">Network message</th>
+                                <th scope="col" data-telecom-i18n="hlrProvisioning.thTime">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="state.loading && state.rows.length === 0">
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <span class="spinner-border spinner-border-sm text-success" role="status" aria-hidden="true"></span>
+                                    <span class="ms-2" data-telecom-i18n="hlrProvisioning.loading">Loading…</span>
+                                </td>
+                            </tr>
+                            <tr v-for="l in state.rows" :key="l.id">
+                                <td class="text-nowrap font-monospace small">{{ l.operationNumber || '—' }}</td>
+                                <td>{{ l.attemptNumber }}</td>
+                                <td class="small text-muted">{{ l.integrationTarget || '—' }}</td>
+                                <td>
+                                    <span class="badge rounded-pill" :class="l.success ? 'bg-success' : 'bg-warning text-dark'">
+                                        {{ l.success ? 'OK' : 'Pending/Retry' }}
+                                    </span>
+                                </td>
+                                <td class="small text-break">{{ l.message }}</td>
+                                <td class="small text-muted text-nowrap">{{ formatDate(l.createdAtUtc) }}</td>
+                            </tr>
+                            <tr v-if="!state.loading && state.rows.length === 0">
+                                <td colspan="6" class="text-center text-muted py-5" data-telecom-i18n="hlrProvisioning.empty">No HLR provisioning records yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-if="state.totalPages > 1" class="card-footer bg-white border-top py-3">
+                    <nav aria-label="HLR log pagination">
+                        <ul class="pagination pagination-sm justify-content-center mb-0 flex-wrap gap-1">
+                            <li class="page-item" :class="{ disabled: state.page <= 1 || state.loading }">
+                                <button type="button" class="page-link" @@click="handler.goToPage(state.page - 1)" data-telecom-i18n="hlrProvisioning.prev">Previous</button>
+                            </li>
+                            <li v-for="p in state.pageNumbers" :key="p" class="page-item" :class="{ active: p === state.page, disabled: state.loading }">
+                                <button type="button" class="page-link" @@click="handler.goToPage(p)">{{ p }}</button>
+                            </li>
+                            <li class="page-item" :class="{ disabled: state.page >= state.totalPages || state.loading }">
+                                <button type="button" class="page-link" @@click="handler.goToPage(state.page + 1)" data-telecom-i18n="hlrProvisioning.next">Next</button>
+                            </li>
+                        </ul>
+                    </nav>
+                    <p class="text-center small text-muted mb-0 mt-2">
+                        {{ pageLabel }}
+                    </p>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/FrontEnd/Pages/Telecom/HlrProvisioning.cshtml.js" asp-append-version="true"></script>
+}

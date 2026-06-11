@@ -1,6 +1,6 @@
 @page "/Telecom/DeviceInventory"
 @{
-    ViewData["Title"] = "Device inventory";
+    ViewData["Title"] = "مخزون الأجهزة (IMEI)";
 }
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 
@@ -13,7 +13,7 @@
                     <span data-telecom-i18n="deviceInventory.title">Device inventory (IMEI)</span>
                 </h1>
                 <p class="text-muted small mb-0" data-telecom-i18n="deviceInventory.subtitle">
-                    Manage showroom devices and routers.
+                    Manage POS devices and routers.
                 </p>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -24,6 +24,19 @@
                 <button type="button" class="btn btn-telecom-primary btn-sm" v-on:click="handler.refresh" :disabled="state.loading">
                     <i class="fas fa-sync-alt" :class="{ 'fa-spin': state.loading }"></i>
                 </button>
+            </div>
+        </div>
+
+        <div v-if="state.showDemoBanner" class="telecom-demo-integration-banner mb-3" role="status" aria-live="polite">
+            <div class="telecom-demo-integration-banner__inner">
+                <div class="telecom-demo-integration-banner__icon" aria-hidden="true">
+                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                </div>
+                <div class="telecom-demo-integration-banner__body">
+                    <div class="telecom-demo-integration-banner__title" v-text="demoBannerTitle"></div>
+                    <p class="telecom-demo-integration-banner__text mb-0" v-text="demoBannerMessage"></p>
+                </div>
+                <span class="telecom-demo-integration-banner__chip" v-text="demoBannerChip"></span>
             </div>
         </div>
 
@@ -60,6 +73,14 @@
                     </div>
                 </div>
             </div>
+            <div class="telecom-bento-span-3">
+                <div class="telecom-bento-card h-100">
+                    <div class="card-body">
+                        <div class="telecom-bento-kpi-label" data-telecom-i18n="deviceInventory.kpi.quarantined">Quarantined</div>
+                        <div class="telecom-bento-kpi-value" v-html="kpiBadge('Quarantined', state.kpis.quarantined)"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="telecom-bento-card mb-3">
@@ -81,8 +102,11 @@
                         <input id="devPrice" type="number" min="0" step="1" class="form-control form-control-sm" v-model.number="state.form.listPrice" dir="ltr" />
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small" for="devBranch" data-telecom-i18n="deviceInventory.form.branchId">Branch ID</label>
-                        <input id="devBranch" class="form-control form-control-sm" v-model="state.form.branchId" dir="ltr" autocomplete="off" />
+                        <label class="form-label small" for="devBranch" data-telecom-i18n="deviceInventory.form.branch">الفرع</label>
+                        <select id="devBranch" class="form-select form-select-sm" v-model="state.form.branchId">
+                            <option value="" data-telecom-i18n="deviceInventory.form.branchPlaceholder">— اختر الفرع —</option>
+                            <option v-for="b in state.branches" :key="b.id" :value="b.id" v-text="b.label"></option>
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <button type="button" class="btn btn-telecom-primary btn-sm w-100" v-on:click="handler.createDevice" :disabled="state.busy">
@@ -148,6 +172,6 @@
     }
 </style>
 
-@section Scripts {
+@section scripts {
     <script src="~/FrontEnd/Pages/Telecom/DeviceInventory.cshtml.js" asp-append-version="true"></script>
 }

@@ -53,6 +53,9 @@ public class TelecomOperationRequest : BaseEntity
     /// <summary>Stored identity scan for legal review (relative path under telecom-ops upload root).</summary>
     public string? IdentityDocumentStorageKey { get; set; }
 
+    /// <summary>KYC vault document reference (GUID) from secure upload vault.</summary>
+    public string? KycDocumentReferenceId { get; set; }
+
     public ActivationChannel ActivationChannel { get; set; } = ActivationChannel.Showroom;
 
     public string? DealerCode { get; set; }
@@ -256,6 +259,14 @@ public class TelecomOperationRequest : BaseEntity
 
     /// <summary>§16 — Pending, Completed, Failed (CBS settlement).</summary>
     public string? CollectionSettlementStatus { get; set; }
+
+    // GLOBAL HARDENING: SLA & Queue Management
+    public DateTime? SlaExpirationTimeUtc { get; set; }
+    public string? ClaimedByUserId { get; set; }
+    public string? AssignedAgentEmail { get; set; }
+    public DateTime? ClaimedAt { get; set; }
+
+    public byte[] RowVersion { get; set; } = null!;
 
     public ICollection<TelecomOperationAuditLog> AuditLogs { get; set; } = new List<TelecomOperationAuditLog>();
 }

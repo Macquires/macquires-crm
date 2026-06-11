@@ -7,8 +7,8 @@
     <div class="row mb-2">
         <div class="col-12">
             <p class="text-muted small mb-0">
-                مصفوفة الصلاحيات (RBAC) — وضع Persona الصارم يحمي المسارات والأوامر الحساسة.
-                <a href="/Administration">← الإدارة والنظام</a>
+                {{ t('subtitle') }}
+                <a href="/Administration">{{ t('backLink') }}</a>
             </p>
         </div>
     </div>
@@ -21,13 +21,13 @@
         <div class="col-md-8 mb-3">
             <div v-if="state.selectedRole" class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong v-text="'صلاحيات: ' + state.selectedRole"></strong>
+                    <strong>{{ t('permissionsFor') }} {{ state.selectedRole }}</strong>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-secondary" v-on:click="handler.cloneRole" v-bind:disabled="!state.selectedRole">
-                            نسخ الدور
+                            {{ t('cloneRole') }}
                         </button>
                         <button class="btn btn-sm btn-primary" v-on:click="handler.savePermissions" v-bind:disabled="state.isSaving">
-                            حفظ المصفوفة
+                            {{ t('saveMatrix') }}
                         </button>
                     </div>
                 </div>
@@ -46,11 +46,11 @@
                     </div>
                 </div>
             </div>
-            <p v-else class="text-muted">اختر دوراً من القائمة لعرض وتعديل صلاحياته.</p>
+            <p v-else class="text-muted">{{ t('selectRoleHint') }}</p>
         </div>
     </div>
 </div>
 
 @section scripts {
-    <script src="~/FrontEnd/Pages/Administration/RoleList.cshtml.js"></script>
+    <script src="~/FrontEnd/Pages/Administration/RoleList.cshtml.js" asp-append-version="true"></script>
 }

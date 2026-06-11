@@ -1,17 +1,16 @@
 const MsisdnInventoryApp = {
     setup() {
-        if (typeof SecurityManager !== 'undefined' && !SecurityManager.canAccessPortalPath(window.location.pathname)) {
-            SecurityManager.denyPageAccess();
-        }
-
         const isEn = () => document.documentElement.lang?.toLowerCase().startsWith('en');
 
         const t = (key) => window.TelecomI18n?.t?.(`msisdnInventory.${key}`) || key;
 
         const state = Vue.reactive({
             loading: true,
+            showDemoBanner: false,
             allRows: [],
             statusFilter: '',
+            lineTypeFilter: '',
+            lineTypes: [],
             quickSearch: '',
             searchPlaceholder: '',
             kpis: { total: 0, available: 0, reserved: 0, active: 0, quarantined: 0 },
@@ -84,6 +83,29 @@ const MsisdnInventoryApp = {
             return status || '—';
         };
 
+        const lineTypeLabel = (lt) => {
+            if (!lt) return '—';
+            if (isEn()) return lt.nameEn || lt.NameEn || lt.nameAr || lt.NameAr || lt.code || lt.Code || '—';
+            return lt.nameAr || lt.NameAr || lt.nameEn || lt.NameEn || lt.code || lt.Code || '—';
+        };
+
+        const exposesPoolPairing = (status) =>
+            status === 'Active' || status === 'Reserved' || status === 'Suspended';
+
+        const unboundCellLabel = () => t('unboundCell');
+
+        const resolveLineTypeLabel = (row) => {
+            const typeId = pick(row, 'compatibleSubscriptionTypeId', 'CompatibleSubscriptionTypeId');
+            const typeAr = pick(row, 'compatibleSubscriptionTypeNameAr', 'CompatibleSubscriptionTypeNameAr');
+            const typeEn = pick(row, 'compatibleSubscriptionTypeNameEn', 'CompatibleSubscriptionTypeNameEn');
+            const typeCode = pick(row, 'compatibleSubscriptionTypeCode', 'CompatibleSubscriptionTypeCode');
+            if (!typeId && !typeAr && !typeEn && !typeCode) return '';
+            if (isEn()) {
+                return String(typeEn || typeAr || typeCode || '').trim();
+            }
+            return String(typeAr || typeEn || typeCode || '').trim();
+        };
+
         const mapRow = (row) => {
             const status = rowStatus(row);
             const reserved = pick(row, 'reservedUntilUtc', 'ReservedUntilUtc');
@@ -94,17 +116,30 @@ const MsisdnInventoryApp = {
 
             const subscriberName = pick(row, 'subscriberName', 'SubscriberName');
             const msisdn = pick(row, 'msisdn', 'Msisdn') || '—';
+            const lineTypeId = pick(row, 'compatibleSubscriptionTypeId', 'CompatibleSubscriptionTypeId') || '';
+            const lineTypeText = resolveLineTypeLabel(row);
+            const paired = exposesPoolPairing(status);
+            const unbound = unboundCellLabel();
+            const rawIccid = String(pick(row, 'iccid', 'Iccid') || '').trim();
+            const rawImsi = String(pick(row, 'imsi', 'Imsi') || '').trim();
+            const rawProduct = String(pick(row, 'productName', 'ProductName') || '').trim();
             return {
                 id: pick(row, 'id', 'Id') || msisdn,
                 msisdn,
-                iccid: pick(row, 'iccid', 'Iccid') || '—',
-                imsi: pick(row, 'imsi', 'Imsi') || '—',
+                iccid: paired && rawIccid ? rawIccid : unbound,
+                imsi: paired && rawImsi ? rawImsi : unbound,
                 poolStatusName: status,
                 statusLabel: statusLabel(status),
+                pairingExposed: paired,
                 assignmentLabel: subscriberName
                     ? String(subscriberName)
-                    : t('showroomStock'),
-                productName: pick(row, 'productName', 'ProductName') || '—',
+                    : paired
+                      ? '—'
+                      : t('showroomStock'),
+                lineTypeLabel: lineTypeText || '—',
+                lineTypeId,
+                lineTypeCode: pick(row, 'compatibleSubscriptionTypeCode', 'CompatibleSubscriptionTypeCode') || '',
+                productName: paired && rawProduct ? rawProduct : unbound,
                 releaseDisplay,
             };
         };
@@ -122,10 +157,15 @@ const MsisdnInventoryApp = {
             if (state.statusFilter) {
                 rows = rows.filter((r) => r.poolStatusName === state.statusFilter);
             }
+            if (state.lineTypeFilter) {
+                rows = rows.filter((r) => r.lineTypeId === state.lineTypeFilter);
+            }
             const q = (state.quickSearch || '').trim().toLowerCase();
             if (!q) return rows;
             return rows.filter((r) => {
-                const blob = [r.msisdn, r.iccid, r.imsi, r.assignmentLabel].join(' ').toLowerCase();
+                const blob = [r.msisdn, r.iccid, r.imsi, r.assignmentLabel, r.lineTypeLabel, r.lineTypeCode]
+                    .join(' ')
+                    .toLowerCase();
                 return blob.includes(q);
             });
         };
@@ -167,18 +207,42 @@ const MsisdnInventoryApp = {
         };
 
         const parsePoolList = (res) => {
-            const fromHelper = StorageManager.apiList(res);
+            const fromHelper =
+                typeof StorageManager !== 'undefined' && StorageManager.apiList
+                    ? StorageManager.apiList(res)
+                    : [];
             if (fromHelper.length > 0) return fromHelper;
             const content = res?.data?.content ?? res?.data?.Content;
             const list = content?.data ?? content?.Data;
             return Array.isArray(list) ? list : [];
         };
 
+        const buildPoolListUrl = () => {
+            let url = '/Telecom/GetMsisdnAssetPoolList';
+            const params = [];
+            if (state.lineTypeFilter) {
+                params.push('subscriptionTypeId=' + encodeURIComponent(state.lineTypeFilter));
+            }
+            if (params.length) url += '?' + params.join('&');
+            return url;
+        };
+
         const methods = {
+            loadLineTypes: async () => {
+                try {
+                    const res = await AxiosManager.get(
+                        '/TelecomSubscriptionType/GetTelecomSubscriptionTypeList?isDeleted=false&activeOnly=true',
+                        {}
+                    );
+                    state.lineTypes = res?.data?.content?.data || [];
+                } catch {
+                    state.lineTypes = [];
+                }
+            },
             load: async () => {
                 state.loading = true;
                 try {
-                    const res = await AxiosManager.get('/Telecom/GetMsisdnAssetPoolList', {});
+                    const res = await AxiosManager.get(buildPoolListUrl(), {});
                     const raw = parsePoolList(res);
                     state.allRows = raw.map(mapRow);
                     recomputeKpis(state.allRows);
@@ -208,6 +272,10 @@ const MsisdnInventoryApp = {
             },
             applyFilter: () => {
                 bindGridData(true);
+            },
+            applyLineTypeFilter: async () => {
+                await methods.load();
+                await ensureGridReady();
             },
             changePageSize: () => {
                 if (!mainGrid.obj) return;
@@ -267,6 +335,31 @@ const MsisdnInventoryApp = {
                     if (args.column?.field === 'statusLabel' && args.cell && args.data) {
                         args.cell.innerHTML = poolStatusBadgeHtml(args.data);
                     }
+                    const unboundFields = ['iccid', 'imsi', 'productName'];
+                    if (
+                        unboundFields.includes(args.column?.field) &&
+                        args.cell &&
+                        args.data &&
+                        !args.data.pairingExposed
+                    ) {
+                        args.cell.innerHTML = `<span class="inv-cell-unbound text-muted fst-italic small">${escapeHtml(
+                            unboundCellLabel()
+                        )}</span>`;
+                    }
+                    if (args.column?.field === 'lineTypeLabel' && args.cell && args.data) {
+                        const label = args.data.lineTypeLabel;
+                        if (!label || label === '—') {
+                            args.cell.textContent = '—';
+                            args.cell.classList.add('text-muted');
+                        } else {
+                            const code = String(args.data.lineTypeCode || '').toUpperCase();
+                            let cls = 'badge bg-secondary';
+                            if (code === 'PREPAID') cls = 'badge bg-success';
+                            else if (code === 'POSTPAID') cls = 'badge bg-primary';
+                            else if (code === 'HYBRID') cls = 'badge bg-warning text-dark';
+                            args.cell.innerHTML = `<span class="${cls}">${escapeHtml(label)}</span>`;
+                        }
+                    }
                 },
                 columns: [
                     {
@@ -283,6 +376,11 @@ const MsisdnInventoryApp = {
                         width: 130,
                     },
                     { field: 'assignmentLabel', headerText: t('columns.assignment'), width: 180 },
+                    {
+                        field: 'lineTypeLabel',
+                        headerText: t('columns.lineType'),
+                        width: 120,
+                    },
                     { field: 'productName', headerText: t('columns.product'), width: 180 },
                     { field: 'releaseDisplay', headerText: t('columns.releaseDate'), width: 160 },
                 ],
@@ -331,16 +429,38 @@ const MsisdnInventoryApp = {
 
         const onWindowResize = () => applyGridHeight();
 
+        const ensurePageAccess = async () => {
+            if (!StorageManager.getAccessToken?.()) {
+                window.location.href = '/Accounts/Login';
+                return false;
+            }
+            if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
+                await PortalNavigation.syncOperatorSession(true);
+            }
+            // Align with GetMsisdnAssetPoolList API (RolesReadTelecom): showroom/call-center may view the pool.
+            const ok = await SecurityManager.authorizeTelecomAccess({
+                roles: SecurityManager.TELECOM_ROLES,
+                permissions: ['telecom.asset.manage', 'telecom.line.activate'],
+            });
+            if (!ok) {
+                SecurityManager.denyPageAccess();
+                return false;
+            }
+            return true;
+        };
+
         Vue.onMounted(async () => {
             try {
-                if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
-                    await PortalNavigation.syncOperatorSession(true);
-                }
+                const allowed = await ensurePageAccess();
+                if (!allowed) return;
             } catch (e) {
-                console.warn('MsisdnInventory: session sync failed', e);
+                console.warn('MsisdnInventory: access check failed', e);
+                SecurityManager.denyPageAccess?.();
+                return;
             }
             await window.TelecomI18n?.ensureLoaded?.();
             applyLocaleUi();
+            state.showDemoBanner = !!(await window.TelecomIntegrationDemoBanner?.isDemoVersion?.());
             document.documentElement.addEventListener('syriatel-locale-changed', () => {
                 applyLocaleUi();
                 if (mainGrid.obj) {
@@ -350,6 +470,7 @@ const MsisdnInventoryApp = {
                     bindGridData(false);
                 }
             });
+            await methods.loadLineTypes();
             await methods.load();
             await ensureGridReady();
             window.addEventListener('resize', onWindowResize);
@@ -365,7 +486,27 @@ const MsisdnInventoryApp = {
             return window.TelecomUiBadges?.poolStatus(status, label) || label;
         };
 
-        return { state, handler, mainGridRef, kpiBadge };
+        const demoBannerTitle = Vue.computed(
+            () => window.TelecomIntegrationDemoBanner?.title?.() || ''
+        );
+        const demoBannerMessage = Vue.computed(
+            () => window.TelecomIntegrationDemoBanner?.message?.() || ''
+        );
+        const demoBannerChip = Vue.computed(
+            () => window.TelecomIntegrationDemoBanner?.chip?.() || ''
+        );
+
+        return {
+            state,
+            handler,
+            mainGridRef,
+            t,
+            kpiBadge,
+            lineTypeLabel,
+            demoBannerTitle,
+            demoBannerMessage,
+            demoBannerChip,
+        };
     },
 };
 

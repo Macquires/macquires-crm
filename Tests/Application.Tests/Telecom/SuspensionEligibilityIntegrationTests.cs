@@ -10,6 +10,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class SuspensionEligibilityIntegrationTests
 {
     [Fact]
@@ -76,6 +78,45 @@ public class SuspensionEligibilityIntegrationTests
     }
 
     [Fact]
+    public async Task ValidateForCreateAsync_auto_reconnect_end_date_cannot_exceed_90_days()
+    {
+        await using var ctx = CreateContext();
+        var (profileId, assetId, _) = await SeedActiveLineAsync(ctx);
+        var checker = new SuspensionEligibilityChecker(ctx, new StubBilling(0m));
+
+        var ex = await Assert.ThrowsAsync<Application.Common.Exceptions.BusinessRuleViolationException>(
+            () => checker.ValidateForCreateAsync(
+                profileId,
+                assetId,
+                SuspensionWellKnown.CustomerRequest,
+                "سفر",
+                SuspensionWellKnown.BarringFull,
+                true,
+                DateTime.UtcNow.AddDays(91)));
+
+        Assert.Contains("90", ex.Message);
+    }
+
+    [Fact]
+    public async Task ValidateForCreateAsync_data_only_barring_allowed()
+    {
+        await using var ctx = CreateContext();
+        var (profileId, assetId, _) = await SeedActiveLineAsync(ctx);
+        var checker = new SuspensionEligibilityChecker(ctx, new StubBilling(0m));
+
+        var result = await checker.ValidateForCreateAsync(
+            profileId,
+            assetId,
+            SuspensionWellKnown.CustomerRequest,
+            "حظر بيانات",
+            SuspensionWellKnown.BarringDataOnly,
+            false,
+            null);
+
+        Assert.True(result.Allowed);
+    }
+
+    [Fact]
     public async Task ValidateForCreateAsync_auto_reconnect_requires_end_date()
     {
         await using var ctx = CreateContext();
@@ -99,7 +140,7 @@ public class SuspensionEligibilityIntegrationTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static async Task<(string ProfileId, string AssetId, string Msisdn)> SeedActiveLineAsync(QueryContext ctx)
@@ -149,6 +190,9 @@ public class SuspensionEligibilityIntegrationTests
     {
         public Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default) =>
             Task.FromResult(balance);
+
+        public Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

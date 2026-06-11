@@ -1,5 +1,6 @@
 using Application.Common.Repositories;
 using Application.Common.Telecom;
+using Application.Common.Telecom.BackOffice;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -58,7 +59,7 @@ public class UploadTelecomOperationIdentityDocumentHandler
         var entity = await _repository.GetAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
-        if (entity.Status != TelecomOperationStatus.Draft)
+        if (!BackOfficeTelecomPipelineState.CanAcceptDocumentUpload(entity))
         {
             throw new InvalidOperationException("Only draft operations accept identity document upload.");
         }
@@ -72,12 +73,15 @@ public class UploadTelecomOperationIdentityDocumentHandler
         entity.IdentityDocumentStorageKey = storageKey;
         entity.DocumentStatus = TelecomDocumentStatus.Uploaded;
 
-        await _orchestrator.TransitionAsync(
-            entity,
-            TelecomOperationStatus.PendingDocuments,
-            request.UpdatedById,
-            "رفع هوية — قيد التدقيق القانوني",
-            cancellationToken);
+        if (entity.Status == TelecomOperationStatus.Draft)
+        {
+            await _orchestrator.TransitionAsync(
+                entity,
+                TelecomOperationStatus.PendingDocuments,
+                request.UpdatedById,
+                "رفع هوية — قيد التدقيق القانوني",
+                cancellationToken);
+        }
 
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);

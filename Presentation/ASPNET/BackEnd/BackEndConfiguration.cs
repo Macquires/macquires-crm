@@ -4,6 +4,8 @@ using Infrastructure;
 using Infrastructure.DataAccessManager.EFCore;
 using Infrastructure.SeedManager;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
 
@@ -20,6 +22,31 @@ public static class BackEndConfiguration
         services.AddInfrastructureServices(configuration);
 
         services.AddExceptionHandler<CustomExceptionHandler>();
+        services.AddSignalR();
+        services.AddScoped<Application.Common.Integrations.IIntegrationLiveBroadcaster, ASPNET.BackEnd.Hubs.SignalRIntegrationLiveBroadcaster>();
+
+        services.AddRateLimiter(options =>
+        {
+            options.AddFixedWindowLimiter("telecom-financial", limiter =>
+            {
+                limiter.Window = TimeSpan.FromMinutes(1);
+                limiter.PermitLimit = 60;
+                limiter.QueueLimit = 0;
+            });
+        });
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var healthChecks = services.AddHealthChecks();
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            healthChecks.AddSqlServer(connectionString, name: "sqlserver");
+        }
+
+        var redis = configuration.GetConnectionString("Redis") ?? configuration["Redis:ConnectionString"];
+        if (!string.IsNullOrWhiteSpace(redis))
+        {
+            healthChecks.AddRedis(redis, name: "redis");
+        }
 
         //>>> Common
 
@@ -82,6 +109,8 @@ public static class BackEndConfiguration
     public static IEndpointRouteBuilder MapBackEndRoutes(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapControllers();
+        endpoints.MapHub<ASPNET.BackEnd.Hubs.IntegrationLiveHub>("/hubs/integration-live");
+        endpoints.MapHealthChecks("/health");
 
         return endpoints;
     }

@@ -499,11 +499,11 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                     <div>
                         <h2 class="h6 fw-bold text-danger mb-1"><i class="bi bi-exclamation-triangle me-2"></i>{{ t360('hlrRemediation.title', 'HLR desync') }}</h2>
-                        <p class="small text-muted mb-0">{{ t360('hlrRemediation.subtitle', '') }}</p>
+                        <p class="small text-muted mb-0">{{ hlrRemediationSubtitle }}</p>
                     </div>
                     <div class="text-end small" v-if="selectedSubscription">
-                        <span class="badge bg-success me-1">{{ t360('hlrRemediation.crmActive', 'CRM: Active') }}</span>
-                        <span class="badge bg-danger">{{ t360('hlrRemediation.hlrState', 'HLR') }}: {{ selectedHlrSnapshot?.hlrSubscriberState || '—' }}</span>
+                        <span class="badge me-1" :class="hlrRemediationCrmBadgeClass">{{ hlrRemediationCrmLabel }}</span>
+                        <span class="badge" :class="hlrRemediationHlrBadgeClass">{{ t360('hlrRemediation.hlrState', 'HLR') }}: {{ selectedHlrSnapshot?.hlrSubscriberState || '—' }}</span>
                     </div>
                 </div>
                 <div class="c360-actions-grid mb-2">
@@ -607,13 +607,59 @@
                         <i class="bi bi-slash-circle c360-action-icon" style="color:var(--sys-brand-red)"></i>
                         <span class="small fw-semibold d-block">{{ ui.actions.suspension }}</span>
                     </button>
-                    <button v-if="selectedLineSuspended" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.reconnect }" :disabled="!can.reconnect || state.isProvisioningInFlight" @@click="openProvisioningWizard('reconnect')">
+                    <button v-if="selectedLineSuspended" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.reconnect || selectedLineBdrPending }" :disabled="!can.reconnect || selectedLineBdrPending || state.isProvisioningInFlight" @@click="openProvisioningWizard('reconnect')">
                         <i class="bi bi-arrow-repeat c360-action-icon" style="color:var(--sys-brand-red)"></i>
                         <span class="small fw-semibold d-block">{{ ui.actions.reconnect }}</span>
                     </button>
-                    <button v-if="selectedLineCollectionEligible" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.collection }" :disabled="!can.collection || state.isProvisioningInFlight" @@click="openProvisioningWizard('badDebt')">
+
+                    <!-- GLOBAL HARDENING: BDR Governance UI -->
+                    <div v-if="selectedLineBdrPending" class="alert alert-warning border-0 py-2 px-3 mb-0 d-flex align-items-center gap-2" style="grid-column: span 2; border-radius: 12px;">
+                        <i class="bi bi-shield-lock-fill fs-4"></i>
+                        <div>
+                            <div class="fw-bold small">VAL-09-02: Pending BDR Settlement</div>
+                            <div class="small opacity-75">Reconnect locked until Back-Office approval.</div>
+                        </div>
+                    </div>
+
+                    <div v-if="!can.reconnect && selectedLineSuspended && !selectedLineBdrPending && !selectedLineBdrApproved && !selectedLineBdrPaidPending" class="alert alert-danger border-0 py-2 px-3 mb-0 d-flex align-items-center gap-2" style="grid-column: span 2; border-radius: 12px;">
+                        <i class="bi bi-shield-lock-fill fs-4"></i>
+                        <div>
+                            <div class="fw-bold small">VAL-09-02: Action Blocked</div>
+                            <div class="small opacity-75">Outstanding Bad Debt Collection required. Initiate BDR Settlement Request.</div>
+                        </div>
+                    </div>
+
+                    <div v-if="!can.reconnect && selectedLineSuspended && !selectedLineBdrPending && !selectedLineBdrApproved && !selectedLineBdrPaidPending" class="text-center mt-1" style="grid-column: span 2;">
+                        <button type="button" class="btn btn-danger btn-sm w-100 py-2 fw-bold" @@click="openProvisioningWizard('badDebt')">
+                            <i class="bi bi-piggy-bank-fill me-2"></i>Initiate BDR Settlement Request
+                        </button>
+                    </div>
+
+                    <div v-if="selectedLineBdrApproved" class="alert alert-success border-0 py-2 px-3 mb-0 d-flex align-items-center gap-2" style="grid-column: span 2; border-radius: 12px;">
+                        <i class="bi bi-check-circle-fill fs-4"></i>
+                        <div>
+                            <div class="fw-bold small">Approved: Pending Cash Collection</div>
+                            <div class="small opacity-75">Reconnect unlocked. Proceed to payment gateway.</div>
+                        </div>
+                    </div>
+
+                    <div v-if="selectedLineBdrAwaitingAudit" class="alert alert-info border-0 py-2 px-3 mb-0 d-flex align-items-center gap-2" style="grid-column: span 2; border-radius: 12px;">
+                        <i class="bi bi-hourglass-split fs-4"></i>
+                        <div>
+                            <div class="fw-bold small">Processing Settlement Ledger</div>
+                            <div class="small opacity-75">Safe to Dismiss Customer. Awaiting Back-Office audit.</div>
+                        </div>
+                    </div>
+
+                    <div v-if="selectedLineBdrPending" class="text-center mt-1" style="grid-column: span 2;">
+                        <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none" @@click="openProvisioningWizard('reconnect', { bypassToAdvance: true })">
+                            <i class="bi bi-lightning-charge-fill me-1"></i>Bypass to Advance Cash Collection
+                        </button>
+                    </div>
+
+                    <button v-if="selectedLineCollectionEligible && !selectedLineBdrPending && !selectedLineBdrApproved" type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.collection }" :disabled="!can.collection || state.isProvisioningInFlight" @@click="openProvisioningWizard('badDebt')">
                         <i class="bi bi-cash-coin c360-action-icon" style="color:var(--sys-brand-red)"></i>
-                        <span class="small fw-semibold d-block">{{ ui.actions.collection }}</span>
+                        <span class="small fw-semibold d-block">Submit BDR Settlement Request</span>
                     </button>
                     <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.refund || selectedLineTerminated }" :disabled="!can.refund || selectedLineTerminated || state.isProvisioningInFlight" @@click="openProvisioningWizard('refund')">
                         <i class="bi bi-wallet2 c360-action-icon" style="color:var(--sys-brand-red)"></i>
@@ -1057,16 +1103,26 @@
                             <label class="form-label small fw-semibold">{{ t360('suspension.barringLevel', 'Level') }} *</label>
                             <select class="form-select form-select-sm mb-2" v-model="state.wizard.susBarringLevel">
                                 <option value="Full">{{ t360('suspension.barringFull', '') }}</option>
-                                <option value="InboundOnly">{{ t360('suspension.barringInbound', '') }}</option>
                                 <option value="OutboundOnly">{{ t360('suspension.barringOutbound', '') }}</option>
+                                <option value="DataOnly">{{ t360('suspension.barringDataOnly', '') }}</option>
                             </select>
                             <label class="form-label small fw-semibold">{{ t360('suspension.suspensionReason', 'Reason') }} *</label>
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.susSuspensionReason" />
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="c360SusAuto" v-model="state.wizard.susAutoReconnectEnabled" />
+                                <input class="form-check-input" type="checkbox" id="c360SusAuto" v-model="state.wizard.susAutoReconnectEnabled" @@change="onSusAutoReconnectChange" />
                                 <label class="form-check-label small" for="c360SusAuto">{{ t360('suspension.autoReconnect', '') }}</label>
                             </div>
-                            <input v-if="state.wizard.susAutoReconnectEnabled" type="datetime-local" class="form-control form-control-sm mb-2" v-model="state.wizard.susEndDateLocal" />
+                            <div v-if="state.wizard.susAutoReconnectEnabled" class="row g-2 mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">{{ t360('suspension.startDate', 'Start') }}</label>
+                                    <input type="date" class="form-control form-control-sm bg-light" :value="suspensionStartDateLocal()" readonly />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">{{ t360('suspension.endDate', 'End') }} *</label>
+                                    <input type="date" class="form-control form-control-sm" v-model="state.wizard.susEndDateLocal" :min="suspensionStartDateLocal()" :max="suspensionMaxEndDateLocal()" />
+                                </div>
+                            </div>
+                            <p v-if="state.wizard.susAutoReconnectEnabled && state.wizard.susEndDateValidationError" class="small text-danger mb-2">{{ state.wizard.susEndDateValidationError }}</p>
                             <div v-if="state.wizard.susRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ t360('suspension.boHint', '') }}</div>
                         </div>
                         <div v-if="state.wizard.kind === 'reconnect'" class="mb-3">
@@ -1090,6 +1146,23 @@
                             <div v-if="state.wizard.rcnRequiresBackOffice" class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="c360RcnFraud" v-model="state.wizard.rcnFraudClearanceConfirmed" @@change="onRcnClearanceChange" />
                                 <label class="form-check-label small" for="c360RcnFraud">{{ t360('reconnect.fraudClearance', '') }}</label>
+                            </div>
+
+                            <!-- GLOBAL HARDENING: BDR Cash Collection Gateway -->
+                            <div v-if="selectedLineBdrApproved" class="mt-3 p-3 bg-light rounded border border-success">
+                                <h6 class="fw-bold text-success mb-2"><i class="bi bi-cash-stack me-2"></i>VAL-09-02 Postpaid Reconnect Payment Gateway</h6>
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted mb-1">Required Cash Settlement</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control fw-bold" value="5,000" readonly />
+                                        <span class="input-group-text">SYP</span>
+                                    </div>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label small fw-bold mb-1">Receipt Reference Number / Payment Ref <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm border-success" v-model="state.wizard.rcnPaymentReference" placeholder="e.g. REC-2026-XXXX" />
+                                    <div class="form-text x-small text-muted">Mandatory validation for financial clearance.</div>
+                                </div>
                             </div>
                         </div>
                         <div v-if="state.wizard.kind === 'refund'" class="mb-3">
@@ -1265,7 +1338,13 @@
                         </div>
                         <div v-else class="border rounded p-3 bg-light">
                             <p class="mb-2 small"><strong>{{ ui.wizardUi.opNumber }}</strong> {{ state.wizard.createdOperationNumber }}</p>
-                            <button v-if="!state.wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="state.wizard.uploadBusy" @@click="submitWizardMarkDocument">
+                            <div v-if="state.wizard.kind === 'suspension'" class="mb-3 border rounded p-3 bg-white">
+                                <label class="form-label small fw-semibold">{{ t360('suspension.kycDocument', 'KYC document') }} *</label>
+                                <p class="small text-muted mb-2">{{ t360('suspension.kycDocumentHint', '') }}</p>
+                                <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
+                                <p v-if="!state.wizard.identityFile" class="small text-danger mb-0 mt-2">{{ t360('suspension.kycRequired', '') }}</p>
+                            </div>
+                            <button v-if="!state.wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="state.wizard.uploadBusy || (state.wizard.kind === 'suspension' && !state.wizard.identityFile)" @@click="submitWizardMarkDocument">
                                 <span v-if="state.wizard.uploadBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.markDocument }}
                             </button>
                             <p v-else class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>{{ ui.wizardUi.documentDone }}</p>

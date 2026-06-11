@@ -21,17 +21,23 @@ public sealed class ReconnectCompletionService : IReconnectCompletionService
     private readonly IQueryContext _query;
     private readonly ICommandRepository<TelecomOperationAuditLog> _auditRepository;
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IHLRLiveStatusService _hlr;
+    private readonly IBillingSystemIntegration _billing;
     private readonly IUnitOfWork _unitOfWork;
 
     public ReconnectCompletionService(
         IQueryContext query,
         ICommandRepository<TelecomOperationAuditLog> auditRepository,
         ISmsGatewayIntegration sms,
+        IHLRLiveStatusService hlr,
+        IBillingSystemIntegration billing,
         IUnitOfWork unitOfWork)
     {
         _query = query;
         _auditRepository = auditRepository;
         _sms = sms;
+        _hlr = hlr;
+        _billing = billing;
         _unitOfWork = unitOfWork;
     }
 
@@ -88,6 +94,15 @@ public sealed class ReconnectCompletionService : IReconnectCompletionService
 
         if (!string.IsNullOrEmpty(line))
         {
+            await _hlr.MarkMockSubscriberActiveAsync(line, cancellationToken);
+
+            // GLOBAL HARDENING: CBS Settlement for BDR Reconnect
+            if (operation.ClearanceType == ReconnectWellKnown.Payment || !string.IsNullOrEmpty(operation.PaymentReference))
+            {
+                // Set Postpaid outstanding balance to 0 in CBS
+                await _billing.AdjustBalanceAsync(line, 0, "BDR Settlement", null, cancellationToken);
+            }
+
             var body =
                 $"تم إعادة تفعيل خطك {line}. مرجع العملية: {operation.Number}.";
             await _sms.SendAsync(line, body, cancellationToken);

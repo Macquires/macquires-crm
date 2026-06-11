@@ -24,10 +24,14 @@ public class TelecomTechnicalTicketConfiguration : BaseEntityConfiguration<Telec
         builder.Property(x => x.PayloadJson).HasColumnType("nvarchar(max)");
         builder.Property(x => x.CreatedByChannel).HasMaxLength(64).IsRequired();
         builder.Property(x => x.TicketCategory).IsRequired();
+        builder.Property(x => x.AssignedAgentEmail).HasMaxLength(128).IsRequired(false);
+        builder.Property(x => x.ClaimedAt).IsRequired(false);
 
         builder.HasIndex(x => x.TicketNumber).IsUnique();
         builder.HasIndex(x => x.TicketCategory);
         builder.HasIndex(x => x.Msisdn);
         builder.HasIndex(x => x.Status);
+
+        builder.Property(x => x.RowVersion).IsRowVersion();
     }
 }

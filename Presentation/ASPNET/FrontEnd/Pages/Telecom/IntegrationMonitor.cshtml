@@ -45,6 +45,7 @@
                         <option value="">{{ ti('allSystems') }}</option>
                         <option value="Huawei_HLR">Huawei HLR</option>
                         <option value="Huawei_CBS">Huawei CBS</option>
+                        <option value="Huawei_IN">Huawei IN</option>
                         <option value="SmsGateway">SMS Gateway</option>
                     </select>
                 </div>
@@ -65,9 +66,9 @@
         </div>
     </div>
 
-    <div class="telecom-bento-card">
+    <div class="telecom-bento-card integration-grid-panel telecom-grid-panel">
         <div class="card-body p-0">
-            <div class="grid-container px-2 pb-2">
+            <div class="grid-container px-2 pb-2" style="min-height: 320px;">
                 <div ref="mainGridRef"></div>
             </div>
             <p class="small text-muted px-3 pb-3 mb-0" v-if="state.totalCount > 0">
@@ -78,5 +79,5 @@
 </div>
 
 @section scripts {
-    <script src="~/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml.js"></script>
+    <script src="~/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml.js" asp-append-version="true"></script>
 }

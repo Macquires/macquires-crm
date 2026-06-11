@@ -73,7 +73,8 @@ public class UpdateGlobalSettingsHandler : IRequestHandler<UpdateGlobalSettingsR
         PendingExternalSyncSummaryDto? syncSummary = null;
         if (IntegrationTurnedOn(before.IntegrationHuaweiEnabled, data.IntegrationHuaweiEnabled)
             || IntegrationTurnedOn(before.IntegrationHlrEnabled, data.IntegrationHlrEnabled)
-            || IntegrationTurnedOn(before.IntegrationSmsEnabled, data.IntegrationSmsEnabled))
+            || IntegrationTurnedOn(before.IntegrationSmsEnabled, data.IntegrationSmsEnabled)
+            || IntegrationTurnedOn(before.IntegrationInEnabled, data.IntegrationInEnabled))
         {
             var flush = await _pendingSync.FlushAsync(request.UpdatedById, cancellationToken);
             syncSummary = new PendingExternalSyncSummaryDto
@@ -95,6 +96,7 @@ public class UpdateGlobalSettingsHandler : IRequestHandler<UpdateGlobalSettingsR
         CancellationToken cancellationToken)
     {
         await LogToggleIfChangedAsync("Huawei CBS", before.IntegrationHuaweiEnabled, after.IntegrationHuaweiEnabled, actorUserId, cancellationToken);
+        await LogToggleIfChangedAsync("Huawei IN", before.IntegrationInEnabled, after.IntegrationInEnabled, actorUserId, cancellationToken);
         await LogToggleIfChangedAsync("HLR", before.IntegrationHlrEnabled, after.IntegrationHlrEnabled, actorUserId, cancellationToken);
         await LogToggleIfChangedAsync("SMS Gateway", before.IntegrationSmsEnabled, after.IntegrationSmsEnabled, actorUserId, cancellationToken);
     }

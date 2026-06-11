@@ -129,7 +129,7 @@
         const fallbacks = {
             Customer_Care_Voice_AI: 'ذكاء اصطناعي — كول سنتر',
             Self_Care_App: 'تطبيق العميل',
-            Showroom_Agent: 'معرض',
+            Showroom_Agent: 'نقطة البيع',
             CallCenter_Agent: 'كول سنتر',
         };
         if (fallbacks[c]) return badgeT(`backOffice.dashboard.badges.channel.${c}`, fallbacks[c]);

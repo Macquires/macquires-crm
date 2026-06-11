@@ -31,6 +31,19 @@
             </div>
         </div>
 
+        <div v-if="state.showDemoBanner" class="telecom-demo-integration-banner mb-3" role="status" aria-live="polite">
+            <div class="telecom-demo-integration-banner__inner">
+                <div class="telecom-demo-integration-banner__icon" aria-hidden="true">
+                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                </div>
+                <div class="telecom-demo-integration-banner__body">
+                    <div class="telecom-demo-integration-banner__title" v-text="demoBannerTitle"></div>
+                    <p class="telecom-demo-integration-banner__text mb-0" v-text="demoBannerMessage"></p>
+                </div>
+                <span class="telecom-demo-integration-banner__chip" v-text="demoBannerChip"></span>
+            </div>
+        </div>
+
         <div class="telecom-bento-grid mb-3">
             <div class="telecom-bento-span-3">
                 <div class="telecom-bento-card h-100">
@@ -88,6 +101,13 @@
                         <option value="Quarantined" data-telecom-i18n="msisdnInventory.filter.quarantined">حجر</option>
                     </select>
                 </div>
+                <div class="input-group input-group-sm" style="max-width: 220px;">
+                    <label class="input-group-text" for="invLineTypeFilter" :title="t('filter.lineTypeHint')"><i class="fas fa-sim-card"></i></label>
+                    <select id="invLineTypeFilter" class="form-select" v-model="state.lineTypeFilter" v-on:change="handler.applyLineTypeFilter">
+                        <option value="">{{ t('filter.lineTypeAll') }}</option>
+                        <option v-for="lt in state.lineTypes" :key="lt.id" :value="lt.id">{{ lineTypeLabel(lt) }}</option>
+                    </select>
+                </div>
                 <input type="search" class="form-control form-control-sm" style="max-width: 220px;" v-model="state.quickSearch" v-on:input="handler.applyFilter" :placeholder="state.searchPlaceholder" dir="ltr" />
             </div>
             <div class="card-body p-0 position-relative">
@@ -104,6 +124,10 @@
 </div>
 
 <style>
+    .telecom-premium-page .inv-cell-unbound {
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+    }
     .telecom-premium-page .inv-grid-panel.telecom-grid-panel .grid-container {
         height: calc(100vh - 20rem);
         min-height: 320px;

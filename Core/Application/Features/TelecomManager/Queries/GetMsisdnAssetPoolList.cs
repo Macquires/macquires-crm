@@ -22,6 +22,10 @@ public record GetMsisdnAssetPoolListDto
     public string? SubscriberProfileId { get; init; }
     public string? SubscriberName { get; init; }
     public string? ProductName { get; init; }
+    public string? CompatibleSubscriptionTypeId { get; init; }
+    public string? CompatibleSubscriptionTypeCode { get; init; }
+    public string? CompatibleSubscriptionTypeNameAr { get; init; }
+    public string? CompatibleSubscriptionTypeNameEn { get; init; }
     public MsisdnCategory Category { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
 }
@@ -37,7 +41,11 @@ public class GetMsisdnAssetPoolListProfile : Profile
                 : string.Empty))
             .ForMember(d => d.Iccid, o => o.Ignore())
             .ForMember(d => d.Imsi, o => o.Ignore())
-            .ForMember(d => d.ProductName, o => o.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty));
+            .ForMember(d => d.ProductName, o => o.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty))
+            .ForMember(d => d.CompatibleSubscriptionTypeId, o => o.Ignore())
+            .ForMember(d => d.CompatibleSubscriptionTypeCode, o => o.Ignore())
+            .ForMember(d => d.CompatibleSubscriptionTypeNameAr, o => o.Ignore())
+            .ForMember(d => d.CompatibleSubscriptionTypeNameEn, o => o.Ignore());
     }
 
     internal static SimInventory? ResolveLinkedSim(MsisdnAsset asset) =>
@@ -54,6 +62,7 @@ public class GetMsisdnAssetPoolListRequest : IRequest<GetMsisdnAssetPoolListResu
 {
     public bool IsDeleted { get; init; }
     public string? Status { get; init; }
+    public string? SubscriptionTypeId { get; init; }
 }
 
 public class GetMsisdnAssetPoolListHandler : IRequestHandler<GetMsisdnAssetPoolListRequest, GetMsisdnAssetPoolListResult>
@@ -78,8 +87,20 @@ public class GetMsisdnAssetPoolListHandler : IRequestHandler<GetMsisdnAssetPoolL
                 .ThenInclude(p => p.Customer)
             .Include(x => x.SubscriberProfile!)
                 .ThenInclude(p => p.SimInventories)
-            .Include(x => x.Product)
+            .Include(x => x.IntendedSubscriptionTypeLookup)
+            .Include(x => x.Product!)
+                .ThenInclude(p => p.CompatibleSubscriptionTypeLookup)
             .AsQueryable();
+
+        var subscriptionTypeId = (request.SubscriptionTypeId ?? string.Empty).Trim();
+        if (!string.IsNullOrEmpty(subscriptionTypeId))
+        {
+            query = query.Where(x =>
+                x.IntendedSubscriptionTypeId == subscriptionTypeId
+                || (x.IntendedSubscriptionTypeId == null
+                    && x.Product != null
+                    && x.Product.CompatibleSubscriptionTypeId == subscriptionTypeId));
+        }
 
         if (!string.IsNullOrEmpty(request.Status))
         {
@@ -113,15 +134,14 @@ public class GetMsisdnAssetPoolListHandler : IRequestHandler<GetMsisdnAssetPoolL
         var iccidCandidates = new HashSet<string>(StringComparer.Ordinal);
         foreach (var asset in list)
         {
-            if (!string.IsNullOrWhiteSpace(asset.PairedIccid))
+            if (!MsisdnAssetKitResolver.ShouldExposePoolPairing(asset.PoolStatus))
             {
-                iccidCandidates.Add(asset.PairedIccid.Trim());
+                continue;
             }
 
-            var derived = MsisdnAssetKitResolver.DeriveIccidFromMsisdn(asset.Msisdn);
-            if (!string.IsNullOrWhiteSpace(derived))
+            foreach (var candidate in MsisdnAssetKitResolver.CollectIccidCandidates(asset))
             {
-                iccidCandidates.Add(derived);
+                iccidCandidates.Add(candidate);
             }
         }
 
@@ -141,9 +161,21 @@ public class GetMsisdnAssetPoolListHandler : IRequestHandler<GetMsisdnAssetPoolL
             }
 
             var profileSim = GetMsisdnAssetPoolListProfile.ResolveLinkedSim(asset);
-            var (iccid, imsi) = MsisdnAssetKitResolver.Resolve(asset, profileSim, operationSim, simsByIccid);
+            var exposePairing = MsisdnAssetKitResolver.ShouldExposePoolPairing(asset.PoolStatus);
+            var (iccid, imsi) = MsisdnAssetKitResolver.ResolveForPoolDisplay(
+                asset, profileSim, operationSim, simsByIccid);
+            var lineLookup = MsisdnAssetLineTypeResolver.ResolveLookup(asset);
             var dto = _mapper.Map<GetMsisdnAssetPoolListDto>(asset);
-            return dto with { Iccid = iccid, Imsi = imsi };
+            return dto with
+            {
+                Iccid = iccid,
+                Imsi = imsi,
+                ProductName = exposePairing ? dto.ProductName : null,
+                CompatibleSubscriptionTypeId = MsisdnAssetLineTypeResolver.ResolveTypeId(asset),
+                CompatibleSubscriptionTypeCode = lineLookup?.Code,
+                CompatibleSubscriptionTypeNameAr = lineLookup?.NameAr,
+                CompatibleSubscriptionTypeNameEn = lineLookup?.NameEn,
+            };
         }).ToList();
 
         return new GetMsisdnAssetPoolListResult { Data = data };

@@ -3,6 +3,7 @@ namespace Application.Common.BulkImport;
 /// <summary>Approved bulk-import CSV header templates per job type.</summary>
 public static class BulkImportSchemas
 {
+    /// <summary>Retired — inventory is synced from Oracle Fusion SCM only.</summary>
     public static readonly string[] MsisdnAssetHeaders =
         ["MSISDN", "IMSI", "ICCID", "Pin1", "Puk1"];
 

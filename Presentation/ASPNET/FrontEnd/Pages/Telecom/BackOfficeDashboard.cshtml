@@ -19,6 +19,69 @@
     a.bo-kpi-link:hover .telecom-bento-card { border-color: rgba(220, 38, 38, 0.35); }
     .bo-workflow-tip { border-right: 4px solid var(--sys-brand-red); }
     #boCriticalBanner.d-none { display: none !important; }
+    
+    /* Global Hardening: SLA Flashing Effects */
+    @@keyframes bo-flash-red {
+        0% { background-color: #dc2626; box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+        70% { background-color: #ef4444; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+        100% { background-color: #dc2626; box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    .bo-sla-breached {
+        animation: bo-flash-red 1.5s infinite;
+        color: white !important;
+        font-weight: bold;
+        border: none !important;
+    }
+    .bo-sla-healthy {
+        background-color: #10b981 !important;
+        color: white !important;
+        font-weight: 600;
+    }
+    
+    /* BDR Financial Ledger Styling */
+    .bo-bdr-ledger-card {
+        border-right: 4px solid #dc2626 !important;
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    .bo-debt-highlight {
+        background: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: #dc2626;
+        padding: 0.5rem;
+        border-radius: 6px;
+    }
+    .bo-finance-block {
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        padding: 0.5rem;
+        border-radius: 6px;
+    }
+    
+    .nav-pills-custom .nav-link {
+        border-radius: 8px;
+        margin-right: 5px;
+        font-weight: 600;
+        color: #64748b;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+    .nav-pills-custom .nav-link.active {
+        background-color: #dc2626 !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+    }
+    .nav-pills-custom .nav-link:hover:not(.active) {
+        background-color: #f1f5f9;
+        border-color: #e2e8f0;
+    }
+
+    .bo-row-fade-out {
+        opacity: 0 !important;
+        transform: translateX(30px) !important;
+        transition: all 0.6s ease-out !important;
+    }
+
     .bo-drawer-section { background: var(--sys-bg); border-radius: var(--sys-radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
     .bo-complaint-box { background: var(--sys-card-bg); border: 1px dashed var(--sys-border); border-radius: var(--sys-radius); padding: 0.65rem 0.85rem; font-size: 0.9rem; max-height: 140px; overflow-y: auto; }
     .bo-tech-toolbar { border: 1px solid var(--sys-border); border-radius: var(--sys-radius); padding: 0.75rem; background: var(--sys-card-bg); }
@@ -53,9 +116,13 @@
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-telecom btn-sm">
+            <a href="/Telecom/BackOfficeHistoricalLedger" class="btn btn-outline-telecom btn-sm">
                 <i class="bi bi-archive me-1"></i>
-                <span data-telecom-i18n="backOffice.dashboard.allTicketsArchive">الأرشيف والسجل</span>
+                <span data-telecom-i18n="backOffice.dashboard.historicalLedger">دفتر الأستاذ التاريخي</span>
+            </a>
+            <a href="/Telecom/TechnicalTicketList" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-task me-1"></i>
+                <span data-telecom-i18n="backOffice.dashboard.allTicketsArchive">أرشيف التذاكر</span>
             </a>
             <a href="/Telecom/BulkImportMonitor" class="btn btn-outline-danger btn-sm">
                 <i class="bi bi-cloud-upload me-1"></i>
@@ -131,6 +198,75 @@
                     </div>
                 </div>
             </a>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-4" id="boTelecomQueuePanel">
+        <div class="card-header bg-white border-0 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h2 class="h6 mb-0 fw-bold text-danger">
+                <i class="bi bi-shield-check me-2"></i>
+                <span data-telecom-i18n="backOffice.dashboard.panels.telecomQueue">طابور اعتماد العمليات (Approval Console)</span>
+            </h2>
+            <div class="d-flex align-items-center gap-3">
+                <ul class="nav nav-pills nav-pills-custom small" id="boQueueTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="active-queue-tab" data-bs-toggle="pill" data-bs-target="#active-queue-pane" type="button" role="tab" data-view="active">
+                            📊 <span data-telecom-i18n="backOffice.tabs.active">طابور العمل النشط</span>
+                            <span class="badge bg-white text-danger ms-1" id="boActiveCounter">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tech-ops-tab" data-bs-toggle="pill" data-bs-target="#tech-ops-pane" type="button" role="tab" data-view="tech">
+                            ⚙️ <span data-telecom-i18n="backOffice.tabs.tech">العمليات الفنية والشبكة</span>
+                            <span class="badge bg-white text-danger ms-1" id="boTechCounter">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="historical-ledger-tab" data-bs-toggle="pill" data-bs-target="#historical-ledger-pane" type="button" role="tab" data-view="historical">
+                            📜 <span data-telecom-i18n="backOffice.tabs.historical">الأرشيف التاريخي (Ledger)</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="card-body py-3">
+            <div class="tab-content" id="boQueueTabContent">
+                <div class="tab-pane fade show active" id="active-queue-pane" role="tabpanel" aria-labelledby="active-queue-tab" tabindex="0">
+                    <p class="small text-muted mb-3" data-telecom-i18n="backOffice.dashboard.panels.activeHint">
+                        الطلبات التي تنتج عن عمليات الفروع وبانتظار المراجعة والبت (Pending_BackOffice_Approval).
+                    </p>
+                </div>
+                <div class="tab-pane fade" id="tech-ops-pane" role="tabpanel" aria-labelledby="tech-ops-tab" tabindex="0">
+                    <p class="small text-muted mb-3" data-telecom-i18n="backOffice.dashboard.panels.techHint">
+                        تذاكر الدعم الفني، تنبيهات تسرب الإيرادات، وأوامر مزامنة الشبكة (HLR Sync).
+                    </p>
+                </div>
+                <div class="tab-pane fade" id="historical-ledger-pane" role="tabpanel" aria-labelledby="historical-ledger-tab" tabindex="0">
+                    <p class="small text-muted mb-3" data-telecom-i18n="backOffice.dashboard.panels.historicalHint">
+                        سجل كامل لجميع الطلبات التي تم البت فيها (Approved / Rejected) لأغراض التدقيق.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" id="boMainQueueTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.request">الطلب</th>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.kind">النوع</th>
+                            <th data-telecom-i18n="backOffice.dashboard.kpi.line">الخط</th>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.clearance">التسوية</th>
+                            <th>SLA Status</th>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.payment">الدفع</th>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.state">الحالة</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="boTelecomQueueBody">
+                        <tr><td colspan="8" class="text-muted text-center py-3" data-telecom-i18n="backOffice.dashboard.kpi.loadingRow">جاري التحميل…</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -379,6 +515,7 @@
                 <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.sla5m">SLA ≤5د</span><strong id="slKpiSla">—</strong></div>
                 <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.avgHandlingMin">متوسط المعالجة (د)</span><strong id="slKpiAht">—</strong></div>
                 <div class="col-md-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.manualOverrides">استثناءات يدوية</span><strong id="slKpiOverride">—</strong></div>
+                <div class="col-12 mt-2"><span class="text-muted d-block" data-telecom-i18n="backOffice.dashboard.kpi.rejectionReasons">أسباب الرفض</span><strong id="slKpiReasons" class="small">—</strong></div>
             </div>
         </div>
     </div>
@@ -388,14 +525,10 @@
             <div>
                 <h2 class="h6 mb-0 fw-bold">
                     <i class="bi bi-list-task me-2 text-danger"></i>
-                    <span data-telecom-i18n="backOffice.dashboard.activeQueueTitle">طابور العمل الحي</span>
+                    <span data-telecom-i18n="backOffice.dashboard.activeQueueTitle">طابور العمل الحي (Technical Tickets)</span>
                 </h2>
-                <p class="small text-muted mb-0 mt-1" data-telecom-i18n="backOffice.dashboard.activeQueueHint">انقر «معالجة» أو انقر مرتين على الصف لتحديث الحالة وملاحظات الحل.</p>
+                <p class="small text-muted mb-0 mt-1" data-telecom-i18n="backOffice.dashboard.activeQueueHint">تذاكر الدعم الفني المفتوحة وقيد المعالجة فقط.</p>
             </div>
-            <a href="/Telecom/TechnicalTicketList" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-box-arrow-up-left me-1"></i>
-                <span data-telecom-i18n="backOffice.dashboard.allTicketsArchive">الأرشيف والسجل</span>
-            </a>
         </div>
         <div class="card-body pt-0">
             <div class="telecom-grid-panel bo-tickets-panel">

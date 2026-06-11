@@ -909,6 +909,8 @@ public class TelecomController : BaseApiController
         var cmd = new ReprovisionSubscriberToHlrRequest
         {
             SubscriberProfileId = request.SubscriberProfileId,
+            MsisdnAssetId = request.MsisdnAssetId,
+            Msisdn = request.Msisdn,
             ActorUserId = request.ActorUserId ?? User.FindFirstValue(ClaimTypes.NameIdentifier),
         };
         var response = await _sender.Send(cmd, cancellationToken);

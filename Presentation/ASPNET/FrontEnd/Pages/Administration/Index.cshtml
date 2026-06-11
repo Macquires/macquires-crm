@@ -3,29 +3,25 @@
     ViewData["Title"] = "الإدارة والنظام";
 }
 
-<div class="container py-4">
-    <h1 class="h4 mb-3">الإدارة والنظام</h1>
-    <p class="text-muted mb-4">مركز قيادة المنصة — للمسؤولين فقط.</p>
-    <div class="list-group list-group-flush shadow-sm rounded-3" style="max-width: 28rem;">
-        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="/Administration/UserList">
-            <i class="bi bi-people-fill text-primary"></i>
-            <span>إدارة المستخدمين</span>
-        </a>
-        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="/Administration/BranchList">
-            <i class="bi bi-diagram-3-fill text-primary"></i>
-            <span>إدارة الفروع</span>
-        </a>
-        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="/Administration/RoleList">
-            <i class="bi bi-shield-lock-fill text-primary"></i>
-            <span>الأدوار والصلاحيات</span>
-        </a>
-        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="/Administration/GlobalSettings">
-            <i class="bi bi-sliders text-primary"></i>
-            <span>الإعدادات العامة</span>
-        </a>
-        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" href="/Dashboards/DashboardWidgetList">
-            <i class="bi bi-layout-three-columns text-primary"></i>
-            <span>عناصر لوحة القيادة</span>
+<div id="app" v-cloak class="telecom-premium-page container py-4">
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body py-3">
+            <h1 class="h4 mb-1">{{ t('pageTitle') }}</h1>
+            <p class="text-muted mb-0">{{ t('subtitle') }}</p>
+        </div>
+    </div>
+    <div class="list-group list-group-flush shadow-sm rounded-3 administration-hub-list">
+        <a
+            v-for="item in hubLinks"
+            :key="item.href"
+            class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            :href="item.href">
+            <i class="bi text-primary" :class="item.icon"></i>
+            <span>{{ item.label }}</span>
         </a>
     </div>
 </div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Administration/Index.cshtml.js" asp-append-version="true"></script>
+}

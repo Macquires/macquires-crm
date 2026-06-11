@@ -58,6 +58,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQnJhbmNoTGlzdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/CityList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cQ2l0eUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Administration/GlobalSettings.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcQWRtaW5pc3RyYXRpb25cR2xvYmFsU2V0dGluZ3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -178,6 +182,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCYWNrT2ZmaWNlRGFzaGJvYXJkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BackOfficeHistoricalLedger.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCYWNrT2ZmaWNlSGlzdG9yaWNhbExlZGdlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/BillingIntegration.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxCaWxsaW5nSW50ZWdyYXRpb24uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -192,6 +200,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/DeviceInventory.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxEZXZpY2VJbnZlbnRvcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/HlrProvisioning.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxIbHJQcm92aXNpb25pbmcuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/InIntegration.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxJbkludGVncmF0aW9uLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml]

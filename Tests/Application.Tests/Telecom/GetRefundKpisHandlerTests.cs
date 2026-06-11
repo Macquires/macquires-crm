@@ -9,6 +9,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class GetRefundKpisHandlerTests
 {
     [Fact]
@@ -33,7 +35,7 @@ public class GetRefundKpisHandlerTests
         Assert.Equal(1, result.PendingBackOffice);
         Assert.Equal(5000m, result.SettledAmountToday);
         Assert.Equal(1, result.DualApprovalToday);
-        Assert.Equal(1, result.RejectionReasons.Count);
+        Assert.Single(result.RejectionReasons);
     }
 
     private static QueryContext CreateContext()
@@ -42,7 +44,7 @@ public class GetRefundKpisHandlerTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static TelecomOperationRequest Op(

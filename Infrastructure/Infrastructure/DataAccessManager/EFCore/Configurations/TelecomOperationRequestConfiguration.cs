@@ -24,6 +24,7 @@ public class TelecomOperationRequestConfiguration : BaseEntityConfiguration<Tele
         builder.Property(x => x.Notes).HasMaxLength(DescriptionConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.TargetOfferName).HasMaxLength(LengthConsts.M).IsRequired(false);
         builder.Property(x => x.IdentityDocumentStorageKey).HasMaxLength(LengthConsts.L).IsRequired(false);
+        builder.Property(x => x.KycDocumentReferenceId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.ActivationChannel).HasConversion<int>();
         builder.Property(x => x.DealerCode).HasMaxLength(64).IsRequired(false);
         builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
@@ -100,6 +101,12 @@ public class TelecomOperationRequestConfiguration : BaseEntityConfiguration<Tele
         builder.Property(x => x.CollectionNote).HasMaxLength(512).IsRequired(false);
         builder.Property(x => x.CollectionSettlementStatus).HasMaxLength(32).IsRequired(false);
 
+        // GLOBAL HARDENING: SLA & Queue Management
+        builder.Property(x => x.SlaExpirationTimeUtc).IsRequired(false);
+        builder.Property(x => x.ClaimedByUserId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
+        builder.Property(x => x.AssignedAgentEmail).HasMaxLength(128).IsRequired(false);
+        builder.Property(x => x.ClaimedAt).IsRequired(false);
+
         builder.HasIndex(x => x.Number).IsUnique();
         builder.HasIndex(x => x.ActivationChannel);
         builder.HasIndex(x => x.DealerCode).HasFilter("[DealerCode] IS NOT NULL");
@@ -126,6 +133,8 @@ public class TelecomOperationRequestConfiguration : BaseEntityConfiguration<Tele
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.CorrelationId).HasFilter("[CorrelationId] IS NOT NULL");
+
+        builder.Property(x => x.RowVersion).IsRowVersion();
 
         builder.HasOne(x => x.Product)
             .WithMany()

@@ -85,6 +85,12 @@
   <data name="Page_BillingIntegrationTitle" xml:space="preserve">
     <value>التكامل مع نظام الفوترة</value>
   </data>
+  <data name="Page_InIntegrationTitle" xml:space="preserve">
+    <value>التكامل مع الشبكة الذكية (IN)</value>
+  </data>
+  <data name="Page_HlrProvisioningTitle" xml:space="preserve">
+    <value>تزويد HLR / HSS</value>
+  </data>
   <data name="Login_PageTitle" xml:space="preserve">
     <value>تسجيل الدخول — سيريتل</value>
   </data>

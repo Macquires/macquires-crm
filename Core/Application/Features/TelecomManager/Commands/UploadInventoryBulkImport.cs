@@ -57,6 +57,8 @@ public class UploadInventoryBulkImportHandler : IRequestHandler<UploadInventoryB
         UploadInventoryBulkImportRequest request,
         CancellationToken cancellationToken)
     {
+        BulkImportLegacyMigrationGuard.EnsureLegacyMigrationJobType(request.JobType);
+
         var job = new InventoryBulkImportJob
         {
             JobStatus = InventoryBulkImportJobStatus.Pending,

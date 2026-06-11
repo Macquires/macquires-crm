@@ -11,6 +11,11 @@ public static class TelecomRoles
     public const string CallCenter = "TelecomCallCenter";
     public const string Management = "TelecomManagement";
 
+    // GLOBAL HARDENING: Separation of Duties Roles
+    public const string FinancialSupervisor = "Financial_Supervisor";
+    public const string NetworkTechnicalAdmin = "Network_Technical_Admin";
+    public const string OperationsManager = "Operations_Manager";
+
     public static readonly string[] All =
     [
         Admin,
@@ -18,6 +23,9 @@ public static class TelecomRoles
         BackOffice,
         CallCenter,
         Management,
+        FinancialSupervisor,
+        NetworkTechnicalAdmin,
+        OperationsManager,
     ];
 
     public static bool IsTelecomOnlyRole(string roleName) =>
@@ -28,7 +36,7 @@ public static class TelecomRoles
 
     public const string RolesUploadDocument = $"{Showroom},{BackOffice},{Admin}";
 
-    public const string RolesConfirmOperation = $"{BackOffice},{Admin}";
+    public const string RolesConfirmOperation = $"{Showroom},{BackOffice},{Admin}";
 
     public const string RolesReadTelecom = $"{Showroom},{BackOffice},{CallCenter},{Management},{Admin}";
 
@@ -49,8 +57,11 @@ public static class TelecomRoles
 
     public const string RolesManageTechnicalTickets = $"{CallCenter},{BackOffice},{Admin}";
 
-    public const string RolesResolveTechnicalTickets = $"{BackOffice},{Admin}";
+    public const string RolesResolveTechnicalTickets = $"{BackOffice},{Admin},{NetworkTechnicalAdmin},{OperationsManager}";
 
     /// <summary>عكس معاملات الدفع (Finance / Management tier).</summary>
-    public const string RolesReversePayment = $"{Management},{BackOffice},{Admin}";
+    public const string RolesReversePayment = $"{Management},{BackOffice},{Admin},{FinancialSupervisor},{OperationsManager}";
+
+    public const string RolesFinancialAudit = $"{FinancialSupervisor},{OperationsManager},{Admin}";
+    public const string RolesNetworkTechnicalAudit = $"{NetworkTechnicalAdmin},{OperationsManager},{Admin}";
 }

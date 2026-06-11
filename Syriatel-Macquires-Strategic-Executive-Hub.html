@@ -778,12 +778,12 @@
       <div class="bilingual-row has-divider" role="group" aria-label="Vision paragraph 2">
         <div class="col-en">
           <p class="flush">
-            For the Board, the distinction is capital allocation: a generic CRM depreciates as “software overhead,” while an operator-grade portal compounds as <strong>network-aware customer equity</strong>—fewer disputes, faster resolution, auditable change, and a single narrative from showroom to back office to executive KPIs.
+            For the Board, the distinction is capital allocation: a generic CRM depreciates as “software overhead,” while an operator-grade portal compounds as <strong>network-aware customer equity</strong>—fewer disputes, faster resolution, auditable change, and a single narrative from Point of Service (POS) to back office to executive KPIs.
           </p>
         </div>
         <div class="col-ar" lang="ar">
           <p class="flush">
-            من منظور المجلس، الفارق يتجلّى في توجيه رأس المال: يميل <span class="ltr-inline">CRM</span> العام إلى التصنيف كتكلفة برمجيات متجددة، بينما بوابة بمواصفات المشغّل تُضاعِف قيمة «رأس مال الزبائن الواعي بالشبكة» — عبر تقليل المنازعات، وتسريع معالجة الحالات، وجعل أي تغيير قابلاً للتتبّع والمراجعة، ورواية موحّدة للحقيقة تمتد من واجهة البيع إلى المكاتب الخلفية وصولاً إلى مؤشرات الأداء التنفيذية.
+            من منظور المجلس، الفارق يتجلّى في توجيه رأس المال: يميل <span class="ltr-inline">CRM</span> العام إلى التصنيف كتكلفة برمجيات متجددة، بينما بوابة بمواصفات المشغّل تُضاعِف قيمة «رأس مال الزبائن الواعي بالشبكة» — عبر تقليل المنازعات، وتسريع معالجة الحالات، وجعل أي تغيير قابلاً للتتبّع والمراجعة، ورواية موحّدة للحقيقة تمتد من نقاط الخدمة (<span class="ltr-inline">POS</span>) إلى المكاتب الخلفية وصولاً إلى مؤشرات الأداء التنفيذية.
           </p>
         </div>
       </div>
@@ -883,11 +883,11 @@
           <div class="card-icon" aria-hidden="true">S</div>
           <div class="bilingual-row has-divider flush" style="margin-bottom:0;">
             <div class="col-en">
-              <h4 class="flush">Showroom</h4>
-              <p class="flush"><strong>Throughput and speed.</strong> Front-line teams close the loop faster when customer context, inventory logic, and next-best actions live in one flow—reducing wait time and elevating first-contact resolution.</p>
+              <h4 class="flush">Point of Service (POS)</h4>
+              <p class="flush"><strong>Throughput and speed.</strong> Front-line teams at subscriber service branches close the loop faster when customer context, inventory logic, and next-best actions live in one flow—reducing wait time and elevating first-contact resolution.</p>
             </div>
             <div class="col-ar" lang="ar">
-              <h4 class="flush">واجهة البيع والصالات</h4>
+              <h4 class="flush">نقطة الخدمة (POS)</h4>
               <p class="flush"><strong>رفع معدلات الإنجاز وتقليل زمن الخدمة:</strong> عندما تتوافر بيانات السياق والمخزون والخطوة التالية الأمثل في تدفّق واحد داخل المنصّة، تُغلق الحالات أسرع وتنخفض أوقات الانتظار، مع ارتفاع نسبة الإغلاق من أول تفاعل — وهو ما يعكس مباشرة على تجربة الزبائن أمام الشاشة.</p>
             </div>
           </div>
@@ -1001,6 +1001,31 @@
             <div class="col-ar" lang="ar">
               <p class="flush">
                 تُهندَس المنصّة على <span class="ltr-inline">.NET 9</span> مع <strong>Clean Architecture</strong> وفصل قراءة/كتابة باتجاه <strong>CQRS</strong> — أنماط مجربة على المستوى المؤسسي. يسمح ذلك بنمو الأحمال (مزيد من الفروع، ومستخدمين متزامنين، وتقارير أثقل) دون انهيار نموذج النطاق (<span class="ltr-inline">domain model</span>) إلى أحاديّة غير قابلة للصيانة. تصبح السعة <strong>تمارين هندسية يمكن تقديرها وتخطيطها</strong>، وليس مُفجّر إعادة بناء يهدّد استمرارية الأعمال.
+              </p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary>
+          <div class="faq-summary-inner">
+            <div class="split-q">
+              <div class="col-en">Can Syriatel add new approval roles later without a code rewrite?</div>
+              <div class="col-ar" lang="ar">هل تستطيع سيريتل إضافة أدوار اعتماد جديدة لاحقاً دون إعادة بناء البرمجيات؟</div>
+            </div>
+          </div>
+        </summary>
+        <div class="faq-body">
+          <div class="bilingual-row has-divider flush" style="margin-bottom:0;">
+            <div class="col-en">
+              <p class="flush">
+                Yes. Macquires CRM provides <strong>fully dynamic RBAC</strong>: administrators can create, clone, and assign new roles and granular permissions from the administration console at any time—<strong>without backend code changes</strong>—when organizational needs evolve (e.g., a future branch approval officer or regional supervisor role). Today's operating model routes sensitive cases directly to <strong>Back-Office / Financial Clearance</strong>; tomorrow's structure can be reflected in roles the same day.
+              </p>
+            </div>
+            <div class="col-ar" lang="ar">
+              <p class="flush">
+                نعم. نظام الـ CRM مبني على <strong>RBAC ديناميكي بالكامل</strong>: إدارة سيريتل تقدر تنشئ وتستنسخ وتعيّن أدوار وصلاحيات جديدة من لوحة الإدارة في أي وقت — <strong>بدون تعديل كود بالخلفية</strong> — عند الحاجة التنظيمية مستقبلاً (مثلاً دور اعتماد فرع أو مشرف منطقة). النموذج التشغيلي الحالي يوجّه الحالات الحساسة مباشرة إلى <strong>الباك أوفيس / التسوية المالية</strong>؛ وأي هيكل تنظيمي جديد يمكن عكسه في الأدوار في اليوم نفسه.
               </p>
             </div>
           </div>

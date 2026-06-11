@@ -1,4 +1,5 @@
 using Application.Common.Integrations;
+using Application.Common.Settings;
 using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -9,11 +10,16 @@ namespace Application.Features.TelecomManager.Events;
 public sealed class SellingLineNotificationHandler : INotificationHandler<TelecomOperationStatusChangedNotification>
 {
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IGlobalSettingsProvider _settings;
     private readonly ILogger<SellingLineNotificationHandler> _logger;
 
-    public SellingLineNotificationHandler(ISmsGatewayIntegration sms, ILogger<SellingLineNotificationHandler> logger)
+    public SellingLineNotificationHandler(
+        ISmsGatewayIntegration sms,
+        IGlobalSettingsProvider settings,
+        ILogger<SellingLineNotificationHandler> logger)
     {
         _sms = sms;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -21,6 +27,11 @@ public sealed class SellingLineNotificationHandler : INotificationHandler<Teleco
     {
         if (notification.Kind != TelecomOperationKind.NewActivation
             || string.IsNullOrEmpty(notification.Msisdn))
+        {
+            return;
+        }
+
+        if (!await NotificationSmsGate.IsCustomerOpsEnabledAsync(_settings, cancellationToken))
         {
             return;
         }

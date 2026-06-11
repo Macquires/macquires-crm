@@ -65,6 +65,9 @@ const App = {
             isSubmitting: false,
             telecomMsisdn: '',
             telecomMsisdnInitial: '',
+            telecomMsisdnPool: [],
+            telecomMsisdnAssetId: '',
+            telecomMsisdnPoolBusy: false,
             telecomSubscriptionId: '',
             telecomSubscriptionIdInitial: '',
             telecomSubscriptionTypeId: TEL_SUB_DEFAULT_PREPAID_ID,
@@ -997,6 +1000,44 @@ const App = {
             },
         };
 
+        const parseMsisdnPoolRows = (res) => {
+            if (typeof StorageManager?.apiList === 'function') {
+                const list = StorageManager.apiList(res);
+                if (Array.isArray(list) && list.length > 0) return list;
+            }
+            const content = res?.data?.content ?? res?.data?.Content;
+            const rows = content?.data ?? content?.Data;
+            return Array.isArray(rows) ? rows : [];
+        };
+
+        const isAvailableMsisdnPoolRow = (row) => {
+            if (!row) return false;
+            const name = String(row.poolStatusName ?? row.PoolStatusName ?? '').toLowerCase();
+            if (name === 'available') return true;
+            const st = row.poolStatus ?? row.PoolStatus;
+            return st === 0 || st === '0' || st === 'Available';
+        };
+
+        const loadBootstrapMsisdnPool = async () => {
+            state.telecomMsisdnPoolBusy = true;
+            state.telecomMsisdnAssetId = '';
+            state.telecomMsisdn = '';
+            try {
+                const res = await AxiosManager.get('/Telecom/GetMsisdnAssetPoolList?status=Available', {});
+                state.telecomMsisdnPool = parseMsisdnPoolRows(res).filter(isAvailableMsisdnPoolRow);
+            } catch {
+                state.telecomMsisdnPool = [];
+            } finally {
+                state.telecomMsisdnPoolBusy = false;
+            }
+        };
+
+        const onBootstrapMsisdnPicked = () => {
+            const id = (state.telecomMsisdnAssetId || '').trim();
+            const row = (state.telecomMsisdnPool || []).find((a) => String(a.id ?? a.Id) === id);
+            state.telecomMsisdn = row?.msisdn ?? row?.Msisdn ?? '';
+        };
+
         const resetFormState = () => {
             state.id = '';
             state.number = '';
@@ -1027,6 +1068,9 @@ const App = {
             state.tikTok = '';
             state.telecomMsisdn = '';
             state.telecomMsisdnInitial = '';
+            state.telecomMsisdnPool = [];
+            state.telecomMsisdnAssetId = '';
+            state.telecomMsisdnPoolBusy = false;
             state.telecomSubscriptionId = '';
             state.telecomSubscriptionIdInitial = '';
             const defLineTypeId =
@@ -1201,10 +1245,12 @@ const App = {
                     (state.telecomLineTypes || []).find((x) => x.isDefault)?.id || TEL_SUB_DEFAULT_PREPAID_ID;
                 state.telecomSubscriptionTypeId = defLine;
                 state.telecomSubscriptionTypeIdInitial = defLine;
+                await loadBootstrapMsisdnPool();
             },
-            proceedNewCustomer: () => {
+            proceedNewCustomer: async () => {
                 state.customerOnboardingStep = 1;
                 state.addFlowBootstrapTelecom = true;
+                await loadBootstrapMsisdnPool();
             },
             goBackToSearch: () => {
                 if (!state.customerOnboardingActive) return;
@@ -2128,6 +2174,13 @@ const App = {
             simIccid: '',
             offerings: [],
             poolNumbers: [],
+            activationChannel: 0,
+            dealerCode: '',
+            paymentReference: '',
+            paymentAmount: '',
+            paymentChannel: 0,
+            paymentCashierLocked: false,
+            cashierFetchBusy: false,
             migrationProducts: [],
             currentProductName: '',
             takeoverSearchNationalId: '',
@@ -2249,6 +2302,16 @@ const App = {
             lineActionModal.msisdnAssetId = '';
             lineActionModal.productOfferingId = '';
             lineActionModal.simIccid = '';
+            lineActionModal.activationChannel = 0;
+            lineActionModal.dealerCode = '';
+            if (typeof ActivationChannelUi !== 'undefined') {
+                ActivationChannelUi.applyDefaults(lineActionModal);
+            }
+            lineActionModal.paymentReference = '';
+            lineActionModal.paymentAmount = '';
+            lineActionModal.paymentChannel = 0;
+            lineActionModal.paymentCashierLocked = false;
+            lineActionModal.cashierFetchBusy = false;
             lineActionModal.migrationProducts = [];
             lineActionModal.currentProductName = '';
             lineActionModal.takeoverSearchNationalId = '';
@@ -2420,7 +2483,12 @@ const App = {
             return (p?.subscriberProfileId || '').trim();
         };
 
-        const runTelecomPipeline = async ({ processingKey, kindLabel, msisdn, buildBody }) => {
+        const newLineOfferingDeposit = () => {
+            const o = (lineActionModal.offerings || []).find((x) => x.id === lineActionModal.productOfferingId);
+            return Number(o?.unitPrice ?? o?.UnitPrice ?? 0) || 0;
+        };
+
+        const runTelecomPipeline = async ({ processingKey, kindLabel, msisdn, buildBody, beforeConfirm }) => {
             const key = processingKey || '__line__';
             if (lineProcessing[key]) return false;
             lineProcessing[key] = true;
@@ -2440,6 +2508,10 @@ const App = {
                 const opId = createRes?.data?.content?.data?.id;
                 if (!opId) throw new Error(telecomT('swal.noOpId'));
                 await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId, updatedById: uid });
+                if (beforeConfirm) {
+                    const paymentOk = await beforeConfirm(opId);
+                    if (!paymentOk) return false;
+                }
                 const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
                     id: opId,
                     updatedById: uid,
@@ -2462,24 +2534,6 @@ const App = {
             }
         };
 
-        const parseMsisdnPoolRows = (res) => {
-            if (typeof StorageManager?.apiList === 'function') {
-                const list = StorageManager.apiList(res);
-                if (Array.isArray(list) && list.length > 0) return list;
-            }
-            const content = res?.data?.content ?? res?.data?.Content;
-            const rows = content?.data ?? content?.Data;
-            return Array.isArray(rows) ? rows : [];
-        };
-
-        const isAvailableMsisdnPoolRow = (row) => {
-            if (!row) return false;
-            const name = String(row.poolStatusName ?? row.PoolStatusName ?? '').toLowerCase();
-            if (name === 'available') return true;
-            const st = row.poolStatus ?? row.PoolStatus;
-            return st === 0 || st === '0' || st === 'Available';
-        };
-
         const loadNewLineModalData = async () => {
             try {
                 const [poolRes, offRes] = await Promise.all([
@@ -2499,9 +2553,20 @@ const App = {
             }
         };
 
+        const onNewLineMsisdnChanged = () => {
+            const id = (lineActionModal.msisdnAssetId || '').trim();
+            const row = (lineActionModal.poolNumbers || []).find((a) => a.id === id);
+            lineActionModal.simIccid = String(
+                row?.iccid ?? row?.Iccid ?? row?.pairedIccid ?? row?.PairedIccid ?? ''
+            ).trim();
+        };
+
         const openNewLineModal = async () => {
             if (!gridAccess.canActivateLine || !state.id) return;
             resetLineActionModal();
+            if (typeof ActivationChannelUi !== 'undefined') {
+                await ActivationChannelUi.ensureLoaded();
+            }
             await loadNewLineModalData();
             showBsModal('C360NewLineModal');
         };
@@ -2641,6 +2706,50 @@ const App = {
             }
         };
 
+        const fetchNewLinePaymentFromCashier = async () => {
+            const ref = (lineActionModal.paymentReference || '').trim();
+            const deposit = newLineOfferingDeposit();
+            if (!ref) {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'warning', title: telecomT('swal.paymentRefRequired', 'Payment ref required') });
+                }
+                return;
+            }
+            lineActionModal.cashierFetchBusy = true;
+            try {
+                const res = await AxiosManager.post('/Telecom/FetchCashierPayment', {
+                    paymentReference: ref,
+                    expectedAmount: deposit > 0 ? deposit : null,
+                });
+                const data = res?.data?.content?.data ?? res?.data?.content?.Data;
+                if (res?.data?.code === 200 && data) {
+                    const amt = data.amountPaid ?? data.AmountPaid;
+                    if (amt != null) lineActionModal.paymentAmount = String(amt);
+                    const ch = data.paymentChannel ?? data.PaymentChannel;
+                    if (ch != null) lineActionModal.paymentChannel = Number(ch);
+                    lineActionModal.paymentReference = data.paymentReference ?? data.PaymentReference ?? ref;
+                    lineActionModal.paymentCashierLocked = true;
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: telecomT('wizardUi.cashierFetched', 'Loaded'),
+                            timer: 1200,
+                            showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    throw Object.assign(
+                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                        { response: res }
+                    );
+                }
+            } catch (e) {
+                showLineActionError(e);
+            } finally {
+                lineActionModal.cashierFetchBusy = false;
+            }
+        };
+
         const submitNewLineActivation = async () => {
             const profileId = primarySubscriberProfileId();
             const assetId = (lineActionModal.msisdnAssetId || '').trim();
@@ -2672,7 +2781,52 @@ const App = {
                     msisdnAssetId: assetId,
                     productOfferingId: offeringId,
                     simIccid: iccid,
+                    activationChannel: Number(lineActionModal.activationChannel) || 0,
+                    dealerCode: (lineActionModal.dealerCode || '').trim() || null,
                 }),
+                beforeConfirm: async (opId) => {
+                    const deposit = newLineOfferingDeposit();
+                    if (deposit <= 0) return true;
+                    if (!lineActionModal.paymentCashierLocked) {
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: telecomT('wizardUi.fetchFromCashier', 'Fetch from cashier'),
+                            });
+                        }
+                        return false;
+                    }
+                    const ref = (lineActionModal.paymentReference || '').trim();
+                    const amt = Number(lineActionModal.paymentAmount);
+                    if (!ref || !(amt > 0)) {
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: telecomT('swal.paymentAmountRequired', 'Payment required'),
+                            });
+                        }
+                        return false;
+                    }
+                    try {
+                        const payRes = await AxiosManager.post('/Telecom/RecordSellingLinePayment', {
+                            operationId: opId,
+                            paymentReference: ref,
+                            amountPaid: amt,
+                            paymentChannel: Number(lineActionModal.paymentChannel) || 0,
+                            updatedById: StorageManager.getUserId(),
+                        });
+                        if (payRes?.data?.code !== 200) {
+                            throw Object.assign(
+                                new Error(payRes?.data?.message || telecomT('swal.genericFailed', 'Failed')),
+                                { response: payRes }
+                            );
+                        }
+                        return true;
+                    } catch (e) {
+                        showLineActionError(e);
+                        return false;
+                    }
+                },
             });
             lineActionModal.busy = false;
             if (ok) hideBsModal('C360NewLineModal');
@@ -3021,11 +3175,30 @@ const App = {
                             response: confirmRes,
                         });
                     }
+                    const confirmContent = confirmRes?.data?.content ?? confirmRes?.data?.Content ?? {};
+                    if (confirmContent.hlrCompletesAsynchronously ?? confirmContent.HlrCompletesAsynchronously) {
+                        const terminal = new Set([3, 4, 'Completed', 'Failed']);
+                        for (let i = 0; i < 15; i++) {
+                            await new Promise((r) => setTimeout(r, 2000));
+                            try {
+                                const detailRes = await AxiosManager.get(
+                                    '/Telecom/GetTelecomOperationDetail?id=' + encodeURIComponent(opId),
+                                    {}
+                                );
+                                const detail = detailRes?.data?.content?.data ?? detailRes?.data?.content?.Data;
+                                const st = detail?.status ?? detail?.Status;
+                                if (terminal.has(st)) break;
+                            } catch {
+                                /* retry */
+                            }
+                        }
+                    }
                     if (window.Swal) {
                         Swal.fire({ icon: 'success', title: telecomT('swal.reconnected'), timer: 1800, showConfirmButton: false });
                     }
                 }
                 await loadCustomer360(state.id);
+                await checkHlrForSubscription(sub);
                 hideBsModal('C360ReconnectModal');
             } catch (e) {
                 showLineActionError(e);
@@ -3710,6 +3883,7 @@ const App = {
             handler,
             customerOnboarding,
             onCustomerTelecomSubscriptionChange,
+            onBootstrapMsisdnPicked,
             uniqueSubscriberProfileIds,
             queryCustomerHlrLiveStatus,
             resyncCustomerFromHlr,
@@ -3728,9 +3902,31 @@ const App = {
             isVasToggling,
             toggleVasService,
             lineActionModal,
+            activationChannelUiMode: Vue.computed(() =>
+                typeof ActivationChannelUi !== 'undefined' ? ActivationChannelUi.resolveMode() : 'showroom'),
+            activationChannelLabels: Vue.computed(() => {
+                const loc = window.TelecomI18n?.getLang?.() || 'ar';
+                if (typeof ActivationChannelUi === 'undefined') {
+                    return { showroom: 'POS', dealer: 'Dealer' };
+                }
+                return {
+                    showroom: ActivationChannelUi.label(0, loc),
+                    dealer: ActivationChannelUi.label(1, loc),
+                };
+            }),
+            activationChannelLockedHint: Vue.computed(() => {
+                const loc = window.TelecomI18n?.getLang?.() || 'ar';
+                if (typeof ActivationChannelUi === 'undefined') {
+                    return telecomT('wizardUi.channelShowroomLockedHint', '');
+                }
+                return ActivationChannelUi.lockedHint(loc);
+            }),
+            newLineOfferingDeposit,
+            fetchNewLinePaymentFromCashier,
             isLineProcessing,
             hasAnyLineAction,
             openNewLineModal,
+            onNewLineMsisdnChanged,
             openMigrateModal,
             openSimSwapModal,
             openChangeNumberModal,

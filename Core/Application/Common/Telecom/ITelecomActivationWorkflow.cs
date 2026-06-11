@@ -8,7 +8,9 @@ public sealed record TelecomActivationWorkflowResult(
     BillingProvisionResult BillingResult,
     NetworkProvisionResult? NetworkResult,
     bool IdempotentReplay,
-    string Message);
+    string Message,
+    string? MessageAr = null,
+    string? MessageEn = null);
 
 public interface ITelecomActivationWorkflow
 {

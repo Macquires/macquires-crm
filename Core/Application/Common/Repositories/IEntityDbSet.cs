@@ -13,6 +13,7 @@ public interface IEntityDbSet
     DbSet<NumberSequence> NumberSequence { get; set; }
     DbSet<CustomerGroup> CustomerGroup { get; set; }
     DbSet<CustomerCategory> CustomerCategory { get; set; }
+    DbSet<GeoCity> GeoCity { get; set; }
     DbSet<Customer> Customer { get; set; }
     DbSet<CustomerIdentityDocument> CustomerIdentityDocument { get; set; }
     DbSet<Product> Product { get; set; }
@@ -48,4 +49,6 @@ public interface IEntityDbSet
     DbSet<InstallmentPlan> InstallmentPlan { get; set; }
     DbSet<DeviceInstallmentContract> DeviceInstallmentContract { get; set; }
     DbSet<DeviceInstallmentScheduleLine> DeviceInstallmentScheduleLine { get; set; }
+    DbSet<IntegrationOutboxMessage> IntegrationOutboxMessage { get; set; }
+    DbSet<IdempotencyRecord> IdempotencyRecord { get; set; }
 }

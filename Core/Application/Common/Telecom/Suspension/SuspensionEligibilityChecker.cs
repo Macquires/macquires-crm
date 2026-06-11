@@ -51,7 +51,7 @@ public sealed class SuspensionEligibilityChecker : ISuspensionEligibilityChecker
 
         if (!SuspensionWellKnown.IsKnownBarringLevel(barring))
         {
-            throw new BusinessRuleViolationException("مستوى الحظر غير معروف (Full, InboundOnly, OutboundOnly).");
+            throw new BusinessRuleViolationException("مستوى الحظر غير معروف (Full, OutboundOnly, DataOnly).");
         }
 
         if (string.IsNullOrWhiteSpace(reason))
@@ -62,6 +62,20 @@ public sealed class SuspensionEligibilityChecker : ISuspensionEligibilityChecker
         if (autoReconnectEnabled && !suspensionEndDateUtc.HasValue)
         {
             throw new BusinessRuleViolationException("VAL-08-04: تاريخ انتهاء الحظر مطلوب عند تفعيل إعادة الاتصال التلقائية.");
+        }
+
+        if (autoReconnectEnabled && suspensionEndDateUtc.HasValue)
+        {
+            var now = DateTime.UtcNow;
+            if (suspensionEndDateUtc.Value <= now)
+            {
+                throw new BusinessRuleViolationException("تاريخ انتهاء الحظر يجب أن يكون في المستقبل.");
+            }
+
+            if (suspensionEndDateUtc.Value > now.Add(SuspensionWellKnown.LongSuspensionThreshold))
+            {
+                throw new BusinessRuleViolationException(SuspensionWellKnown.MaxSuspensionPeriodMessageAr);
+            }
         }
 
         var profileId = subscriberProfileId.Trim();

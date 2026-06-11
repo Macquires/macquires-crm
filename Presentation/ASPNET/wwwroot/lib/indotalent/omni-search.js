@@ -2,8 +2,11 @@
  * Syr-Tel Omni-Search (Ctrl+K) — universal MSISDN / customer lookup.
  */
 const OmniSearch = (function () {
+    const SEARCH_TIMEOUT_MS = 20000;
     let modalInstance = null;
     let debounceTimer = null;
+    let searchAbort = null;
+    let searchSeq = 0;
 
     function ensureModal() {
         if (document.getElementById('syrOmniModal')) return;
@@ -129,11 +132,23 @@ const OmniSearch = (function () {
         });
     }
 
+    function isAbortError(e) {
+        const code = e?.code || e?.name || '';
+        return code === 'ERR_CANCELED' || code === 'CanceledError' || code === 'AbortError';
+    }
+
     async function runSearch(term) {
         if (!term || term.length < 2) {
             setResultsMessage('hint', 'اكتب حرفين على الأقل للبحث.');
             return;
         }
+        if (searchAbort) {
+            searchAbort.abort();
+        }
+        searchAbort = new AbortController();
+        const abortSignal = searchAbort.signal;
+        const seq = ++searchSeq;
+
         setResultsMessage('loading', 'جاري البحث…');
         const digits = term.replace(/[٠-٩۰-۹]/g, (ch) => {
             const cp = ch.codePointAt(0);
@@ -150,13 +165,18 @@ const OmniSearch = (function () {
                 '/Telecom/GetTelecomUniversalSearch?term=' +
                 encodeURIComponent(term) +
                 '&profilesOnly=false';
-            const res = await AxiosManager.get(q, {});
+            const res = await AxiosManager.get(q, {
+                signal: abortSignal,
+                timeout: SEARCH_TIMEOUT_MS,
+            });
+            if (seq !== searchSeq || abortSignal.aborted) return;
             const data =
                 typeof StorageManager !== 'undefined' && typeof StorageManager.apiList === 'function'
                     ? StorageManager.apiList(res)
                     : res?.data?.content?.data || res?.data?.content?.Data || [];
             renderResults(Array.isArray(data) ? data : []);
         } catch (e) {
+            if (isAbortError(e) || abortSignal.aborted) return;
             console.error('OmniSearch', e);
             setResultsMessage('error', 'تعذّر البحث — تحقق من الاتصال وحاول مجدداً.');
         }

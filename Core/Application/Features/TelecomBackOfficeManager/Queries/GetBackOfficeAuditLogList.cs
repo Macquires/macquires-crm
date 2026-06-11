@@ -52,6 +52,8 @@ public class GetBackOfficeAuditLogListHandler : IRequestHandler<GetBackOfficeAud
         UserAuditActionTypes.BulkImportStarted,
         UserAuditActionTypes.BulkImportExecuted,
         UserAuditActionTypes.TelecomOperationConfirmed,
+        UserAuditActionTypes.BackOfficeTelecomApproved,
+        UserAuditActionTypes.BackOfficeTelecomRejected,
     ];
 
     private readonly IUserAuditReadService _read;

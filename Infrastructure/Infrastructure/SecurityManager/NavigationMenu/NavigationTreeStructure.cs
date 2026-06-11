@@ -51,9 +51,11 @@ public static partial class NavigationTreeStructure
                 { "URL": "/Telecom/BackOfficeDashboard", "Name": "مركز العمليات الخلفية", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-speedometer2", "SortOrder": 2, "IsQuickAction": true, "BadgeKey": "overdueTickets" },
                 { "URL": "/Telecom/TechnicalTicketList", "Name": "إدارة التذاكر الفنية", "IsModule": false, "Personas": ["CallCenter","BackOffice","SysAdmin"], "Icon": "bi-ticket-detailed", "SortOrder": 3, "BadgeKey": "openTechnicalTickets" },
                 { "URL": "/Telecom/BulkImportMonitor", "Name": "مراقبة الاستيراد الضخم", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-cloud-upload", "SortOrder": 4, "BadgeKey": "bulkImportActive" },
-                { "URL": "/Telecom/MsisdnInventory", "Name": "مستودع الأرقام والشرائح", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-boxes", "SortOrder": 5 },
+                { "URL": "/Telecom/MsisdnInventory", "Name": "مستودع الأرقام والشرائح", "IsModule": false, "Personas": ["BackOffice","Showroom","CallCenter","SysAdmin"], "Icon": "bi-boxes", "SortOrder": 5 },
                 { "URL": "/Telecom/DeviceInventory", "Name": "مخزون الأجهزة (IMEI)", "IsModule": false, "Personas": ["BackOffice","SysAdmin"], "Icon": "bi-phone", "SortOrder": 6 },
-                { "URL": "/Telecom/BillingIntegration", "Name": "التكامل مع نظام الفوترة", "IsModule": false, "Personas": ["Executive","BackOffice","SysAdmin"], "Icon": "bi-receipt-cutoff", "SortOrder": 6 }
+                { "URL": "/Telecom/BillingIntegration", "Name": "التكامل مع نظام الفوترة", "IsModule": false, "Personas": ["Executive","BackOffice","SysAdmin"], "Icon": "bi-receipt-cutoff", "SortOrder": 7 },
+                { "URL": "/Telecom/InIntegration", "Name": "التكامل مع الشبكة الذكية (IN)", "IsModule": false, "Personas": ["Executive","BackOffice","SysAdmin"], "Icon": "bi-cpu", "SortOrder": 8 },
+                { "URL": "/Telecom/HlrProvisioning", "Name": "تزويد HLR / HSS", "IsModule": false, "Personas": ["Executive","BackOffice","SysAdmin"], "Icon": "bi-hdd-network", "SortOrder": 9 }
             ]
         },
         {
@@ -84,7 +86,7 @@ public static partial class NavigationTreeStructure
             ]
         },
         {
-            "URL": "#",
+            "URL": "/Administration",
             "Name": "الحوكمة والنظام",
             "IsModule": true,
             "Personas": ["SysAdmin"],
@@ -130,9 +132,11 @@ public static partial class NavigationTreeStructure
                 var nodeId = index.ToString();
                 if (item.IsModule)
                 {
+                    var moduleUrl = string.IsNullOrWhiteSpace(item.URL) || item.URL == "#" ? null : item.URL;
                     nodes.Add(new MenuNavigationTreeNodeDto(
                         nodeId,
                         item.Name ?? "",
+                        param_navURL: moduleUrl,
                         param_hasChild: true,
                         param_expanded: false,
                         param_nameEn: item.NameEn ?? item.Name,

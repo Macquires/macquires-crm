@@ -28,7 +28,7 @@ public class HlrResyncByMsisdnRequest : IRequest<HlrResyncByMsisdnResult>, IRequ
     public string? TechnicalTicketId { get; init; }
     public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
-    public string PermissionKey => PermissionCatalog.TelecomTicketHlrResync;
+    public string PermissionKey => PermissionCatalog.NetworkTechnicalSync;
 }
 
 public class HlrResyncByMsisdnValidator : AbstractValidator<HlrResyncByMsisdnRequest>
@@ -90,10 +90,18 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
+        var msisdnAssetId = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+            .Where(s => s.SubscriberProfileId == profileId && s.MsisdnAsset != null && s.MsisdnAsset.Msisdn == msisdn)
+            .OrderByDescending(s => s.IsPrimaryLine)
+            .Select(s => s.MsisdnAssetId)
+            .FirstOrDefaultAsync(cancellationToken);
+
         var result = await _mediator.Send(
             new ResyncSubscriberFromHlrRequest
             {
                 SubscriberProfileId = profileId,
+                MsisdnAssetId = msisdnAssetId,
+                Msisdn = msisdn,
                 ActorUserId = request.ActorUserId,
             },
             cancellationToken);

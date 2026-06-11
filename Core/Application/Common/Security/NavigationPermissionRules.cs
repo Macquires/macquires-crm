@@ -38,13 +38,35 @@ public static class NavigationPermissionRules
               PermissionCatalog.TelecomLineMigrate,
               PermissionCatalog.TelecomReportsMis,
           ],
+          ["/Telecom/InIntegration"] =
+          [
+              PermissionCatalog.CustomerView,
+              PermissionCatalog.TelecomLineActivate,
+              PermissionCatalog.TelecomLineSimSwap,
+              PermissionCatalog.TelecomLineSimSwapRequest,
+              PermissionCatalog.TelecomLineMigrate,
+              PermissionCatalog.TelecomReportsMis,
+          ],
+          ["/Telecom/HlrProvisioning"] =
+          [
+              PermissionCatalog.CustomerView,
+              PermissionCatalog.TelecomLineActivate,
+              PermissionCatalog.TelecomLineSimSwap,
+              PermissionCatalog.TelecomLineSimSwapRequest,
+              PermissionCatalog.TelecomLineMigrate,
+              PermissionCatalog.TelecomReportsMis,
+          ],
           ["/Telecom/IntegrationMonitor"] = [PermissionCatalog.AdminIntegrationMonitor],
           ["/Telecom/BulkImportMonitor"] =
           [
               PermissionCatalog.BulkImportMonitor,
               PermissionCatalog.BulkImportUpload,
           ],
-          ["/Telecom/MsisdnInventory"] = [PermissionCatalog.TelecomAssetManage],
+          ["/Telecom/MsisdnInventory"] =
+          [
+              PermissionCatalog.TelecomAssetManage,
+              PermissionCatalog.TelecomLineActivate,
+          ],
           ["/Telecom/DeviceInventory"] = [PermissionCatalog.TelecomDeviceInventoryManage],
           ["/Telecom/TechnicalTicketList"] =
           [
@@ -87,6 +109,7 @@ public static class NavigationPermissionRules
           ["/Administration/BranchList"] = [PermissionCatalog.AdminUsersManage],
           ["/Administration/RoleList"] = [PermissionCatalog.AdminRolesManage],
           ["/Administration/GlobalSettings"] = [PermissionCatalog.AdminSettingsManage],
+          ["/Administration/CityList"] = [PermissionCatalog.AdminSettingsManage],
           ["/Administration/AuditLogList"] = [PermissionCatalog.AdminAuditView],
           ["/Companies/MyCompany"] = [PermissionCatalog.AdminSettingsManage],
           ["/NumberSequences/NumberSequenceList"] = [PermissionCatalog.AdminSettingsManage],

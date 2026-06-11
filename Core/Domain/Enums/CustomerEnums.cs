@@ -83,7 +83,9 @@ public enum SimStatus
     Reserved = 1,
     Active = 2,
     Suspended = 3,
-    Quarantined = 4
+    Quarantined = 4,
+    /// <summary>Permanently dead after recycling / force unpair — never re-issued.</summary>
+    Burned = 5
 }
 
 public enum SimType

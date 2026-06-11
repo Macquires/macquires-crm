@@ -62,6 +62,10 @@
                         <span class="spinner-border text-danger"></span>
                         <p class="small text-muted mt-2 mb-0">{{ usT('loading') }}</p>
                     </div>
+                    <div v-else-if="state.modalError" class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-circle fa-2x mb-2 opacity-75"></i>
+                        <p class="mb-0 small">{{ state.modalError }}</p>
+                    </div>
                     <div v-else-if="!state.results.length" class="text-center py-5 text-muted">
                         <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
                         <p class="mb-0 small">{{ usT('noResults') }}</p>

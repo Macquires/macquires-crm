@@ -1,5 +1,7 @@
 const usT = (key) => window.TelecomI18n?.t?.(`unifiedSearch.${key}`) || key;
 
+const SEARCH_TIMEOUT_MS = 20000;
+
 function normalizeIndicDigits(term) {
     return String(term || '').replace(/[٠-٩۰-۹]/g, (ch) => {
         const cp = ch.codePointAt(0);
@@ -38,6 +40,11 @@ function displayName(row) {
     return row?.customerNameAr || row?.CustomerNameAr || row?.title || row?.Title || '—';
 }
 
+function isAbortError(e) {
+    const code = e?.code || e?.name || '';
+    return code === 'ERR_CANCELED' || code === 'CanceledError' || code === 'AbortError';
+}
+
 const UnifiedSearchApp = {
     setup() {
         const state = Vue.reactive({
@@ -46,10 +53,13 @@ const UnifiedSearchApp = {
             results: [],
             selectedCustomerId: '',
             inlineAlert: '',
+            modalError: '',
             searchPlaceholder: '',
         });
 
         let searchModal = null;
+        let searchAbort = null;
+        let searchSeq = 0;
 
         const rowKey = (row) => `${pickCustomerId(row)}:${row?.msisdn || row?.Msisdn || row?.id || row?.Id}`;
 
@@ -63,16 +73,17 @@ const UnifiedSearchApp = {
         const selectRow = (row) => {
             const cid = pickCustomerId(row);
             if (!cid) {
-                state.inlineAlert = usT('noCustomerId');
+                state.modalError = usT('noCustomerId');
                 state.selectedCustomerId = '';
                 return;
             }
             state.selectedCustomerId = cid;
-            state.inlineAlert = '';
+            state.modalError = '';
         };
 
         const runSearch = async () => {
             state.inlineAlert = '';
+            state.modalError = '';
             const term = (state.searchTerm || '').trim();
             if (term.length < 2) {
                 state.inlineAlert = usT('termTooShort');
@@ -90,16 +101,32 @@ const UnifiedSearchApp = {
                 return;
             }
 
+            if (searchAbort) {
+                searchAbort.abort();
+            }
+            searchAbort = new AbortController();
+            const abortSignal = searchAbort.signal;
+            const seq = ++searchSeq;
+
             state.searchBusy = true;
+            state.results = [];
             state.selectedCustomerId = '';
+            showModal();
+
             try {
                 const q = '/Telecom/GetTelecomUniversalSearch?term=' + encodeURIComponent(term);
-                const res = await AxiosManager.get(q, {});
+                const res = await AxiosManager.get(q, {
+                    signal: abortSignal,
+                    timeout: SEARCH_TIMEOUT_MS,
+                });
+                if (seq !== searchSeq || abortSignal.aborted) return;
+
                 const rows =
                     typeof StorageManager !== 'undefined' && typeof StorageManager.apiList === 'function'
                         ? StorageManager.apiList(res)
                         : res?.data?.content?.data ?? res?.data?.content?.Data ?? [];
                 state.results = Array.isArray(rows) ? rows : [];
+
                 if (state.results.length === 1) {
                     const cid = pickCustomerId(state.results[0]);
                     if (cid) {
@@ -109,12 +136,16 @@ const UnifiedSearchApp = {
                     }
                     selectRow(state.results[0]);
                 }
-                showModal();
             } catch (e) {
+                if (isAbortError(e) || abortSignal.aborted) return;
                 state.results = [];
-                state.inlineAlert = e?.response?.data?.message || usT('searchFailed');
+                const msg = e?.response?.data?.message || usT('searchFailed');
+                state.modalError = msg;
+                state.inlineAlert = msg;
             } finally {
-                state.searchBusy = false;
+                if (seq === searchSeq) {
+                    state.searchBusy = false;
+                }
             }
         };
 
@@ -149,6 +180,7 @@ const UnifiedSearchApp = {
         });
 
         Vue.onUnmounted(() => {
+            if (searchAbort) searchAbort.abort();
             document.documentElement.removeEventListener('syriatel-locale-changed', applyLocaleUi);
         });
 
@@ -158,6 +190,7 @@ const UnifiedSearchApp = {
             selectRow,
             rowKey,
             displayName,
+            pickCustomerId,
             redirectToFullProfile,
             usT,
         };

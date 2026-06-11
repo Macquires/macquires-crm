@@ -22,6 +22,12 @@ public static class IccidValidator
             return false;
         }
 
+        if (!normalized.StartsWith("89", StringComparison.Ordinal))
+        {
+            error = "ICCID يجب أن يبدأ ببادئة إقليمية صالحة (89...).";
+            return false;
+        }
+
         if (normalized.Length == 20 && !PassesLuhn(normalized))
         {
             error = "ICCID غير صالح (فشل تحقق Luhn).";

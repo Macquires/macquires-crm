@@ -7,6 +7,8 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Application.Tests.Administration;
 
+using Application.Tests.TestSupport;
+
 public class GlobalSettingsProviderJwtTests
 {
     [Fact]
@@ -16,7 +18,7 @@ public class GlobalSettingsProviderJwtTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        await using var context = new DataContext(options);
+        await using var context = new DataContext(options, TestOperatorContext.Instance);
         context.GlobalSetting.Add(new GlobalSetting
         {
             Key = GlobalSettingKeys.JwtAccessTokenMinutes,

@@ -1,7 +1,11 @@
 using Application.Common.Audit;
 using Application.Common.Exceptions;
+using Application.Common.CQS.Queries;
+using Application.Common.Extensions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Telecom.Billing;
+using Microsoft.EntityFrameworkCore;
 using Application.Common.Security;
 using Application.Features.TelecomManager.Events;
 using Domain.Entities;
@@ -32,7 +36,8 @@ public sealed class PaymentServicesReversalService : IPaymentServicesReversalSer
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPaymentServicesEligibilityChecker _eligibility;
     private readonly IPaymentGatewayIntegration _paymentGateway;
-    private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingRoutingOrchestrator _billingRouting;
+    private readonly IQueryContext _query;
     private readonly IPaymentServicesAuditWriter _auditWriter;
     private readonly IUserAuditService _userAudit;
     private readonly IOperatorContext _operatorContext;
@@ -44,7 +49,8 @@ public sealed class PaymentServicesReversalService : IPaymentServicesReversalSer
         IUnitOfWork unitOfWork,
         IPaymentServicesEligibilityChecker eligibility,
         IPaymentGatewayIntegration paymentGateway,
-        IBillingSystemIntegration billing,
+        IBillingRoutingOrchestrator billingRouting,
+        IQueryContext query,
         IPaymentServicesAuditWriter auditWriter,
         IUserAuditService userAudit,
         IOperatorContext operatorContext,
@@ -55,7 +61,8 @@ public sealed class PaymentServicesReversalService : IPaymentServicesReversalSer
         _unitOfWork = unitOfWork;
         _eligibility = eligibility;
         _paymentGateway = paymentGateway;
-        _billing = billing;
+        _billingRouting = billingRouting;
+        _query = query;
         _auditWriter = auditWriter;
         _userAudit = userAudit;
         _operatorContext = operatorContext;
@@ -89,7 +96,18 @@ public sealed class PaymentServicesReversalService : IPaymentServicesReversalSer
             ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
 
         var balanceBefore = profile.PrepaidBalance ?? 0m;
-        var cbsReverse = await _billing.ReverseRechargeAsync(
+        var subscriptionTypeCode = await _query.TelecomSubscription.AsNoTracking()
+            .IsDeletedEqualTo()
+            .Where(s => s.Id == payment.TelecomSubscriptionId)
+            .Join(
+                _query.TelecomSubscriptionTypeLookup.AsNoTracking().IsDeletedEqualTo(),
+                s => s.SubscriptionTypeId,
+                t => t.Id,
+                (_, t) => t.Code)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var reverseResult = await _billingRouting.ReverseRechargeAsync(
+            subscriptionTypeCode,
             new BillingReverseRechargeRequest(
                 payment.Id,
                 payment.Number,
@@ -98,15 +116,15 @@ public sealed class PaymentServicesReversalService : IPaymentServicesReversalSer
                 payment.CorrelationId),
             cancellationToken);
 
-        if (!cbsReverse.Success)
+        if (!reverseResult.Success)
         {
-            throw new BusinessRuleViolationException(cbsReverse.Message);
+            throw new BusinessRuleViolationException(reverseResult.Message);
         }
 
         var newBalance = Math.Max(0m, balanceBefore - payment.Amount);
-        if (cbsReverse.NewBalance.HasValue)
+        if (reverseResult.NewBalance.HasValue)
         {
-            newBalance = cbsReverse.NewBalance.Value;
+            newBalance = reverseResult.NewBalance.Value;
         }
 
         profile.PrepaidBalance = newBalance;

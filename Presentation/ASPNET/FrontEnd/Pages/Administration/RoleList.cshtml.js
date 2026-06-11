@@ -1,5 +1,15 @@
+const I18N_PREFIX = 'administration.roleList';
+
 const App = {
     setup() {
+        const localeTick = Vue.ref(0);
+
+        const t = (key, fallback = '') => {
+            localeTick.value;
+            const hit = window.TelecomI18n?.t?.(`${I18N_PREFIX}.${key}`);
+            return hit && hit !== `${I18N_PREFIX}.${key}` ? hit : fallback || key;
+        };
+
         const state = Vue.reactive({
             roles: [],
             catalog: [],
@@ -17,19 +27,17 @@ const App = {
             getCatalog: () => AxiosManager.get('/Security/GetPermissionCatalog'),
             getRolePermissions: (roleName) =>
                 AxiosManager.get('/Security/GetRolePermissions', { params: { roleName } }),
-            updateRolePermissions: (body) =>
-                AxiosManager.post('/Security/UpdateRolePermissions', body),
+            updateRolePermissions: (body) => AxiosManager.post('/Security/UpdateRolePermissions', body),
             cloneRole: (body) => AxiosManager.post('/Security/CloneRolePermissions', body),
         };
-
-        const uiLang = () =>
-            (typeof getUiLang === 'function' ? getUiLang() : document.documentElement.lang?.startsWith('en') ? 'en' : 'ar');
 
         const permKey = (p) => p?.key ?? p?.Key ?? '';
         const permModule = (p) => p?.module ?? p?.Module ?? '';
         const permLabel = (p) => {
+            localeTick.value;
             const key = permKey(p);
-            return uiLang() === 'en'
+            const lang = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
+            return lang === 'en'
                 ? p?.labelEn ?? p?.LabelEn ?? key
                 : p?.labelAr ?? p?.LabelAr ?? key;
         };
@@ -55,10 +63,7 @@ const App = {
 
         const methods = {
             load: async () => {
-                const [rolesRes, catRes] = await Promise.all([
-                    services.getRoles(),
-                    services.getCatalog(),
-                ]);
+                const [rolesRes, catRes] = await Promise.all([services.getRoles(), services.getCatalog()]);
                 state.roles = (rolesRes?.data?.content?.data || []).map(normalizeRoleRow);
                 state.catalog = catRes?.data?.content?.data || [];
                 state.permissionGroups = buildGroups(state.catalog);
@@ -70,10 +75,7 @@ const App = {
                     return;
                 }
                 const res = await services.getRolePermissions(name);
-                const keys =
-                    res?.data?.content?.permissionKeys ??
-                    res?.data?.content?.PermissionKeys ??
-                    [];
+                const keys = res?.data?.content?.permissionKeys ?? res?.data?.content?.PermissionKeys ?? [];
                 state.selectedPermissionKeys = [...keys];
             },
         };
@@ -91,9 +93,9 @@ const App = {
             cloneRole: async () => {
                 if (!state.selectedRole) return;
                 const { value: newName } = await Swal.fire({
-                    title: uiLang() === 'en' ? 'Clone role' : 'نسخ الدور',
+                    title: t('clone.title'),
                     input: 'text',
-                    inputLabel: uiLang() === 'en' ? 'New role name' : 'اسم الدور الجديد',
+                    inputLabel: t('clone.inputLabel'),
                     inputValue: state.selectedRole + '_Copy',
                     showCancelButton: true,
                 });
@@ -108,7 +110,12 @@ const App = {
                         await methods.load();
                         roleGrid.dataSource = state.roles;
                         roleGrid.refresh();
-                        Swal.fire({ icon: 'success', title: uiLang() === 'en' ? 'Role cloned' : 'تم نسخ الدور', timer: 1400, showConfirmButton: false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: t('clone.success'),
+                            timer: 1400,
+                            showConfirmButton: false,
+                        });
                     }
                 } catch (e) {
                     Swal.fire({ icon: 'error', text: e.response?.data?.message || e.message });
@@ -124,12 +131,17 @@ const App = {
                         updatedById: StorageManager.getUserId(),
                     });
                     if (res?.data?.code === 200) {
-                        Swal.fire({ icon: 'success', title: 'تم حفظ الصلاحيات', timer: 1400, showConfirmButton: false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: t('messages.saved'),
+                            timer: 1400,
+                            showConfirmButton: false,
+                        });
                     } else {
-                        Swal.fire({ icon: 'error', title: 'فشل الحفظ', text: res?.data?.message || '' });
+                        Swal.fire({ icon: 'error', title: t('messages.saveFailed'), text: res?.data?.message || '' });
                     }
                 } catch (e) {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: e.response?.data?.message || e.message });
+                    Swal.fire({ icon: 'error', title: t('messages.error'), text: e.response?.data?.message || e.message });
                 } finally {
                     state.isSaving = false;
                 }
@@ -137,6 +149,7 @@ const App = {
         };
 
         const createRoleGrid = () => {
+            localeTick.value;
             roleGrid = new ej.grids.Grid({
                 id: 'RoleGrid',
                 height: getDashminGridHeight(),
@@ -147,7 +160,7 @@ const App = {
                 selectionSettings: { type: 'Single' },
                 columns: [
                     { field: 'id', isPrimaryKey: true, visible: false },
-                    { field: 'name', headerText: 'الدور', width: 200 },
+                    { field: 'name', headerText: t('grid.role'), width: 200 },
                 ],
                 rowSelected: async () => {
                     const row = roleGrid.getSelectedRecords()[0];
@@ -161,8 +174,37 @@ const App = {
             roleGrid.appendTo(roleGridRef.value);
         };
 
+        const rebuildRoleGrid = () => {
+            if (!roleGridRef.value) return;
+            const data = state.roles.slice();
+            const selected = state.selectedRole;
+            if (roleGrid) {
+                roleGrid.destroy();
+                roleGrid = null;
+            }
+            createRoleGrid();
+            if (roleGrid && selected) {
+                const idx = data.findIndex((r) => roleDisplayName(r) === selected);
+                if (idx >= 0) {
+                    roleGrid.selectRow(idx);
+                }
+            }
+        };
+
+        const onLocaleChanged = async () => {
+            localeTick.value++;
+            await window.TelecomI18n?.ensureLoaded?.();
+            const title = t('pageTitle');
+            if (title) document.title = title;
+            rebuildRoleGrid();
+        };
+
         Vue.onMounted(async () => {
+            document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
             try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                const title = t('pageTitle');
+                if (title) document.title = title;
                 await SecurityManager.authorizePage(['TelecomAdmin']);
                 await SecurityManager.validateToken();
                 await methods.load();
@@ -174,7 +216,11 @@ const App = {
             }
         });
 
-        return { roleGridRef, state, handler, permLabel, permKey };
+        Vue.onUnmounted(() => {
+            document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
+        });
+
+        return { roleGridRef, state, handler, permLabel, permKey, t };
     },
 };
 

@@ -129,6 +129,21 @@ public class CustomerController : BaseApiController
     }
 
     [Authorize]
+    [HttpGet("GetCustomer360Supplements")]
+    public async Task<ActionResult<ApiSuccessResult<GetCustomer360SupplementsResult>>> GetCustomer360SupplementsAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string customerId)
+    {
+        var response = await _sender.Send(new GetCustomer360SupplementsRequest { CustomerId = customerId ?? "" }, cancellationToken);
+        return Ok(new ApiSuccessResult<GetCustomer360SupplementsResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetCustomer360SupplementsAsync),
+            Content = response
+        });
+    }
+
+    [Authorize]
     [HttpGet("GetCustomer360LineWallets")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomer360LineWalletsResult>>> GetCustomer360LineWalletsAsync(
         CancellationToken cancellationToken,

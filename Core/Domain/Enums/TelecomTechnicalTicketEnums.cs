@@ -13,6 +13,7 @@ public enum TechnicalTicketCategory
     ChangeGsmType = 7,
     DeviceSale = 8,
     Collections = 9,
+    RevenueAssurance = 10,
 }
 
 public enum TechnicalTicketIssueType

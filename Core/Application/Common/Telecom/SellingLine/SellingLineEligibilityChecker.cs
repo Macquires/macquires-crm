@@ -9,9 +9,17 @@ namespace Application.Common.Telecom.SellingLine;
 
 public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityChecker
 {
-    private readonly IQueryContext _query;
+    private const string DealerChannelMissingCode = "VAL-ACT-09: Dealer Code is missing for Dealer Channel.";
+    private const string DealerChannelUnknownCode = "VAL-ACT-09: Dealer code is not registered in the system.";
 
-    public SellingLineEligibilityChecker(IQueryContext query) => _query = query;
+    private readonly IQueryContext _query;
+    private readonly IDealerCodeValidator _dealerCodeValidator;
+
+    public SellingLineEligibilityChecker(IQueryContext query, IDealerCodeValidator dealerCodeValidator)
+    {
+        _query = query;
+        _dealerCodeValidator = dealerCodeValidator;
+    }
 
     public async Task ValidateForCreateAsync(
         CreateTelecomOperationRequest request,
@@ -22,7 +30,25 @@ public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityCheck
             return;
         }
 
+        if ((request.ActivationChannel ?? ActivationChannel.Showroom) == ActivationChannel.Dealer)
+        {
+            var dealerCode = (request.DealerCode ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(dealerCode))
+            {
+                throw new BusinessRuleViolationException(DealerChannelMissingCode);
+            }
+
+            if (!await _dealerCodeValidator.ExistsAsync(dealerCode, cancellationToken))
+            {
+                throw new BusinessRuleViolationException(DealerChannelUnknownCode);
+            }
+        }
+
         await ValidateMsisdnAsync(request.MsisdnAssetId, cancellationToken);
+        await ValidateActivationLineTypeMatchAsync(
+            request.MsisdnAssetId,
+            request.TargetSubscriptionTypeId,
+            cancellationToken);
         await ValidateSimAsync(request.SimInventoryId, request.SimIccid, cancellationToken);
     }
 
@@ -37,6 +63,10 @@ public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityCheck
 
         ValidateKycGate(operation);
         await ValidateMsisdnAsync(operation.MsisdnAssetId, cancellationToken);
+        await ValidateActivationLineTypeMatchAsync(
+            operation.MsisdnAssetId,
+            operation.TargetSubscriptionTypeId,
+            cancellationToken);
         await ValidateSimForOperationAsync(operation.SimInventoryId, cancellationToken);
 
         if (!string.IsNullOrEmpty(operation.ProductId))
@@ -61,7 +91,8 @@ public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityCheck
             SubscriberProfileId = request.SubscriberProfileId,
             MsisdnAssetId = request.MsisdnAssetId,
             ProductId = resolvedProductId,
-            ProductOfferingId = resolvedOfferingId
+            ProductOfferingId = resolvedOfferingId,
+            TargetSubscriptionTypeId = request.TargetSubscriptionTypeId,
         };
 
         return ValidateCatalogForOperationAsync(stub, cancellationToken);
@@ -152,39 +183,46 @@ public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityCheck
         await ValidateSimAsync(id, null, cancellationToken);
     }
 
+    private async Task ValidateActivationLineTypeMatchAsync(
+        string? msisdnAssetId,
+        string? selectedLineTypeId,
+        CancellationToken cancellationToken)
+    {
+        var msisdnId = (msisdnAssetId ?? string.Empty).Trim();
+        var lineTypeId = (selectedLineTypeId ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(msisdnId) || string.IsNullOrEmpty(lineTypeId))
+        {
+            return;
+        }
+
+        var asset = await _query.MsisdnAsset.AsNoTracking()
+            .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == msisdnId, cancellationToken);
+
+        var intended = asset?.IntendedSubscriptionTypeId;
+        if (!string.IsNullOrEmpty(intended)
+            && !string.Equals(intended, lineTypeId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new BusinessRuleViolationException(
+                "VAL-02-06: نوع الخط المختار لا يطابق نوع الرقم المثبّت في مستودع MSISDN.");
+        }
+    }
+
     private async Task ValidateCatalogForOperationAsync(
         TelecomOperationRequest operation,
         CancellationToken cancellationToken)
     {
-        var subs = await _query.TelecomSubscription.AsNoTracking()
-            .Where(s => !s.IsDeleted && s.SubscriberProfileId == operation.SubscriberProfileId)
-            .Include(s => s.SubscriptionTypeLookup)
-            .ToListAsync(cancellationToken);
-
-        if (subs.Count == 0)
+        var lineTypeId = await ResolveCatalogLineTypeIdAsync(operation, cancellationToken);
+        if (string.IsNullOrEmpty(lineTypeId))
         {
             throw new BusinessRuleViolationException(
-                "VAL-02-04: لا يوجد اشتراك لملف المشترك؛ لا يمكن التحقق من توافق العرض.");
+                "VAL-02-04: لا يمكن تحديد نوع الخط للتحقق من توافق العرض.");
         }
 
-        var msisdnId = (operation.MsisdnAssetId ?? string.Empty).Trim();
-        TelecomSubscription? chosen = null;
-        if (!string.IsNullOrEmpty(msisdnId))
-        {
-            var poolAsset = await _query.MsisdnAsset.AsNoTracking()
-                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == msisdnId, cancellationToken);
-            if (poolAsset?.PoolStatus == MsisdnPoolStatus.Available)
-            {
-                chosen = subs.FirstOrDefault(s => s.IsPrimaryLine) ?? subs.First();
-            }
-            else
-            {
-                chosen = subs.FirstOrDefault(s => s.MsisdnAssetId == msisdnId);
-            }
-        }
+        var lineTypeName = await _query.TelecomSubscriptionTypeLookup.AsNoTracking()
+            .Where(t => !t.IsDeleted && t.Id == lineTypeId)
+            .Select(t => t.NameAr)
+            .FirstOrDefaultAsync(cancellationToken) ?? "—";
 
-        chosen ??= subs.FirstOrDefault(s => s.IsPrimaryLine) ?? subs.First();
-        var lineTypeId = chosen.SubscriptionTypeId;
         var productId = operation.ProductId!;
 
         var product = await _query.Product.AsNoTracking()
@@ -201,7 +239,7 @@ public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityCheck
                 && offering.CompatibleSubscriptionTypeId != lineTypeId)
             {
                 throw new BusinessRuleViolationException(
-                    $"VAL-02-04: نوع الخط ({chosen.SubscriptionTypeLookup?.NameAr ?? "—"}) غير متوافق مع العرض التجاري.");
+                    $"VAL-02-04: نوع الخط ({lineTypeName}) غير متوافق مع العرض التجاري.");
             }
         }
 
@@ -209,7 +247,49 @@ public sealed class SellingLineEligibilityChecker : ISellingLineEligibilityCheck
             && product.CompatibleSubscriptionTypeId != lineTypeId)
         {
             throw new BusinessRuleViolationException(
-                $"VAL-02-04: نوع الخط ({chosen.SubscriptionTypeLookup?.NameAr ?? "—"}) غير متوافق مع الباقة.");
+                $"VAL-02-04: نوع الخط ({lineTypeName}) غير متوافق مع الباقة.");
         }
+    }
+
+    private async Task<string?> ResolveCatalogLineTypeIdAsync(
+        TelecomOperationRequest operation,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(operation.TargetSubscriptionTypeId))
+        {
+            return operation.TargetSubscriptionTypeId.Trim();
+        }
+
+        var msisdnId = (operation.MsisdnAssetId ?? string.Empty).Trim();
+        if (!string.IsNullOrEmpty(msisdnId))
+        {
+            var asset = await _query.MsisdnAsset.AsNoTracking()
+                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == msisdnId, cancellationToken);
+
+            var fromAsset = asset == null ? null : MsisdnAssetLineTypeResolver.ResolveTypeId(asset);
+            if (!string.IsNullOrEmpty(fromAsset))
+            {
+                return fromAsset;
+            }
+        }
+
+        var subs = await _query.TelecomSubscription.AsNoTracking()
+            .Where(s => !s.IsDeleted && s.SubscriberProfileId == operation.SubscriberProfileId)
+            .Include(s => s.SubscriptionTypeLookup)
+            .ToListAsync(cancellationToken);
+
+        if (subs.Count == 0)
+        {
+            return null;
+        }
+
+        TelecomSubscription? chosen = null;
+        if (!string.IsNullOrEmpty(msisdnId))
+        {
+            chosen = subs.FirstOrDefault(s => s.MsisdnAssetId == msisdnId);
+        }
+
+        chosen ??= subs.FirstOrDefault(s => s.IsPrimaryLine) ?? subs.First();
+        return chosen.SubscriptionTypeId;
     }
 }

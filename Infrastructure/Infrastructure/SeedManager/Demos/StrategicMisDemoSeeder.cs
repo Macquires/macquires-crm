@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -18,17 +19,20 @@ public sealed class StrategicMisDemoSeeder
     private readonly ICommandRepository<Customer> _customerRepository;
     private readonly NumberSequenceService _numberSequence;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IFieldEncryptionService _encryption;
 
     public StrategicMisDemoSeeder(
         DataContext context,
         ICommandRepository<Customer> customerRepository,
         NumberSequenceService numberSequence,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IFieldEncryptionService encryption)
     {
         _context = context;
         _customerRepository = customerRepository;
         _numberSequence = numberSequence;
         _unitOfWork = unitOfWork;
+        _encryption = encryption;
     }
 
     public async Task GenerateDataAsync()
@@ -112,8 +116,9 @@ public sealed class StrategicMisDemoSeeder
             .Select(g => new { BranchId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.BranchId, x => x.Count);
 
+        var reservedNationalIdHashes = await LoadReservedNationalIdHashesAsync();
+
         var rnd = new Random(42);
-        var added = false;
 
         var extras = new (string BranchKeyword, string City, string Name)[]
         {
@@ -140,6 +145,30 @@ public sealed class StrategicMisDemoSeeder
                 continue;
             }
 
+            var alreadySeeded = await _context.Customer
+                .AsNoTracking()
+                .AnyAsync(c => !c.IsDeleted && c.DisplayName == match.Name);
+            if (alreadySeeded)
+            {
+                continue;
+            }
+
+            var nationalId = $"NID-STR-{branch.Id.Replace("-", string.Empty, StringComparison.Ordinal)}";
+            var nationalIdHash = _encryption.ComputeSearchHash(nationalId);
+            if (!reservedNationalIdHashes.Add(nationalIdHash))
+            {
+                continue;
+            }
+
+            var nationalIdExists = await _context.Customer
+                .OfType<IndividualCustomer>()
+                .AsNoTracking()
+                .AnyAsync(c => !c.IsDeleted && c.NationalId == nationalId);
+            if (nationalIdExists)
+            {
+                continue;
+            }
+
             var address = new PostalAddress("شارع تجاري", match.City, match.City, "10001", "سوريا");
             var account = _numberSequence.GenerateNumber(nameof(Customer), "", "CST");
             var phone = $"093{rnd.Next(1000000, 9999999)}";
@@ -148,22 +177,44 @@ public sealed class StrategicMisDemoSeeder
             var entity = IndividualCustomer.Create(
                 match.Name,
                 account,
-                $"NID-{rnd.Next(100000, 999999)}",
+                nationalId,
                 address,
                 email,
                 phone,
                 groups[rnd.Next(groups.Count)],
                 categories[rnd.Next(categories.Count)]);
 
+            entity.SyncNationalIdSearchHash(_encryption);
             entity.SetOrgUnitId(branch.Id);
             await _customerRepository.CreateAsync(entity);
-            added = true;
-        }
-
-        if (added)
-        {
             await _unitOfWork.SaveAsync();
         }
+    }
+
+    private async Task<HashSet<string>> LoadReservedNationalIdHashesAsync()
+    {
+        var individuals = await _context.Customer
+            .OfType<IndividualCustomer>()
+            .AsNoTracking()
+            .Where(c => !c.IsDeleted)
+            .Select(c => new { c.NationalId, c.NationalIdSearchHash })
+            .ToListAsync();
+
+        var reserved = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var row in individuals)
+        {
+            if (!string.IsNullOrWhiteSpace(row.NationalIdSearchHash))
+            {
+                reserved.Add(row.NationalIdSearchHash);
+            }
+
+            if (!string.IsNullOrWhiteSpace(row.NationalId))
+            {
+                reserved.Add(_encryption.ComputeSearchHash(row.NationalId.Trim()));
+            }
+        }
+
+        return reserved;
     }
 
     private async Task EnsureMsisdnTierMixAsync()

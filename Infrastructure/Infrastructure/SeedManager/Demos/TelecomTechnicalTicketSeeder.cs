@@ -37,7 +37,7 @@ public class TelecomTechnicalTicketSeeder
         new(TechnicalTicketIssueType.Network, TechnicalTicketCategory.Complaint, TechnicalTicketPriority.Critical,
             "ضعف تغطية - قدسيا", "انقطاع متكرر 4G — مسح شبكة مطلوب.", PreferHero: false),
         new(TechnicalTicketIssueType.SimBlock, TechnicalTicketCategory.SimSwap, TechnicalTicketPriority.High,
-            "طلب تبديل شريحة — معلّق", "تبديل SIM من المعرض بانتظار مزامنة HLR.", PreferHero: false),
+            "طلب تبديل شريحة — معلّق", "تبديل SIM من نقطة البيع بانتظار مزامنة HLR.", PreferHero: false),
         new(TechnicalTicketIssueType.Provisioning, TechnicalTicketCategory.PackageMigration, TechnicalTicketPriority.Medium,
             "ترحيل باقة MGR — معلّق", "ترحيل باقة من Customer 360 بانتظار تسوية CBS.", PreferHero: false),
         new(TechnicalTicketIssueType.Provisioning, TechnicalTicketCategory.LineActivation, TechnicalTicketPriority.High,
@@ -201,11 +201,3 @@ public class TelecomTechnicalTicketSeeder
     }
 }
 
-/// <summary>Canonical demo MSISDNs aligned with <see cref="TelecomSyriatelSeeder"/>.</summary>
-public static class TelecomDemoMsisdn
-{
-    public const string Hero = "0939000001";
-    public const string DebtSubscriber = "0939000002";
-    /// <summary>Secondary hero line — suspended (Fraud) for RCN §9 demo.</summary>
-    public const string ReconnectFraudDemo = "0939000091";
-}

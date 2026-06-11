@@ -9,6 +9,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class GetBadDebtKpisHandlerTests
 {
     [Fact]
@@ -42,7 +44,7 @@ public class GetBadDebtKpisHandlerTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static TelecomOperationRequest Op(

@@ -1,5 +1,7 @@
+using Application.Common.CQS.Queries;
 using Domain.Entities;
 using Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Common.Telecom;
 
@@ -21,12 +23,14 @@ public static class MsisdnAssetKitResolver
             .FirstOrDefault();
     }
 
-    public static string SimTypeLabel(SimType? simType) => simType switch
+    public static string SimTypeCode(SimType? simType) => simType switch
     {
-        SimType.ESim => "eSIM",
-        SimType.Physical => "فيزيائية",
-        _ => "فيزيائية",
+        SimType.ESim => "ESim",
+        SimType.Physical => "Physical",
+        _ => "Physical",
     };
+
+    public static string SimTypeLabel(SimType? simType) => SimTypeCode(simType);
 
     public static string SimStatusLabel(SimStatus? status) => status switch
     {
@@ -87,6 +91,24 @@ public static class MsisdnAssetKitResolver
         return ((10 - (sum % 10)) % 10).ToString();
     }
 
+    /// <summary>Pool dashboard — pairing is shown only after a subscriber transaction binds MSISDN and SIM.</summary>
+    public static bool ShouldExposePoolPairing(MsisdnPoolStatus status) =>
+        status is MsisdnPoolStatus.Active or MsisdnPoolStatus.Reserved or MsisdnPoolStatus.Suspended;
+
+    public static (string? Iccid, string? Imsi) ResolveForPoolDisplay(
+        MsisdnAsset asset,
+        SimInventory? profileSim,
+        SimInventory? operationSim,
+        IReadOnlyDictionary<string, SimInventory> simsByIccid)
+    {
+        if (!ShouldExposePoolPairing(asset.PoolStatus))
+        {
+            return (null, null);
+        }
+
+        return Resolve(asset, profileSim, operationSim, simsByIccid);
+    }
+
     public static (string? Iccid, string? Imsi) Resolve(
         MsisdnAsset asset,
         SimInventory? profileSim,
@@ -111,5 +133,70 @@ public static class MsisdnAssetKitResolver
         var iccid = sim?.Iccid ?? asset.PairedIccid ?? derivedIccid;
         var imsi = sim?.Imsi ?? asset.PairedImsi ?? DeriveImsiFromMsisdn(asset.Msisdn);
         return (iccid, imsi);
+    }
+
+    public static HashSet<string> CollectIccidCandidates(MsisdnAsset asset)
+    {
+        var candidates = new HashSet<string>(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(asset.PairedIccid))
+        {
+            candidates.Add(asset.PairedIccid.Trim());
+        }
+
+        var derivedIccid = DeriveIccidFromMsisdn(asset.Msisdn);
+        if (!string.IsNullOrWhiteSpace(derivedIccid))
+        {
+            candidates.Add(derivedIccid);
+        }
+
+        return candidates;
+    }
+
+    public static async Task<Dictionary<string, SimInventory>> LoadSimsByIccidAsync(
+        IQueryContext query,
+        IEnumerable<string> iccidCandidates,
+        CancellationToken cancellationToken = default)
+    {
+        var candidates = iccidCandidates
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            return new Dictionary<string, SimInventory>(StringComparer.Ordinal);
+        }
+
+        return await query.SimInventory.AsNoTracking()
+            .Where(s => !s.IsDeleted && candidates.Contains(s.Iccid))
+            .ToDictionaryAsync(s => s.Iccid, StringComparer.Ordinal, cancellationToken);
+    }
+
+    public static async Task<(string? Iccid, string? Imsi)> ResolveForAssetAsync(
+        IQueryContext query,
+        MsisdnAsset asset,
+        string? subscriberProfileId,
+        string? operationSimInventoryId = null,
+        CancellationToken cancellationToken = default)
+    {
+        SimInventory? operationSim = null;
+        if (!string.IsNullOrWhiteSpace(operationSimInventoryId))
+        {
+            operationSim = await query.SimInventory.AsNoTracking()
+                .FirstOrDefaultAsync(s => !s.IsDeleted && s.Id == operationSimInventoryId, cancellationToken);
+        }
+
+        SimInventory? profileSim = null;
+        if (!string.IsNullOrWhiteSpace(subscriberProfileId))
+        {
+            var profileSims = await query.SimInventory.AsNoTracking()
+                .Where(s => !s.IsDeleted && s.SubscriberProfileId == subscriberProfileId)
+                .ToListAsync(cancellationToken);
+            profileSim = ResolveLinkedSim(profileSims);
+        }
+
+        var simsByIccid = await LoadSimsByIccidAsync(query, CollectIccidCandidates(asset), cancellationToken);
+        return Resolve(asset, profileSim, operationSim, simsByIccid);
     }
 }

@@ -1,0 +1,74 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using Application.Common.Integrations;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace Infrastructure.TelecomIntegrations.Http;
+
+public sealed class SimulatorHlrHttpClient
+{
+    private readonly HttpClient _http;
+    private readonly TelecomHttpIntegrationOptions _options;
+    private readonly ILogger<SimulatorHlrHttpClient> _logger;
+
+    public SimulatorHlrHttpClient(
+        HttpClient http,
+        IOptions<TelecomHttpIntegrationOptions> options,
+        ILogger<SimulatorHlrHttpClient> logger)
+    {
+        _http = http;
+        _options = options.Value;
+        _logger = logger;
+        _http.BaseAddress = new Uri(_options.SimulatorBaseUrl.TrimEnd('/') + "/");
+        _http.Timeout = TimeSpan.FromSeconds(_options.TimeoutSeconds);
+    }
+
+    public async Task<NetworkProvisionResult> ProvisionAsync(NetworkProvisionRequest request, CancellationToken cancellationToken)
+    {
+        var msisdn = request.Msisdn ?? "unknown";
+        var response = await _http.PostAsJsonAsync(
+            $"hlr/subscribers/{Uri.EscapeDataString(msisdn)}/provision",
+            new { command = request.Kind.ToString(), imsi = request.Imsi, iccid = request.Iccid },
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Simulator HLR provision failed for {Msisdn}: {Status}", msisdn, response.StatusCode);
+            return new NetworkProvisionResult(false, await response.Content.ReadAsStringAsync(cancellationToken));
+        }
+
+        return new NetworkProvisionResult(true, "Simulator HLR provision OK");
+    }
+
+    public async Task<HlrLiveStatusResult> QueryLiveStatusAsync(string msisdn, string? crmStatus, CancellationToken cancellationToken)
+    {
+        var response = await _http.GetAsync($"hlr/subscribers/{Uri.EscapeDataString(msisdn)}/status", cancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        var hlrState = doc.RootElement.GetProperty("hlrSubscriberState").GetString() ?? "ACTIVE";
+        var isOnline = doc.RootElement.GetProperty("isOnline").GetBoolean();
+        return new HlrLiveStatusResult(
+            true,
+            "HLR live query OK (simulator)",
+            isOnline,
+            "Damascus-GMSC-01",
+            "417011234567890",
+            hlrState,
+            !StatesAligned(crmStatus, hlrState),
+            crmStatus);
+    }
+
+    private static bool StatesAligned(string? crm, string hlr)
+    {
+        if (string.Equals(crm, "Active", StringComparison.OrdinalIgnoreCase) || crm == "1")
+        {
+            return hlr == "ACTIVE";
+        }
+        if (string.Equals(crm, "Suspended", StringComparison.OrdinalIgnoreCase))
+        {
+            return hlr is "SUSPENDED" or "INACTIVE";
+        }
+        return true;
+    }
+}

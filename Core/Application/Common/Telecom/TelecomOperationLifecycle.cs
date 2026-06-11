@@ -26,12 +26,20 @@ public static class TelecomOperationLifecycle
         [
             TelecomOperationStatus.Completed,
             TelecomOperationStatus.Failed,
+            TelecomOperationStatus.ProvisioningError,
             TelecomOperationStatus.PendingExternal
         ],
         [TelecomOperationStatus.PendingExternal] =
         [
             TelecomOperationStatus.Provisioning,
-            TelecomOperationStatus.Failed
+            TelecomOperationStatus.Failed,
+            TelecomOperationStatus.ProvisioningError
+        ],
+        [TelecomOperationStatus.ProvisioningError] =
+        [
+            TelecomOperationStatus.Provisioning,
+            TelecomOperationStatus.Failed,
+            TelecomOperationStatus.Completed
         ]
     };
 
@@ -51,4 +59,7 @@ public static class TelecomOperationLifecycle
 
     public static bool IsTerminal(TelecomOperationStatus status) =>
         status is TelecomOperationStatus.Completed or TelecomOperationStatus.Failed;
+
+    public static bool RequiresManualRemediation(TelecomOperationStatus status) =>
+        status is TelecomOperationStatus.ProvisioningError;
 }

@@ -26,11 +26,13 @@
                         <div class="card-header bg-light">
                             <h5 class="mb-0">{{ telecomT('onboarding.title', 'Pre-add verification') }}</h5>
                             <p class="small text-muted mb-0 mt-1">{{ telecomT('onboarding.hint', '') }}</p>
+                            <p class="small text-muted mb-0 mt-1"><i class="fas fa-info-circle text-primary me-1" aria-hidden="true"></i>{{ telecomT('onboarding.identitySearchHint1', '') }}</p>
+                            <p class="small text-muted mb-0 mt-1">{{ telecomT('onboarding.identitySearchHint2', '') }}</p>
                         </div>
                         <div class="card-body">
                             <div class="row g-2 align-items-end">
                                 <div class="col-md-4">
-                                    <label class="form-label small">{{ telecomT('onboarding.nationalId', 'National ID') }}</label>
+                                    <label class="form-label small">{{ telecomT('onboarding.nationalId', 'National ID / commercial registry') }}</label>
                                     <input type="text" class="form-control" v-model="state.customerSearchNationalId" maxlength="32" autocomplete="off" :placeholder="telecomT('onboarding.nationalIdPh', '')" />
                                 </div>
                                 <div class="col-md-4">
@@ -221,7 +223,14 @@
                                             <div class="row">
                                                 <div class="col-md-6 mb-2 mb-md-0" v-if="state.addFlowBootstrapTelecom">
                                                     <label class="form-label">MSISDN</label>
-                                                    <input type="text" class="form-control" v-model="state.telecomMsisdn" maxlength="16" autocomplete="off" placeholder="09…" />
+                                                    <select class="form-select" v-model="state.telecomMsisdnAssetId" v-on:change="onBootstrapMsisdnPicked" :disabled="state.telecomMsisdnPoolBusy">
+                                                        <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                                                        <option v-for="a in state.telecomMsisdnPool" :key="a.id || a.Id" :value="a.id || a.Id">{{ a.msisdn || a.Msisdn || a.id || a.Id }}</option>
+                                                    </select>
+                                                    <div v-if="!state.telecomMsisdnPoolBusy && state.telecomMsisdnPool.length === 0" class="form-text text-warning">
+                                                        {{ telecomT('c360.poolEmpty', '') }}
+                                                        <a href="/Telecom/MsisdnInventory" target="_blank" rel="noopener">MSISDN</a>
+                                                    </div>
                                                 </div>
                                                 <div class="col-md-6 mb-2 mb-md-0" v-else>
                                                     <label class="form-label">MSISDN</label>
@@ -528,7 +537,7 @@
                     <p class="small text-muted">{{ telecomT('c360.newLineHint', '') }} <a href="/Telecom/MsisdnInventory" target="_blank" rel="noopener">MSISDN</a></p>
                     <div class="mb-2">
                         <label class="form-label small">MSISDN</label>
-                        <select class="form-select" v-model="lineActionModal.msisdnAssetId" :disabled="lineActionModal.busy">
+                        <select class="form-select" v-model="lineActionModal.msisdnAssetId" :disabled="lineActionModal.busy" @@change="onNewLineMsisdnChanged">
                             <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
                             <option v-for="a in lineActionModal.poolNumbers" :key="a.id" :value="a.id">{{ a.msisdn || a.id }}</option>
                         </select>
@@ -543,9 +552,56 @@
                             <option v-for="o in lineActionModal.offerings" :key="o.id" :value="o.id">{{ o.name || o.nameEn }}</option>
                         </select>
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-2">
                         <label class="form-label small">{{ telecomT('c360.simIccid', 'ICCID') }}</label>
-                        <input type="text" class="form-control font-monospace" dir="ltr" maxlength="19" v-model="lineActionModal.simIccid" :disabled="lineActionModal.busy" placeholder="89…" />
+                        <input type="text" class="form-control font-monospace" dir="ltr" maxlength="19" v-model="lineActionModal.simIccid" :readonly="!!lineActionModal.msisdnAssetId" :class="{ 'bg-light': !!lineActionModal.msisdnAssetId }" :disabled="lineActionModal.busy" placeholder="89…" />
+                        <p v-if="lineActionModal.msisdnAssetId" class="form-text small text-muted mb-0">{{ telecomT('wizard.activateIccidLockedHint', '') }}</p>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6" v-if="activationChannelUiMode === 'admin'">
+                            <label class="form-label small">{{ telecomT('wizardUi.activationChannel', 'Channel') }}</label>
+                            <select class="form-select form-select-sm" v-model.number="lineActionModal.activationChannel" :disabled="lineActionModal.busy">
+                                <option :value="0">{{ activationChannelLabels.showroom }}</option>
+                                <option :value="1">{{ activationChannelLabels.dealer }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" v-else>
+                            <label class="form-label small">{{ telecomT('wizardUi.activationChannel', 'Channel') }}</label>
+                            <div class="form-control form-control-sm bg-light text-muted">{{ activationChannelLabels.showroom }}</div>
+                            <p class="small text-muted mb-0 mt-1">{{ activationChannelLockedHint }}</p>
+                        </div>
+                        <div class="col-md-6" v-show="activationChannelUiMode === 'admin' && lineActionModal.activationChannel === 1">
+                            <label class="form-label small">{{ telecomT('wizardUi.dealerCode', 'Dealer code') }}</label>
+                            <input type="text" class="form-control form-control-sm" v-model="lineActionModal.dealerCode" maxlength="64" :disabled="lineActionModal.busy" />
+                        </div>
+                    </div>
+                    <div class="border rounded p-2 mb-0 bg-light" v-if="newLineOfferingDeposit() > 0">
+                        <p class="small fw-semibold mb-2">{{ telecomT('wizardUi.paymentBlock', 'Payment') }}</p>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control form-control-sm font-monospace" dir="ltr" v-model="lineActionModal.paymentReference" :placeholder="telecomT('wizardUi.paymentRefPh', 'Reference')" :disabled="lineActionModal.busy || lineActionModal.paymentCashierLocked" />
+                            </div>
+                            <div class="col-md-4 d-grid">
+                                <button type="button" class="btn btn-outline-primary btn-sm" :disabled="lineActionModal.busy || lineActionModal.cashierFetchBusy || lineActionModal.paymentCashierLocked" v-on:click="fetchNewLinePaymentFromCashier">
+                                    <span v-if="lineActionModal.cashierFetchBusy" class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('wizardUi.fetchFromCashier', 'Fetch from cashier') }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <select class="form-select form-select-sm" v-model.number="lineActionModal.paymentChannel" :disabled="lineActionModal.busy || lineActionModal.paymentCashierLocked">
+                                    <option :value="0">{{ telecomT('refund.methodCash', 'Cash') }}</option>
+                                    <option :value="1">{{ telecomT('refund.methodWallet', 'Wallet') }}</option>
+                                    <option :value="2">{{ telecomT('swal.voucher', 'Voucher') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" min="1" step="1" class="form-control form-control-sm" v-model="lineActionModal.paymentAmount" :placeholder="telecomT('wizardUi.amountPh', 'Amount')" :readonly="lineActionModal.paymentCashierLocked" :disabled="lineActionModal.busy" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-center">
+                                <span v-if="lineActionModal.paymentCashierLocked" class="small text-success">{{ telecomT('wizardUi.cashierFetched', 'Loaded from cashier') }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -880,5 +936,6 @@
     <script id="subscriptionTypeNameTemplate" type="text/x-template">
         <span style="color:${subscriptionTypeDisplayColor}">${subscriptionTypeName}</span>
     </script>
+    <script src="~/lib/indotalent/activation-channel-ui.js" asp-append-version="true"></script>
     <script src="~/FrontEnd/Pages/Customers/CustomerList.cshtml.js"></script>
 }

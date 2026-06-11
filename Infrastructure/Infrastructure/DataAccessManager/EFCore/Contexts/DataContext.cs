@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Infrastructure.DataAccessManager.EFCore.Common;
 using Infrastructure.DataAccessManager.EFCore.Configurations;
@@ -11,8 +12,28 @@ namespace Infrastructure.DataAccessManager.EFCore.Contexts;
 
 public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
 {
-    public DataContext(DbContextOptions<DataContext> options) : base(options)
+    private readonly string? _branchId;
+    private readonly bool _bypassBranchFilter;
+
+    public DataContext(
+        DbContextOptions<DataContext> options,
+        IOperatorContext operatorContext) : base(options)
     {
+        _branchId = operatorContext.BranchId;
+        _bypassBranchFilter = ResolveBypassBranchFilter(operatorContext);
+    }
+
+    private static bool ResolveBypassBranchFilter(IOperatorContext operatorContext)
+    {
+        if (!operatorContext.IsAuthenticated)
+        {
+            return false;
+        }
+
+        return operatorContext.Roles.Any(r =>
+            string.Equals(r, TelecomEnterpriseRoleMatrix.RoleAdmin, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(r, TelecomEnterpriseRoleMatrix.RoleManagement, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(r, TelecomEnterpriseRoleMatrix.RoleOperationsManager, StringComparison.OrdinalIgnoreCase));
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -29,6 +50,7 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
     public DbSet<NumberSequence> NumberSequence { get; set; }
     public DbSet<CustomerGroup> CustomerGroup { get; set; }
     public DbSet<CustomerCategory> CustomerCategory { get; set; }
+    public DbSet<GeoCity> GeoCity { get; set; }
     public DbSet<Customer> Customer { get; set; }
     public DbSet<CustomerIdentityDocument> CustomerIdentityDocument { get; set; }
     public DbSet<Product> Product { get; set; }
@@ -58,6 +80,9 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
     public DbSet<RolePermission> RolePermission { get; set; }
     public DbSet<TelecomTechnicalTicket> TelecomTechnicalTicket { get; set; }
     public DbSet<TelecomValueAddedService> TelecomValueAddedService { get; set; }
+    public DbSet<IntegrationOutboxMessage> IntegrationOutboxMessage { get; set; }
+    public DbSet<IdempotencyRecord> IdempotencyRecord { get; set; }
+
     public DbSet<SubscriberActiveService> SubscriberActiveService { get; set; }
     public DbSet<DeviceInventory> DeviceInventory { get; set; }
     public DbSet<InstallmentPlan> InstallmentPlan { get; set; }
@@ -77,6 +102,7 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
         modelBuilder.ApplyConfiguration(new NumberSequenceConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerGroupConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new GeoCityConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
         modelBuilder.ApplyConfiguration(new IndividualCustomerConfiguration());
         modelBuilder.ApplyConfiguration(new CorporateCustomerConfiguration());
@@ -113,10 +139,11 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
         modelBuilder.ApplyConfiguration(new InstallmentPlanConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceInstallmentContractConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceInstallmentScheduleLineConfiguration());
+        modelBuilder.ApplyConfiguration(new IntegrationOutboxMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new IdempotencyRecordConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            // Global filters apply only to root mapped types (TPH: Customer, not IndividualCustomer/CorporateCustomer).
             if (entityType.IsOwned() || entityType.GetRootType() != entityType)
             {
                 continue;
@@ -129,13 +156,50 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
             }
 
             var parameter = System.Linq.Expressions.Expression.Parameter(clrType, "e");
-            var property = System.Linq.Expressions.Expression.Property(parameter, nameof(Domain.Common.IHasIsDeleted.IsDeleted));
-            var filterExpr = System.Linq.Expressions.Expression.Lambda(
-                System.Linq.Expressions.Expression.Equal(property, System.Linq.Expressions.Expression.Constant(false)),
-                parameter);
+
+            var isDeletedProperty = System.Linq.Expressions.Expression.Property(parameter, nameof(Domain.Common.IHasIsDeleted.IsDeleted));
+            var isDeletedFilter = System.Linq.Expressions.Expression.Equal(isDeletedProperty, System.Linq.Expressions.Expression.Constant(false));
+
+            System.Linq.Expressions.Expression combinedFilter = isDeletedFilter;
+
+            if (typeof(Domain.Common.IHasBranchId).IsAssignableFrom(clrType))
+            {
+                combinedFilter = System.Linq.Expressions.Expression.AndAlso(
+                    combinedFilter,
+                    BuildBranchFilter(parameter, clrType));
+            }
+
+            var filterExpr = System.Linq.Expressions.Expression.Lambda(combinedFilter, parameter);
             modelBuilder.Entity(clrType).HasQueryFilter(filterExpr);
         }
 
         modelBuilder.ApplyNullableBitAsBoolConvention();
+    }
+
+    private System.Linq.Expressions.Expression BuildBranchFilter(
+        System.Linq.Expressions.ParameterExpression parameter,
+        Type clrType)
+    {
+        if (_bypassBranchFilter)
+        {
+            return System.Linq.Expressions.Expression.Constant(true);
+        }
+
+        var branchIdProperty = System.Linq.Expressions.Expression.Property(parameter, nameof(Domain.Common.IHasBranchId.BranchId));
+
+        if (string.IsNullOrEmpty(_branchId))
+        {
+            return System.Linq.Expressions.Expression.Constant(false);
+        }
+
+        var matchesBranch = System.Linq.Expressions.Expression.Equal(
+            branchIdProperty,
+            System.Linq.Expressions.Expression.Constant(_branchId));
+
+        var nullBranch = System.Linq.Expressions.Expression.Equal(
+            branchIdProperty,
+            System.Linq.Expressions.Expression.Constant(null, typeof(string)));
+
+        return System.Linq.Expressions.Expression.OrElse(matchesBranch, nullBranch);
     }
 }

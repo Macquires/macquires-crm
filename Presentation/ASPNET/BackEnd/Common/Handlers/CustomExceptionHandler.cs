@@ -1,6 +1,8 @@
+using System.Globalization;
 using Application.Common.Exceptions;
 using ASPNET.BackEnd.Common.Models;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Hosting;
 
 namespace ASPNET.BackEnd.Common.Handlers;
@@ -16,9 +18,56 @@ public class CustomExceptionHandler : IExceptionHandler
         _exceptionHandlers = new()
             {
                 { typeof(BusinessRuleViolationException), HandleBusinessRuleViolation },
+                { typeof(TicketAlreadyClaimedException), HandleTicketAlreadyClaimed },
+                { typeof(UnauthorizedPermissionException), HandleUnauthorizedPermission },
                 { typeof(Exception), HandleException },
             };
     }
+
+    private static async Task HandleUnauthorizedPermission(HttpContext httpContext, Exception ex)
+    {
+        if (httpContext.Response.HasStarted)
+        {
+            return;
+        }
+
+        httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+        var result = new ApiErrorResult
+        {
+            Code = StatusCodes.Status403Forbidden,
+            Message = ex.Message,
+            MessageAr = "انتهاك أمني: ليس لديك الصلاحيات الكافية لتنفيذ هذا الإجراء.",
+            MessageEn = "Security Violation: You do not possess the required compliance permissions to execute this action.",
+            Error = new Error(null, ex.Source, null, ex.GetType().Name)
+        };
+
+        httpContext.Response.ContentType = "application/json";
+        await httpContext.Response.WriteAsJsonAsync(result);
+    }
+
+    private static async Task HandleTicketAlreadyClaimed(HttpContext httpContext, Exception ex)
+    {
+        if (httpContext.Response.HasStarted)
+        {
+            return;
+        }
+
+        httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+        var messageAr = ex is BusinessRuleViolationException bre ? bre.MessageAr : ex.Message;
+        var messageEn = ex is BusinessRuleViolationException breEn ? breEn.MessageEn : ex.Message;
+        var result = new ApiErrorResult
+        {
+            Code = StatusCodes.Status409Conflict,
+            Message = ResolveUserMessage(httpContext, messageAr, messageEn),
+            MessageAr = messageAr,
+            MessageEn = messageEn,
+            Error = new Error(null, ex.Source, null, ex.GetType().Name)
+        };
+
+        httpContext.Response.ContentType = "application/json";
+        await httpContext.Response.WriteAsJsonAsync(result);
+    }
+
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var exceptionType = exception.GetType();
@@ -44,10 +93,14 @@ public class CustomExceptionHandler : IExceptionHandler
         }
 
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+        var messageAr = ex is BusinessRuleViolationException bre ? bre.MessageAr : ex.Message;
+        var messageEn = ex is BusinessRuleViolationException breEn ? breEn.MessageEn : ex.Message;
         var result = new ApiErrorResult
         {
             Code = StatusCodes.Status400BadRequest,
-            Message = ex.Message,
+            Message = ResolveUserMessage(httpContext, messageAr, messageEn),
+            MessageAr = messageAr,
+            MessageEn = messageEn,
             Error = new Error(null, ex.Source, null, ex.GetType().Name)
         };
 
@@ -82,6 +135,15 @@ public class CustomExceptionHandler : IExceptionHandler
 
         httpContext.Response.ContentType = "application/json";
         await httpContext.Response.WriteAsJsonAsync(result);
+    }
+
+    private static string ResolveUserMessage(HttpContext httpContext, string messageAr, string messageEn)
+    {
+        var culture = httpContext.Features.Get<IRequestCultureFeature>()?.RequestCulture.UICulture
+            ?? CultureInfo.CurrentUICulture;
+        return string.Equals(culture.TwoLetterISOLanguageName, "ar", StringComparison.OrdinalIgnoreCase)
+            ? messageAr
+            : messageEn;
     }
 }
 

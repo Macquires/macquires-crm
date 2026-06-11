@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Telecom;
+using Application.Common.Telecom.SellingLine;
 using Application.Common.Telecom.Reconnect;
 using Application.Common.Telecom.BadDebt;
 using Application.Common.Telecom.Suspension;
@@ -82,6 +83,8 @@ public record GetTelecomOperationDetailDto
     public string? AgencyReference { get; init; }
     public string? CollectionSettlementStatus { get; init; }
     public string? CollectionNote { get; init; }
+    public string? TechnicalTicketId { get; init; }
+    public string? TechnicalTicketNumber { get; init; }
 }
 
 public record TelecomOperationAuditTrailItemDto(
@@ -104,8 +107,13 @@ public class GetTelecomOperationDetailRequest : IRequest<GetTelecomOperationDeta
 public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperationDetailRequest, GetTelecomOperationDetailResult>
 {
     private readonly IQueryContext _context;
+    private readonly IActivationChannelLabelProvider _channelLabels;
 
-    public GetTelecomOperationDetailHandler(IQueryContext context) => _context = context;
+    public GetTelecomOperationDetailHandler(IQueryContext context, IActivationChannelLabelProvider channelLabels)
+    {
+        _context = context;
+        _channelLabels = channelLabels;
+    }
 
     public async Task<GetTelecomOperationDetailResult> Handle(
         GetTelecomOperationDetailRequest request,
@@ -139,6 +147,22 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
             op.SourceSuspensionOperationId,
             cancellationToken);
 
+        var falloutTicket = await ResolveFalloutTicketAsync(op, cancellationToken);
+
+        string? resolvedIccid = op.SimInventory?.Iccid;
+        string? resolvedImsi = op.MsisdnAsset?.PairedImsi;
+        if (op.MsisdnAsset != null)
+        {
+            var (kitIccid, kitImsi) = await MsisdnAssetKitResolver.ResolveForAssetAsync(
+                _context,
+                op.MsisdnAsset,
+                op.SubscriberProfileId,
+                op.SimInventoryId,
+                cancellationToken);
+            resolvedIccid = kitIccid ?? resolvedIccid;
+            resolvedImsi = kitImsi ?? resolvedImsi;
+        }
+
         return new GetTelecomOperationDetailResult
         {
             Data = new GetTelecomOperationDetailDto
@@ -158,7 +182,7 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 CreatedAtUtc = op.CreatedAtUtc,
                 CorrelationId = op.CorrelationId,
                 ActivationChannel = op.ActivationChannel,
-                ActivationChannelLabelAr = ChannelLabelAr(op.ActivationChannel),
+                ActivationChannelLabelAr = await _channelLabels.GetLabelArAsync(op.ActivationChannel, cancellationToken),
                 DealerCode = op.DealerCode,
                 BranchId = op.BranchId,
                 PaymentReference = op.PaymentReference,
@@ -167,9 +191,9 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 KycVerifiedAtUtc = op.KycVerifiedAtUtc,
                 ProvisioningStatusLabelAr = TelecomOperationLabels.StatusLabelAr(op.Status),
                 OfferCode = op.Product?.ServiceCode ?? op.ProductOffering?.Code,
-                Imsi = op.MsisdnAsset?.PairedImsi,
-                Iccid = op.SimInventory?.Iccid,
-                NewSimIccid = op.SimInventory?.Iccid,
+                Imsi = resolvedImsi,
+                Iccid = resolvedIccid,
+                NewSimIccid = resolvedIccid,
                 PriorSimIccid = priorSimIccid,
                 ReplacementReason = op.ReplacementReason,
                 IsLostOrStolenReport = op.IsLostOrStolenReport,
@@ -211,6 +235,8 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 AgencyReference = op.AgencyReference,
                 CollectionSettlementStatus = op.CollectionSettlementStatus,
                 CollectionNote = op.CollectionNote,
+                TechnicalTicketId = falloutTicket?.Id,
+                TechnicalTicketNumber = falloutTicket?.TicketNumber,
                 AuditTrail = op.AuditLogs
                     .OrderBy(a => a.OccurredAtUtc)
                     .Select(a => new TelecomOperationAuditTrailItemDto(
@@ -224,13 +250,27 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
         };
     }
 
-    private static string ChannelLabelAr(ActivationChannel channel) => channel switch
+    private async Task<(string Id, string TicketNumber)?> ResolveFalloutTicketAsync(
+        TelecomOperationRequest op,
+        CancellationToken cancellationToken)
     {
-        ActivationChannel.Showroom => "معرض",
-        ActivationChannel.Dealer => "موزع",
-        ActivationChannel.Digital => "رقمي",
-        _ => channel.ToString()
-    };
+        if (op.Status is not (TelecomOperationStatus.Failed or TelecomOperationStatus.PendingExternal))
+        {
+            return null;
+        }
+
+        var opId = op.Id;
+        var ticket = await _context.TelecomTechnicalTicket.AsNoTracking()
+            .Where(t => !t.IsDeleted
+                        && t.TicketCategory == TechnicalTicketCategory.LineActivation
+                        && t.PayloadJson != null
+                        && t.PayloadJson.Contains(opId))
+            .OrderByDescending(t => t.CreatedAtUtc)
+            .Select(t => new { t.Id, t.TicketNumber })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return ticket == null ? null : (ticket.Id, ticket.TicketNumber);
+    }
 
     private static async Task<string?> ResolveTypeLabelAsync(
         IQueryContext context,

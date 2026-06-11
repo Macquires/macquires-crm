@@ -26,6 +26,7 @@ public class DownloadBulkImportTemplateHandler : IRequestHandler<DownloadBulkImp
         DownloadBulkImportTemplateRequest request,
         CancellationToken cancellationToken)
     {
+        BulkImportLegacyMigrationGuard.EnsureLegacyMigrationJobType(request.JobType);
         var processor = _resolver.Resolve(request.JobType);
         var headerLine = string.Join(",", processor.RequiredHeaders);
         var utf8 = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true);

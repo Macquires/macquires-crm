@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Common.Telecom.Suspension;
 using Application.Features.NumberSequenceManager;
@@ -28,6 +29,7 @@ public class TelecomSyriatelSeeder
     private readonly ICommandRepository<BillingIntegrationLog> _logRepository;
     private readonly NumberSequenceService _numberSequenceService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IFieldEncryptionService _encryption;
 
     public TelecomSyriatelSeeder(
         IQueryContext query,
@@ -39,7 +41,8 @@ public class TelecomSyriatelSeeder
         ICommandRepository<TelecomOperationRequest> operationRepository,
         ICommandRepository<BillingIntegrationLog> logRepository,
         NumberSequenceService numberSequenceService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IFieldEncryptionService encryption)
     {
         _query = query;
         _customerRepository = customerRepository;
@@ -51,6 +54,39 @@ public class TelecomSyriatelSeeder
         _logRepository = logRepository;
         _numberSequenceService = numberSequenceService;
         _unitOfWork = unitOfWork;
+        _encryption = encryption;
+    }
+
+    private static string AdjustMsisdnForHlrAlignment(string msisdn, SubscriberOperationalStatus status, Random rnd)
+    {
+        if (string.IsNullOrWhiteSpace(msisdn) || msisdn.Length < 2 || IsWellKnownDemoMsisdn(msisdn)) return msisdn;
+        
+        // Special case: Operational suspension (last digit 5)
+        if (status is SubscriberOperationalStatus.Suspended or SubscriberOperationalStatus.SuspendedInbound or SubscriberOperationalStatus.SuspendedOutbound)
+        {
+            return $"{msisdn[..^1]}5";
+        }
+
+        var prefix = msisdn[..^1];
+        var lastDigit = status switch
+        {
+            SubscriberOperationalStatus.Active => rnd.Next(4) switch
+            {
+                0 => 0,
+                1 => 2,
+                2 => 6,
+                _ => 8
+            },
+            SubscriberOperationalStatus.Terminated => 1,
+            _ => rnd.Next(10)
+        };
+        return $"{prefix}{lastDigit}";
+    }
+
+    private async Task CreateIndividualAsync(IndividualCustomer customer)
+    {
+        customer.SyncNationalIdSearchHash(_encryption);
+        await _customerRepository.CreateAsync(customer);
     }
 
     /// <summary>
@@ -133,6 +169,11 @@ public class TelecomSyriatelSeeder
 
         await _unitOfWork.SaveAsync();
     }
+
+    /// <summary>
+    /// Inventory SIM rows are provisioned exclusively via Oracle Fusion SCM sync (zero-coupling at warehouse level).
+    /// </summary>
+    public Task EnsureAvailablePoolSimKitsAsync() => Task.CompletedTask;
 
     /// <summary>
     /// Idempotent backfill for existing demo DBs: hero line bound to MIX_500 + completed MGR/VAS for KPIs.
@@ -274,21 +315,13 @@ public class TelecomSyriatelSeeder
         // Entity is already tracked from GetAsync — avoid Update() which would force UPDATE semantics incorrectly.
     }
 
-    private static bool IsWellKnownDemoMsisdn(string msisdn) =>
-        msisdn == TelecomDemoMsisdn.Hero
-        || msisdn == TelecomDemoMsisdn.DebtSubscriber
-        || msisdn == TelecomDemoMsisdn.ReconnectFraudDemo;
+    private static bool IsWellKnownDemoMsisdn(string msisdn) => TelecomDemoMsisdn.IsWellKnown(msisdn);
 
     private static string ResolvePrimaryMsisdn(Customer cust, Random rnd)
     {
-        if (cust.DisplayName.Contains("سعدون الشامي", StringComparison.Ordinal))
+        if (cust.DisplayName.Contains(TelecomDemoMsisdn.ShowcaseCustomerName, StringComparison.Ordinal))
         {
             return TelecomDemoMsisdn.Hero;
-        }
-
-        if (cust.DisplayName.Contains("مازن المديون", StringComparison.Ordinal))
-        {
-            return TelecomDemoMsisdn.DebtSubscriber;
         }
 
         if (!string.IsNullOrWhiteSpace(cust.PrimaryPhone))
@@ -298,6 +331,149 @@ public class TelecomSyriatelSeeder
         }
 
         return $"093{Math.Abs(cust.Id.GetHashCode()) % 10_000_000:0000000}";
+    }
+
+    private sealed class MsisdnPoolCatalog
+    {
+        public List<string> TypeIds { get; }
+        private readonly Dictionary<string, List<string>> _productsByType;
+
+        public MsisdnPoolCatalog(List<string> typeIds, Dictionary<string, List<string>> productsByType)
+        {
+            TypeIds = typeIds;
+            _productsByType = productsByType;
+        }
+
+        public (string TypeId, string? ProductId) PickForIndex(int index, Random rnd)
+        {
+            var typeId = TypeIds[(index - 1) % TypeIds.Count];
+            return (typeId, PickProductForType(typeId, rnd));
+        }
+
+        public string? PickProductForType(string typeId, Random rnd)
+        {
+            if (!_productsByType.TryGetValue(typeId, out var products) || products.Count == 0)
+            {
+                return null;
+            }
+
+            return products[rnd.Next(products.Count)];
+        }
+    }
+
+    private async Task<MsisdnPoolCatalog> LoadMsisdnPoolCatalogAsync()
+    {
+        var typeIds = await _query.TelecomSubscriptionTypeLookup.AsNoTracking()
+            .Where(x => !x.IsDeleted && x.IsActive)
+            .OrderBy(x => x.SortOrder)
+            .Select(x => x.Id)
+            .ToListAsync();
+
+        var products = await _query.Product.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.Physical != true && p.CompatibleSubscriptionTypeId != null)
+            .Select(p => new { p.Id, p.CompatibleSubscriptionTypeId })
+            .ToListAsync();
+
+        var byType = products
+            .GroupBy(p => p.CompatibleSubscriptionTypeId!)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToList());
+
+        return new MsisdnPoolCatalog(typeIds, byType);
+    }
+
+    /// <summary>Demo quarantine rows — Available/Reserved must pass through Active per pool state machine.</summary>
+    private static void ApplyDemoQuarantineState(MsisdnAsset asset, DateTime quarantineEndsUtc)
+    {
+        if (asset.PoolStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Reserved)
+        {
+            asset.TransitionTo(MsisdnPoolStatus.Active);
+        }
+
+        if (asset.PoolStatus != MsisdnPoolStatus.Quarantined)
+        {
+            asset.TransitionTo(MsisdnPoolStatus.Quarantined);
+        }
+
+        asset.QuarantineEndsUtc = quarantineEndsUtc;
+    }
+
+    private async Task ApplyDemoInventoryStatePatchesAsync(MsisdnPoolCatalog poolCatalog, Random rnd)
+    {
+        var quarantineOffsets = new[] { -5, 10, 30 };
+        for (var i = 0; i < 3; i++)
+        {
+            var num = $"093555000{i + 1}";
+            var asset = await _msisdnRepository.GetQuery()
+                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Msisdn == num);
+            if (asset == null || !string.IsNullOrEmpty(asset.SubscriberProfileId))
+            {
+                continue;
+            }
+
+            var (typeId, productId) = poolCatalog.PickForIndex(i + 101, rnd);
+            asset.IntendedSubscriptionTypeId = typeId;
+            asset.ProductId = productId;
+            
+            // GLOBAL INVENTORY & PAIRING NORMALIZATION: Quarantined assets must have zero-coupling
+            asset.SubscriberProfileId = null;
+            asset.PairedIccid = null;
+            asset.PairedImsi = null;
+
+            ApplyDemoQuarantineState(asset, DateTime.UtcNow.AddDays(quarantineOffsets[i]));
+        }
+
+        for (var i = 0; i < 5; i++)
+        {
+            var num = $"093999000{i + 1}";
+            var asset = await _msisdnRepository.GetQuery()
+                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Msisdn == num);
+            if (asset == null || !string.IsNullOrEmpty(asset.SubscriberProfileId))
+            {
+                continue;
+            }
+
+            var (typeId, productId) = poolCatalog.PickForIndex(i + 201, rnd);
+            asset.IntendedSubscriptionTypeId = typeId;
+            asset.ProductId = productId;
+            asset.ReservedUntilUtc = i < 3
+                ? DateTime.UtcNow.AddHours(-2)
+                : DateTime.UtcNow.AddHours(12);
+            asset.ReservedForCustomerId = null;
+
+            // GLOBAL INVENTORY & PAIRING NORMALIZATION: Reserved assets in pool must have zero-coupling
+            asset.SubscriberProfileId = null;
+            asset.PairedIccid = null;
+            asset.PairedImsi = null;
+
+            if (asset.PoolStatus != MsisdnPoolStatus.Reserved)
+            {
+                asset.TransitionTo(MsisdnPoolStatus.Reserved);
+            }
+        }
+
+        for (var i = 1; i <= 100; i++)
+        {
+            var pfx = i % 2 == 0 ? "093" : "099";
+            var num = $"{pfx}{i + 2_000_000:0000000}";
+            var asset = await _msisdnRepository.GetQuery()
+                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Msisdn == num);
+            if (asset == null || !string.IsNullOrEmpty(asset.SubscriberProfileId))
+            {
+                continue;
+            }
+
+            var (typeId, productId) = poolCatalog.PickForIndex(i, rnd);
+            asset.IntendedSubscriptionTypeId = typeId;
+            asset.ProductId = productId;
+
+            // GLOBAL INVENTORY & PAIRING NORMALIZATION: Available assets must have zero-coupling
+            if (asset.PoolStatus == MsisdnPoolStatus.Available)
+            {
+                asset.ResetToAvailableForInventoryIngest();
+            }
+        }
+
+        await _unitOfWork.SaveAsync();
     }
 
     /// <summary>Allocates a Syrian-style MSISDN not already present on a non-deleted <see cref="MsisdnAsset"/>.</summary>
@@ -318,71 +494,12 @@ public class TelecomSyriatelSeeder
 
     public async Task GenerateDataAsync()
     {
-        var productIds = await _query.Product
-            .AsNoTracking()
-            .Where(p => p.Physical == false && !p.IsDeleted && p.ServiceCode != null)
-            .OrderBy(p => p.Name)
-            .Select(p => p.Id)
-            .ToListAsync();
-
-        if (!productIds.Any())
+        var poolCatalog = await LoadMsisdnPoolCatalogAsync();
+        if (poolCatalog.TypeIds.Count == 0)
             return;
 
         var rnd = new Random(20260512);
-
-        // 1. Available Pool (100 numbers)
-        for (int i = 1; i <= 100; i++)
-        {
-            var pfx = i % 2 == 0 ? "093" : "099";
-            var num = $"{pfx}{i + 2000000:0000000}";
-            if (!await _query.MsisdnAsset.AsNoTracking().AnyAsync(m => !m.IsDeleted && m.Msisdn == num))
-            {
-                var entity = new MsisdnAsset
-                {
-                    Msisdn = num,
-                    PoolStatus = MsisdnPoolStatus.Available,
-                    ProductId = productIds[rnd.Next(productIds.Count)]
-                };
-                await _msisdnRepository.CreateAsync(entity);
-            }
-        }
-
-        // 2. Quarantined Numbers (3 numbers: 1 past, 2 future)
-        var quarantineOffsets = new[] { -5, 10, 30 }; // days
-        for (int i = 0; i < 3; i++)
-        {
-            var num = $"093555000{i + 1}";
-            if (!await _query.MsisdnAsset.AsNoTracking().AnyAsync(m => !m.IsDeleted && m.Msisdn == num))
-            {
-                var entity = new MsisdnAsset
-                {
-                    Msisdn = num,
-                    PoolStatus = MsisdnPoolStatus.Quarantined,
-                    QuarantineEndsUtc = DateTime.UtcNow.AddDays(quarantineOffsets[i]),
-                    ProductId = productIds[rnd.Next(productIds.Count)]
-                };
-                await _msisdnRepository.CreateAsync(entity);
-            }
-        }
-
-        // 3. Reserved Numbers (5 numbers: 3 expired > 1 hour, 2 valid)
-        var reservedOffsets = new[] { -2, -1.5, -1.1, 0.5, 1.0 }; // hours
-        for (int i = 0; i < 5; i++)
-        {
-            var num = $"093999000{i + 1}";
-            if (!await _query.MsisdnAsset.AsNoTracking().AnyAsync(m => !m.IsDeleted && m.Msisdn == num))
-            {
-                var entity = new MsisdnAsset
-                {
-                    Msisdn = num,
-                    PoolStatus = MsisdnPoolStatus.Reserved,
-                    ProductId = productIds[rnd.Next(productIds.Count)]
-                };
-                await _msisdnRepository.CreateAsync(entity);
-            }
-        }
-
-        await _unitOfWork.SaveAsync();
+        await ApplyDemoInventoryStatePatchesAsync(poolCatalog, rnd);
 
         if (await _query.SubscriberProfile.AnyAsync())
             return;
@@ -400,7 +517,7 @@ public class TelecomSyriatelSeeder
             groups[rnd.Next(groups.Count)],
             categories[rnd.Next(categories.Count)],
             description: "عميل منذ نحو 10 سنوات — سيناريو ديمو.");
-        await _customerRepository.CreateAsync(heroCustomer);
+        await CreateIndividualAsync(heroCustomer);
 
         var debtCustomer = IndividualCustomer.Create(
             "مازن المديون",
@@ -411,8 +528,8 @@ public class TelecomSyriatelSeeder
             TelecomDemoMsisdn.DebtSubscriber,
             groups[rnd.Next(groups.Count)],
             categories[rnd.Next(categories.Count)]);
-        debtCustomer.SetDescription("مشترك عليه ديون — سيناريو TakeOver.");
-        await _customerRepository.CreateAsync(debtCustomer);
+        debtCustomer.SetDescription("مشترك عليه ديون — سيناريو TakeOver (خط منفصل عن عرض الاستكشاف).");
+        await CreateIndividualAsync(debtCustomer);
 
         var multiProfileParties = new List<(string Name, int ProfileCount, string City, string Street, string Phone)>
         {
@@ -434,6 +551,17 @@ public class TelecomSyriatelSeeder
             await _customerRepository.CreateAsync(c);
         }
 
+        var demoDealer = CorporateCustomer.Create(
+            "موزع معتمد — ديمو",
+            "DLR-001",
+            "CR-DEALER-DEMO",
+            new PostalAddress("فرع الموزعين", "دمشق", "سوريا", "11111", "سوريا"),
+            "dealer-dlr-001@syriatel-demo.local",
+            "0939000100",
+            groups[rnd.Next(groups.Count)],
+            categories[rnd.Next(categories.Count)]);
+        await _customerRepository.CreateAsync(demoDealer);
+
         for (var i = 0; i < 20; i++)
         {
             var city = DemoSyrianSubscriberCatalog.Cities[i % DemoSyrianSubscriberCatalog.Cities.Length];
@@ -454,7 +582,7 @@ public class TelecomSyriatelSeeder
                 gender: i % 2 == 0 ? Gender.Male : Gender.Female,
                 occupation: DemoSyrianSubscriberCatalog.Occupations[i % DemoSyrianSubscriberCatalog.Occupations.Length],
                 description: $"مشترك نشط — {city} — بيانات ديمو كاملة.");
-            await _customerRepository.CreateAsync(c);
+            await CreateIndividualAsync(c);
         }
 
         await _unitOfWork.SaveAsync();
@@ -507,23 +635,71 @@ public class TelecomSyriatelSeeder
                     msisdn = await GenerateUniqueDemoMsisdnAsync(rnd);
                 }
 
-                var isPrepaid = profileIndex % 2 != 0;
+                var subscriptionTypeId = isHero
+                    ? TelecomSubscriptionTypeWellKnownIds.Hybrid
+                    : msisdn == TelecomDemoMsisdn.DebtSubscriber
+                        ? TelecomSubscriptionTypeWellKnownIds.Postpaid
+                        : profileCount > 1
+                            ? profileIndex switch
+                            {
+                                0 => TelecomSubscriptionTypeWellKnownIds.Postpaid,
+                                1 => TelecomSubscriptionTypeWellKnownIds.Prepaid,
+                                _ => TelecomSubscriptionTypeWellKnownIds.Hybrid
+                            }
+                            : rnd.Next(3) switch
+                            {
+                                0 => TelecomSubscriptionTypeWellKnownIds.Prepaid,
+                                1 => TelecomSubscriptionTypeWellKnownIds.Postpaid,
+                                _ => TelecomSubscriptionTypeWellKnownIds.Hybrid
+                            };
+
+                var isPrepaid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Prepaid;
+                var isPostpaid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Postpaid;
+                var isHybrid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Hybrid;
+
+                // GLOBAL HARDENING: Introduce some suspended lines in bulk for diversity
+                var operationalStatus = SubscriberOperationalStatus.Active;
+                if (!isHero && profileCount == 1 && rnd.Next(10) == 0)
+                {
+                    operationalStatus = SubscriberOperationalStatus.Suspended;
+                }
+
+                // GLOBAL HLR MOCK DETERMINISTIC ALIGNMENT: Adjust MSISDN last digit based on status
+                msisdn = AdjustMsisdnForHlrAlignment(msisdn, operationalStatus, rnd);
 
                 var profile = new SubscriberProfile
                 {
                     CustomerId = cust.Id,
                     ServiceLineType = ServiceLineType.Mobile,
-                    OperationalStatus = SubscriberOperationalStatus.Active,
+                    OperationalStatus = operationalStatus,
                     ActivationDateUtc = DateTime.UtcNow.AddDays(-rnd.Next(30, 800)),
                     LoyaltyPoints = rnd.Next(1000, 25000),
                     LoyaltyTier = rnd.Next(3) == 0 ? "Platinum" : rnd.Next(2) == 0 ? "Gold" : "Silver",
-                    PrepaidBalance = isPrepaid ? rnd.Next(12500, 85000) : null,
-                    PostpaidCreditLimit = !isPrepaid ? rnd.Next(50000, 300000) : null,
                     ChurnRiskScore = rnd.Next(5, 45)
                 };
 
+                if (operationalStatus is SubscriberOperationalStatus.Suspended or SubscriberOperationalStatus.SuspendedInbound or SubscriberOperationalStatus.SuspendedOutbound)
+                {
+                    if (isPostpaid)
+                    {
+                        profile.PrepaidBalance = null;
+                        profile.PostpaidCreditLimit = -15000m; // GLOBAL HARDENING: Postpaid debt
+                    }
+                    else
+                    {
+                        profile.PrepaidBalance = 1500; // GLOBAL HARDENING: Prepaid positive balance
+                        profile.PostpaidCreditLimit = null;
+                    }
+                }
+                else
+                {
+                    profile.PrepaidBalance = (isPrepaid || isHybrid) ? rnd.Next(12500, 85000) : null;
+                    profile.PostpaidCreditLimit = (isPostpaid || isHybrid) ? rnd.Next(50000, 300000) : null;
+                }
+
                 if (isHero)
                 {
+                    profile.OperationalStatus = SubscriberOperationalStatus.Active;
                     profile.LoyaltyPoints = 45000;
                     profile.LoyaltyTier = "Platinum";
                     profile.ChurnRiskScore = 8;
@@ -545,16 +721,35 @@ public class TelecomSyriatelSeeder
                     ? MsisdnAssetKitResolver.DeriveImsiFromMsisdn(msisdn)
                     : null;
 
-                var asset = new MsisdnAsset
+                var assetProductId = isHero && mixOffering?.ProductId != null
+                    ? mixOffering.ProductId
+                    : poolCatalog.PickProductForType(subscriptionTypeId, rnd);
+
+                var asset = await _msisdnRepository.GetQuery()
+                    .FirstOrDefaultAsync(m => !m.IsDeleted && m.Msisdn == msisdn);
+                if (asset == null)
                 {
-                    Msisdn = msisdn,
-                    PoolStatus = MsisdnPoolStatus.Active,
-                    SubscriberProfileId = profile.Id,
-                    ProductId = productIds[rnd.Next(productIds.Count)],
-                    PairedIccid = kitIccid,
-                    PairedImsi = kitImsi,
-                };
-                await _msisdnRepository.CreateAsync(asset);
+                    asset = new MsisdnAsset
+                    {
+                        Msisdn = msisdn,
+                        PoolStatus = operationalStatus == SubscriberOperationalStatus.Active ? MsisdnPoolStatus.Active : MsisdnPoolStatus.Suspended,
+                        SubscriberProfileId = profile.Id,
+                        IntendedSubscriptionTypeId = subscriptionTypeId,
+                        ProductId = assetProductId,
+                    };
+                    await _msisdnRepository.CreateAsync(asset);
+                }
+                else
+                {
+                    asset.SubscriberProfileId = profile.Id;
+                    asset.IntendedSubscriptionTypeId = subscriptionTypeId;
+                    asset.ProductId = assetProductId;
+                    var targetPoolStatus = operationalStatus == SubscriberOperationalStatus.Active ? MsisdnPoolStatus.Active : MsisdnPoolStatus.Suspended;
+                    if (asset.PoolStatus != targetPoolStatus)
+                    {
+                        asset.TransitionTo(targetPoolStatus);
+                    }
+                }
 
                 if (demoTakeoverNewOwnerProfile == null
                     && profileIndex == 0
@@ -568,25 +763,9 @@ public class TelecomSyriatelSeeder
                 {
                     SubscriberProfileId = profile.Id,
                     MsisdnAssetId = asset.Id,
-                    ProductId = isHero && mixOffering?.ProductId != null
-                        ? mixOffering.ProductId
-                        : asset.ProductId,
+                    ProductId = asset.ProductId,
                     ProductOfferingId = isHero && profileIndex == 0 ? mixOffering?.Id : null,
-                    SubscriptionTypeId = isHero
-                        ? TelecomSubscriptionTypeWellKnownIds.Hybrid
-                        : profileCount > 1
-                            ? profileIndex switch
-                            {
-                                0 => TelecomSubscriptionTypeWellKnownIds.Postpaid,
-                                1 => TelecomSubscriptionTypeWellKnownIds.Prepaid,
-                                _ => TelecomSubscriptionTypeWellKnownIds.Hybrid
-                            }
-                            : rnd.Next(3) switch
-                            {
-                                0 => TelecomSubscriptionTypeWellKnownIds.Prepaid,
-                                1 => TelecomSubscriptionTypeWellKnownIds.Postpaid,
-                                _ => TelecomSubscriptionTypeWellKnownIds.Hybrid
-                            },
+                    SubscriptionTypeId = subscriptionTypeId,
                     DocumentStatus = TelecomDocumentStatus.Verified,
                     IsPrimaryLine = primaryForParty
                 };
@@ -601,10 +780,21 @@ public class TelecomSyriatelSeeder
 
                 if (!string.IsNullOrWhiteSpace(kitIccid))
                 {
-                    var sim = SimInventory.Create(kitIccid, imsi: kitImsi);
+                    var sim = await _simRepository.GetQuery()
+                        .FirstOrDefaultAsync(s => !s.IsDeleted && s.Iccid == kitIccid);
+                    if (sim == null)
+                    {
+                        sim = SimInventory.Create(kitIccid, imsi: kitImsi);
+                        await _simRepository.CreateAsync(sim);
+                    }
+
                     sim.AssignToProfile(profile.Id);
-                    sim.TransitionTo(SimStatus.Active);
-                    await _simRepository.CreateAsync(sim);
+                    if (sim.Status != SimStatus.Active)
+                    {
+                        sim.TransitionTo(SimStatus.Active);
+                    }
+
+                    _simRepository.Update(sim);
                 }
 
                 await _unitOfWork.SaveAsync();
@@ -690,24 +880,35 @@ public class TelecomSyriatelSeeder
     {
         await EnsureSuspendedReconnectDemoLineAsync(
             TelecomDemoMsisdn.ReconnectFraudDemo,
-            "سعدون الشامي",
             SuspensionWellKnown.Fraud,
             "ديمو RCN: خط موقوف احتيال — يتطلب اعتماد باك أوفيس.");
 
         await EnsureSuspendedReconnectDemoLineAsync(
             TelecomDemoMsisdn.DebtSubscriber,
-            "مازن المديون",
             SuspensionWellKnown.Billing,
-            "ديمو RCN: خط موقوف فواتير — مسار تسوية Payment بالمعرض.");
+            "ديمو RCN: خط موقوف فواتير — مسار تسوية Payment بنقطة البيع.");
+
+        await EnsureSuspendedReconnectDemoLineAsync(
+            TelecomDemoMsisdn.ShowcaseOperationalSuspended,
+            SuspensionWellKnown.Operational,
+            "ديمو RCN: خط موقوف تشغيلي — مسار Operational بدون دفع (VAL-09-04).");
+    }
+
+    /// <summary>
+    /// Idempotent tribulation showcase: extra active lines on hero customer (healthy + NOT_PROVISIONED HLR).
+    /// </summary>
+    public async Task EnsureTribulationShowcaseDemoAsync()
+    {
+        await EnsureActiveTribulationLineAsync(TelecomDemoMsisdn.ShowcaseHealthy, isPrimaryLine: false);
+        await EnsureActiveTribulationLineAsync(TelecomDemoMsisdn.ShowcaseNotProvisioned, isPrimaryLine: false);
     }
 
     private async Task EnsureSuspendedReconnectDemoLineAsync(
         string msisdn,
-        string customerNameContains,
         string suspensionType,
         string susNotes)
     {
-        var customerId = await ResolveReconnectDemoCustomerIdAsync(msisdn, customerNameContains);
+        var customerId = await ResolveShowcaseCustomerIdAsync();
         if (customerId == null)
         {
             return;
@@ -718,61 +919,19 @@ public class TelecomSyriatelSeeder
             .Select(m => new { m.Id, m.SubscriberProfileId, m.PoolStatus })
             .FirstOrDefaultAsync();
 
-        string profileId;
-        string assetId;
+        var (profileId, assetId) = await EnsureReconnectDemoLineAsync(
+            msisdn,
+            customerId,
+            assetRow?.Id,
+            assetRow?.SubscriberProfileId);
 
-        if (assetRow == null)
+        if (string.IsNullOrEmpty(profileId) || string.IsNullOrEmpty(assetId))
         {
-            var profile = new SubscriberProfile
-            {
-                CustomerId = customerId,
-                ServiceLineType = ServiceLineType.Mobile,
-                OperationalStatus = SubscriberOperationalStatus.Suspended,
-                ActivationDateUtc = DateTime.UtcNow.AddDays(-400),
-            };
-            profile.Suspend();
-            await _profileRepository.CreateAsync(profile);
-            await _unitOfWork.SaveAsync();
-            profileId = profile.Id;
-
-            var productId = await _query.Product.AsNoTracking().IsDeletedEqualTo()
-                .Select(p => p.Id)
-                .FirstOrDefaultAsync();
-
-            var asset = new MsisdnAsset
-            {
-                Msisdn = msisdn,
-                SubscriberProfileId = profileId,
-                ProductId = productId,
-                Category = MsisdnCategory.Normal,
-            };
-            asset.TransitionTo(MsisdnPoolStatus.Active);
-            asset.TransitionTo(MsisdnPoolStatus.Suspended);
-            await _msisdnRepository.CreateAsync(asset);
-            await _unitOfWork.SaveAsync();
-            assetId = asset.Id;
-
-            if (productId != null)
-            {
-                await _subscriptionRepository.CreateAsync(new TelecomSubscription
-                {
-                    SubscriberProfileId = profileId,
-                    MsisdnAssetId = assetId,
-                    ProductId = productId,
-                    SubscriptionTypeId = TelecomSubscriptionTypeWellKnownIds.Prepaid,
-                    DocumentStatus = TelecomDocumentStatus.Verified,
-                    IsPrimaryLine = msisdn != TelecomDemoMsisdn.ReconnectFraudDemo,
-                });
-                await _unitOfWork.SaveAsync();
-            }
+            return;
         }
-        else
-        {
-            profileId = assetRow.SubscriberProfileId!;
-            assetId = assetRow.Id;
 
-            await ApplyDemoReconnectSuspendedStateAsync(profileId, assetId);
-        }
+        profileId = await EnsureDemoLineOwnedByCustomerAsync(profileId, assetId, customerId);
+        await ApplyDemoReconnectSuspendedStateAsync(profileId, assetId);
 
         var hasCompletedSus = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
             .AnyAsync(o => o.Kind == TelecomOperationKind.TemporarySuspension
@@ -787,6 +946,10 @@ public class TelecomSyriatelSeeder
         }
 
         var demoNow = DateTime.UtcNow;
+        var susDate = msisdn == TelecomDemoMsisdn.DebtSubscriber
+            ? demoNow.AddMonths(-7) // Exceeds default 6-month BDR threshold
+            : demoNow.AddDays(-14);
+
         var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.TemporarySuspension);
         var sus = new TelecomOperationRequest
         {
@@ -799,10 +962,10 @@ public class TelecomSyriatelSeeder
             SuspensionType = suspensionType,
             SuspensionReason = susNotes,
             BarringLevel = SuspensionWellKnown.BarringFull,
-            SuspensionStartDateUtc = demoNow.AddDays(-14),
+            SuspensionStartDateUtc = susDate,
             BarStatus = "Active",
-            ConfirmedAtUtc = demoNow.AddDays(-14),
-            CreatedAtUtc = demoNow.AddDays(-15),
+            ConfirmedAtUtc = susDate,
+            CreatedAtUtc = susDate.AddDays(-1),
             Notes = susNotes,
             IsLostOrStolenReport = false,
             FraudClearanceConfirmed = false,
@@ -819,8 +982,158 @@ public class TelecomSyriatelSeeder
         await _unitOfWork.SaveAsync();
     }
 
+  /// <summary>
+  /// Ensures a subscriber profile is linked to a demo MSISDN (pool rows from Oracle may lack <see cref="MsisdnAsset.SubscriberProfileId"/>).
+  /// </summary>
+    private async Task<(string? ProfileId, string? AssetId)> EnsureReconnectDemoLineAsync(
+        string msisdn,
+        string customerId,
+        string? existingAssetId,
+        string? existingProfileId)
+    {
+        var rnd = new Random();
+        if (!string.IsNullOrEmpty(existingAssetId) && !string.IsNullOrEmpty(existingProfileId))
+        {
+            await EnsureDemoLineKitPairedAsync(existingAssetId, msisdn);
+            return (existingProfileId, existingAssetId);
+        }
+
+        var productId = await _query.Product.AsNoTracking().IsDeletedEqualTo()
+            .Select(p => p.Id)
+            .FirstOrDefaultAsync();
+
+        string profileId;
+        if (!string.IsNullOrEmpty(existingProfileId))
+        {
+            profileId = existingProfileId;
+            var tracked = await _profileRepository.GetAsync(profileId, CancellationToken.None);
+            if (tracked != null)
+            {
+                if (msisdn == TelecomDemoMsisdn.DebtSubscriber)
+                {
+                    tracked.PrepaidBalance = null;
+                    tracked.PostpaidCreditLimit = -15000m;
+                }
+                else if (msisdn == TelecomDemoMsisdn.ReconnectFraudDemo)
+                {
+                    tracked.PrepaidBalance = 0;
+                    tracked.PostpaidCreditLimit = null;
+                }
+                else
+                {
+                    tracked.PrepaidBalance = 1500;
+                    tracked.PostpaidCreditLimit = null;
+                }
+                _profileRepository.Update(tracked);
+                await _unitOfWork.SaveAsync();
+            }
+        }
+        else
+        {
+            var profile = new SubscriberProfile
+            {
+                CustomerId = customerId,
+                ServiceLineType = ServiceLineType.Mobile,
+                OperationalStatus = SubscriberOperationalStatus.Suspended,
+                ActivationDateUtc = DateTime.UtcNow.AddDays(-400),
+                // GLOBAL LINE TYPE & COMMERCIAL INTEGRITY: Deterministic layout based on MSISDN
+                PrepaidBalance = (msisdn == TelecomDemoMsisdn.DebtSubscriber || msisdn == TelecomDemoMsisdn.ReconnectFraudDemo) ? 0 : 1500,
+                PostpaidCreditLimit = msisdn == TelecomDemoMsisdn.DebtSubscriber ? -15000m : null
+            };
+            profile.Suspend(msisdn);
+            await _profileRepository.CreateAsync(profile);
+            await _unitOfWork.SaveAsync();
+            profileId = profile.Id;
+        }
+
+        // GLOBAL HLR MOCK DETERMINISTIC ALIGNMENT: Adjust MSISDN for suspended state
+        msisdn = AdjustMsisdnForHlrAlignment(msisdn, SubscriberOperationalStatus.Suspended, rnd);
+
+        string assetId;
+        if (!string.IsNullOrEmpty(existingAssetId))
+        {
+            assetId = existingAssetId;
+            var tracked = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
+            if (tracked != null)
+            {
+                tracked.SubscriberProfileId = profileId;
+                if (msisdn == TelecomDemoMsisdn.DebtSubscriber)
+                {
+                    tracked.IntendedSubscriptionTypeId = TelecomSubscriptionTypeWellKnownIds.Postpaid;
+                }
+                if (tracked.PoolStatus == MsisdnPoolStatus.Available
+                    || tracked.PoolStatus == MsisdnPoolStatus.Reserved)
+                {
+                    tracked.TransitionTo(MsisdnPoolStatus.Active);
+                }
+
+                if (tracked.PoolStatus == MsisdnPoolStatus.Active)
+                {
+                    tracked.TransitionTo(MsisdnPoolStatus.Suspended);
+                }
+
+                if (productId != null && tracked.ProductId == null)
+                {
+                    tracked.ProductId = productId;
+                }
+
+                _msisdnRepository.Update(tracked);
+                await _unitOfWork.SaveAsync();
+            }
+        }
+        else
+        {
+            var asset = new MsisdnAsset
+            {
+                Msisdn = msisdn,
+                SubscriberProfileId = profileId,
+                ProductId = productId,
+                Category = MsisdnCategory.Normal,
+                IntendedSubscriptionTypeId = msisdn == TelecomDemoMsisdn.DebtSubscriber ? TelecomSubscriptionTypeWellKnownIds.Postpaid : TelecomSubscriptionTypeWellKnownIds.Prepaid
+            };
+            asset.TransitionTo(MsisdnPoolStatus.Active);
+            asset.TransitionTo(MsisdnPoolStatus.Suspended);
+            await _msisdnRepository.CreateAsync(asset);
+            await _unitOfWork.SaveAsync();
+            assetId = asset.Id;
+        }
+
+        var hasSubscription = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+            .AnyAsync(s => s.SubscriberProfileId == profileId && s.MsisdnAssetId == assetId);
+
+        if (!hasSubscription && productId != null)
+        {
+            await _subscriptionRepository.CreateAsync(new TelecomSubscription
+            {
+                SubscriberProfileId = profileId,
+                MsisdnAssetId = assetId,
+                ProductId = productId,
+                SubscriptionTypeId = msisdn == TelecomDemoMsisdn.DebtSubscriber ? TelecomSubscriptionTypeWellKnownIds.Postpaid : TelecomSubscriptionTypeWellKnownIds.Prepaid,
+                DocumentStatus = TelecomDocumentStatus.Verified,
+                IsPrimaryLine = msisdn != TelecomDemoMsisdn.ReconnectFraudDemo,
+            });
+            await _unitOfWork.SaveAsync();
+        }
+
+        await EnsureDemoLineKitPairedAsync(assetId, msisdn);
+        return (profileId, assetId);
+    }
+
+    private async Task EnsureDemoLineKitPairedAsync(string msisdnAssetId, string msisdn)
+    {
+        var iccid = MsisdnAssetKitResolver.DeriveIccidFromMsisdn(msisdn);
+        if (string.IsNullOrEmpty(iccid))
+        {
+            return;
+        }
+
+        await PairMsisdnKitAsync(msisdnAssetId, iccid, MsisdnAssetKitResolver.DeriveImsiFromMsisdn(msisdn));
+    }
+
     private async Task ApplyDemoReconnectSuspendedStateAsync(string profileId, string assetId)
     {
+        var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
+        var msisdn = asset?.Msisdn ?? "";
         var profile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
         if (profile != null
             && profile.OperationalStatus is not (
@@ -829,47 +1142,237 @@ public class TelecomSyriatelSeeder
                 or SubscriberOperationalStatus.SuspendedOutbound
                 or SubscriberOperationalStatus.Terminated))
         {
-            profile.Suspend();
+            profile.Suspend(msisdn);
             _profileRepository.Update(profile);
         }
 
-        var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
         if (asset != null && asset.PoolStatus == MsisdnPoolStatus.Active)
         {
             asset.TransitionTo(MsisdnPoolStatus.Suspended);
-            _msisdnRepository.Update(asset);
         }
 
         await _unitOfWork.SaveAsync();
     }
 
-    private async Task<string?> ResolveReconnectDemoCustomerIdAsync(string msisdn, string customerNameContains)
+    private async Task<string?> ResolveShowcaseCustomerIdAsync()
     {
-        if (msisdn == TelecomDemoMsisdn.ReconnectFraudDemo)
-        {
-            var fromHero = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
-                .Where(m => m.Msisdn == TelecomDemoMsisdn.Hero)
-                .Join(
-                    _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo(),
-                    m => m.SubscriberProfileId,
-                    p => p.Id,
-                    (_, p) => p.CustomerId)
-                .FirstOrDefaultAsync();
+        var fromHero = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            .Where(m => m.Msisdn == TelecomDemoMsisdn.Hero)
+            .Join(
+                _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo(),
+                m => m.SubscriberProfileId,
+                p => p.Id,
+                (_, p) => p.CustomerId)
+            .FirstOrDefaultAsync();
 
-            if (!string.IsNullOrEmpty(fromHero))
-            {
-                return fromHero;
-            }
+        if (!string.IsNullOrEmpty(fromHero))
+        {
+            return fromHero;
         }
 
         return await _query.Customer.AsNoTracking().IsDeletedEqualTo()
-            .Where(c => c.DisplayName.Contains(customerNameContains))
+            .Where(c => c.DisplayName.Contains(TelecomDemoMsisdn.ShowcaseCustomerName))
             .Select(c => c.Id)
             .FirstOrDefaultAsync();
     }
 
+    private async Task<string> EnsureDemoLineOwnedByCustomerAsync(string profileId, string assetId, string customerId)
+    {
+        var profile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
+        if (profile == null || profile.CustomerId == customerId)
+        {
+            return profileId;
+        }
+
+        var newProfile = new SubscriberProfile
+        {
+            CustomerId = customerId,
+            ServiceLineType = ServiceLineType.Mobile,
+            OperationalStatus = profile.OperationalStatus,
+            ActivationDateUtc = profile.ActivationDateUtc ?? DateTime.UtcNow.AddDays(-365),
+        };
+
+        var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
+        var msisdn = asset?.Msisdn ?? "";
+
+        if (profile.OperationalStatus is SubscriberOperationalStatus.Suspended
+            or SubscriberOperationalStatus.SuspendedInbound
+            or SubscriberOperationalStatus.SuspendedOutbound)
+        {
+            newProfile.Suspend(msisdn);
+        }
+
+        await _profileRepository.CreateAsync(newProfile);
+        await _unitOfWork.SaveAsync();
+
+        if (asset != null)
+        {
+            asset.SubscriberProfileId = newProfile.Id;
+        }
+
+        var subscriptions = await _query.TelecomSubscription.IsDeletedEqualTo()
+            .Where(s => s.MsisdnAssetId == assetId && s.SubscriberProfileId == profileId)
+            .ToListAsync();
+
+        foreach (var sub in subscriptions)
+        {
+            var tracked = await _subscriptionRepository.GetAsync(sub.Id, CancellationToken.None);
+            if (tracked != null)
+            {
+                tracked.SubscriberProfileId = newProfile.Id;
+                _subscriptionRepository.Update(tracked);
+            }
+        }
+
+        var operations = await _query.TelecomOperationRequest.IsDeletedEqualTo()
+            .Where(o => o.MsisdnAssetId == assetId && o.SubscriberProfileId == profileId)
+            .ToListAsync();
+
+        foreach (var op in operations)
+        {
+            var tracked = await _operationRepository.GetAsync(op.Id, CancellationToken.None);
+            if (tracked != null)
+            {
+                tracked.SubscriberProfileId = newProfile.Id;
+                _operationRepository.Update(tracked);
+            }
+        }
+
+        await _unitOfWork.SaveAsync();
+        return newProfile.Id;
+    }
+
+    private async Task EnsureActiveTribulationLineAsync(string msisdn, bool isPrimaryLine)
+    {
+        var customerId = await ResolveShowcaseCustomerIdAsync();
+        if (customerId == null)
+        {
+            return;
+        }
+
+        var assetRow = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            .Where(m => m.Msisdn == msisdn)
+            .Select(m => new { m.Id, m.SubscriberProfileId })
+            .FirstOrDefaultAsync();
+
+        var productId = await _query.Product.AsNoTracking().IsDeletedEqualTo()
+            .Select(p => p.Id)
+            .FirstOrDefaultAsync();
+
+        if (productId == null)
+        {
+            return;
+        }
+
+        string profileId;
+        string assetId;
+
+        if (!string.IsNullOrEmpty(assetRow?.Id))
+        {
+            assetId = assetRow.Id;
+
+            if (!string.IsNullOrEmpty(assetRow.SubscriberProfileId))
+            {
+                profileId = await EnsureDemoLineOwnedByCustomerAsync(
+                    assetRow.SubscriberProfileId,
+                    assetId,
+                    customerId);
+            }
+            else
+            {
+                var profile = new SubscriberProfile
+                {
+                    CustomerId = customerId,
+                    ServiceLineType = ServiceLineType.Mobile,
+                    OperationalStatus = SubscriberOperationalStatus.Active,
+                    ActivationDateUtc = DateTime.UtcNow.AddDays(-200),
+                    // GLOBAL HARDENING: Prepaid active line
+                    PrepaidBalance = 5000,
+                    PostpaidCreditLimit = null
+                };
+                await _profileRepository.CreateAsync(profile);
+                await _unitOfWork.SaveAsync();
+                profileId = profile.Id;
+            }
+
+            var trackedProfile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
+            if (trackedProfile != null && trackedProfile.OperationalStatus != SubscriberOperationalStatus.Active)
+            {
+                trackedProfile.Activate();
+                _profileRepository.Update(trackedProfile);
+            }
+
+            var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
+            if (asset != null)
+            {
+                asset.SubscriberProfileId = profileId;
+                if (asset.PoolStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Reserved
+                    or MsisdnPoolStatus.Suspended)
+                {
+                    asset.TransitionTo(MsisdnPoolStatus.Active);
+                }
+
+                if (asset.ProductId == null)
+                {
+                    asset.ProductId = productId;
+                }
+
+                _msisdnRepository.Update(asset);
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+        else
+        {
+            var profile = new SubscriberProfile
+            {
+                CustomerId = customerId,
+                ServiceLineType = ServiceLineType.Mobile,
+                OperationalStatus = SubscriberOperationalStatus.Active,
+                ActivationDateUtc = DateTime.UtcNow.AddDays(-200),
+                // GLOBAL HARDENING: Prepaid active line
+                PrepaidBalance = 5000,
+                PostpaidCreditLimit = null
+            };
+            await _profileRepository.CreateAsync(profile);
+            await _unitOfWork.SaveAsync();
+            profileId = profile.Id;
+
+            var asset = new MsisdnAsset
+            {
+                Msisdn = msisdn,
+                SubscriberProfileId = profileId,
+                ProductId = productId,
+                Category = MsisdnCategory.Normal,
+            };
+            asset.TransitionTo(MsisdnPoolStatus.Active);
+            await _msisdnRepository.CreateAsync(asset);
+            await _unitOfWork.SaveAsync();
+            assetId = asset.Id;
+        }
+
+        var hasSubscription = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+            .AnyAsync(s => s.SubscriberProfileId == profileId && s.MsisdnAssetId == assetId);
+
+        if (!hasSubscription)
+        {
+            await _subscriptionRepository.CreateAsync(new TelecomSubscription
+            {
+                SubscriberProfileId = profileId,
+                MsisdnAssetId = assetId,
+                ProductId = productId,
+                SubscriptionTypeId = TelecomSubscriptionTypeWellKnownIds.Prepaid,
+                DocumentStatus = TelecomDocumentStatus.Verified,
+                IsPrimaryLine = isPrimaryLine,
+            });
+            await _unitOfWork.SaveAsync();
+        }
+
+        await EnsureDemoLineKitPairedAsync(assetId, msisdn);
+    }
+
     /// <summary>
-    /// Idempotent §16 demo: pending write-off BDR on debt hero line (0939000002 / مازن المديون).
+    /// Idempotent §16 demo: pending write-off BDR on debt showcase line (0939000002 / سعدون الشامي).
     /// Runs after <see cref="EnsureHeroReconnectDemoAsync"/> so billing suspension exists.
     /// </summary>
     public async Task EnsureHeroBadDebtDemoAsync()
@@ -879,49 +1382,92 @@ public class TelecomSyriatelSeeder
             .Select(m => new { m.Id, m.SubscriberProfileId })
             .FirstOrDefaultAsync();
 
-        if (assetRow?.SubscriberProfileId == null)
+        var debtCustomerId = await ResolveShowcaseCustomerIdAsync();
+
+        if (debtCustomerId == null)
         {
             return;
         }
 
-        var hasOpenBdr = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
-            .AnyAsync(o => o.Kind == TelecomOperationKind.BadDebtRecovery
-                           && o.MsisdnAssetId == assetRow.Id
-                           && o.Status == TelecomOperationStatus.PendingDocuments);
+        var (profileId, assetId) = await EnsureReconnectDemoLineAsync(
+            TelecomDemoMsisdn.DebtSubscriber,
+            debtCustomerId,
+            assetRow?.Id,
+            assetRow?.SubscriberProfileId);
 
-        if (hasOpenBdr)
+        if (!string.IsNullOrEmpty(profileId) && !string.IsNullOrEmpty(assetId))
+        {
+            profileId = await EnsureDemoLineOwnedByCustomerAsync(profileId, assetId, debtCustomerId);
+        }
+
+        if (string.IsNullOrEmpty(profileId) || string.IsNullOrEmpty(assetId))
         {
             return;
         }
 
-        var demoNow = DateTime.UtcNow;
-        var bdr = new TelecomOperationRequest
-        {
-            Kind = TelecomOperationKind.BadDebtRecovery,
-            Number = _numberSequenceService.GenerateNumber("TelecomOp_BadDebt", "BDR-", "", useDate: false),
-            CorrelationId = Guid.CreateVersion7().ToString(),
-            Status = TelecomOperationStatus.PendingDocuments,
-            DocumentStatus = TelecomDocumentStatus.Uploaded,
-            SubscriberProfileId = assetRow.SubscriberProfileId,
-            MsisdnAssetId = assetRow.Id,
-            CollectionAction = "WriteOffPartial",
-            DunningStage = "WriteOffPending",
-            PriorDunningStage = "Reminder2",
-            OutstandingBalanceSnapshot = -15_000m,
-            WriteOffAmount = 10_000m,
-            CollectionNote = "ديمو BDR: شطب جزئي معلّق — اعتماد باك أوفيس.",
-            CollectionSettlementStatus = "Pending",
-            ApprovalLevelRequired = "BackOffice",
-            ProvisioningResult = "Pending",
-            Notes = "BDR|demo=WriteOffPartial|balance=-15000|bo=true",
-            IsLostOrStolenReport = false,
-            FraudClearanceConfirmed = false,
-            AutoReconnectEnabled = false,
-            NotificationSuppressed = false,
-            CreatedAtUtc = demoNow.AddHours(-2),
-        };
+        // GLOBAL HARDENING: Force update any existing BDR for this line to ensure it shows up for Saadoon
+        var existingBdr = await _query.TelecomOperationRequest.IsDeletedEqualTo()
+            .FirstOrDefaultAsync(o => o.Kind == TelecomOperationKind.BadDebtRecovery
+                           && o.MsisdnAssetId == assetId);
 
-        await _operationRepository.CreateAsync(bdr);
-        await _unitOfWork.SaveAsync();
+        if (existingBdr != null)
+        {
+            var trackedBdr = await _operationRepository.GetAsync(existingBdr.Id, CancellationToken.None);
+            if (trackedBdr != null)
+            {
+                trackedBdr.SubscriberProfileId = profileId;
+                trackedBdr.Status = TelecomOperationStatus.PendingDocuments;
+                trackedBdr.ApprovalLevelRequired = "BackOffice";
+                trackedBdr.DocumentStatus = TelecomDocumentStatus.Verified; // User requested "Verified"
+                trackedBdr.OutstandingBalanceSnapshot = -15000m;
+                trackedBdr.WriteOffAmount = 10000m;
+                trackedBdr.CollectedAmount = 5000m; // Required Cash
+                trackedBdr.CollectionAction = "WriteOffPartial";
+                trackedBdr.DunningStage = "WriteOffPending";
+                trackedBdr.Notes = "BDR-0001|demo=WriteOffPartial|balance=-15000|writeoff=10000|cash=5000|bo=true";
+                
+                // GLOBAL HARDENING: SLA for demo BDR
+                var slaMinutes = 2;
+                trackedBdr.SlaExpirationTimeUtc = DateTime.UtcNow.AddMinutes(slaMinutes);
+                
+                _operationRepository.Update(trackedBdr);
+                await _unitOfWork.SaveAsync();
+            }
+        }
+        else
+        {
+            var demoNow = DateTime.UtcNow;
+            var bdr = new TelecomOperationRequest
+            {
+                Kind = TelecomOperationKind.BadDebtRecovery,
+                Number = "BDR-0001", // Explicitly BDR-0001
+                CorrelationId = Guid.CreateVersion7().ToString(),
+                Status = TelecomOperationStatus.PendingDocuments,
+                IdentityDocumentStorageKey = "demo-bdr-identity-key", // Fixed: Allow BackOffice Approval
+                DocumentStatus = TelecomDocumentStatus.Verified,
+                SubscriberProfileId = profileId,
+                MsisdnAssetId = assetId,
+                CollectionAction = "WriteOffPartial",
+                DunningStage = "WriteOffPending",
+                PriorDunningStage = "Reminder2",
+                OutstandingBalanceSnapshot = -15_000m,
+                WriteOffAmount = 10_000m,
+                CollectedAmount = 5_000m, // Required Cash
+                CollectionNote = "ديمو BDR: شطب جزئي معلّق — اعتماد باك أوفيس.",
+                CollectionSettlementStatus = "Pending",
+                ApprovalLevelRequired = "BackOffice",
+                ProvisioningResult = "Pending",
+                Notes = "BDR-0001|demo=WriteOffPartial|balance=-15000|writeoff=10000|cash=5000|bo=true",
+                IsLostOrStolenReport = false,
+                FraudClearanceConfirmed = false,
+                AutoReconnectEnabled = false,
+                NotificationSuppressed = false,
+                CreatedAtUtc = demoNow.AddHours(-2),
+                SlaExpirationTimeUtc = DateTime.UtcNow.AddMinutes(2),
+            };
+
+            await _operationRepository.CreateAsync(bdr);
+            await _unitOfWork.SaveAsync();
+        }
     }
 }

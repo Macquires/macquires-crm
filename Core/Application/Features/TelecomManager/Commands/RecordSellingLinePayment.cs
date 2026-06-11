@@ -75,6 +75,14 @@ public class RecordSellingLinePaymentHandler : IRequestHandler<RecordSellingLine
             throw new BusinessRuleViolationException("لا يمكن تسجيل دفع لعملية منتهية.");
         }
 
+        var requiredDeposit = await SellingLineDepositResolver.ResolveRequiredDepositAsync(
+            _query, entity, cancellationToken);
+        if (requiredDeposit > 0 && request.AmountPaid < requiredDeposit)
+        {
+            throw new BusinessRuleViolationException(
+                "VAL-02-05: المبلغ المدفوع أقل من قيمة الوديعة المطلوبة للباقة.");
+        }
+
         var gatewayResult = await _paymentGateway.CaptureAsync(
             new PaymentCaptureRequest(
                 entity.Id,

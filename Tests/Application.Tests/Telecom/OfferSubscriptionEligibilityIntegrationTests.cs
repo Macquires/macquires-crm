@@ -11,6 +11,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class OfferSubscriptionEligibilityIntegrationTests
 {
     [Fact]
@@ -98,7 +100,7 @@ public class OfferSubscriptionEligibilityIntegrationTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static async Task<(string ProfileId, string AssetId, string OfferingId, string ProductId)> SeedLineWithCatalogAsync(
@@ -197,6 +199,9 @@ public class OfferSubscriptionEligibilityIntegrationTests
     {
         public Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default) =>
             Task.FromResult(balance);
+
+        public Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

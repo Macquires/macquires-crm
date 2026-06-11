@@ -168,7 +168,7 @@ public class UserAuditReadService : IUserAuditReadService
 
         var msisdns = await _context.TelecomSubscription
             .AsNoTracking()
-            .Where(s => !s.IsDeleted && s.SubscriberProfile.CustomerId == customerId && s.MsisdnAsset != null)
+            .Where(s => !s.IsDeleted && s.SubscriberProfile != null && s.SubscriberProfile.CustomerId == customerId && s.MsisdnAsset != null)
             .Select(s => s.MsisdnAsset!.Msisdn)
             .Where(m => m != null && m != "")
             .Distinct()
@@ -306,10 +306,11 @@ public class UserAuditReadService : IUserAuditReadService
                 .AsNoTracking()
                 .Where(s =>
                     !s.IsDeleted
+                    && s.SubscriberProfile != null
                     && s.MsisdnAsset != null
                     && s.MsisdnAsset.Msisdn != null
                     && s.MsisdnAsset.Msisdn.Contains(f))
-                .Select(s => s.SubscriberProfile.CustomerId)
+                .Select(s => s.SubscriberProfile!.CustomerId)
                 .Take(50)
                 .ToListAsync(cancellationToken);
             foreach (var id in byMsisdn)

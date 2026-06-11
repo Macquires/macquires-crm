@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -16,6 +17,7 @@ public class CustomerSeeder
     private readonly NumberSequenceService _numberSequenceService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly DataContext _context;
+    private readonly IFieldEncryptionService _encryption;
 
     public CustomerSeeder(
         ICommandRepository<Customer> customerRepository,
@@ -23,7 +25,8 @@ public class CustomerSeeder
         ICommandRepository<CustomerCategory> categoryRepository,
         NumberSequenceService numberSequenceService,
         IUnitOfWork unitOfWork,
-        DataContext context)
+        DataContext context,
+        IFieldEncryptionService encryption)
     {
         _customerRepository = customerRepository;
         _groupRepository = groupRepository;
@@ -31,6 +34,7 @@ public class CustomerSeeder
         _numberSequenceService = numberSequenceService;
         _unitOfWork = unitOfWork;
         _context = context;
+        _encryption = encryption;
     }
 
     public async Task GenerateDataAsync()
@@ -68,6 +72,11 @@ public class CustomerSeeder
                 ? CorporateCustomer.Create(name, account, idKey, address, email, phone, groupId, catId,
                     taxNumber: "TAX-99001", authorizedSignatoryName: "مفوض معتمد")
                 : IndividualCustomer.Create(name, account, idKey, address, email, phone, groupId, catId);
+
+            if (entity is IndividualCustomer individual)
+            {
+                individual.SyncNationalIdSearchHash(_encryption);
+            }
 
             var branchId = branches.FirstOrDefault(b => b.NameAr.Contains(city, StringComparison.Ordinal))?.Id
                 ?? defaultBranchId;

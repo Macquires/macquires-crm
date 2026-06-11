@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Telecom;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -53,10 +54,24 @@ public class QueryHlrLiveStatusHandler : IRequestHandler<QueryHlrLiveStatusReque
             throw new InvalidOperationException("SubscriberProfileId or MSISDN is required.");
         }
 
-        var msisdn = msisdnQuery ?? await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => s.SubscriberProfileId == profile.Id)
-            .Select(s => s.MsisdnAsset!.Msisdn)
-            .FirstOrDefaultAsync(cancellationToken);
+        string? msisdn = msisdnQuery;
+        if (string.IsNullOrEmpty(msisdn))
+        {
+            try
+            {
+                var line = await SubscriberLineResolver.ResolveAssetAsync(
+                    _query,
+                    profile.Id,
+                    msisdnAssetId: null,
+                    msisdn: null,
+                    cancellationToken);
+                msisdn = line.Msisdn;
+            }
+            catch (InvalidOperationException)
+            {
+                msisdn = null;
+            }
+        }
 
         if (string.IsNullOrEmpty(msisdn))
         {

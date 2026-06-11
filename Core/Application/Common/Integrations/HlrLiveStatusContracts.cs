@@ -36,4 +36,7 @@ public interface IHLRLiveStatusService
     Task<HlrLiveStatusResult> QueryLiveStatusAsync(string msisdn, string? crmOperationalStatus, CancellationToken cancellationToken = default);
     Task<HlrResyncResult> ResyncFromHlrAsync(HlrResyncRequest request, CancellationToken cancellationToken = default);
     Task<HlrReprovisionResult> ReprovisionSubscriberAsync(HlrReprovisionRequest request, CancellationToken cancellationToken = default);
+    Task MarkMockSubscriberActiveAsync(string msisdn, CancellationToken cancellationToken = default);
+    Task MarkMockSubscriberSuspendedAsync(string msisdn, CancellationToken cancellationToken = default);
+    Task MarkMockSubscriberTerminatedAsync(string msisdn, CancellationToken cancellationToken = default);
 }

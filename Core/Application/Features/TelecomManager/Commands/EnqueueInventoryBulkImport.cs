@@ -1,8 +1,5 @@
-using System.Text.Json;
 using Application.Common.BulkImport;
-using Application.Common.Repositories;
-using Application.Common.Telecom;
-using Domain.Entities;
+using Application.Common.Exceptions;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
@@ -37,43 +34,8 @@ public class EnqueueInventoryBulkImportValidator : AbstractValidator<EnqueueInve
 
 public class EnqueueInventoryBulkImportHandler : IRequestHandler<EnqueueInventoryBulkImportRequest, EnqueueInventoryBulkImportResult>
 {
-    private readonly ICommandRepository<InventoryBulkImportJob> _jobRepository;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public EnqueueInventoryBulkImportHandler(
-        ICommandRepository<InventoryBulkImportJob> jobRepository,
-        IUnitOfWork unitOfWork)
-    {
-        _jobRepository = jobRepository;
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<EnqueueInventoryBulkImportResult> Handle(
+    public Task<EnqueueInventoryBulkImportResult> Handle(
         EnqueueInventoryBulkImportRequest request,
-        CancellationToken cancellationToken)
-    {
-        foreach (var line in request.Lines)
-        {
-            if (!string.IsNullOrWhiteSpace(line.Iccid)
-                && !IccidValidator.TryValidate(line.Iccid, out _, out var iccidError))
-            {
-                throw new InvalidOperationException($"ICCID غير صالح: {iccidError}");
-            }
-        }
-
-        var job = new InventoryBulkImportJob
-        {
-            JobStatus = InventoryBulkImportJobStatus.Pending,
-            JobType = BulkImportJobType.MsisdnAsset,
-            FileName = "inline-paste.csv",
-            TotalRows = request.Lines.Count,
-            PayloadJson = JsonSerializer.Serialize(request.Lines),
-            CreatedById = request.CreatedById
-        };
-
-        await _jobRepository.CreateAsync(job, cancellationToken);
-        await _unitOfWork.SaveAsync(cancellationToken);
-
-        return new EnqueueInventoryBulkImportResult { JobId = job.Id, QueuedRows = request.Lines.Count };
-    }
+        CancellationToken cancellationToken) =>
+        throw new BusinessRuleViolationException(BulkImportLegacyMigrationGuard.InventoryRetiredMessageAr);
 }

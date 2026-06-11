@@ -1,5 +1,6 @@
 using Application.Common.Repositories;
 using Application.Common.Telecom;
+using Application.Common.Telecom.BackOffice;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -50,18 +51,21 @@ public class UploadTelecomOperationDocumentHandler : IRequestHandler<UploadTelec
         var entity = await _repository.GetAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
-        if (entity.Status != TelecomOperationStatus.Draft)
+        if (!BackOfficeTelecomPipelineState.CanAcceptDocumentUpload(entity))
         {
             throw new InvalidOperationException("Only draft operations accept document upload.");
         }
 
         entity.DocumentStatus = TelecomDocumentStatus.Uploaded;
-        await _orchestrator.TransitionAsync(
-            entity,
-            TelecomOperationStatus.PendingDocuments,
-            request.UpdatedById,
-            "رفع الوثائق",
-            cancellationToken);
+        if (entity.Status == TelecomOperationStatus.Draft)
+        {
+            await _orchestrator.TransitionAsync(
+                entity,
+                TelecomOperationStatus.PendingDocuments,
+                request.UpdatedById,
+                "رفع الوثائق",
+                cancellationToken);
+        }
 
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);

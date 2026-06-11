@@ -48,15 +48,9 @@
 
             <div class="card-body py-3">
 
-                <p class="small text-muted mb-2" data-telecom-i18n="bulkImport.templatesHint">حمّل القالب المعتمد، عبّئه، ثم ارفعه لتفادي رفض الأعمدة.</p>
+                <p class="small text-muted mb-2" data-telecom-i18n="bulkImport.templatesHint">ترحيل بيانات النظام القديم فقط — المخزون (MSISDN/SIM) يُزامَن من Oracle Fusion SCM.</p>
 
                 <div class="d-flex flex-wrap gap-3">
-
-                    <a href="#" class="small text-danger text-decoration-none" v-on:click.prevent="downloadTemplate(0)">
-
-                        <i class="bi bi-download me-1"></i><span data-telecom-i18n="bulkImport.templateMsisdn">قالب استيراد الأرقام المعتمد</span>
-
-                    </a>
 
                     <a href="#" class="small text-danger text-decoration-none" v-on:click.prevent="downloadTemplate(1)">
 
@@ -90,11 +84,9 @@
 
                         <select class="form-select form-select-sm" v-model="uploadJobType">
 
-                            <option value="0">MSISDN / SIM</option>
+                            <option value="1">{{ t('jobTypes.customers', 'Customers') }}</option>
 
-                            <option value="1">Customers</option>
-
-                            <option value="2">Packages</option>
+                            <option value="2">{{ t('jobTypes.packages', 'Packages') }}</option>
 
                         </select>
 

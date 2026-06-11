@@ -48,25 +48,19 @@ public sealed class SubscriptionBindingCompensator : ISubscriptionBindingCompens
             _subscriptionRepository.Update(sub);
         }
 
+        var utcNow = DateTime.UtcNow;
+
         var msisdn = await _msisdnRepository.GetAsync(msisdnAssetId, cancellationToken);
         if (msisdn != null)
         {
-            msisdn.SubscriberProfileId = null;
-            if (msisdn.PoolStatus == MsisdnPoolStatus.Active)
-            {
-                msisdn.TransitionTo(MsisdnPoolStatus.Available);
-            }
+            msisdn.RollbackFailedActivationBinding(utcNow);
             _msisdnRepository.Update(msisdn);
         }
 
         var sim = await _simRepository.GetAsync(simInventoryId, cancellationToken);
         if (sim != null)
         {
-            sim.AssignToProfile(null);
-            if (sim.Status == SimStatus.Active)
-            {
-                sim.TransitionTo(SimStatus.Available);
-            }
+            sim.RollbackFailedActivationBinding(utcNow);
             _simRepository.Update(sim);
         }
 

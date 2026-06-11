@@ -815,7 +815,7 @@
     "refreshFail": "تعذر تحميل بعض البيانات. تحقق من الاتصال أو الجلسة ثم أعد المحاولة.",
     "bulkImport": {
       "title": "مراقبة الاستيراد الضخم",
-      "subtitle": "تتبّع عمليات الاستيراد حتى 100,000 سطر — تحديث تلقائي عند وجود مهام نشطة.",
+      "subtitle": "ترحيل بيانات النظام القديم (عملاء · باقات) — المخزون يُزامَن حصرياً من Oracle Fusion SCM.",
       "upload": "رفع ملف CSV",
       "jobType": "نوع الاستيراد",
       "jobTypes": {
@@ -842,7 +842,7 @@
       "exportErrors": "تصدير CSV",
       "noJobs": "لا توجد عمليات استيراد.",
       "uploadOk": "تم رفع الملف وبدء المعالجة في الخلفية.",
-      "templatesHint": "حمّل القالب المعتمد، عبّئه، ثم ارفعه لتفادي رفض الأعمدة.",
+      "templatesHint": "ترحيل بيانات النظام القديم فقط — المخزون (MSISDN/SIM) يُزامَن من Oracle Fusion SCM.",
       "templateMsisdn": "قالب استيراد الأرقام المعتمد",
       "templateCustomers": "قالب ملفات العملاء",
       "templatePackages": "قالب ترحيل الباقات",
@@ -951,6 +951,22 @@
         "catalogAdvanced": "كتالوج العروض",
         "catalogHint": "تفعيل/إيقاف العروض في الكتالوج",
         "refresh": "تحديث",
+        "telecomQueue": {
+          "request": "الطلب",
+          "kind": "النوع",
+          "clearance": "التسوية",
+          "payment": "مرجع الدفع",
+          "state": "الحالة",
+          "approve": "اعتماد",
+          "reject": "رفض",
+          "empty": "لا توجد طلبات بانتظار اعتماد الباك أوفيس",
+          "rejectTitle": "رفض الطلب",
+          "rejectPlaceholder": "سبب الرفض (5 أحرف على الأقل)…",
+          "approved": "تم اعتماد الطلب — جاري التنفيذ على CBS/HLR",
+          "rejected": "تم رفض الطلب",
+          "paymentOk": "موثّق",
+          "paymentPending": "غير موثّق"
+        },
         "openCountHint": "مفتوحة + قيد المعالجة",
         "techToolbar": "شريط الأدوات الفني",
         "networkPing": "استعلام واستكشاف حالة الشبكة الحية",
@@ -1038,6 +1054,8 @@
           "suffixLostStolen": "سرقة/ضياع"
         },
         "panels": {
+          "telecomQueue": "طابور اعتماد العمليات (SUS / RCN)",
+          "telecomQueueHint": "الطلبات الحساسة (Fraud / Regulatory / Payment) تبقى في Pending_BackOffice_Approval حتى يعتمد المشرف؛ بعد الاعتماد يُنفَّذ CBS ثم HLR تلقائياً.",
           "paymentServices": "الأداء المالي (Payment Services)",
           "changeGsm": "أداء تحويل تقنيات الخطوط (CGT)",
           "changeNumber": "تغيير رقم الخط (CNR)",
@@ -1051,7 +1069,7 @@
           "simSwap": "تحليلات وأداء تبديل الشرائح (SIM Swap)",
           "takeOver": "نقل الملكية (TKO)",
           "sellingLine": "مؤشرات تفعيل الخط (Selling Line)",
-          "bulkImportHint": "MSISDN · عملاء · باقات"
+          "bulkImportHint": "ترحيل النظام القديم · عملاء · باقات"
         },
         "grid": {
           "ticketNumber": "رقم التذكرة",
@@ -1214,6 +1232,7 @@
       "gridTitle": "قائمة الأصول",
       "loading": "جاري تحميل المستودع…",
       "showroomStock": "بضاعة نقطة البيع",
+      "unboundCell": "غير مربوط — مخزون المستودع",
       "kpi": {
         "total": "إجمالي الأرقام",
         "available": "متاح",
@@ -1386,12 +1405,19 @@
       "typeRegulatory": "تنظيمي",
       "typeOperational": "تشغيلي",
       "barringLevel": "مستوى الحظر",
-      "barringFull": "حظر كامل",
-      "barringInbound": "وارد فقط",
-      "barringOutbound": "صادر فقط",
+      "barringFull": "حظر كامل (Full Bar)",
+      "barringInbound": "حظر وارد فقط",
+      "barringOutbound": "حظر صادر فقط (Outgoing Bar)",
+      "barringDataOnly": "حظر بيانات فقط (Data Bar)",
       "suspensionReason": "سبب الحظر",
       "autoReconnect": "إعادة تفعيل تلقائية عند انتهاء المدة",
+      "startDate": "تاريخ بدء الفصل",
+      "endDate": "تاريخ انتهاء الفصل",
       "endDateRequired": "تاريخ انتهاء الحظر مطلوب",
+      "endDateMaxExceeded": "حسب الأنظمة السيادية لسيريتل، الحد الأقصى للفصل المؤقت هو 90 يوماً فقط",
+      "kycDocument": "وثيقة طلب الفصل / هوية المشترك",
+      "kycDocumentHint": "رفع الهوية أو طلب الفصل الموقّع إلزامي قبل إتمام العملية (امتثال قانوني).",
+      "kycRequired": "يجب رفع وثيقة إثبات طلب الفصل",
       "boHint": "VAL-08-02/03: يتطلب اعتماد الباك أوفيس قبل التنفيذ."
     },
     "refund": {
@@ -1730,6 +1756,7 @@
       "hlrRemediation": {
         "title": "استكشاف تعارض HLR",
         "subtitle": "الـ CRM يعرض الخط نشطاً لكن HLR يُرجع حالة غير متزامنة — اختر إجراء الإنقاذ المناسب.",
+        "subtitlePattern": "الـ CRM يعرض «{crm}» بينما HLR يُرجع «{hlr}» — اختر إجراء الإنقاذ المناسب.",
         "crmActive": "CRM: نشط",
         "hlrState": "HLR",
         "reprovision": "إعادة تزويد HLR",
@@ -2534,8 +2561,10 @@
             "msisdnQuarantineHint": "بعد الإنهاء أو تغيير الرقم قبل إعادة الرقم للتجمع.",
             "simQuarantineDays": "حجر الشريحة (أيام)",
             "simQuarantineHint": "بعد SIM Swap قبل إعادة ICCID للمستودع.",
-            "msisdnReservationHours": "مدة حجز الرقم (ساعات)",
-            "msisdnReservationHint": "انتهاء الحجز يُعيد الرقم إلى متاح.",
+            "msisdnReservationMinutes": "قفل الرقم أثناء البيع (دقائق)",
+            "msisdnReservationMinutesHint": "عند اختيار الرقم عند نقطة البيع يُحجز باسم العميل لهذه المدة لمنع بيعه لزبون آخر. الافتراضي 15 دقيقة.",
+            "msisdnReservationHours": "احتياطي — حجز الرقم (ساعات)",
+            "msisdnReservationHoursHint": "يُستخدم فقط إذا ضُبطت الدقائق على 0.",
             "suspensionLongReviewDays": "عتبة الحظر الطويل (أيام)",
             "suspensionLongReviewHint": "أكثر من هذه المدة → تذكرة مراجعة Back-Office."
           },

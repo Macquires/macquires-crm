@@ -49,6 +49,16 @@
             <section class="mb-4" :aria-label="t('telecom.quickPathsAria')">
                 <div class="row g-3">
                     <div class="col-6 col-md-4 col-lg-2">
+                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-new-customer shadow-sm"
+                                :class="{ 'opacity-50 pe-none': !hubPermissions.canOpenSubscriberRegistry }"
+                                :disabled="!hubPermissions.canOpenSubscriberRegistry"
+                                @@click="openCustomerWizard" :aria-label="t('telecom.tiles.newCustomer.aria')">
+                            <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-user-plus"></i></span>
+                            <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.newCustomer.title') }}</span>
+                            <small class="opacity-75">{{ t('telecom.tiles.newCustomer.sub') }}</small>
+                        </button>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
                         <button type="button" class="btn w-100 py-4 text-white big-tile tile-activate shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
                                 :disabled="!hubPermissions.canCreateOps"
@@ -191,11 +201,302 @@
                 </div>
             </section>
 
-            <section v-if="wizard.visible" class="mb-4" aria-labelledby="wizardHeading">
-                <div class="card border-primary shadow-sm">
-                    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
-                        <h2 id="wizardHeading" class="h6 mb-0 fw-semibold">{{ t('telecom.wizard.heading', { title: wizardTitle }) }}</h2>
-                        <button type="button" class="btn-close" :aria-label="t('telecom.wizard.closeAria')" @@click="closeWizard"></button>
+            <section v-if="customerWizard.visible" id="telecomCustomerWizardPanel" class="mb-4 telecom-hub-wizard-anchor" aria-labelledby="customerWizardHeading">
+                <div class="card border-success shadow-sm telecom-wizard-card telecom-customer-wizard-card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                        <h2 id="customerWizardHeading" class="h6 mb-0 fw-semibold text-white">{{ t('telecom.customerWizard.heading') }}</h2>
+                        <button type="button" class="btn-close btn-close-white" :aria-label="t('telecom.wizard.closeAria')" @@click="closeCustomerWizard"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="telecom-stepper d-flex gap-2 mb-4 flex-wrap" role="list">
+                            <span v-for="s in 3" :key="'cw'+s" class="telecom-step flex-grow-1 text-center small py-2 rounded"
+                                  :class="customerWizard.step >= s ? 'telecom-step-active-customer' : 'telecom-step-muted'"
+                                  role="listitem">
+                                {{ s === 1 ? t('telecom.customerWizard.steps.verify') : s === 2 ? t('telecom.customerWizard.steps.data') : t('telecom.customerWizard.steps.done') }}
+                            </span>
+                        </div>
+
+                        <div v-show="customerWizard.step === 1" class="telecom-wizard-step">
+                            <p class="small text-muted mb-2">{{ t('telecom.customerWizard.step1Help') }}</p>
+                            <div class="alert alert-light border small py-2 mb-3" role="note">
+                                <i class="fas fa-info-circle text-success me-1" aria-hidden="true"></i>
+                                <span class="d-block">{{ t('telecom.customerWizard.identitySearchHint1') }}</span>
+                                <span class="d-block mt-1">{{ t('telecom.customerWizard.identitySearchHint2') }}</span>
+                            </div>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.identitySearch') }}</label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.searchNationalId" maxlength="32" autocomplete="off" :placeholder="t('telecom.customerWizard.identitySearchPh')" @@keyup.enter="runCustomerWizardSearch" />
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.phone') }}</label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.searchPhone" maxlength="16" autocomplete="off" dir="ltr" :placeholder="t('telecom.customerWizard.phonePh')" @@keyup.enter="runCustomerWizardSearch" />
+                                </div>
+                                <div class="col-12 col-md-4 d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-success btn-sm" :disabled="customerWizard.searchBusy" @@click="runCustomerWizardSearch">
+                                        <span v-if="customerWizard.searchBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.customerWizard.searchBtn') }}
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="customerWizard.searchBusy" @@click="proceedCustomerWizardNew">{{ t('telecom.customerWizard.newBtn') }}</button>
+                                </div>
+                            </div>
+                            <p v-if="customerWizard.searchAttempted && !customerWizard.searchBusy && (!customerWizard.searchResults || customerWizard.searchResults.length === 0)" class="small text-muted mt-3 mb-0">{{ t('telecom.customerWizard.noResults') }}</p>
+                            <ul v-if="customerWizard.searchResults && customerWizard.searchResults.length" class="list-group list-group-flush mt-3 border rounded">
+                                <li v-for="c in customerWizard.searchResults" :key="c.id" class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ c.name || '—' }}</div>
+                                        <div class="small text-muted">{{ c.phoneNumber || '—' }} · {{ c.city || '' }}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary" :disabled="customerWizard.handoffBusy" @@click="handoffExistingCustomerToActivate(c)">
+                                        <span v-if="customerWizard.handoffBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.customerWizard.activateExisting') }}
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div v-show="customerWizard.step === 2" class="telecom-wizard-step">
+                            <button type="button" class="btn btn-link btn-sm p-0 mb-2" @@click="goBackCustomerWizardSearch">← {{ t('telecom.customerWizard.backToSearch') }}</button>
+                            <p class="small text-muted mb-3">{{ t('telecom.customerWizard.step2Help') }}</p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">{{ t('telecom.customerWizard.subscriberType') }}</label>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="cwSubInd" :value="0" v-model.number="customerWizard.subscriberType" @@change="onCustomerWizardSubscriberTypeChange" />
+                                            <label class="form-check-label small" for="cwSubInd">{{ t('telecom.customerWizard.individual') }}</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="cwSubCorp" :value="1" v-model.number="customerWizard.subscriberType" @@change="onCustomerWizardSubscriberTypeChange" />
+                                            <label class="form-check-label small" for="cwSubCorp">{{ t('telecom.customerWizard.corporate') }}</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ customerWizard.subscriberType === 1 ? t('telecom.customerWizard.companyName') : t('telecom.customerWizard.subscriberName') }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.name" maxlength="256" />
+                                    <div class="text-danger small" v-if="customerWizard.errors.name">{{ customerWizard.errors.name }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.customerGroup') }} <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" v-model="customerWizard.customerGroupId">
+                                        <option value="">{{ t('telecom.customerWizard.selectGroup') }}</option>
+                                        <option v-for="g in customerWizard.groupOptions" :key="g.id" :value="g.id">{{ g.name }}</option>
+                                    </select>
+                                    <div class="text-danger small" v-if="customerWizard.errors.customerGroupId">{{ customerWizard.errors.customerGroupId }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.customerCategory') }} <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" v-model="customerWizard.customerCategoryId">
+                                        <option value="">{{ t('telecom.customerWizard.selectCategory') }}</option>
+                                        <option v-for="c in customerWizard.categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                    </select>
+                                    <div class="text-danger small" v-if="customerWizard.errors.customerCategoryId">{{ customerWizard.errors.customerCategoryId }}</div>
+                                </div>
+                                <div class="col-md-6" v-if="customerWizard.subscriberType === 0">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.nationalId') }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.nationalId" maxlength="10" dir="ltr" />
+                                    <div class="text-danger small" v-if="customerWizard.errors.nationalId">{{ customerWizard.errors.nationalId }}</div>
+                                </div>
+                                <div class="col-md-6" v-if="customerWizard.subscriberType === 0">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.dateOfBirth') }}</label>
+                                    <input type="date" class="form-control form-control-sm" v-model="customerWizard.dateOfBirth" />
+                                </div>
+                                <template v-if="customerWizard.subscriberType === 1">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">{{ t('telecom.customerWizard.commercialReg') }} <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" v-model="customerWizard.commercialRegistration" maxlength="64" />
+                                        <div class="text-danger small" v-if="customerWizard.errors.commercialRegistration">{{ customerWizard.errors.commercialRegistration }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">{{ t('telecom.customerWizard.taxNumber') }}</label>
+                                        <input type="text" class="form-control form-control-sm" v-model="customerWizard.taxNumber" maxlength="32" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">{{ t('telecom.customerWizard.authorizedSignatory') }}</label>
+                                        <input type="text" class="form-control form-control-sm" v-model="customerWizard.authorizedSignatory" maxlength="128" />
+                                    </div>
+                                </template>
+                                <div class="col-12">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.description') }}</label>
+                                    <textarea class="form-control form-control-sm" v-model="customerWizard.description" rows="2" maxlength="512"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <h3 class="h6 text-muted mb-0 pt-1">{{ t('telecom.customerWizard.sectionAddress') }}</h3>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.street') }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.street" maxlength="256" />
+                                    <div class="text-danger small" v-if="customerWizard.errors.street">{{ customerWizard.errors.street }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.city') }} <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" v-model="customerWizard.cityId" v-on:change="onCustomerWizardCityChange">
+                                        <option value="">{{ t('telecom.customerWizard.citySelect') }}</option>
+                                        <option v-for="c in customerWizard.cityOptions" :key="c.id" :value="c.id">{{ c.name }} — {{ c.governorate }}</option>
+                                    </select>
+                                    <div class="text-danger small" v-if="customerWizard.errors.city">{{ customerWizard.errors.city }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.addressState') }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm bg-light" v-model="customerWizard.addressState" maxlength="128" readonly />
+                                    <div class="text-danger small" v-if="customerWizard.errors.addressState">{{ customerWizard.errors.addressState }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.zipCode') }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.zipCode" maxlength="16" dir="ltr" />
+                                    <div class="text-danger small" v-if="customerWizard.errors.zipCode">{{ customerWizard.errors.zipCode }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.country') }}</label>
+                                    <input type="text" class="form-control form-control-sm bg-light" v-model="customerWizard.country" maxlength="64" readonly />
+                                </div>
+                                <div class="col-12">
+                                    <h3 class="h6 text-muted mb-0 pt-1">{{ t('telecom.customerWizard.sectionContact') }}</h3>
+                                    <p class="small text-muted mb-0">{{ t('telecom.customerWizard.sectionContactHint') }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.phone') }} <span class="text-muted fw-normal">({{ t('telecom.customerWizard.optional') }})</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.phoneNumber" maxlength="16" dir="ltr" :placeholder="t('telecom.customerWizard.phonePh')" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">{{ t('telecom.customerWizard.email') }} <span class="text-muted fw-normal">({{ t('telecom.customerWizard.optional') }})</span></label>
+                                    <input type="text" class="form-control form-control-sm" v-model="customerWizard.emailAddress" maxlength="256" inputmode="email" autocomplete="email" />
+                                </div>
+
+                                <div class="col-12" v-if="customerWizard.subscriberType === 0">
+                                    <details class="telecom-wizard-optional-panel border rounded p-2 bg-light-subtle">
+                                        <summary class="small fw-semibold text-muted user-select-none">{{ t('telecom.customerWizard.sectionIndividualExtra') }} <span class="text-muted fw-normal">({{ t('telecom.customerWizard.optional') }})</span></summary>
+                                        <div class="row g-3 mt-1">
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.nationality') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.nationality" maxlength="64" :placeholder="t('telecom.customerWizard.nationalityPh')" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.gender') }}</label>
+                                                <select class="form-select form-select-sm" v-model="customerWizard.gender">
+                                                    <option value="">{{ t('telecom.customerWizard.genderUnknown') }}</option>
+                                                    <option value="1">{{ t('telecom.customerWizard.genderMale') }}</option>
+                                                    <option value="2">{{ t('telecom.customerWizard.genderFemale') }}</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.occupation') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.occupation" maxlength="128" />
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+
+                                <div class="col-12">
+                                    <details class="telecom-wizard-optional-panel border rounded p-2 bg-light-subtle">
+                                        <summary class="small fw-semibold text-muted user-select-none">{{ t('telecom.customerWizard.sectionContactExtra') }} <span class="text-muted fw-normal">({{ t('telecom.customerWizard.optional') }})</span></summary>
+                                        <div class="row g-3 mt-1">
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.fax') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.faxNumber" maxlength="16" dir="ltr" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.website') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.website" maxlength="256" dir="ltr" inputmode="url" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.whatsApp') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.whatsApp" maxlength="16" dir="ltr" />
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+
+                                <div class="col-12">
+                                    <details class="telecom-wizard-optional-panel border rounded p-2 bg-light-subtle">
+                                        <summary class="small fw-semibold text-muted user-select-none">{{ t('telecom.customerWizard.sectionSocial') }} <span class="text-muted fw-normal">({{ t('telecom.customerWizard.optional') }})</span></summary>
+                                        <div class="row g-3 mt-1">
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.linkedIn') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.linkedIn" maxlength="256" dir="ltr" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.facebook') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.facebook" maxlength="256" dir="ltr" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.instagram') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.instagram" maxlength="256" dir="ltr" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.twitterX') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.twitterX" maxlength="256" dir="ltr" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small">{{ t('telecom.customerWizard.tikTok') }}</label>
+                                                <input type="text" class="form-control form-control-sm" v-model="customerWizard.tikTok" maxlength="256" dir="ltr" />
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+
+                                <div class="col-12">
+                                    <details class="telecom-wizard-optional-panel border rounded p-2 bg-light-subtle">
+                                        <summary class="small fw-semibold text-muted user-select-none">{{ t('telecom.customerWizard.sectionContacts') }} <span class="text-muted fw-normal">({{ t('telecom.customerWizard.optional') }})</span></summary>
+                                        <p class="small text-muted mb-2 mt-1">{{ t('telecom.customerWizard.sectionContactsHint') }}</p>
+                                        <div v-for="(row, idx) in customerWizard.contactRows" :key="idx" class="border rounded p-2 mb-2 bg-white">
+                                            <p class="small fw-semibold text-muted mb-2">{{ t('telecom.customerWizard.contactRow') }} {{ idx + 1 }}</p>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small">{{ t('telecom.customerWizard.contactName') }}</label>
+                                                    <input type="text" class="form-control form-control-sm" v-model="row.name" maxlength="128" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small">{{ t('telecom.customerWizard.contactJobTitle') }}</label>
+                                                    <input type="text" class="form-control form-control-sm" v-model="row.jobTitle" maxlength="128" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small">{{ t('telecom.customerWizard.contactPhone') }}</label>
+                                                    <input type="text" class="form-control form-control-sm" v-model="row.phoneNumber" maxlength="16" dir="ltr" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small">{{ t('telecom.customerWizard.contactEmail') }}</label>
+                                                    <input type="text" class="form-control form-control-sm" v-model="row.emailAddress" maxlength="256" dir="ltr" inputmode="email" />
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label small">{{ t('telecom.customerWizard.contactNotes') }}</label>
+                                                    <input type="text" class="form-control form-control-sm" v-model="row.description" maxlength="256" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-show="customerWizard.step === 3" class="telecom-wizard-step text-center py-2">
+                            <p class="mb-2"><i class="fas fa-check-circle text-success fa-2x mb-2" aria-hidden="true"></i></p>
+                            <p class="mb-1">{{ t('telecom.customerWizard.savedOk') }}</p>
+                            <p class="mb-1"><strong>{{ customerWizard.savedCustomerName }}</strong></p>
+                            <p class="small text-muted mb-3">{{ t('telecom.customerWizard.savedNumber') }} <strong>{{ customerWizard.savedCustomerNumber || '—' }}</strong></p>
+                            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                <button type="button" class="btn btn-outline-secondary" @@click="finishCustomerWizard">{{ t('telecom.customerWizard.finishBtn') }}</button>
+                                <button type="button" class="btn btn-success" :disabled="!hubPermissions.canCreateOps || customerWizard.handoffBusy" @@click="handoffSavedCustomerToActivate">
+                                    <span v-if="customerWizard.handoffBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.customerWizard.activateBtn') }}
+                                </button>
+                            </div>
+                            <p v-if="!hubPermissions.canCreateOps" class="small text-warning mt-2 mb-0">{{ t('telecom.customerWizard.activateDenied') }}</p>
+                        </div>
+
+                        <div v-if="customerWizard.step === 2" class="d-flex flex-wrap gap-2 mt-4 pt-2 border-top">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" @@click="goBackCustomerWizardSearch">{{ t('telecom.wizard.prev') }}</button>
+                            <button class="btn btn-success btn-sm" type="button" :disabled="customerWizard.saveBusy" @@click="submitCustomerWizardSave">
+                                <span v-if="customerWizard.saveBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.customerWizard.saveBtn') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="wizard.visible" id="telecomOpsWizardPanel" class="mb-4 telecom-hub-wizard-anchor" aria-labelledby="wizardHeading">
+                <div class="card border-primary shadow-sm telecom-wizard-card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                        <h2 id="wizardHeading" class="h6 mb-0 fw-semibold text-white">{{ t('telecom.wizard.heading', { title: wizardTitle }) }}</h2>
+                        <button type="button" class="btn-close btn-close-white" :aria-label="t('telecom.wizard.closeAria')" @@click="closeWizard"></button>
                     </div>
                     <div class="card-body">
                         <div class="telecom-stepper d-flex gap-2 mb-4 flex-wrap" role="list">
@@ -209,7 +510,7 @@
                         <div v-show="wizard.step === 1" class="telecom-wizard-step">
                             <p class="small text-muted mb-3">{{ t('telecom.wizard.step1Help') }}</p>
                             <div class="row g-3">
-                                <div class="col-12 col-lg-6">
+                                <div class="col-12 col-lg-6" v-if="!(wizard.kind === 'activate' && wizard.primarySubscriberProfileId)">
                                     <label class="form-label fw-semibold small">{{ t('telecom.wizard.primaryLabel') }}</label>
                                     <div class="input-group input-group-sm mb-2">
                                         <input type="search" class="form-control" v-model="wizard.primarySearchTerm" :placeholder="t('telecom.wizard.searchPh')" @@keyup.enter="runWizardPrimarySearch" />
@@ -231,12 +532,58 @@
                                         <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardPrimary">{{ t('telecom.wizard.cancel') }}</button>
                                     </div>
                                 </div>
-                                <div v-if="needsSecondaryParty" class="col-12 col-lg-6">
+                                <div class="col-12" v-if="wizard.kind === 'activate' && wizard.primarySubscriberProfileId">
+                                    <div class="alert alert-success py-2 small mb-0">
+                                        {{ t('telecom.customerWizard.activatePrefilled') }} <strong>{{ wizard.primaryLabel }}</strong>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardPrimary">{{ t('telecom.wizard.cancel') }}</button>
+                                    </div>
+                                </div>
+                                <div v-if="needsActivateMsisdn" class="col-12 telecom-wizard-reveal">
+                                    <label class="form-label fw-semibold small" for="wizActivationLineType">
+                                        {{ t('telecom.wizard.lineType.label') }}
+                                        <span class="text-danger">{{ t('telecom.wizard.requiredStar') }}</span>
+                                    </label>
+                                    <p class="small text-muted mb-2">{{ t('telecom.wizard.lineType.hint') }}</p>
+                                    <select id="wizActivationLineType" class="form-select form-select-sm mb-2" v-model="wizard.activationLineTypeId" :disabled="telecomLineTypesBusy" @@change="onActivationLineTypeChange">
+                                        <option value="">{{ telecomLineTypesBusy ? t('common.loading', 'Loading…') : t('telecom.wizard.lineType.placeholder') }}</option>
+                                        <option v-for="lt in activationLineTypeOptions" :key="lt.id" :value="lt.id">{{ lineTypeDisplayName(lt) }}</option>
+                                    </select>
+                                    <p v-if="!telecomLineTypesBusy && !activationLineTypeOptions.length" class="small text-warning mb-0">
+                                        {{ t('telecom.wizard.lineType.emptyCatalog', 'No line types in catalog — add them under Subscription line types.') }}
+                                    </p>
+                                    <p v-if="activationLineTypeLabel" class="small text-success mb-0">
+                                        <i class="bi bi-funnel me-1"></i>{{ t('telecom.wizard.lineType.selectedHint', { type: activationLineTypeLabel }) }}
+                                    </p>
+                                </div>
+                                <div v-if="needsActivateMsisdn" class="col-12 col-lg-6 telecom-wizard-reveal">
+                                    <label class="form-label fw-semibold small">
+                                        {{ t('telecom.wizard.activateMsisdnLabel') }}
+                                        <span class="text-danger">{{ t('telecom.wizard.requiredStar') }}</span>
+                                    </label>
+                                    <p class="small text-muted mb-2">{{ t('telecom.wizard.activateMsisdnHint') }}</p>
+                                    <p v-if="!wizard.activationLineTypeId" class="small text-warning mb-2">{{ t('telecom.wizard.lineType.selectFirst') }}</p>
+                                    <div class="input-group input-group-sm mb-2">
+                                        <input type="search" class="form-control font-monospace" dir="ltr" v-model="wizard.activateMsisdnSearchTerm" :placeholder="t('telecom.wizard.activateMsisdnPh')" :disabled="!canPickActivateMsisdn" @@keyup.enter.prevent="runWizardActivateMsisdnSearch" />
+                                        <button class="btn btn-outline-primary" type="button" :disabled="!canPickActivateMsisdn" @@click.prevent="runWizardActivateMsisdnSearch" :title="t('telecom.wizard.msisdnPicker.browseTitle')">
+                                            <i class="bi bi-search me-1"></i>{{ t('telecom.wizard.msisdnPicker.browseTitle') }}
+                                        </button>
+                                    </div>
+                                    <div v-if="wizard.activateMsisdnLabel" class="alert alert-success border small py-2 mb-0">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        {{ t('telecom.wizard.selected') }}
+                                        <strong class="font-monospace" dir="ltr">{{ wizard.activateMsisdnLabel }}</strong>
+                                        <span class="badge text-bg-success ms-1">{{ t('telecom.wizard.msisdnPicker.reservedHint') }}</span>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" @@click="clearWizardActivateMsisdn">{{ t('telecom.wizard.cancel') }}</button>
+                                    </div>
+                                </div>
+                                <div v-if="needsSecondaryParty" class="col-12 col-lg-6 telecom-wizard-reveal">
                                     <label class="form-label fw-semibold small">
                                         {{ t('telecom.wizard.secondaryLabel') }}
                                         <span v-if="secondaryRequired" class="text-danger">{{ t('telecom.wizard.requiredStar') }}</span>
                                         <span v-else class="text-muted fw-normal">{{ t('telecom.wizard.optional') }}</span>
                                     </label>
+                                    <p v-if="wizard.kind === 'activate' && isCorporatePrimary" class="small text-muted mb-2">{{ t('telecom.wizard.corporateSecondPartyHint') }}</p>
+                                    <p v-else-if="wizard.kind === 'takeover'" class="small text-muted mb-2">{{ t('telecom.wizard.secondaryRequiredHint') }}</p>
                                     <div class="input-group input-group-sm mb-2">
                                         <input type="search" class="form-control" v-model="wizard.secondarySearchTerm" :placeholder="t('telecom.wizard.searchPh')" @@keyup.enter="runWizardSecondarySearch" />
                                         <button class="btn btn-outline-primary" type="button" :disabled="wizard.secondaryBusy" @@click="runWizardSecondarySearch">{{ t('telecom.wizard.searchBtn') }}</button>
@@ -260,26 +607,75 @@
                                     <p v-if="currentProductName && wizard.kind === 'migrate'" class="small text-muted mb-1">
                                         {{ t('telecom.wizard.migrationOffers.currentPlan') }}: <strong>{{ currentProductName }}</strong>
                                     </p>
-                                    <p v-if="migrationLineTypeHint" class="small text-muted mb-1">{{ t('telecom.wizard.migrationOffers.lineTypeHint', { type: migrationLineTypeHint }) }}</p>
+                                    <p v-if="wizard.kind === 'migrate' && migrationLineTypeHint" class="small text-muted mb-1">{{ t('telecom.wizard.migrationOffers.lineTypeHint', { type: migrationLineTypeHint }) }}</p>
+                                    <p v-if="wizard.kind === 'activate' && !wizard.activationLineTypeId" class="small text-warning mb-1">{{ t('telecom.wizard.lineType.selectFirst') }}</p>
                                     <p v-if="!wizard.primarySubscriberProfileId" class="small text-warning mb-1">{{ t('telecom.wizard.migrationOffers.selectSubscriberFirst') }}</p>
                                     <label class="form-label small" for="wizTargetOffer">{{ t('telecom.wizard.targetOffer') }} <span class="text-danger">*</span></label>
                                     <div v-if="migrationOffersBusy" class="placeholder-glow mb-2"><span class="placeholder col-12" style="height:2.25rem;"></span></div>
-                                    <select v-else id="wizTargetOffer" class="form-select form-select-sm mb-2" v-model="wizard.migrationTargetProductId">
+                                    <select v-else id="wizTargetOffer" class="form-select form-select-sm mb-2" v-model="wizard.migrationTargetProductId" :disabled="wizard.kind === 'activate' && !wizard.activationLineTypeId" @@change="onWizardOfferChanged">
                                         <option value="">{{ t('telecom.wizard.migrationOffers.placeholder') }}</option>
                                         <option v-for="p in migrationEligibleProducts" :key="p.id" :value="p.id">{{ productDisplayName(p) }} ({{ p.serviceCode }})</option>
-                                        <option value="OTHER">{{ t('telecom.wizard.migrationOffers.options.OTHER') }}</option>
                                     </select>
-                                    <div v-if="migrateNeedsOtherText">
-                                        <label class="form-label small" for="wizTargetOfferOther">{{ t('telecom.wizard.migrationOffers.otherLabel') }}</label>
-                                        <input id="wizTargetOfferOther" type="text" class="form-control form-control-sm" v-model="wizard.targetOfferOtherText"
-                                               :placeholder="t('telecom.wizard.migrationOffers.otherPh')" maxlength="200" />
-                                        <p class="small text-muted mb-0 mt-1">{{ t('telecom.wizard.migrationOffers.otherRequiredHint') }}</p>
+                                    <div v-if="wizard.offerDetailBusy" class="wizard-offer-detail-card placeholder-glow mb-2 p-3 border rounded bg-light">
+                                        <span class="placeholder col-8 mb-2"></span>
+                                        <span class="placeholder col-12 mb-1"></span>
+                                        <span class="placeholder col-10"></span>
+                                    </div>
+                                    <div v-else-if="wizard.offerDetail" class="wizard-offer-detail-card card border-0 shadow-sm mb-2 overflow-hidden">
+                                        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" :class="'bg-' + (wizard.offerDetail.badgeColor || 'primary') + ' bg-opacity-10'">
+                                            <div class="d-flex align-items-center gap-2 min-w-0">
+                                                <i class="bi fs-5" :class="wizard.offerDetail.iconClass || 'bi-box-seam'"></i>
+                                                <div class="min-w-0">
+                                                    <div class="fw-semibold small text-truncate">{{ wizardOfferDisplayName }}</div>
+                                                    <div class="font-monospace wizard-offer-code" style="font-size:0.7rem;" dir="ltr">{{ wizard.offerDetail.code }}</div>
+                                                </div>
+                                            </div>
+                                            <span v-if="wizardOfferMonthlyPrice" class="badge text-bg-danger shrink-0">{{ t('telecom.wizard.migrationOffers.offerCard.priceLabel', { price: wizardOfferMonthlyPrice }) }}</span>
+                                        </div>
+                                        <div class="card-body py-2 px-3 small">
+                                            <p v-if="wizardOfferSummaryText" class="text-muted mb-2">{{ wizardOfferSummaryText }}</p>
+                                            <ul class="list-unstyled mb-0 wizard-offer-detail-list">
+                                                <li v-if="wizardOfferVoiceLine" class="mb-1">
+                                                    <i class="bi bi-telephone-fill text-primary me-1"></i>
+                                                    <span class="text-muted">{{ t('telecom.wizard.migrationOffers.offerCard.voice') }}:</span>
+                                                    <strong>{{ wizardOfferVoiceLine }}</strong>
+                                                </li>
+                                                <li v-if="wizardOfferDataLine" class="mb-1">
+                                                    <i class="bi bi-wifi text-success me-1"></i>
+                                                    <span class="text-muted">{{ t('telecom.wizard.migrationOffers.offerCard.data') }}:</span>
+                                                    <strong>{{ wizardOfferDataLine }}</strong>
+                                                </li>
+                                                <li v-if="wizardOfferSmsLine" class="mb-0">
+                                                    <i class="bi bi-chat-dots-fill text-info me-1"></i>
+                                                    <span class="text-muted">{{ t('telecom.wizard.migrationOffers.offerCard.sms') }}:</span>
+                                                    <strong>{{ wizardOfferSmsLine }}</strong>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'activate'">
                                     <label class="form-label small" for="wizActivateIccid">{{ t('telecom.wizard.activateIccid') }} <span class="text-danger">*</span></label>
-                                    <input id="wizActivateIccid" type="text" class="form-control form-control-sm font-monospace mb-1" dir="ltr" maxlength="19" v-model="wizard.simIccid" />
-                                    <p class="small text-muted mb-0">{{ t('telecom.wizard.activateIccidHint') }}</p>
+                                    <input id="wizActivateIccid" type="text" class="form-control form-control-sm font-monospace mb-1" dir="ltr" maxlength="19" v-model="wizard.simIccid" :readonly="activateSimIccidLocked" :class="{ 'bg-light': activateSimIccidLocked }" />
+                                    <p class="small text-muted mb-2">{{ activateSimIccidLocked ? t('telecom.wizard.activateIccidLockedHint') : t('telecom.wizard.activateIccidHint') }}</p>
+                                    <div class="row g-2">
+                                        <div class="col-md-6" v-if="activationChannelUiMode === 'admin'">
+                                            <label class="form-label small">{{ t('telecom.wizardUi.activationChannel', 'Channel') }}</label>
+                                            <select class="form-select form-select-sm" v-model.number="wizard.activationChannel">
+                                                <option :value="0">{{ activationChannelLabels.showroom }}</option>
+                                                <option :value="1">{{ activationChannelLabels.dealer }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" v-else>
+                                            <label class="form-label small">{{ t('telecom.wizardUi.activationChannel', 'Channel') }}</label>
+                                            <div class="form-control form-control-sm bg-light text-muted">{{ activationChannelLabels.showroom }}</div>
+                                            <p class="small text-muted mb-0 mt-1">{{ activationChannelLockedHint }}</p>
+                                        </div>
+                                        <div class="col-md-6" v-show="activationChannelUiMode === 'admin' && wizard.activationChannel === 1">
+                                            <label class="form-label small">{{ t('telecom.wizardUi.dealerCode', 'Dealer code') }}</label>
+                                            <input type="text" class="form-control form-control-sm" v-model="wizard.dealerCode" maxlength="64" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-12" v-if="wizard.kind === 'addpackage'">
                                     <label class="form-label small">{{ t('telecom.tiles.addpackage.title') }}</label>
@@ -380,8 +776,8 @@
                                     <label class="form-label small">{{ t('telecom.suspension.barringLevel') }} *</label>
                                     <select class="form-select form-select-sm mb-2" v-model="wizard.susBarringLevel">
                                         <option value="Full">{{ t('telecom.suspension.barringFull') }}</option>
-                                        <option value="InboundOnly">{{ t('telecom.suspension.barringInbound') }}</option>
                                         <option value="OutboundOnly">{{ t('telecom.suspension.barringOutbound') }}</option>
+                                        <option value="DataOnly">{{ t('telecom.suspension.barringDataOnly') }}</option>
                                     </select>
                                     <label class="form-label small">{{ t('telecom.suspension.suspensionReason') }} *</label>
                                     <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.susSuspensionReason" />
@@ -546,9 +942,51 @@
                         </div>
 
                         <div v-show="wizard.step === 2 && wizard.kind !== 'addpackage'" class="telecom-wizard-step">
-                            <p class="small text-muted mb-3" v-html="t('telecom.wizard.step2Help')"></p>
+                            <div v-if="wizard.kind === 'activate'" class="mb-4">
+                                <label class="form-label fw-semibold small mb-2">
+                                    {{ t('telecom.wizard.kycUpload.title') }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="hidden" :value="wizard.kycDocumentReferenceId" />
+                                <div class="kyc-dropzone"
+                                     :class="{
+                                         'kyc-dropzone--hover': wizard.kycDropHover,
+                                         'kyc-dropzone--locked': wizard.kycUploadLocked,
+                                         'kyc-dropzone--error': !!wizard.kycUploadError
+                                     }"
+                                     @@dragenter.prevent="onKycDragEnter"
+                                     @@dragover.prevent="onKycDragOver"
+                                     @@dragleave.prevent="onKycDragLeave"
+                                     @@drop.prevent="onKycDrop"
+                                     @@click="!wizard.kycUploadLocked && $refs.kycFileInput?.click()">
+                                    <input ref="kycFileInput" type="file" class="d-none" accept=".pdf,.png,.jpg,.jpeg"
+                                           :disabled="wizard.kycUploadLocked || wizard.kycUploadBusy"
+                                           @@change="onKycFileSelected" />
+                                    <div v-if="wizard.kycUploadBusy" class="kyc-dropzone__body text-center">
+                                        <div class="spinner-border text-primary mb-2" role="status" aria-hidden="true"></div>
+                                        <p class="small mb-2">{{ t('telecom.wizard.kycUpload.uploading') }}</p>
+                                        <div class="progress kyc-upload-progress" role="progressbar" :aria-valuenow="wizard.kycUploadProgress" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" :style="{ width: wizard.kycUploadProgress + '%' }"></div>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="wizard.kycUploadLocked" class="kyc-dropzone__body kyc-dropzone__success text-center">
+                                        <img v-if="wizard.kycThumbnailUrl" :src="wizard.kycThumbnailUrl" alt="" class="kyc-thumbnail mb-2" />
+                                        <i v-else class="fas fa-file-pdf fa-2x text-danger mb-2" aria-hidden="true"></i>
+                                        <p class="mb-1 small fw-semibold text-success">
+                                            <i class="fas fa-check-circle me-1"></i>{{ wizard.kycUploadFileName }}
+                                        </p>
+                                        <p class="small text-muted mb-0">{{ t('telecom.wizard.kycUpload.locked') }}</p>
+                                    </div>
+                                    <div v-else class="kyc-dropzone__body text-center">
+                                        <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2 kyc-dropzone__icon" aria-hidden="true"></i>
+                                        <p class="mb-1 fw-semibold small">{{ t('telecom.wizard.kycUpload.dropHint') }}</p>
+                                        <p class="small text-muted mb-0">{{ t('telecom.wizard.kycUpload.formats') }}</p>
+                                    </div>
+                                </div>
+                                <p v-if="wizard.kycUploadError" class="small text-danger mt-2 mb-0">{{ wizard.kycUploadError }}</p>
+                            </div>
                             <div v-if="!wizard.createdOperationId" class="d-grid gap-2">
-                                <button type="button" class="btn btn-primary" :disabled="wizardSubmitBusy" @@click="submitCreateOperation">
+                                <button type="button" class="btn btn-primary" :disabled="wizardSubmitBusy || (wizard.kind === 'activate' && !wizard.kycDocumentReferenceId)" @@click="submitCreateOperation">
                                     <span v-if="wizardSubmitBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
                                     {{ wizard.kind === 'migrate' ? t('telecom.wizard.draftMigrate') : t('telecom.wizard.draftDefault') }}
                                 </button>
@@ -560,15 +998,63 @@
                                     <label class="form-label small fw-semibold">{{ wizard.kind === 'termination' ? t('telecom.termination.identityRequired') : wizard.kind === 'changeNumber' ? t('telecom.changeNumber.paymentDocHint') : wizard.kind === 'simswap' ? t('telecom.simSwap.identityRequired') : t('telecom.takeOver.identityRequired') }} *</label>
                                     <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                                 </div>
-                                <button v-if="!wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="wizardUploadBusy" @@click="submitMarkDocumentUploaded">
+                                <button v-if="!wizard.documentMarkedUploaded && wizard.kind !== 'activate'" type="button" class="btn btn-success btn-sm" :disabled="wizardUploadBusy" @@click="submitMarkDocumentUploaded">
                                     <span v-if="wizardUploadBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
                                     {{ wizard.kind === 'takeover' || (wizard.kind === 'simswap' && wizard.simLostOrStolen) || (wizard.kind === 'changeNumber' && wizard.cnRequiresBackOffice) || (wizard.kind === 'termination' && wizard.trmRequiresBackOffice) ? t('telecom.wizard.uploadBtnTakeOver') : t('telecom.wizard.uploadBtn') }}
                                 </button>
+                                <p v-if="wizard.kind === 'activate' && wizard.documentMarkedUploaded" class="mb-2 small text-success">
+                                    <i class="fas fa-check-circle me-1"></i>{{ t('telecom.wizard.kycUpload.linked') }}
+                                </p>
                                 <p v-if="(wizard.kind === 'takeover' || (wizard.kind === 'simswap' && wizard.simLostOrStolen) || (wizard.kind === 'changeNumber' && wizard.cnRequiresBackOffice) || (wizard.kind === 'termination' && wizard.trmRequiresBackOffice)) && wizard.documentMarkedUploaded" class="small text-muted mb-2">{{ wizard.kind === 'termination' ? t('telecom.termination.pendingBackOffice') : wizard.kind === 'changeNumber' ? t('telecom.changeNumber.pendingBackOffice') : wizard.kind === 'simswap' ? t('telecom.simSwap.pendingBackOffice') : t('telecom.takeOver.pendingBackOffice') }}</p>
                                 <p v-else-if="wizard.documentMarkedUploaded" class="mb-0 small text-success">
                                     <i class="fas fa-check-circle me-1"></i>
                                     {{ t('telecom.wizard.uploaded') }}
                                 </p>
+                                <div v-if="wizard.kind === 'activate' && wizard.documentMarkedUploaded && activateRequiredDeposit > 0 && !wizard.paymentRecorded" class="border rounded p-2 mb-2 mt-2 bg-white">
+                                    <p class="small fw-semibold mb-2">{{ t('telecom.wizardUi.paymentBlock', 'Payment') }}</p>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-8">
+                                            <input type="text" class="form-control form-control-sm font-monospace" dir="ltr" v-model="wizard.paymentReference" :placeholder="t('telecom.wizardUi.paymentRefPh', 'Reference')" :disabled="wizard.paymentCashierLocked" />
+                                        </div>
+                                        <div class="col-md-4 d-grid">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" :disabled="wizard.cashierFetchBusy || wizard.paymentCashierLocked" @@click="fetchPaymentFromCashier">
+                                                <span v-if="wizard.cashierFetchBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.wizardUi.fetchFromCashier', 'Fetch from cashier') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <select class="form-select form-select-sm" v-model.number="wizard.paymentChannel" :disabled="wizard.paymentCashierLocked">
+                                                <option :value="0">{{ t('telecom.refund.methodCash', 'Cash') }}</option>
+                                                <option :value="1">{{ t('telecom.refund.methodWallet', 'Wallet') }}</option>
+                                                <option :value="2">{{ t('telecom.swal.voucher', 'Voucher') }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" min="1" step="1" class="form-control form-control-sm" v-model="wizard.paymentAmount" :placeholder="t('telecom.wizardUi.amountPh', 'Amount')" :readonly="wizard.paymentCashierLocked" />
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-center">
+                                            <span v-if="wizard.paymentCashierLocked" class="small text-success">{{ t('telecom.wizardUi.cashierFetched', 'Loaded from cashier') }}</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" :disabled="wizard.paymentBusy || !wizard.paymentCashierLocked" @@click="submitWizardRecordPayment">
+                                        <span v-if="wizard.paymentBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.wizardUi.recordPayment', 'Record payment') }}
+                                    </button>
+                                </div>
+                                <p v-if="wizard.kind === 'activate' && wizard.paymentRecorded" class="small text-success mb-2">{{ t('telecom.wizardUi.paymentDone', 'Payment recorded') }}</p>
+                                <button v-if="wizard.kind === 'activate' && wizard.documentMarkedUploaded && !wizard.confirmed && (activateRequiredDeposit <= 0 || wizard.paymentRecorded)" type="button" class="btn btn-primary btn-sm mt-2" :disabled="wizard.confirmBusy" @@click="submitWizardConfirmCbs">
+                                    <span v-if="wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t('telecom.wizardUi.confirmCbs', 'Confirm CBS/HLR') }}
+                                </button>
+                                <p v-if="wizard.kind === 'activate' && wizard.confirmed && wizard.confirmStatusHint" class="small text-muted mb-2">{{ wizard.confirmStatusHint }}</p>
+                                <p v-if="wizard.kind === 'activate' && wizard.confirmed" class="small text-muted mb-0 mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ t('telecom.wizardUi.rechargeVia360Hint', 'لشحن الرصيد لاحقاً (Top-up) استخدم Customer 360 أو قائمة العملاء — وليس هذا المعالج.') }}
+                                    <a href="#" class="ms-1 alert-link" @@click.prevent="openWizardCustomer360">{{ t('telecom.wizardUi.openCustomer360', 'Customer 360') }}</a>
+                                </p>
+                                <div v-if="wizard.kind === 'activate' && wizard.falloutTicketId" class="alert alert-danger py-2 small mb-0 mt-2">
+                                    {{ t('telecom.wizard.falloutBanner', 'Network fallout — ticket opened') }}
+                                    <a :href="'/Telecom/TechnicalTicketList?id=' + encodeURIComponent(wizard.falloutTicketId)" class="alert-link ms-1">{{ wizard.falloutTicketNumber || wizard.falloutTicketId }}</a>
+                                </div>
                             </div>
                         </div>
 
@@ -894,6 +1380,94 @@
                 </div>
             </div>
 
+            <teleport to="body">
+            <div v-if="wizard.activateMsisdnModalOpen" class="modal fade show d-block activate-msisdn-picker-host" tabindex="-1" role="dialog" aria-modal="true" @@keydown.esc="closeActivateMsisdnModal">
+                <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow msisdn-picker-modal">
+                        <div class="modal-header border-0 pb-0">
+                            <div>
+                                <h5 class="modal-title fw-bold">
+                                    <i class="bi bi-telephone-plus me-2 text-danger"></i>{{ t('telecom.wizard.msisdnPicker.title') }}
+                                </h5>
+                                <p class="small text-muted mb-0">{{ t('telecom.wizard.msisdnPicker.subtitle') }}</p>
+                                <p v-if="activationLineTypeLabel" class="small text-success mb-0 mt-1">
+                                    <i class="bi bi-funnel-fill me-1"></i>{{ t('telecom.wizard.lineType.selectedHint', { type: activationLineTypeLabel }) }}
+                                </p>
+                            </div>
+                            <button type="button" class="btn-close" :aria-label="t('telecom.wizard.closeAria')" @@click="closeActivateMsisdnModal"></button>
+                        </div>
+                        <div class="modal-body pt-3">
+                            <div v-if="wizard.activateMsisdnModalPrefix" class="alert alert-light border py-2 small mb-3">
+                                <i class="bi bi-funnel me-1"></i>
+                                {{ t('telecom.wizard.msisdnPicker.prefixFilter') }}:
+                                <strong class="font-monospace" dir="ltr">{{ wizard.activateMsisdnModalPrefix }}</strong>
+                            </div>
+                            <ul class="nav nav-pills gap-2 mb-3 flex-wrap msisdn-tier-tabs">
+                                <li class="nav-item" v-for="tab in MSISDN_CATEGORY_TABS" :key="tab.id">
+                                    <button type="button" class="nav-link py-1 px-3 small"
+                                            :class="{ active: wizard.activateMsisdnCategoryTab === tab.id }"
+                                            @@click="setActivateMsisdnCategoryTab(tab.id)">
+                                        {{ t('telecom.wizard.msisdnPicker.categories.' + tab.i18n) }}
+                                    </button>
+                                </li>
+                            </ul>
+                            <div v-if="wizard.activateMsisdnPoolBusy" class="text-center py-5 text-muted">
+                                <span class="spinner-border text-danger"></span>
+                                <p class="small mt-2 mb-0">{{ t('telecom.wizard.msisdnPicker.loading') }}</p>
+                            </div>
+                            <div v-else-if="activateMsisdnPoolDisplay.length === 0" class="text-center py-5 text-muted small">
+                                <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                                <span v-if="activateMsisdnPoolEmptyDueToLineType">{{ t('telecom.wizard.msisdnPicker.emptyFiltered') }}</span>
+                                <span v-else>{{ t('telecom.wizard.msisdnPicker.empty') }}</span>
+                            </div>
+                            <div v-else class="table-responsive msisdn-picker-table-wrap">
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>{{ t('telecom.wizard.msisdnPicker.colMsisdn') }}</th>
+                                            <th>{{ t('telecom.wizard.msisdnPicker.colTier') }}</th>
+                                            <th class="d-none d-md-table-cell">ICCID</th>
+                                            <th class="text-end">{{ t('telecom.wizard.msisdnPicker.colAction') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="row in activateMsisdnPoolDisplay" :key="row.id || row.Id" class="msisdn-picker-row">
+                                            <td class="font-monospace fw-semibold" dir="ltr">{{ row.msisdn || row.Msisdn }}</td>
+                                            <td>
+                                                <span class="badge msisdn-tier-badge" :class="msisdnCategoryBadgeClass(resolveMsisdnCategory(row))">
+                                                    {{ msisdnCategoryLabel(resolveMsisdnCategory(row)) }}
+                                                </span>
+                                            </td>
+                                            <td class="font-monospace small text-muted d-none d-md-table-cell" dir="ltr">{{ row.iccid || row.Iccid || '—' }}</td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-danger" @@click="selectWizardActivateMsisdn(row)">
+                                                    {{ t('telecom.wizard.msisdnPicker.selectBtn') }}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p v-if="activateMsisdnPoolTruncated" class="small text-muted mt-2 mb-0">
+                                {{ t('telecom.wizard.msisdnPicker.truncated') }}
+                                <strong>100</strong> / {{ filteredActivateMsisdnPool.length }}
+                            </p>
+                            <p v-else-if="activateMsisdnPoolDisplay.length" class="small text-muted mt-2 mb-0">
+                                {{ t('telecom.wizard.msisdnPicker.total') }}: <strong>{{ filteredActivateMsisdnPool.length }}</strong>
+                            </p>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @@click="loadActivateMsisdnPool" :disabled="wizard.activateMsisdnPoolBusy">
+                                <i class="bi bi-arrow-clockwise me-1"></i>{{ t('telecom.wizard.msisdnPicker.refresh') }}
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" @@click="closeActivateMsisdnModal">{{ t('telecom.wizard.closeAria') }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-if="wizard.activateMsisdnModalOpen" class="modal-backdrop fade show"></div>
+            </teleport>
+
             <nav class="d-flex flex-wrap gap-2 pb-4" aria-label="Shortcuts">
                 <a v-if="hubPermissions.canSeeBillingLog" class="btn btn-outline-secondary" href="/Telecom/BillingIntegration">{{ t('telecom.shortcuts.billing') }}</a>
                 <a v-if="hubPermissions.showRetailShortcuts" class="btn btn-outline-secondary" href="/SalesOrders/SalesOrderList">{{ t('telecom.shortcuts.sales') }}</a>
@@ -923,7 +1497,101 @@
         .telecom-step { border: 1px solid var(--sys-border); }
         .telecom-step-active { background: var(--sys-brand-red); color: var(--sys-card-bg); border-color: var(--sys-brand-red); font-weight: 600; }
         .telecom-step-muted { background: var(--sys-bg); color: var(--sys-text-muted); }
+        .telecom-wizard-card .card-header {
+            background: var(--sys-brand-red, #dc3545) !important;
+            color: #fff !important;
+        }
+        .telecom-wizard-card .card-header h2 {
+            color: #fff !important;
+        }
+        .telecom-customer-wizard-card .card-header {
+            background: linear-gradient(145deg, #15803d 0%, #16a34a 100%) !important;
+        }
+        .telecom-step-active-customer { background: #16a34a; color: #fff; border-color: #16a34a; font-weight: 600; }
+        .tile-new-customer {
+            background: linear-gradient(145deg, #15803d 0%, #16a34a 100%) !important;
+            color: #fff !important;
+        }
         .telecom-table thead th { white-space: nowrap; font-weight: 600; font-size: 0.8125rem; }
+        .telecom-hub-wizard-anchor {
+            scroll-margin-top: max(1rem, env(safe-area-inset-top, 0px));
+        }
+        .telecom-wizard-card .card-body {
+            padding: clamp(0.75rem, 2.5vw, 1.25rem);
+        }
+        .activate-msisdn-picker-host {
+            z-index: 1060;
+        }
+        body > .modal-backdrop:last-of-type {
+            z-index: 1055;
+        }
+        .telecom-stepper .telecom-step {
+            min-width: 0;
+        }
+        @@media (max-width: 575.98px) {
+            .telecom-stepper {
+                flex-direction: column;
+            }
+            .telecom-stepper .telecom-step {
+                width: 100%;
+                flex: 1 1 auto;
+            }
+            .telecom-wizard-card .card-header {
+                padding-inline: 0.75rem;
+            }
+            .telecom-wizard-card .card-header h2 {
+                font-size: 0.95rem;
+                line-height: 1.35;
+            }
+            .big-tile {
+                min-height: 96px;
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+            .big-tile .fs-6 {
+                font-size: 0.9rem !important;
+            }
+        }
+        .kyc-dropzone {
+            border: 2px dashed #94a3b8;
+            border-radius: 0.75rem;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+        }
+        .kyc-dropzone:not(.kyc-dropzone--locked):hover,
+        .kyc-dropzone--hover {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            transform: translateY(-1px);
+        }
+        .kyc-dropzone--locked {
+            border-color: #16a34a;
+            background: #f0fdf4;
+            cursor: default;
+        }
+        .kyc-dropzone--error {
+            border-color: #dc2626;
+        }
+        .kyc-dropzone__icon {
+            transition: transform 0.2s ease;
+        }
+        .kyc-dropzone--hover .kyc-dropzone__icon {
+            transform: scale(1.08);
+        }
+        .kyc-thumbnail {
+            max-width: 120px;
+            max-height: 80px;
+            object-fit: cover;
+            border-radius: 0.375rem;
+            border: 1px solid #e2e8f0;
+        }
+        .kyc-upload-progress {
+            height: 0.5rem;
+            max-width: 280px;
+            margin: 0 auto;
+        }
     </style>
 }
 
@@ -935,5 +1603,6 @@
         };
     </script>
     <script src="~/lib/vue-i18n/vue-i18n.global.prod.js"></script>
+    <script src="~/lib/indotalent/activation-channel-ui.js" asp-append-version="true"></script>
     <script src="~/FrontEnd/Pages/Telecom/TelecomHub.cshtml.js" asp-append-version="true"></script>
 }

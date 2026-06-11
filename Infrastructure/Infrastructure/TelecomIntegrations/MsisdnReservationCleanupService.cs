@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Telecom;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,9 +28,16 @@ public class MsisdnReservationCleanupService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var pollInterval = TimeSpan.FromMinutes(5);
+
             try
             {
                 using var scope = _serviceProvider.CreateScope();
+                var inventoryRules = scope.ServiceProvider.GetRequiredService<ITelecomInventoryRulesProvider>();
+                var reservationDuration = await inventoryRules.GetMsisdnReservationDurationAsync(stoppingToken);
+                var pollMinutes = Math.Clamp(reservationDuration.TotalMinutes / 3, 1, 15);
+                pollInterval = TimeSpan.FromMinutes(pollMinutes);
+
                 var dbContext = scope.ServiceProvider.GetRequiredService<DataAccessManager.EFCore.Contexts.DataContext>();
 
                 var utcNow = DateTime.UtcNow;
@@ -57,7 +65,7 @@ public class MsisdnReservationCleanupService : BackgroundService
                 _logger.LogError(ex, "Error occurred executing MsisdnReservationCleanupService.");
             }
 
-            await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken);
+            await Task.Delay(pollInterval, stoppingToken);
         }
     }
 }

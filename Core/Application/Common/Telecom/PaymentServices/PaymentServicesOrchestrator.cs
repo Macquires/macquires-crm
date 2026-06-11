@@ -12,6 +12,8 @@ using Application.Common.Repositories;
 
 using Application.Common.Security;
 
+using Application.Common.Telecom.Billing;
+
 using Application.Features.NumberSequenceManager;
 
 using Application.Features.TelecomManager.Events;
@@ -48,7 +50,7 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
 
     private readonly IPaymentGatewayIntegration _paymentGateway;
 
-    private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingRoutingOrchestrator _billingRouting;
 
     private readonly IUserAuditService _audit;
 
@@ -74,7 +76,7 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
 
         IPaymentGatewayIntegration paymentGateway,
 
-        IBillingSystemIntegration billing,
+        IBillingRoutingOrchestrator billingRouting,
 
         IUserAuditService audit,
 
@@ -98,7 +100,7 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
 
         _paymentGateway = paymentGateway;
 
-        _billing = billing;
+        _billingRouting = billingRouting;
 
         _audit = audit;
 
@@ -334,37 +336,33 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
 
 
 
-        var cbsResult = await _billing.RechargeAsync(
+        var subscriptionTypeCode = await _query.TelecomSubscription.AsNoTracking()
+            .IsDeletedEqualTo()
+            .Where(s => s.Id == payment.TelecomSubscriptionId)
+            .Join(
+                _query.TelecomSubscriptionTypeLookup.AsNoTracking().IsDeletedEqualTo(),
+                s => s.SubscriptionTypeId,
+                t => t.Id,
+                (_, t) => t.Code)
+            .FirstOrDefaultAsync(cancellationToken);
 
+        var rechargeResult = await _billingRouting.RechargeAsync(
+            subscriptionTypeCode,
             new BillingRechargeRequest(
-
                 payment.Id,
-
                 payment.Number,
-
                 payment.Msisdn!,
-
                 payment.Amount,
-
                 payment.CorrelationId),
-
             cancellationToken);
 
-
-
-        if (!cbsResult.Success)
-
+        if (!rechargeResult.Success)
         {
-
-            await FailPaymentAsync(payment, cbsResult.Message, fromStatus, confirmedById, cancellationToken);
-
-            return FailedResult(payment, cbsResult.Message);
-
+            await FailPaymentAsync(payment, rechargeResult.Message, fromStatus, confirmedById, cancellationToken);
+            return FailedResult(payment, rechargeResult.Message);
         }
 
-
-
-        var newBalance = cbsResult.NewBalance ?? (balanceBefore + payment.Amount);
+        var newBalance = rechargeResult.NewBalance ?? (balanceBefore + payment.Amount);
 
         profile.PrepaidBalance = newBalance;
 

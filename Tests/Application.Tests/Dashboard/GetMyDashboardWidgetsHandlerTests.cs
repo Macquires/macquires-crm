@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Tests.Dashboard;
 
+using Application.Tests.TestSupport;
+
 public class GetMyDashboardWidgetsHandlerTests
 {
     public GetMyDashboardWidgetsHandlerTests() => DashboardTestEncryption.EnsureInitialized();
@@ -72,7 +74,7 @@ public class GetMyDashboardWidgetsHandlerTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static DashboardWidget Widget(
@@ -105,6 +107,7 @@ public class GetMyDashboardWidgetsHandlerTests
         public IReadOnlyList<string> Roles => [];
         public TelecomMenuPersona? EffectivePersona => null;
         public bool IsAuthenticated => false;
+        public string? BranchId => null;
     }
 
     private sealed class StubProvider(string key) : IDashboardWidgetDataProvider

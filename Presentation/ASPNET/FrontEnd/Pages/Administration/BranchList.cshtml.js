@@ -1,5 +1,24 @@
+const I18N_PREFIX = 'administration.branchList';
+
 const App = {
     setup() {
+        const localeTick = Vue.ref(0);
+
+        const t = (key, fallback = '') => {
+            localeTick.value;
+            const hit = window.TelecomI18n?.t?.(`${I18N_PREFIX}.${key}`);
+            return hit && hit !== `${I18N_PREFIX}.${key}` ? hit : fallback || key;
+        };
+
+        const isEn = () => document.documentElement.lang?.toLowerCase().startsWith('en');
+
+        const branchLabel = (row) => {
+            if (!row) return '';
+            const ar = (row.nameAr || '').trim();
+            const en = (row.nameEn || '').trim();
+            return isEn() ? en || ar : ar || en;
+        };
+
         const state = Vue.reactive({
             mainData: [],
             managerOptions: [],
@@ -23,9 +42,7 @@ const App = {
             updateBranch: async (body) => AxiosManager.post('/Security/UpdateOrgUnit', body),
         };
 
-        const parentOptions = Vue.computed(() =>
-            (state.mainData || []).filter((row) => row.id !== state.id)
-        );
+        const parentOptions = Vue.computed(() => (state.mainData || []).filter((row) => row.id !== state.id));
 
         const buildManagerOptions = (rows) =>
             (rows || []).map((u) => ({
@@ -33,15 +50,17 @@ const App = {
                 label: `${u.firstName || ''} ${u.lastName || ''} (${u.email || ''})`.trim(),
             }));
 
+        const mapBranchRow = (row) => ({
+            ...row,
+            activeLabel: row.isActive ? t('active.active') : t('active.inactive'),
+            activeBadge: row.isActive ? 'bg-success' : 'bg-secondary',
+            managerLabel: row.managerDisplayName || '—',
+        });
+
         const methods = {
             populateMainData: async () => {
                 const response = await services.getBranches();
-                state.mainData = (response?.data?.content?.data || []).map((row) => ({
-                    ...row,
-                    activeLabel: row.isActive ? 'نشط' : 'موقوف',
-                    activeBadge: row.isActive ? 'bg-success' : 'bg-secondary',
-                    managerLabel: row.managerDisplayName || '—',
-                }));
+                state.mainData = (response?.data?.content?.data || []).map(mapBranchRow);
             },
             populateManagers: async () => {
                 const response = await services.getUsers();
@@ -62,7 +81,7 @@ const App = {
         const handler = {
             handleSubmit: async () => {
                 if (!state.nameAr?.trim()) {
-                    Swal.fire({ icon: 'warning', title: 'اسم الفرع مطلوب' });
+                    Swal.fire({ icon: 'warning', title: t('messages.nameRequired') });
                     return;
                 }
 
@@ -88,23 +107,26 @@ const App = {
                               createdById: uid,
                           };
 
-                    const res = state.id
-                        ? await services.updateBranch(body)
-                        : await services.createBranch(body);
+                    const res = state.id ? await services.updateBranch(body) : await services.createBranch(body);
 
                     if (res?.data?.code === 200) {
                         await methods.populateMainData();
                         mainGrid.refresh();
                         mainModal.obj.hide();
                         resetForm();
-                        Swal.fire({ icon: 'success', title: 'تم الحفظ', timer: 1400, showConfirmButton: false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: t('messages.saved'),
+                            timer: 1400,
+                            showConfirmButton: false,
+                        });
                     } else {
-                        Swal.fire({ icon: 'error', title: 'فشل الحفظ', text: res?.data?.message || '' });
+                        Swal.fire({ icon: 'error', title: t('messages.saveFailed'), text: res?.data?.message || '' });
                     }
                 } catch (e) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'خطأ',
+                        title: t('messages.error'),
                         text: e.response?.data?.message || e.message,
                     });
                 } finally {
@@ -113,9 +135,34 @@ const App = {
             },
         };
 
+        const gridColumns = () => [
+            { field: 'id', isPrimaryKey: true, visible: false },
+            { field: 'nameAr', headerText: t('grid.nameAr'), width: 180, minWidth: 140 },
+            { field: 'nameEn', headerText: t('grid.nameEn'), width: 140, minWidth: 100 },
+            { field: 'parentNameAr', headerText: t('grid.parent'), width: 160, minWidth: 120 },
+            { field: 'managerLabel', headerText: t('grid.manager'), width: 180, minWidth: 140 },
+            { field: 'managerEmail', headerText: t('grid.managerEmail'), width: 200, minWidth: 140 },
+            { field: 'staffCount', headerText: t('grid.staff'), width: 90, minWidth: 70, textAlign: 'Center' },
+            {
+                field: 'activeLabel',
+                headerText: t('grid.status'),
+                width: 90,
+                minWidth: 80,
+                template: '<span class="badge ${activeBadge}">${activeLabel}</span>',
+            },
+        ];
+
+        const gridToolbar = () => [
+            { text: t('toolbar.add'), tooltipText: t('toolbar.add'), prefixIcon: 'e-add', id: 'AddCustom' },
+            { text: t('toolbar.edit'), tooltipText: t('toolbar.edit'), prefixIcon: 'e-edit', id: 'EditCustom' },
+            'Search',
+            'ExcelExport',
+        ];
+
         const mainGrid = {
             obj: null,
             create: async (dataSource) => {
+                localeTick.value;
                 mainGrid.obj = new ej.grids.Grid({
                     id: 'BranchAdminGrid',
                     height: getDashminGridHeight(),
@@ -130,38 +177,18 @@ const App = {
                     pageSettings: { pageSize: 25, pageSizes: ['10', '25', '50'] },
                     selectionSettings: { type: 'Single' },
                     gridLines: 'Horizontal',
-                    columns: [
-                        { field: 'id', isPrimaryKey: true, visible: false },
-                        { field: 'nameAr', headerText: 'الفرع', width: 180, minWidth: 140 },
-                        { field: 'nameEn', headerText: 'EN', width: 140, minWidth: 100 },
-                        { field: 'parentNameAr', headerText: 'الوحدة الأب', width: 160, minWidth: 120 },
-                        { field: 'managerLabel', headerText: 'مدير الفرع', width: 180, minWidth: 140 },
-                        { field: 'managerEmail', headerText: 'بريد المدير', width: 200, minWidth: 140 },
-                        { field: 'staffCount', headerText: 'الموظفون', width: 90, minWidth: 70, textAlign: 'Center' },
-                        {
-                            field: 'activeLabel',
-                            headerText: 'الحالة',
-                            width: 90,
-                            minWidth: 80,
-                            template: '<span class="badge ${activeBadge}">${activeLabel}</span>',
-                        },
-                    ],
-                    toolbar: [
-                        { text: 'إضافة فرع', tooltipText: 'إضافة', prefixIcon: 'e-add', id: 'AddCustom' },
-                        { text: 'تعديل', tooltipText: 'تعديل', prefixIcon: 'e-edit', id: 'EditCustom' },
-                        'Search',
-                        'ExcelExport',
-                    ],
+                    columns: gridColumns(),
+                    toolbar: gridToolbar(),
                     toolbarClick: (args) => {
                         if (args.item.id === 'AddCustom') {
                             resetForm();
-                            state.mainTitle = 'إضافة فرع';
+                            state.mainTitle = t('modal.addTitle');
                             mainModal.obj.show();
                         }
                         if (args.item.id === 'EditCustom') {
                             const selected = mainGrid.obj.getSelectedRecords();
                             if (!selected?.length) {
-                                Swal.fire({ icon: 'info', title: 'اختر فرعاً من الجدول' });
+                                Swal.fire({ icon: 'info', title: t('messages.selectBranch') });
                                 return;
                             }
                             const row = selected[0];
@@ -171,7 +198,7 @@ const App = {
                             state.parentId = row.parentId || '';
                             state.managerUserId = row.managerUserId || '';
                             state.isActive = !!row.isActive;
-                            state.mainTitle = 'تعديل فرع';
+                            state.mainTitle = t('modal.editTitle');
                             mainModal.obj.show();
                         }
                     },
@@ -183,6 +210,15 @@ const App = {
                     mainGrid.obj.dataSource = state.mainData;
                 }
             },
+            rebuild: async () => {
+                if (!mainGridRef.value) return;
+                state.mainData = state.mainData.map(mapBranchRow);
+                if (mainGrid.obj) {
+                    mainGrid.obj.destroy();
+                    mainGrid.obj = null;
+                }
+                await mainGrid.create(state.mainData);
+            },
         };
 
         const mainModal = {
@@ -192,14 +228,38 @@ const App = {
             },
         };
 
+        const onLocaleChanged = async () => {
+            localeTick.value++;
+            await window.TelecomI18n?.ensureLoaded?.();
+            const title = t('pageTitle');
+            if (title) document.title = title;
+            await mainGrid.rebuild();
+        };
+
         Vue.onMounted(async () => {
-            mainModal.create();
-            await methods.populateManagers();
-            await methods.populateMainData();
-            await mainGrid.create(state.mainData);
+            document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                const title = t('pageTitle');
+                if (title) document.title = title;
+                await SecurityManager.authorizePage(['TelecomAdmin']);
+                await SecurityManager.validateToken();
+                mainModal.create();
+                await methods.populateManagers();
+                await methods.populateMainData();
+                await mainGrid.create(state.mainData);
+            } catch (e) {
+                console.error('BranchList init:', e);
+            } finally {
+                hideSpinnerAndShowContent();
+            }
         });
 
-        return { state, handler, mainGridRef, mainModalRef, parentOptions };
+        Vue.onUnmounted(() => {
+            document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
+        });
+
+        return { state, handler, mainGridRef, mainModalRef, parentOptions, t, branchLabel };
     },
 };
 

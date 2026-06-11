@@ -1,5 +1,6 @@
 using Application.Common.Telecom.Suspension;
 using Domain.Enums;
+using Application.Common.Settings;
 
 namespace Application.Common.Telecom.Reconnect;
 
@@ -11,7 +12,9 @@ public sealed record ReconnectEligibilityMatrixInput(
     string ClearanceType,
     bool HasPaymentReference,
     decimal OutstandingBalance,
-    bool FraudClearanceConfirmed);
+    bool FraudClearanceConfirmed,
+    string? BdrStatus = null,
+    DateTime? SuspensionDate = null);
 
 public sealed record ReconnectEligibilityMatrixResult(
     bool Allowed,
@@ -24,6 +27,36 @@ public static class ReconnectEligibilityMatrix
 {
     public static ReconnectEligibilityMatrixResult Evaluate(ReconnectEligibilityMatrixInput input)
     {
+        // GLOBAL HARDENING: Logic for Revenue Leakage and BDR block
+        if (input.LastSuspensionType == SuspensionWellKnown.Billing && input.OutstandingBalance < 0)
+        {
+            // If BDR is approved and pending cash, we allow reconnect but it will require payment ref in the next step
+            if (input.BdrStatus == "Approved_Pending_Cash")
+            {
+                return new ReconnectEligibilityMatrixResult(
+                    true,
+                    "VAL-09-02: تم اعتماد طلب تسوية الديون (BDR). يرجى استكمال عملية إعادة التفعيل مع إدخال رقم الوصل المالي.",
+                    "BdrApprovedPendingCash",
+                    false);
+            }
+
+            // DYNAMIC BAD DEBT CALCULATION (BDR Governance Framework)
+            var thresholdMonths = GlobalSettings.PostpaidBadDebtThresholdMonths;
+            var cutoffDate = DateTime.UtcNow.AddMonths(-thresholdMonths);
+            var suspensionDate = input.SuspensionDate ?? DateTime.UtcNow;
+
+            if (suspensionDate < cutoffDate)
+            {
+                // IF the line has been unpaid/suspended for LONGER than the customized number of months -> Legal Bad Debt state
+                return Deny(
+                    $"VAL-09-02: تم تجاوز مهلة السداد ({thresholdMonths} شهر). الخط في حالة ديون معدومة (Bad Debt). يرجى تقديم طلب تسوية ديون (BDR Request) عبر المكتب الخلفي المالي.",
+                    "BdrPendingBlock");
+            }
+
+            // IF the line has been unpaid/suspended for LESS than the customized number of months -> Overdue Postpaid Debtor
+            // Standard synchronous payment at showroom desk is allowed.
+        }
+
         if (input.ProfileOperationalStatus == SubscriberOperationalStatus.Terminated)
         {
             return Deny(
@@ -59,16 +92,15 @@ public static class ReconnectEligibilityMatrix
         }
 
         var clearance = (input.ClearanceType ?? string.Empty).Trim();
-        var requiresPaymentClearance =
-            string.Equals(input.LastSuspensionType, SuspensionWellKnown.Billing, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(clearance, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase);
 
-        if (requiresPaymentClearance)
+        if (RequiresPaymentClearance(clearance, input.LastSuspensionType))
         {
             if (!input.HasPaymentReference)
             {
                 return Deny(
-                    "VAL-09-02: مرجع الدفع مطلوب لتسوية حظر الفواتير.",
+                    string.Equals(clearance, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase)
+                        ? "VAL-09-02: مرجع الدفع مطلوب لتسوية حظر الفواتير."
+                        : "VAL-09-02: مرجع الدفع مطلوب — الحظر الأصلي مالي (Billing).",
                     "PaymentReferenceRequired");
             }
 
@@ -94,13 +126,49 @@ public static class ReconnectEligibilityMatrix
                 true);
         }
 
+        if (string.Equals(clearance, ReconnectWellKnown.Operational, StringComparison.OrdinalIgnoreCase))
+        {
+            return new ReconnectEligibilityMatrixResult(
+                true,
+                "VAL-09-04: إعادة التفعيل التشغيلية مسموحة — مزامنة فنية فورية (HLR/CRM).",
+                "OperationalAllowed",
+                false);
+        }
+
+        if (string.Equals(clearance, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase))
+        {
+            return new ReconnectEligibilityMatrixResult(
+                true,
+                "VAL-09-06: تسوية مالية مكتملة — مسموح إعادة التفعيل.",
+                "PaymentCleared",
+                false);
+        }
+
         return new ReconnectEligibilityMatrixResult(
             true,
             requiresBo
                 ? "إعادة التفعيل مسموحة — بانتظار اعتماد الباك أوفيس."
-                : "مسموح إعادة التفعيل الفوري — معرض.",
-            requiresBo ? "BackOfficePending" : "Allowed",
+                : "VAL-09-07: مسموح إعادة التفعيل الفوري — نقطة البيع.",
+            requiresBo ? "BackOfficePending" : "CustomerAllowed",
             requiresBo);
+    }
+
+    /// <summary>Payment rules apply only on financial clearance paths — not Operational/Fraud/Regulatory.</summary>
+    private static bool RequiresPaymentClearance(string clearance, string? lastSuspensionType)
+    {
+        if (string.Equals(clearance, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.Equals(clearance, ReconnectWellKnown.Operational, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(clearance, ReconnectWellKnown.Fraud, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(clearance, ReconnectWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return string.Equals(lastSuspensionType, SuspensionWellKnown.Billing, StringComparison.OrdinalIgnoreCase);
     }
 
     private static ReconnectEligibilityMatrixResult Deny(

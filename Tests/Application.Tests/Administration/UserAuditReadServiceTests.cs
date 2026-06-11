@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Tests.Administration;
 
+using Application.Tests.TestSupport;
+
 public class UserAuditReadServiceTests
 {
     private sealed class TestEncryption : IFieldEncryptionService
@@ -24,7 +26,7 @@ public class UserAuditReadServiceTests
             .UseInMemoryDatabase(dbName)
             .Options;
 
-        await using var context = new DataContext(options);
+        await using var context = new DataContext(options, TestOperatorContext.Instance);
         context.UserAuditLog.AddRange(
             new UserAuditLog
             {
@@ -59,7 +61,7 @@ public class UserAuditReadServiceTests
             .UseInMemoryDatabase(dbName)
             .Options;
 
-        await using var context = new DataContext(options);
+        await using var context = new DataContext(options, TestOperatorContext.Instance);
         context.UserAuditLog.Add(new UserAuditLog
         {
             ActorUserId = "a1",

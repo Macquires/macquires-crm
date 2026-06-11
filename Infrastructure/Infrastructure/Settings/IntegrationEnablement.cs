@@ -19,6 +19,9 @@ public class IntegrationEnablement
     public Task<bool> IsSmsEnabledAsync(CancellationToken ct = default) =>
         _settings.GetBoolAsync(GlobalSettingKeys.IntegrationSmsEnabled, true, ct);
 
+    public Task<bool> IsInEnabledAsync(CancellationToken ct = default) =>
+        _settings.GetBoolAsync(GlobalSettingKeys.IntegrationInEnabled, true, ct);
+
     public static BillingProvisionResult DisabledBilling(string system) =>
         new(false, $"Integration '{system}' is disabled in Global Settings.");
 }

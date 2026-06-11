@@ -71,7 +71,7 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
     public string? SimIccid { get; init; }
     public string? CreatedById { get; init; }
 
-    public ActivationChannel? ActivationChannel { get; init; }
+    public ActivationChannel? ActivationChannel { get; set; }
 
     public string? DealerCode { get; init; }
 
@@ -181,6 +181,9 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
     public string? CollectionNote { get; init; }
 
     public bool CollectionApprovalConfirmed { get; init; }
+
+    /// <summary>KYC vault document reference (required for new line activation).</summary>
+    public string? KycDocumentReferenceId { get; init; }
 }
 
 public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTelecomOperationRequest>
@@ -201,12 +204,28 @@ public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTe
         RuleFor(x => x.MsisdnAssetId)
             .NotEmpty()
             .When(x => x.Kind == TelecomOperationKind.NewActivation);
+        RuleFor(x => x.KycDocumentReferenceId)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.NewActivation)
+            .WithMessage(TelecomUserMessages.ValAct12KycRequired.Ar);
+        RuleFor(x => x.ActivationChannel)
+            .NotNull()
+            .When(x => x.Kind == TelecomOperationKind.NewActivation);
+        RuleFor(x => x.DealerCode)
+            .NotEmpty()
+            .MaximumLength(64)
+            .When(x => x.Kind == TelecomOperationKind.NewActivation
+                       && (x.ActivationChannel ?? ActivationChannel.Showroom) == ActivationChannel.Dealer)
+            .WithMessage("VAL-ACT-09: Dealer Code is missing for Dealer Channel.");
         RuleFor(x => x.MsisdnAssetId)
             .NotEmpty()
             .When(x => x.Kind == TelecomOperationKind.ChangeGsmType);
         RuleFor(x => x.TargetSubscriptionTypeId)
             .NotEmpty()
             .When(x => x.Kind == TelecomOperationKind.ChangeGsmType);
+        RuleFor(x => x.TargetSubscriptionTypeId)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.NewActivation);
         RuleFor(x => x.GsmMigrationReason)
             .NotEmpty()
             .MaximumLength(256)
@@ -363,6 +382,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
     private readonly IRefundEligibilityChecker _refundEligibility;
     private readonly IBadDebtEligibilityChecker _badDebtEligibility;
     private readonly ICommandRepository<DeviceInventory> _deviceInventoryRepository;
+    private readonly IKycDocumentStorageService _kycDocumentStorage;
 
     public CreateTelecomOperationRequestHandler(
         ICommandRepository<TelecomOperationRequest> repository,
@@ -385,7 +405,8 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         IDeviceSalesEligibilityChecker deviceSalesEligibility,
         IRefundEligibilityChecker refundEligibility,
         IBadDebtEligibilityChecker badDebtEligibility,
-        ICommandRepository<DeviceInventory> deviceInventoryRepository)
+        ICommandRepository<DeviceInventory> deviceInventoryRepository,
+        IKycDocumentStorageService kycDocumentStorage)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
@@ -408,6 +429,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         _refundEligibility = refundEligibility;
         _badDebtEligibility = badDebtEligibility;
         _deviceInventoryRepository = deviceInventoryRepository;
+        _kycDocumentStorage = kycDocumentStorage;
     }
 
     public async Task<CreateTelecomOperationRequestResult> Handle(
@@ -436,6 +458,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         if (request.Kind == TelecomOperationKind.NewActivation)
         {
             await ValidateNewActivationLineCapAsync(request, cancellationToken);
+            await ValidateNewActivationKycDocumentAsync(request, cancellationToken);
         }
 
         SimSwapEligibilityResult? simSwapEligibility = null;
@@ -755,6 +778,19 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             NotificationSuppressed = false,
         };
 
+        if (request.Kind == TelecomOperationKind.NewActivation
+            && !string.IsNullOrWhiteSpace(request.TargetSubscriptionTypeId))
+        {
+            entity.TargetSubscriptionTypeId = request.TargetSubscriptionTypeId.Trim();
+        }
+
+        if (request.Kind == TelecomOperationKind.NewActivation
+            && !string.IsNullOrWhiteSpace(request.KycDocumentReferenceId))
+        {
+            entity.KycDocumentReferenceId = request.KycDocumentReferenceId.Trim();
+            entity.DocumentStatus = TelecomDocumentStatus.Uploaded;
+        }
+
         if (request.Kind == TelecomOperationKind.ChangeGsmType && changeGsmEligibility != null)
         {
             entity.SourceSubscriptionTypeId = changeGsmEligibility.SourceSubscriptionTypeId;
@@ -788,6 +824,7 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             if (request.IsLostOrStolenReport)
             {
                 entity.ApprovalLevelRequired = "BackOffice";
+                entity.Status = TelecomOperationStatus.PendingDocuments;
             }
 
             entity.Notes = AppendSimSwapAudit(entity.Notes, simSwapEligibility);
@@ -845,7 +882,6 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             if (suspensionEligibility.RequiresBackOfficeApproval)
             {
                 entity.ApprovalLevelRequired = "BackOffice";
-                entity.Status = TelecomOperationStatus.PendingDocuments;
             }
 
             entity.Notes = AppendSuspensionAudit(entity.Notes, suspensionEligibility);
@@ -925,6 +961,10 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             {
                 entity.ApprovalLevelRequired = "BackOffice";
                 entity.Status = TelecomOperationStatus.PendingDocuments;
+
+                // GLOBAL HARDENING: SLA Countdown for BDR
+                var slaMinutes = await _globalSettings.GetIntAsync(GlobalSettingKeys.TelecomBdrTicketSlaMinutes, 2, cancellationToken: cancellationToken);
+                entity.SlaExpirationTimeUtc = DateTime.UtcNow.AddMinutes(slaMinutes);
             }
 
             entity.Notes = AppendBadDebtAudit(entity.Notes, badDebtEligibility);
@@ -946,7 +986,13 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             if (reconnectEligibility.RequiresBackOfficeApproval)
             {
                 entity.ApprovalLevelRequired = "BackOffice";
-                entity.Status = TelecomOperationStatus.PendingDocuments;
+            }
+
+            // GLOBAL HARDENING: Route B Bypass to Advance
+            if (request.Notes?.Contains("BypassToAdvance:true") == true)
+            {
+                entity.Status = TelecomOperationStatus.Paid_Pending_BackOffice_Clearance;
+                entity.ApprovalLevelRequired = "BackOffice";
             }
 
             entity.Notes = AppendReconnectAudit(entity.Notes, reconnectEligibility);
@@ -975,74 +1021,6 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         }
 
         return new CreateTelecomOperationRequestResult { Data = entity };
-    }
-
-    private async Task ValidateCatalogSelectionAgainstSubscriptionAsync(
-        CreateTelecomOperationRequest request,
-        string resolvedProductId,
-        string? resolvedOfferingId,
-        CancellationToken cancellationToken)
-    {
-        var subs = await _queryContext.TelecomSubscription
-            .AsNoTracking()
-            .Where(s => !s.IsDeleted && s.SubscriberProfileId == request.SubscriberProfileId)
-            .Include(s => s.SubscriptionTypeLookup)
-            .ToListAsync(cancellationToken);
-
-        if (subs.Count == 0)
-        {
-            throw new BusinessRuleViolationException(
-                "لا يوجد اشتراك مرتبط بملف المشترك؛ لا يمكن التحقق من نوع الخط لتطبيق قواعد توافق الباقة.");
-        }
-
-        var msisdnId = (request.MsisdnAssetId ?? string.Empty).Trim();
-        TelecomSubscription? chosen = null;
-        if (request.Kind == TelecomOperationKind.NewActivation && !string.IsNullOrEmpty(msisdnId))
-        {
-            var poolAsset = await _queryContext.MsisdnAsset
-                .AsNoTracking()
-                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == msisdnId, cancellationToken);
-            if (poolAsset?.PoolStatus == MsisdnPoolStatus.Available)
-            {
-                chosen = subs.FirstOrDefault(s => s.IsPrimaryLine) ?? subs.First();
-            }
-        }
-
-        if (chosen == null && !string.IsNullOrEmpty(msisdnId))
-        {
-            chosen = subs.FirstOrDefault(s => s.MsisdnAssetId == msisdnId);
-        }
-
-        chosen ??= subs.FirstOrDefault(s => s.IsPrimaryLine) ?? subs.First();
-
-        var lineTypeId = chosen.SubscriptionTypeId;
-
-        var product = await _queryContext.Product
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => !p.IsDeleted && p.Id == resolvedProductId, cancellationToken)
-            ?? throw new BusinessRuleViolationException("المنتج التقني المرتبط غير موجود.");
-
-        if (!string.IsNullOrEmpty(resolvedOfferingId))
-        {
-            var offering = await _queryContext.ProductOffering
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == resolvedOfferingId, cancellationToken);
-
-            if (offering != null
-                && !string.IsNullOrEmpty(offering.CompatibleSubscriptionTypeId)
-                && offering.CompatibleSubscriptionTypeId != lineTypeId)
-            {
-                throw new BusinessRuleViolationException(
-                    $"نوع الخط الحالي ({chosen.SubscriptionTypeLookup?.NameAr ?? "غير معروف"}) غير متوافق مع العرض التجاري المختار.");
-            }
-        }
-
-        if (!string.IsNullOrEmpty(product.CompatibleSubscriptionTypeId)
-            && product.CompatibleSubscriptionTypeId != lineTypeId)
-        {
-            throw new BusinessRuleViolationException(
-                $"نوع الخط الأساسي ({chosen.SubscriptionTypeLookup?.NameAr ?? "غير معروف"}) غير متوافق مع الباقة المطلوبة.");
-        }
     }
 
     private async Task ValidateCatalogSelectionForChangeGsmAsync(
@@ -1393,6 +1371,24 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         }
 
         return $"{auditPrefix} | {existing}";
+    }
+
+    private Task ValidateNewActivationKycDocumentAsync(
+        CreateTelecomOperationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var referenceId = (request.KycDocumentReferenceId ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(referenceId))
+        {
+            throw new BusinessRuleViolationException(TelecomUserMessages.ValAct12KycRequired);
+        }
+
+        if (!_kycDocumentStorage.DocumentExists(referenceId))
+        {
+            throw new BusinessRuleViolationException(TelecomUserMessages.ValAct12KycVaultMissing);
+        }
+
+        return Task.CompletedTask;
     }
 
     private async Task ValidateNewActivationLineCapAsync(

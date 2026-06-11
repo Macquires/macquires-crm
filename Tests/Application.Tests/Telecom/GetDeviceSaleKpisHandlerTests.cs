@@ -8,6 +8,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class GetDeviceSaleKpisHandlerTests
 {
     [Fact]
@@ -32,7 +34,7 @@ public class GetDeviceSaleKpisHandlerTests
         Assert.Equal(2, result.InstallmentCount);
         Assert.Equal(1, result.CashCount);
         Assert.Equal(1, result.ManualOverrideCount);
-        Assert.Equal(1, result.RejectionReasons.Count);
+        Assert.Single(result.RejectionReasons);
         Assert.True(result.CompletionRatePercent > 0);
     }
 
@@ -42,7 +44,7 @@ public class GetDeviceSaleKpisHandlerTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static TelecomOperationRequest Op(

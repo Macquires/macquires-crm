@@ -5,4 +5,5 @@ public enum TelecomIntegrationSystem
     Huawei_CBS = 0,
     Huawei_HLR = 1,
     SmsGateway = 2,
+    Huawei_IN = 3,
 }

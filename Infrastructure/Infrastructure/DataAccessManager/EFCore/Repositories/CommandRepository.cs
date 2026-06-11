@@ -31,7 +31,12 @@ public class CommandRepository<T> : ICommandRepository<T> where T : BaseEntity
     public void Update(T entity)
     {
         entity.UpdatedAtUtc = DateTime.UtcNow;
-        _context.Update(entity);
+        var entry = _context.Entry(entity);
+        // Already-tracked entities: let change detection run — _context.Update() corrupts RowVersion originals.
+        if (entry.State == EntityState.Detached)
+        {
+            _context.Update(entity);
+        }
     }
 
     public void Delete(T entity)

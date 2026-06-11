@@ -104,7 +104,7 @@ public static class BadDebtEligibilityMatrix
 
         return new BadDebtEligibilityMatrixResult(
             true,
-            "مسموح تسجيل التحصيل/التصعيد من المعرض.",
+            "مسموح تسجيل التحصيل/التصعيد من نقطة البيع.",
             "Allowed",
             false);
     }

@@ -8,15 +8,25 @@ const SUBSCRIBER_REGISTRY_ROLES = new Set([
     'TelecomManagement',
 ]);
 
-/** Best-effort message from Axios API error payloads (e.g. validation / exception handler). */
-function pickHttpErrorMessage(e) {
-    const d = e?.response?.data;
-    if (!d) return e?.message ? String(e.message) : '';
-    const inner = d.error?.innerException;
-    let m = d.message || (typeof inner === 'string' ? inner : '') || '';
+/** Best-effort bilingual message from API payloads (errors or structured responses). */
+function pickApiUserMessage(data, locale) {
+    if (!data) return '';
+    const isAr = String(locale || '').toLowerCase().startsWith('ar');
+    const ar = data.messageAr || data.MessageAr || '';
+    const en = data.messageEn || data.MessageEn || '';
+    if (ar || en) return isAr ? (ar || en) : (en || ar);
+    const inner = data.error?.innerException;
+    let m = data.message || data.Message || (typeof inner === 'string' ? inner : '') || '';
     m = String(m);
     if (m.startsWith('Exception: ')) return m.slice(11).trim();
     return m;
+}
+
+/** Best-effort message from Axios API error payloads (e.g. validation / exception handler). */
+function pickHttpErrorMessage(e, locale) {
+    const d = e?.response?.data;
+    if (!d) return e?.message ? String(e.message) : '';
+    return pickApiUserMessage(d, locale);
 }
 
 function formatMoneyIntl(value, locale) {
@@ -63,6 +73,102 @@ function parseUniversalSearchRows(res) {
 
 function pickCustomerIdFromSearchRow(row) {
     return row?.customerId || row?.CustomerId || '';
+}
+
+function resolveWizardCustomerId(wizard) {
+    const direct = (wizard?.customerId || '').trim();
+    if (direct) {
+        return direct;
+    }
+
+    const rowKey = (wizard?.primaryRowKey || '').trim();
+    if (rowKey.startsWith('Customer:')) {
+        return rowKey.slice('Customer:'.length).trim();
+    }
+
+    return '';
+}
+
+/** Same list as /TelecomSubscriptionTypes/TelecomSubscriptionTypeList (GetTelecomSubscriptionTypeList API). */
+function parseTelecomSubscriptionTypeList(res) {
+    if (typeof StorageManager !== 'undefined' && typeof StorageManager.apiList === 'function') {
+        const list = StorageManager.apiList(res);
+        if (Array.isArray(list)) return list;
+    }
+    const content = res?.data?.content ?? res?.data?.Content;
+    const rows = content?.data ?? content?.Data;
+    return Array.isArray(rows) ? rows : [];
+}
+
+function lineTypeRowId(row) {
+    return (row?.id ?? row?.Id ?? '').trim();
+}
+
+function parseProductOfferingDetail(res) {
+    const c = res?.data?.content ?? res?.content ?? {};
+    return {
+        id: c.id ?? c.Id ?? '',
+        name: c.name ?? c.Name ?? '',
+        nameEn: c.nameEn ?? c.NameEn ?? '',
+        code: c.code ?? c.Code ?? c.serviceIdSocCode ?? c.ServiceIdSocCode ?? '',
+        description: c.description ?? c.Description ?? '',
+        shortDescription: c.shortDescription ?? c.ShortDescription ?? '',
+        voiceMinutesLimit: c.voiceMinutesLimit ?? c.VoiceMinutesLimit,
+        speedQuotaLimitGb: c.speedQuotaLimitGb ?? c.SpeedQuotaLimitGb,
+        billingCycle: c.billingCycle ?? c.BillingCycle ?? '',
+        iconClass: c.iconClass ?? c.IconClass ?? 'bi-box-seam',
+        badgeColor: c.badgeColor ?? c.BadgeColor ?? 'primary',
+        components: Array.isArray(c.components) ? c.components : c.Components ?? [],
+        pricePlans: Array.isArray(c.pricePlans) ? c.pricePlans : c.PricePlans ?? [],
+    };
+}
+
+function offerDetailDisplayName(detail, lang) {
+    if (!detail) return '';
+    const ar = (detail.name || '').trim();
+    const en = (detail.nameEn || '').trim();
+    return lang === 'ar' ? ar || en : en || ar;
+}
+
+function offerDefaultMonthlyPrice(detail) {
+    const plans = detail?.pricePlans || [];
+    const def = plans.find((p) => p.isDefault || p.IsDefault) || plans[0];
+    if (!def) return null;
+    const price = Number(def.price ?? def.Price);
+    return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function offerComponentByType(detail, type) {
+    return (detail?.components || []).find((c) => (c.componentType ?? c.ComponentType) === type);
+}
+
+function formatOfferQuotaLine(comp, lang) {
+    if (!comp) return '';
+    if (comp.isUnlimited || comp.IsUnlimited) return lang === 'ar' ? 'بلا حدود' : 'Unlimited';
+    const q = comp.quota ?? comp.Quota;
+    const u = String(comp.quotaUnit ?? comp.QuotaUnit ?? '').toLowerCase();
+    const type = comp.componentType ?? comp.ComponentType;
+    if (lang === 'en') {
+        if (type === 0 || u === 'minutes') return `${q} local minutes`;
+        if (type === 1 || u === 'gb') return `${q} GB`;
+        if (type === 2 || u === 'sms') return `${q} SMS`;
+        const label = comp.label ?? comp.Label;
+        return label || `${q ?? ''} ${u}`.trim();
+    }
+    const label = comp.label ?? comp.Label;
+    if (label) return label;
+    if (type === 0 || u === 'minutes') return `${q} دقيقة محلية`;
+    if (type === 1 || u === 'gb') return `${q} جيجا`;
+    if (type === 2 || u === 'sms') return `${q} رسالة`;
+    return `${q ?? ''} ${u}`.trim();
+}
+
+function offerDetailSummaryText(detail, lang) {
+    if (!detail) return '';
+    if (lang === 'ar') {
+        return (detail.shortDescription || detail.description || '').trim();
+    }
+    return '';
 }
 
 /** Mirrors server rule: name-only queries are rejected (national ID / registry / MSISDN only). */
@@ -120,7 +226,7 @@ function createTelecomApp() {
                     roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice'].includes(x));
                 return {
                     canCreateOps: roles.some((x) => ['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice'].includes(x)),
-                    canConfirmCbs: roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice'].includes(x)),
+                    canConfirmCbs: roles.some((x) => ['TelecomAdmin', 'TelecomBackOffice', 'TelecomShowroom'].includes(x)),
                     canApproveTakeOver: canTransferOwnership,
                     canApproveSimSwap,
                     canApproveChangeNumber,
@@ -163,6 +269,15 @@ function createTelecomApp() {
                     primaryMsisdnAssetId: '',
                     primaryLabel: '',
                     primaryRowKey: '',
+                    primaryCustomerKind: '',
+                    activationLineTypeId: '',
+                    activateMsisdnSearchTerm: '',
+                    activateMsisdnPoolRows: [],
+                    activateMsisdnPoolBusy: false,
+                    activateMsisdnLabel: '',
+                    activateMsisdnCategoryTab: 'all',
+                    activateMsisdnModalPrefix: '',
+                    activateMsisdnModalOpen: false,
                     secondarySearchTerm: '',
                     secondaryResults: [],
                     secondaryBusy: false,
@@ -174,9 +289,19 @@ function createTelecomApp() {
                     createdOperationNumber: '',
                     documentMarkedUploaded: false,
                     identityFile: null,
+                    kycDocumentReferenceId: '',
+                    kycUploadFileName: '',
+                    kycUploadProgress: 0,
+                    kycUploadLocked: false,
+                    kycUploadBusy: false,
+                    kycUploadError: '',
+                    kycDropHover: false,
+                    kycThumbnailUrl: '',
                     submitBusy: false,
                     uploadBusy: false,
                     migrationTargetProductId: '',
+                    offerDetail: null,
+                    offerDetailBusy: false,
                     targetOfferOtherText: '',
                     customerId: '',
                     simIccid: '',
@@ -204,6 +329,75 @@ function createTelecomApp() {
                     vasCatalog: [],
                     vasCatalogBusy: false,
                     vasActivated: false,
+                    activationChannel: 0,
+                    dealerCode: '',
+                    paymentReference: '',
+                    paymentAmount: '',
+                    paymentChannel: 0,
+                    paymentRecorded: false,
+                    paymentBusy: false,
+                    paymentCashierLocked: false,
+                    cashierFetchBusy: false,
+                    confirmBusy: false,
+                    confirmed: false,
+                    confirmStatusHint: '',
+                    operationCorrelationId: '',
+                    falloutTicketId: '',
+                    falloutTicketNumber: '',
+                },
+                customerWizard: {
+                    visible: false,
+                    step: 1,
+                    searchNationalId: '',
+                    searchPhone: '',
+                    searchBusy: false,
+                    searchAttempted: false,
+                    searchResults: [],
+                    lookupsLoaded: false,
+                    groupOptions: [],
+                    categoryOptions: [],
+                    cityOptions: [],
+                    cityId: '',
+                    subscriberType: 0,
+                    name: '',
+                    nationalId: '',
+                    commercialRegistration: '',
+                    taxNumber: '',
+                    authorizedSignatory: '',
+                    dateOfBirth: '',
+                    description: '',
+                    customerGroupId: '',
+                    customerCategoryId: '',
+                    street: '',
+                    city: '',
+                    addressState: '',
+                    zipCode: '',
+                    country: 'سوريا',
+                    phoneNumber: '',
+                    emailAddress: '',
+                    nationality: '',
+                    gender: '',
+                    occupation: '',
+                    faxNumber: '',
+                    website: '',
+                    whatsApp: '',
+                    linkedIn: '',
+                    facebook: '',
+                    instagram: '',
+                    twitterX: '',
+                    tikTok: '',
+                    contactRows: [
+                        { name: '', jobTitle: '', phoneNumber: '', emailAddress: '', description: '' },
+                        { name: '', jobTitle: '', phoneNumber: '', emailAddress: '', description: '' },
+                        { name: '', jobTitle: '', phoneNumber: '', emailAddress: '', description: '' },
+                    ],
+                    errors: {},
+                    saveBusy: false,
+                    handoffBusy: false,
+                    savedCustomerId: '',
+                    savedCustomerNumber: '',
+                    savedCustomerName: '',
+                    savedSubscriberProfileId: '',
                 },
                 searchModalVisible: false,
                 searchModalView: 'list',
@@ -216,6 +410,7 @@ function createTelecomApp() {
                 detailTelecomTypeId: 'a0e0e0e0-0000-4000-8000-000000000001',
                 detailLineSaveBusy: false,
                 telecomLineTypes: [],
+                telecomLineTypesBusy: false,
                 huaweiCbsBusy: false,
                 huaweiCbsData: null,
                 hlrLiveBusy: false,
@@ -269,29 +464,281 @@ function createTelecomApp() {
                 return t('telecom.wizard.titles.' + k);
             });
 
-            const needsSecondaryParty = Vue.computed(() => state.wizard.kind === 'takeover' || state.wizard.kind === 'migrate' || state.wizard.kind === 'activate');
+            const isCorporateKind = (kind) => {
+                const k = String(kind ?? '').toLowerCase();
+                return k === 'corporate' || k === '1';
+            };
 
-            const secondaryRequired = Vue.computed(() => state.wizard.kind === 'takeover' || state.wizard.kind === 'activate');
+            const isCorporatePrimary = Vue.computed(() => isCorporateKind(state.wizard.primaryCustomerKind));
 
-            const migrateNeedsOtherText = Vue.computed(
-                () => state.wizard.kind === 'migrate' && state.wizard.migrationTargetProductId === 'OTHER'
+            const MSISDN_CATEGORY_TABS = [
+                { id: 'all', i18n: 'all' },
+                { id: 'Normal', i18n: 'normal' },
+                { id: 'Silver', i18n: 'silver' },
+                { id: 'Gold', i18n: 'gold' },
+                { id: 'Platinum', i18n: 'platinum' },
+            ];
+
+            const parseMsisdnPoolRows = (res) => {
+                if (typeof StorageManager?.apiList === 'function') {
+                    const list = StorageManager.apiList(res);
+                    if (Array.isArray(list) && list.length > 0) return list;
+                }
+                const content = res?.data?.content ?? res?.data?.Content;
+                const rows = content?.data ?? content?.Data;
+                return Array.isArray(rows) ? rows : [];
+            };
+
+            const isAvailableMsisdnPoolRow = (row) => {
+                if (!row) return false;
+                const name = String(row.poolStatusName ?? row.PoolStatusName ?? '').toLowerCase();
+                if (name === 'available') return true;
+                const st = row.poolStatus ?? row.PoolStatus;
+                return st === 0 || st === '0' || st === 'Available';
+            };
+
+            const resolveMsisdnCategory = (row) => {
+                const cat = row?.category ?? row?.Category;
+                if (typeof cat === 'string' && cat) return cat;
+                const names = ['Normal', 'Silver', 'Gold', 'Platinum'];
+                const n = Number(cat);
+                return names[n] ?? 'Normal';
+            };
+
+            const msisdnPrefixDigits = (term) =>
+                String(term || '')
+                    .replace(/[\u0660-\u0669\u06F0-\u06F9]/g, (ch) => {
+                        const code = ch.charCodeAt(0);
+                        if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+                        return String(code - 0x06f0);
+                    })
+                    .replace(/\D/g, '');
+
+            const activationLineTypeOptions = Vue.computed(() =>
+                (state.telecomLineTypes || [])
+                    .filter((x) => x.isActive !== false && x.IsActive !== false)
+                    .map((x) => ({
+                        ...x,
+                        id: lineTypeRowId(x),
+                        code: x.code || x.Code || '',
+                        nameAr: x.nameAr || x.NameAr || '',
+                        nameEn: x.nameEn || x.NameEn || '',
+                        sortOrder: x.sortOrder ?? x.SortOrder ?? 0,
+                        isDefault: x.isDefault ?? x.IsDefault ?? false,
+                    }))
+                    .filter((x) => x.id)
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
             );
+
+            const defaultTelecomLineTypeId = () => {
+                const rows = activationLineTypeOptions.value;
+                const def = rows.find((x) => x.isDefault);
+                return def?.id || rows[0]?.id || '';
+            };
+
+            const activationLineTypeLabel = Vue.computed(() => {
+                const id = (state.wizard.activationLineTypeId || '').trim();
+                if (!id) return '';
+                const row = activationLineTypeOptions.value.find((x) => x.id === id);
+                return row ? lineTypeDisplayName(row) : '';
+            });
+
+            const canPickActivateMsisdn = Vue.computed(
+                () => !!(state.wizard.activationLineTypeId || '').trim()
+            );
+
+            const lineTypeDisplayName = (row) => {
+                if (!row) return '—';
+                const ar = row.nameAr || row.NameAr || '';
+                const en = row.nameEn || row.NameEn || '';
+                if (locale.value === 'ar' && ar) return ar;
+                if (en) return en;
+                return ar || en || row.code || row.Code || '—';
+            };
+
+            const msisdnMatchesActivationLineType = (row) => {
+                const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
+                if (!lineTypeId) return false;
+                const compat = row?.compatibleSubscriptionTypeId ?? row?.CompatibleSubscriptionTypeId ?? '';
+                return !compat || compat === lineTypeId;
+            };
+
+            const filteredActivateMsisdnPool = Vue.computed(() => {
+                const tab = state.wizard.activateMsisdnCategoryTab || 'all';
+                const prefix = msisdnPrefixDigits(state.wizard.activateMsisdnModalPrefix);
+                let rows = state.wizard.activateMsisdnPoolRows || [];
+                if (state.wizard.kind === 'activate' && (state.wizard.activationLineTypeId || '').trim()) {
+                    rows = rows.filter(msisdnMatchesActivationLineType);
+                }
+                if (prefix.length >= 2) {
+                    rows = rows.filter((r) => {
+                        const m = String(r.msisdn ?? r.Msisdn ?? '');
+                        return m.startsWith(prefix) || m.includes(prefix);
+                    });
+                }
+                if (tab !== 'all') {
+                    rows = rows.filter((r) => resolveMsisdnCategory(r) === tab);
+                }
+                return rows;
+            });
+
+            const activateMsisdnPoolDisplay = Vue.computed(() => filteredActivateMsisdnPool.value.slice(0, 100));
+
+            const activateMsisdnPoolTruncated = Vue.computed(
+                () => filteredActivateMsisdnPool.value.length > 100
+            );
+
+            const activateMsisdnPoolUnfilteredCount = Vue.computed(() => {
+                const tab = state.wizard.activateMsisdnCategoryTab || 'all';
+                const prefix = msisdnPrefixDigits(state.wizard.activateMsisdnModalPrefix);
+                let rows = state.wizard.activateMsisdnPoolRows || [];
+                if (prefix.length >= 2) {
+                    rows = rows.filter((r) => {
+                        const m = String(r.msisdn ?? r.Msisdn ?? '');
+                        return m.startsWith(prefix) || m.includes(prefix);
+                    });
+                }
+                if (tab !== 'all') {
+                    rows = rows.filter((r) => resolveMsisdnCategory(r) === tab);
+                }
+                return rows.length;
+            });
+
+            const activateMsisdnPoolEmptyDueToLineType = Vue.computed(
+                () =>
+                    state.wizard.kind === 'activate' &&
+                    !!(state.wizard.activationLineTypeId || '').trim() &&
+                    !state.wizard.activateMsisdnPoolBusy &&
+                    filteredActivateMsisdnPool.value.length === 0 &&
+                    activateMsisdnPoolUnfilteredCount.value > 0
+            );
+
+            const msisdnCategoryLabel = (cat) => t(`telecom.wizard.msisdnPicker.categories.${String(cat).toLowerCase()}`, cat);
+
+            const msisdnCategoryBadgeClass = (cat) => {
+                const c = String(cat || 'Normal');
+                if (c === 'Platinum') return 'msisdn-tier-platinum';
+                if (c === 'Gold') return 'msisdn-tier-gold';
+                if (c === 'Silver') return 'msisdn-tier-silver';
+                return 'msisdn-tier-normal';
+            };
+
+            const needsActivateMsisdn = Vue.computed(() => state.wizard.kind === 'activate');
+
+            const needsSecondaryParty = Vue.computed(() => {
+                const k = state.wizard.kind;
+                if (k === 'takeover' || k === 'migrate') return true;
+                if (k === 'activate' && isCorporatePrimary.value) return true;
+                return false;
+            });
+
+            const secondaryRequired = Vue.computed(() => {
+                const k = state.wizard.kind;
+                if (k === 'takeover') return true;
+                if (k === 'activate' && isCorporatePrimary.value) return true;
+                return false;
+            });
 
             const buildMigrateTargetOfferPayload = () => {
                 const sel = (state.wizard.migrationTargetProductId || '').trim();
                 if (!sel) return null;
-                if (sel === 'OTHER') {
-                    const txt = (state.wizard.targetOfferOtherText || '').trim();
-                    return txt || null;
-                }
                 const row = state.migrationEligibleProducts.find((x) => x.id === sel);
                 if (row && row.name) return String(row.name).trim();
                 return null;
             };
 
+            const activateRequiredDeposit = Vue.computed(() => {
+                if (state.wizard.kind !== 'activate') return 0;
+                const fromDetail = offerDefaultMonthlyPrice(state.wizard.offerDetail);
+                if (fromDetail != null) return fromDetail;
+                const sel = (state.wizard.migrationTargetProductId || '').trim();
+                if (!sel) return 0;
+                const row = state.migrationEligibleProducts.find((x) => x.id === sel);
+                return Number(row?.unitPrice ?? row?.UnitPrice ?? 0) || 0;
+            });
+
+            const wizardOfferDisplayName = Vue.computed(() =>
+                offerDetailDisplayName(state.wizard.offerDetail, locale.value)
+            );
+
+            const wizardOfferMonthlyPrice = Vue.computed(() => {
+                const p = offerDefaultMonthlyPrice(state.wizard.offerDetail);
+                return p != null ? formatMoneyIntl(p, locale.value) : null;
+            });
+
+            const wizardOfferVoiceLine = Vue.computed(() => {
+                const d = state.wizard.offerDetail;
+                if (!d) return '';
+                const c = offerComponentByType(d, 0);
+                if (c) return formatOfferQuotaLine(c, locale.value);
+                if (d.voiceMinutesLimit) {
+                    return locale.value === 'ar'
+                        ? `${d.voiceMinutesLimit} دقيقة`
+                        : `${d.voiceMinutesLimit} min`;
+                }
+                return '';
+            });
+
+            const wizardOfferDataLine = Vue.computed(() => {
+                const d = state.wizard.offerDetail;
+                if (!d) return '';
+                const c = offerComponentByType(d, 1);
+                if (c) return formatOfferQuotaLine(c, locale.value);
+                if (d.speedQuotaLimitGb) {
+                    return locale.value === 'ar'
+                        ? `${d.speedQuotaLimitGb} جيجا`
+                        : `${d.speedQuotaLimitGb} GB`;
+                }
+                return '';
+            });
+
+            const wizardOfferSmsLine = Vue.computed(() => {
+                const d = state.wizard.offerDetail;
+                if (!d) return '';
+                const c = offerComponentByType(d, 2);
+                return c ? formatOfferQuotaLine(c, locale.value) : '';
+            });
+
+            const wizardOfferSummaryText = Vue.computed(() => {
+                locale.value;
+                return offerDetailSummaryText(state.wizard.offerDetail, locale.value);
+            });
+
+            const activateSimIccidLocked = Vue.computed(() => state.wizard.kind === 'activate');
+
+            const loadWizardOfferDetail = async (offerId) => {
+                const id = (offerId || '').trim();
+                if (!id) {
+                    state.wizard.offerDetail = null;
+                    state.wizard.offerDetailBusy = false;
+                    return;
+                }
+                state.wizard.offerDetailBusy = true;
+                try {
+                    const res = await AxiosManager.get(
+                        `/ProductOffering/GetProductOfferingSingle?id=${encodeURIComponent(id)}`,
+                        {}
+                    );
+                    state.wizard.offerDetail = parseProductOfferingDetail(res);
+                } catch {
+                    state.wizard.offerDetail = null;
+                } finally {
+                    state.wizard.offerDetailBusy = false;
+                }
+            };
+
+            const onWizardOfferChanged = async () => {
+                await loadWizardOfferDetail(state.wizard.migrationTargetProductId);
+            };
+
             const canWizardGoToStep3 = Vue.computed(() => {
                 if (state.wizard.kind === 'addpackage') {
                     return !!state.wizard.vasActivated;
+                }
+                if (state.wizard.kind === 'activate') {
+                    if (!state.wizard.kycDocumentReferenceId || !state.wizard.createdOperationId || !state.wizard.documentMarkedUploaded) return false;
+                    if (activateRequiredDeposit.value > 0 && !state.wizard.paymentRecorded) return false;
+                    return !!state.wizard.confirmed;
                 }
                 return !!state.wizard.createdOperationId && state.wizard.documentMarkedUploaded;
             });
@@ -308,6 +755,16 @@ function createTelecomApp() {
                 state.wizard.primaryMsisdn = '';
                 state.wizard.primaryLabel = '';
                 state.wizard.primaryRowKey = '';
+                state.wizard.primaryCustomerKind = '';
+                state.wizard.activationLineTypeId = '';
+                state.wizard.activateMsisdnSearchTerm = '';
+                state.wizard.activateMsisdnPoolRows = [];
+                state.wizard.activateMsisdnPoolBusy = false;
+                state.wizard.activateMsisdnLabel = '';
+                state.wizard.activateMsisdnCategoryTab = 'all';
+                state.wizard.activateMsisdnModalPrefix = '';
+                state.wizard.activateMsisdnModalOpen = false;
+                unlockActivateMsisdnBodyScroll();
                 state.wizard.selectedVasCode = '';
                 state.wizard.vasCatalog = [];
                 state.wizard.vasCatalogBusy = false;
@@ -323,9 +780,22 @@ function createTelecomApp() {
                 state.wizard.createdOperationNumber = '';
                 state.wizard.documentMarkedUploaded = false;
                 state.wizard.identityFile = null;
+                state.wizard.kycDocumentReferenceId = '';
+                state.wizard.kycUploadFileName = '';
+                state.wizard.kycUploadProgress = 0;
+                state.wizard.kycUploadLocked = false;
+                state.wizard.kycUploadBusy = false;
+                state.wizard.kycUploadError = '';
+                state.wizard.kycDropHover = false;
+                if (state.wizard.kycThumbnailUrl) {
+                    URL.revokeObjectURL(state.wizard.kycThumbnailUrl);
+                }
+                state.wizard.kycThumbnailUrl = '';
                 state.wizard.submitBusy = false;
                 state.wizard.uploadBusy = false;
                 state.wizard.migrationTargetProductId = '';
+                state.wizard.offerDetail = null;
+                state.wizard.offerDetailBusy = false;
                 state.wizard.targetOfferOtherText = '';
                 state.wizard.customerId = '';
                 state.wizard.simIccid = '';
@@ -372,6 +842,24 @@ function createTelecomApp() {
                 state.wizard.bdrRequiresBackOffice = false;
                 state.wizard.bdrEligibilityBusy = false;
                 state.wizard.bdrEligibility = null;
+                state.wizard.activationChannel = 0;
+                state.wizard.dealerCode = '';
+                if (typeof ActivationChannelUi !== 'undefined') {
+                    ActivationChannelUi.applyDefaults(state.wizard);
+                }
+                state.wizard.paymentReference = '';
+                state.wizard.paymentAmount = '';
+                state.wizard.paymentChannel = 0;
+                state.wizard.paymentRecorded = false;
+                state.wizard.paymentBusy = false;
+                state.wizard.paymentCashierLocked = false;
+                state.wizard.cashierFetchBusy = false;
+                state.wizard.confirmBusy = false;
+                state.wizard.confirmed = false;
+                state.wizard.confirmStatusHint = '';
+                state.wizard.operationCorrelationId = '';
+                state.wizard.falloutTicketId = '';
+                state.wizard.falloutTicketNumber = '';
                 state.migrationEligibleProducts = [];
                 state.migrationOffersBusy = false;
                 state.migrationLineTypeHint = '';
@@ -823,17 +1311,14 @@ function createTelecomApp() {
                 if (!d) {
                     state.detailTelecomSubscriptionId = '';
                     state.detailTelecomMsisdn = '';
-                    state.detailTelecomTypeId = 'a0e0e0e0-0000-4000-8000-000000000001';
+                    state.detailTelecomTypeId = defaultTelecomLineTypeId();
                     return;
                 }
                 const subs = d.subscriptions || [];
                 const primary = subs.find((x) => x.isPrimaryLine) || subs[0];
                 state.detailTelecomSubscriptionId = primary?.id || '';
                 state.detailTelecomMsisdn = primary?.msisdn || '';
-                const defId =
-                    (state.telecomLineTypes || []).find((x) => x.isDefault)?.id ||
-                    'a0e0e0e0-0000-4000-8000-000000000001';
-                state.detailTelecomTypeId = primary?.subscriptionTypeId || defId;
+                state.detailTelecomTypeId = primary?.subscriptionTypeId || defaultTelecomLineTypeId();
             };
 
             const onDetailSubscriptionChange = () => {
@@ -843,7 +1328,7 @@ function createTelecomApp() {
                 const found = subs.find((x) => x.id === state.detailTelecomSubscriptionId);
                 if (found) {
                     state.detailTelecomMsisdn = found.msisdn || '';
-                    state.detailTelecomTypeId = found.subscriptionTypeId || 'a0e0e0e0-0000-4000-8000-000000000001';
+                    state.detailTelecomTypeId = found.subscriptionTypeId || defaultTelecomLineTypeId();
                 }
             };
 
@@ -1015,9 +1500,12 @@ function createTelecomApp() {
                 if (which === 'primary') state.wizard.primaryBusy = true;
                 else state.wizard.secondaryBusy = true;
                 try {
-                    const q = '/Telecom/GetTelecomUniversalSearch?term=' + encodeURIComponent(tt) + 
-                        (state.wizard.kind === 'activate' && which === 'secondary' ? '&availableOnly=true' : '') +
-                        (state.wizard.kind === 'activate' && which === 'primary' ? '&profilesOnly=true' : '');
+                    const q =
+                        '/Telecom/GetTelecomUniversalSearch?term=' +
+                        encodeURIComponent(tt) +
+                        (which === 'primary' || (state.wizard.kind === 'activate' && which === 'secondary')
+                            ? '&profilesOnly=true'
+                            : '');
                     const res = await AxiosManager.get(q, {});
                     const rows = res?.data?.content?.data ?? [];
                     if (which === 'primary') state.wizard.primaryResults = rows;
@@ -1036,6 +1524,96 @@ function createTelecomApp() {
 
             const runWizardPrimarySearch = () => wizardSearch(state.wizard.primarySearchTerm, 'primary');
             const runWizardSecondarySearch = () => wizardSearch(state.wizard.secondarySearchTerm, 'secondary');
+
+            const loadActivateMsisdnPool = async () => {
+                state.wizard.activateMsisdnPoolBusy = true;
+                try {
+                    let url = '/Telecom/GetMsisdnAssetPoolList?status=Available';
+                    const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
+                    if (lineTypeId) {
+                        url += '&subscriptionTypeId=' + encodeURIComponent(lineTypeId);
+                    }
+                    const res = await AxiosManager.get(url, {});
+                    state.wizard.activateMsisdnPoolRows = parseMsisdnPoolRows(res).filter(isAvailableMsisdnPoolRow);
+                } catch (e) {
+                    console.warn('Activate MSISDN pool load failed', e);
+                    state.wizard.activateMsisdnPoolRows = [];
+                } finally {
+                    state.wizard.activateMsisdnPoolBusy = false;
+                }
+            };
+
+            const unlockActivateMsisdnBodyScroll = () => {
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+            };
+
+            const closeActivateMsisdnModal = () => {
+                state.wizard.activateMsisdnModalOpen = false;
+                unlockActivateMsisdnBodyScroll();
+            };
+
+            const setActivateMsisdnCategoryTab = (tabId) => {
+                state.wizard.activateMsisdnCategoryTab = tabId;
+            };
+
+            const openActivateMsisdnModal = async () => {
+                if (!canPickActivateMsisdn.value) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: t('telecom.swal.incompleteTitle'),
+                            text: t('telecom.wizard.lineType.required'),
+                        });
+                    }
+                    return;
+                }
+                state.wizard.activateMsisdnModalPrefix = (state.wizard.activateMsisdnSearchTerm || '').trim();
+                state.wizard.activateMsisdnCategoryTab = 'all';
+                state.wizard.activateMsisdnModalOpen = true;
+                document.body.classList.add('modal-open');
+                document.body.style.overflow = 'hidden';
+                await loadActivateMsisdnPool();
+            };
+
+            const runWizardActivateMsisdnSearch = async (ev) => {
+                if (ev?.preventDefault) ev.preventDefault();
+                await openActivateMsisdnModal();
+            };
+
+            const onActivationLineTypeChange = async () => {
+                await clearWizardActivateMsisdn();
+                state.wizard.migrationTargetProductId = '';
+                state.migrationEligibleProducts = [];
+                state.migrationLineTypeHint = activationLineTypeLabel.value;
+                const sid = (state.wizard.primarySubscriberProfileId || '').trim();
+                if (sid && canPickActivateMsisdn.value) {
+                    await loadMigrationEligibleProducts();
+                }
+            };
+
+            const resolvePrimaryCustomerKind = async (profileId) => {
+                const pid = (profileId || '').trim();
+                if (!pid) return '';
+                try {
+                    const res = await AxiosManager.get(
+                        '/Telecom/GetTelecomSubscriberProfileDetail?subscriberProfileId=' + encodeURIComponent(pid),
+                        {}
+                    );
+                    const d = res?.data?.content ?? {};
+                    return d.subscriberType ?? d.SubscriberType ?? d.data?.subscriberType ?? '';
+                } catch {
+                    return '';
+                }
+            };
+
+            const subscriberTypeToCustomerKind = (subscriberType) => {
+                const n = Number(subscriberType);
+                if (n === 1) return 'Corporate';
+                if (n === 0) return 'Individual';
+                return '';
+            };
 
             const profileIdFromRow = (r) => {
                 if (!r) return '';
@@ -1075,11 +1653,26 @@ function createTelecomApp() {
                     state.migrationLineTypeHint = '';
                     return;
                 }
+                if (state.wizard.kind === 'activate') {
+                    const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
+                    if (!lineTypeId) {
+                        state.migrationEligibleProducts = [];
+                        state.migrationLineTypeHint = '';
+                        return;
+                    }
+                }
                 state.migrationOffersBusy = true;
                 try {
-                    const ms = (state.wizard.primaryMsisdnAssetId || '').trim();
                     let url = '/Product/GetMigrationEligibleProducts?subscriberProfileId=' + encodeURIComponent(sid);
-                    if (ms) url += '&msisdnAssetId=' + encodeURIComponent(ms);
+                    if (state.wizard.kind === 'activate') {
+                        const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
+                        if (lineTypeId) {
+                            url += '&targetSubscriptionTypeId=' + encodeURIComponent(lineTypeId);
+                        }
+                    } else {
+                        const ms = (state.wizard.primaryMsisdnAssetId || '').trim();
+                        if (ms) url += '&msisdnAssetId=' + encodeURIComponent(ms);
+                    }
                     const res = await AxiosManager.get(url, {});
                     const c = res?.data?.content;
                     state.migrationEligibleProducts = Array.isArray(c?.data) ? c.data : [];
@@ -1119,11 +1712,13 @@ function createTelecomApp() {
                                             });
                                         }
                                         state.wizard.migrationTargetProductId = product.id;
+                                        await loadWizardOfferDetail(product.id);
                                         state.wizard.notes = t('telecom.swal.autoMigrateNote', {
                                             plan: productDisplayName(product),
                                         });
                                     } else {
                                         state.wizard.migrationTargetProductId = '';
+                                        state.wizard.offerDetail = null;
                                     }
                                 } else {
                                     // Compatible! Just ensure it's in eligible list and select it
@@ -1137,6 +1732,7 @@ function createTelecomApp() {
                                         });
                                     }
                                     state.wizard.migrationTargetProductId = product.id;
+                                    await loadWizardOfferDetail(product.id);
                                 }
                             }
                         } catch (e) {
@@ -1150,11 +1746,15 @@ function createTelecomApp() {
                     state.migrationLineTypeHint = '';
                     state.currentProductName = '';
                 } finally {
+                    const selOffer = (state.wizard.migrationTargetProductId || '').trim();
+                    if (selOffer) {
+                        await loadWizardOfferDetail(selOffer);
+                    }
                     state.migrationOffersBusy = false;
                 }
             };
 
-            const selectWizardPrimary = (r) => {
+            const selectWizardPrimary = async (r) => {
                 const pid = profileIdFromRow(r);
                 if (!pid) {
                     if (window.Swal) {
@@ -1166,6 +1766,7 @@ function createTelecomApp() {
                     }
                     return;
                 }
+                const prevCorporate = isCorporatePrimary.value;
                 state.wizard.primarySubscriberProfileId = pid;
                 state.wizard.primaryMsisdnAssetId = r.resultType === 'Msisdn' ? r.id : '';
                 state.wizard.primaryMsisdn =
@@ -1173,7 +1774,11 @@ function createTelecomApp() {
                 state.wizard.customerId = r.customerId || state.wizard.customerId || '';
                 state.wizard.primaryLabel = `${r.title || '—'} (${r.resultType})`;
                 state.wizard.primaryRowKey = rowKey(r);
-                
+                state.wizard.primaryCustomerKind = await resolvePrimaryCustomerKind(pid);
+                if (prevCorporate && !isCorporateKind(state.wizard.primaryCustomerKind)) {
+                    clearWizardSecondary();
+                }
+
                 if (state.preloadedProductId) {
                     state.wizard.migrationTargetProductId = state.preloadedProductId;
                 } else {
@@ -1181,7 +1786,9 @@ function createTelecomApp() {
                 }
                 
                 state.wizard.targetOfferOtherText = '';
-                if (state.wizard.kind === 'migrate' || state.wizard.kind === 'activate') {
+                if (state.wizard.kind === 'migrate') {
+                    loadMigrationEligibleProducts();
+                } else if (state.wizard.kind === 'activate' && (state.wizard.activationLineTypeId || '').trim()) {
                     loadMigrationEligibleProducts();
                 }
                 if (state.wizard.kind === 'changeGsm') {
@@ -1273,21 +1880,74 @@ function createTelecomApp() {
                 loadReconnectEligibility();
             };
 
-            const clearWizardPrimary = () => {
+            const clearWizardPrimary = async () => {
+                await releaseWizardActivateMsisdnIfAny();
                 state.wizard.primarySubscriberProfileId = '';
                 state.wizard.primaryMsisdnAssetId = '';
                 state.wizard.primaryLabel = '';
                 state.wizard.primaryRowKey = '';
+                state.wizard.primaryCustomerKind = '';
+                clearWizardSecondary();
                 state.migrationEligibleProducts = [];
                 state.migrationLineTypeHint = '';
                 state.currentProductName = '';
                 state.wizard.migrationTargetProductId = '';
+                state.wizard.offerDetail = null;
+                state.wizard.offerDetailBusy = false;
                 state.wizard.targetOfferOtherText = '';
+            };
+
+            const wizardReservationCustomerId = () => resolveWizardCustomerId(state.wizard);
+
+            const wizardCustomer360ProfileUrl = Vue.computed(() => {
+                const customerId = resolveWizardCustomerId(state.wizard);
+                if (!customerId) {
+                    return '';
+                }
+                return '/Telecom/Customer360Profile?customerId=' + encodeURIComponent(customerId);
+            });
+
+            const openWizardCustomer360 = () => {
+                const url = wizardCustomer360ProfileUrl.value;
+                if (url) {
+                    window.location.href = url;
+                    return;
+                }
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: t('telecom.swal.incompleteTitle'),
+                        text: t('telecom.wizardUi.customer360IdMissing', 'Select a customer before opening Customer 360.'),
+                    });
+                }
+            };
+
+            const releaseMsisdnForWizard = async (assetId, customerId) => {
+                const aid = (assetId || '').trim();
+                const cid = (customerId || '').trim();
+                if (!aid || !cid) return;
+                try {
+                    await AxiosManager.post('/Telecom/ReleaseMsisdnReservation', {
+                        msisdnAssetId: aid,
+                        customerId: cid,
+                        releasedByUserId: StorageManager.getUserId(),
+                    });
+                } catch {
+                    /* best-effort; background cleanup is safety net */
+                }
+            };
+
+            const releaseWizardActivateMsisdnIfAny = async () => {
+                if ((state.wizard.createdOperationId || '').trim()) return;
+                if (state.wizard.submitBusy) return;
+                const assetId = (state.wizard.secondaryMsisdnAssetId || '').trim();
+                if (!assetId) return;
+                await releaseMsisdnForWizard(assetId, wizardReservationCustomerId());
             };
 
             const reserveMsisdnForWizard = async () => {
                 const assetId = (state.wizard.secondaryMsisdnAssetId || '').trim();
-                const customerId = (state.wizard.customerId || '').trim();
+                const customerId = wizardReservationCustomerId();
                 if (!assetId || !customerId) return;
                 try {
                     await AxiosManager.post('/Telecom/ReserveMsisdnForCustomer', {
@@ -1307,13 +1967,33 @@ function createTelecomApp() {
                 }
             };
 
-            const selectWizardSecondary = async (r) => {
-                if (state.wizard.kind === 'activate') {
-                    state.wizard.secondaryMsisdnAssetId = r.id;
-                    state.wizard.secondaryLabel = `${r.title || '—'} (${r.resultType})`;
-                    await reserveMsisdnForWizard();
-                    return;
+            const iccidFromMsisdnPoolRow = (row) =>
+                String(row?.iccid ?? row?.Iccid ?? row?.pairedIccid ?? row?.PairedIccid ?? '').trim();
+
+            const selectWizardActivateMsisdn = async (row) => {
+                const id = row?.id ?? row?.Id;
+                const msisdn = row?.msisdn ?? row?.Msisdn ?? row?.title;
+                if (!id) return;
+                const previousAssetId = (state.wizard.secondaryMsisdnAssetId || '').trim();
+                if (previousAssetId && previousAssetId !== id) {
+                    await releaseMsisdnForWizard(previousAssetId, wizardReservationCustomerId());
                 }
+                state.wizard.secondaryMsisdnAssetId = id;
+                state.wizard.activateMsisdnLabel = msisdn || '—';
+                state.wizard.activateMsisdnSearchTerm = msisdn || '';
+                state.wizard.simIccid = iccidFromMsisdnPoolRow(row);
+                closeActivateMsisdnModal();
+                await reserveMsisdnForWizard();
+            };
+
+            const clearWizardActivateMsisdn = async () => {
+                await releaseWizardActivateMsisdnIfAny();
+                state.wizard.secondaryMsisdnAssetId = '';
+                state.wizard.activateMsisdnLabel = '';
+                state.wizard.simIccid = '';
+            };
+
+            const selectWizardSecondary = async (r) => {
                 const pid = profileIdFromRow(r);
                 if (!pid) {
                     if (window.Swal) {
@@ -1337,8 +2017,9 @@ function createTelecomApp() {
 
             const clearWizardSecondary = () => {
                 state.wizard.secondarySubscriberProfileId = '';
-                state.wizard.secondaryMsisdnAssetId = '';
                 state.wizard.secondaryLabel = '';
+                state.wizard.secondarySearchTerm = '';
+                state.wizard.secondaryResults = [];
             };
 
             const loadDeviceWizardCatalog = async () => {
@@ -1429,15 +2110,463 @@ function createTelecomApp() {
                 }
             };
 
-            const openWizard = (kind) => {
+            const scrollToHubWizard = async (headingId) => {
+                await Vue.nextTick();
+                requestAnimationFrame(() => {
+                    const el = document.getElementById(headingId);
+                    if (!el) return;
+                    const stickyHeader = document.querySelector('.navbar.fixed-top, .main-header, header.fixed-top');
+                    const offset = (stickyHeader?.offsetHeight ?? 0) + 16;
+                    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+                    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                });
+            };
+
+            const openWizard = async (kind) => {
+                if (state.customerWizard.visible) {
+                    closeCustomerWizard();
+                }
                 resetWizardState();
                 state.wizard.visible = true;
                 state.wizard.kind = kind;
+                if (kind === 'activate') {
+                    if (typeof ActivationChannelUi !== 'undefined') {
+                        await ActivationChannelUi.ensureLoaded();
+                        ActivationChannelUi.applyDefaults(state.wizard);
+                    }
+                    await loadTelecomLineTypes();
+                }
                 if (kind === 'deviceSale') loadDeviceWizardCatalog();
                 if (kind === 'addpackage') loadWizardVasCatalog();
+                await scrollToHubWizard('wizardHeading');
             };
 
-            const closeWizard = () => {
+            const resetCustomerWizard = () => {
+                state.customerWizard.step = 1;
+                state.customerWizard.searchNationalId = '';
+                state.customerWizard.searchPhone = '';
+                state.customerWizard.searchBusy = false;
+                state.customerWizard.searchAttempted = false;
+                state.customerWizard.searchResults = [];
+                state.customerWizard.subscriberType = 0;
+                state.customerWizard.name = '';
+                state.customerWizard.nationalId = '';
+                state.customerWizard.commercialRegistration = '';
+                state.customerWizard.taxNumber = '';
+                state.customerWizard.authorizedSignatory = '';
+                state.customerWizard.dateOfBirth = '';
+                state.customerWizard.description = '';
+                state.customerWizard.customerGroupId = '';
+                state.customerWizard.customerCategoryId = '';
+                state.customerWizard.street = '';
+                state.customerWizard.cityId = '';
+                state.customerWizard.city = '';
+                state.customerWizard.addressState = '';
+                state.customerWizard.zipCode = '';
+                state.customerWizard.country = 'سوريا';
+                state.customerWizard.phoneNumber = '';
+                state.customerWizard.emailAddress = '';
+                state.customerWizard.nationality = '';
+                state.customerWizard.gender = '';
+                state.customerWizard.occupation = '';
+                state.customerWizard.faxNumber = '';
+                state.customerWizard.website = '';
+                state.customerWizard.whatsApp = '';
+                state.customerWizard.linkedIn = '';
+                state.customerWizard.facebook = '';
+                state.customerWizard.instagram = '';
+                state.customerWizard.twitterX = '';
+                state.customerWizard.tikTok = '';
+                state.customerWizard.contactRows = [
+                    { name: '', jobTitle: '', phoneNumber: '', emailAddress: '', description: '' },
+                    { name: '', jobTitle: '', phoneNumber: '', emailAddress: '', description: '' },
+                    { name: '', jobTitle: '', phoneNumber: '', emailAddress: '', description: '' },
+                ];
+                state.customerWizard.errors = {};
+                state.customerWizard.saveBusy = false;
+                state.customerWizard.handoffBusy = false;
+                state.customerWizard.savedCustomerId = '';
+                state.customerWizard.savedCustomerNumber = '';
+                state.customerWizard.savedCustomerName = '';
+                state.customerWizard.savedSubscriberProfileId = '';
+            };
+
+            const loadCustomerWizardLookups = async () => {
+                if (state.customerWizard.lookupsLoaded) return;
+                try {
+                    const [groupRes, categoryRes, cityRes] = await Promise.all([
+                        AxiosManager.get('/CustomerGroup/GetCustomerGroupList', {}),
+                        AxiosManager.get('/CustomerCategory/GetCustomerCategoryList', {}),
+                        AxiosManager.get('/GeoCity/GetGeoCityList', { params: { activeOnly: true } }),
+                    ]);
+                    state.customerWizard.groupOptions = groupRes?.data?.content?.data ?? [];
+                    state.customerWizard.categoryOptions = categoryRes?.data?.content?.data ?? [];
+                    state.customerWizard.cityOptions = cityRes?.data?.content?.data ?? [];
+                    state.customerWizard.lookupsLoaded = true;
+                } catch {
+                    state.customerWizard.groupOptions = [];
+                    state.customerWizard.categoryOptions = [];
+                    state.customerWizard.cityOptions = [];
+                }
+            };
+
+            const onCustomerWizardCityChange = () => {
+                const w = state.customerWizard;
+                const selected = w.cityOptions.find((c) => c.id === w.cityId);
+                if (selected) {
+                    w.city = selected.name || '';
+                    w.addressState = selected.governorate || '';
+                } else {
+                    w.city = '';
+                    w.addressState = '';
+                }
+            };
+
+            const applyCustomerWizardDefaultLookups = () => {
+                const w = state.customerWizard;
+                if (!w.customerGroupId && w.groupOptions.length) {
+                    const preferred =
+                        w.subscriberType === 1
+                            ? w.groupOptions.find((g) => (g.name || '').includes('شركات'))
+                            : w.groupOptions.find((g) => (g.name || '').includes('أفراد'));
+                    w.customerGroupId = preferred?.id ?? w.groupOptions[0]?.id ?? '';
+                }
+                if (!w.customerCategoryId && w.categoryOptions.length) {
+                    const preferred =
+                        w.subscriberType === 1
+                            ? w.categoryOptions.find((c) => (c.name || '').includes('شركات'))
+                            : w.categoryOptions.find((c) => (c.name || '').includes('أفراد'));
+                    w.customerCategoryId = preferred?.id ?? w.categoryOptions[0]?.id ?? '';
+                }
+            };
+
+            const openCustomerWizard = async () => {
+                if (!hubPermissions.value.canOpenSubscriberRegistry) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: t('telecom.searchModal.registryDeniedTitle'),
+                            text: t('telecom.searchModal.registryDeniedText'),
+                        });
+                    }
+                    return;
+                }
+                if (state.wizard.visible) {
+                    closeWizard();
+                }
+                resetCustomerWizard();
+                state.customerWizard.visible = true;
+                await loadCustomerWizardLookups();
+                await scrollToHubWizard('customerWizardHeading');
+            };
+
+            const closeCustomerWizard = () => {
+                state.customerWizard.visible = false;
+                resetCustomerWizard();
+            };
+
+            const runCustomerWizardSearch = async () => {
+                const nat = (state.customerWizard.searchNationalId || '').trim();
+                const ph = (state.customerWizard.searchPhone || '').trim();
+                if (nat.length < 2 && ph.length < 2) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: t('telecom.swal.searchTitle'),
+                            text: t('telecom.customerWizard.searchHintMin'),
+                        });
+                    }
+                    return;
+                }
+                state.customerWizard.searchBusy = true;
+                state.customerWizard.searchAttempted = true;
+                try {
+                    const qs = new URLSearchParams();
+                    if (nat) qs.set('nationalId', nat);
+                    if (ph) qs.set('phone', ph);
+                    const res = await AxiosManager.get('/Customer/FindCustomerCandidates?' + qs.toString(), {});
+                    if (res?.data?.code !== 200) {
+                        state.customerWizard.searchResults = [];
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.searchTitle'),
+                                text: res?.data?.message || t('telecom.swal.searchFail'),
+                            });
+                        }
+                        return;
+                    }
+                    const list = res?.data?.content?.data;
+                    state.customerWizard.searchResults = Array.isArray(list) ? list : [];
+                } catch (e) {
+                    state.customerWizard.searchResults = [];
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: t('telecom.swal.searchTitle'),
+                            text: pickHttpErrorMessage(e) || t('telecom.swal.searchFail'),
+                        });
+                    }
+                } finally {
+                    state.customerWizard.searchBusy = false;
+                }
+            };
+
+            const proceedCustomerWizardNew = async () => {
+                await loadCustomerWizardLookups();
+                state.customerWizard.step = 2;
+                const nat = (state.customerWizard.searchNationalId || '').trim();
+                const ph = (state.customerWizard.searchPhone || '').trim();
+                if (nat) {
+                    if (state.customerWizard.subscriberType === 0 && nat.length === 10) {
+                        state.customerWizard.nationalId = nat;
+                    } else if (state.customerWizard.subscriberType === 1 && !state.customerWizard.commercialRegistration) {
+                        state.customerWizard.commercialRegistration = nat;
+                    }
+                }
+                if (ph && !state.customerWizard.phoneNumber) {
+                    state.customerWizard.phoneNumber = ph;
+                }
+                applyCustomerWizardDefaultLookups();
+            };
+
+            const goBackCustomerWizardSearch = () => {
+                state.customerWizard.step = 1;
+                state.customerWizard.errors = {};
+            };
+
+            const onCustomerWizardSubscriberTypeChange = () => {
+                state.customerWizard.customerGroupId = '';
+                state.customerWizard.customerCategoryId = '';
+                applyCustomerWizardDefaultLookups();
+            };
+
+            const validateCustomerWizardForm = () => {
+                const w = state.customerWizard;
+                const errors = {};
+                const trim = (v) => (v || '').trim();
+
+                if (!trim(w.name)) errors.name = t('telecom.customerWizard.errName');
+                if (!trim(w.customerGroupId)) errors.customerGroupId = t('telecom.customerWizard.errGroup');
+                if (!trim(w.customerCategoryId)) errors.customerCategoryId = t('telecom.customerWizard.errCategory');
+                if (!trim(w.street)) errors.street = t('telecom.customerWizard.errStreet');
+                if (!trim(w.cityId)) errors.city = t('telecom.customerWizard.errCity');
+                if (!trim(w.addressState)) errors.addressState = t('telecom.customerWizard.errState');
+                if (!trim(w.zipCode)) errors.zipCode = t('telecom.customerWizard.errZip');
+                if (w.subscriberType === 0) {
+                    const nid = trim(w.nationalId);
+                    if (!nid || nid.length !== 10) {
+                        errors.nationalId = t('telecom.customerWizard.errNationalId');
+                    }
+                } else {
+                    const reg = trim(w.commercialRegistration);
+                    if (!reg || reg.length < 4) {
+                        errors.commercialRegistration = t('telecom.customerWizard.errCommercialReg');
+                    }
+                }
+
+                w.errors = errors;
+                return Object.keys(errors).length === 0;
+            };
+
+            const ensureSubscriberProfileForCustomerId = async (customerId) => {
+                const res = await AxiosManager.post('/Telecom/EnsureSubscriberProfileForCustomer', {
+                    customerId,
+                    createdById: StorageManager.getUserId(),
+                });
+                if (res?.data?.code !== 200) {
+                    throw Object.assign(new Error(res?.data?.message || t('telecom.customerWizard.profileFail')), {
+                        response: res,
+                    });
+                }
+                const content = res?.data?.content ?? res?.data?.Content;
+                return (
+                    content?.subscriberProfileId ??
+                    content?.SubscriberProfileId ??
+                    content?.data?.subscriberProfileId ??
+                    ''
+                );
+            };
+
+            const prefillActivateWizardForCustomer = async (
+                customerId,
+                customerName,
+                subscriberProfileId,
+                customerKindHint = ''
+            ) => {
+                resetWizardState();
+                state.wizard.visible = true;
+                state.wizard.kind = 'activate';
+                state.wizard.step = 1;
+                state.wizard.customerId = customerId;
+                state.wizard.primarySubscriberProfileId = subscriberProfileId;
+                state.wizard.primaryLabel = customerName || customerId;
+                state.wizard.primaryRowKey = `Customer:${customerId}`;
+                state.wizard.primaryCustomerKind =
+                    customerKindHint || (await resolvePrimaryCustomerKind(subscriberProfileId));
+                await scrollToHubWizard('wizardHeading');
+            };
+
+            const trimOrNull = (v) => {
+                const s = (v || '').trim();
+                return s || null;
+            };
+
+            const isCustomerWizardContactRowComplete = (row) => {
+                const name = (row?.name || '').trim();
+                const jobTitle = (row?.jobTitle || '').trim();
+                const phoneNumber = (row?.phoneNumber || '').trim();
+                const emailAddress = (row?.emailAddress || '').trim();
+                return !!(name && jobTitle && phoneNumber && emailAddress);
+            };
+
+            const createCustomerWizardContacts = async (customerId, uid) => {
+                const rows = state.customerWizard.contactRows || [];
+                for (const row of rows) {
+                    if (!isCustomerWizardContactRowComplete(row)) continue;
+                    const contactRes = await AxiosManager.post('/CustomerContact/CreateCustomerContact', {
+                        name: row.name.trim(),
+                        jobTitle: row.jobTitle.trim(),
+                        phoneNumber: row.phoneNumber.trim(),
+                        emailAddress: row.emailAddress.trim(),
+                        description: trimOrNull(row.description),
+                        customerId,
+                        createdById: uid,
+                    });
+                    if (contactRes?.data?.code !== 200) {
+                        throw Object.assign(new Error(contactRes?.data?.message || t('telecom.swal.failTitle')), {
+                            response: contactRes,
+                        });
+                    }
+                }
+            };
+
+            const submitCustomerWizardSave = async () => {
+                if (!validateCustomerWizardForm()) return;
+                state.customerWizard.saveBusy = true;
+                try {
+                    const uid = StorageManager.getUserId();
+                    const w = state.customerWizard;
+                    const nid = (w.nationalId || '').trim();
+                    const genderVal = w.gender === '' || w.gender == null ? null : Number(w.gender);
+                    const res = await AxiosManager.post('/Customer/CreateCustomer', {
+                        name: w.name.trim(),
+                        customerGroupId: w.customerGroupId,
+                        customerCategoryId: w.customerCategoryId,
+                        description: trimOrNull(w.description),
+                        street: w.street.trim(),
+                        city: w.city.trim(),
+                        state: w.addressState.trim(),
+                        zipCode: w.zipCode.trim(),
+                        country: w.country.trim(),
+                        phoneNumber: trimOrNull(w.phoneNumber),
+                        faxNumber: trimOrNull(w.faxNumber),
+                        emailAddress: trimOrNull(w.emailAddress),
+                        website: trimOrNull(w.website),
+                        whatsApp: trimOrNull(w.whatsApp),
+                        linkedIn: trimOrNull(w.linkedIn),
+                        facebook: trimOrNull(w.facebook),
+                        instagram: trimOrNull(w.instagram),
+                        twitterX: trimOrNull(w.twitterX),
+                        tikTok: trimOrNull(w.tikTok),
+                        createdById: uid,
+                        subscriberType: w.subscriberType,
+                        nationalId: w.subscriberType === 0 ? nid : '',
+                        dateOfBirth: w.dateOfBirth ? new Date(w.dateOfBirth).toISOString() : null,
+                        nationality: w.subscriberType === 0 ? trimOrNull(w.nationality) : null,
+                        gender: w.subscriberType === 0 ? genderVal : null,
+                        occupation: w.subscriberType === 0 ? trimOrNull(w.occupation) : null,
+                        commercialRegistration: w.subscriberType === 1 ? (w.commercialRegistration || '').trim() : '',
+                        taxNumber: (w.taxNumber || '').trim(),
+                        authorizedSignatory: (w.authorizedSignatory || '').trim(),
+                    });
+                    if (res?.data?.code !== 200) {
+                        throw Object.assign(new Error(res?.data?.message || t('telecom.swal.failTitle')), { response: res });
+                    }
+                    const row = res?.data?.content?.data ?? res?.data?.content?.Data ?? {};
+                    const customerId = row?.id ?? row?.Id ?? '';
+                    if (!customerId) {
+                        throw new Error(t('telecom.customerWizard.saveNoId'));
+                    }
+                    await createCustomerWizardContacts(customerId, uid);
+                    const profileId = await ensureSubscriberProfileForCustomerId(customerId);
+                    state.customerWizard.savedCustomerId = customerId;
+                    state.customerWizard.savedCustomerNumber = row?.number ?? row?.Number ?? '';
+                    state.customerWizard.savedCustomerName = row?.name ?? row?.Name ?? state.customerWizard.name;
+                    state.customerWizard.savedSubscriberProfileId = profileId;
+                    state.customerWizard.step = 3;
+                    await refreshAll();
+                } catch (e) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: t('telecom.swal.errorTitle'),
+                            text: pickHttpErrorMessage(e) || t('telecom.swal.failTitle'),
+                        });
+                    }
+                } finally {
+                    state.customerWizard.saveBusy = false;
+                }
+            };
+
+            const finishCustomerWizard = async () => {
+                closeCustomerWizard();
+                await refreshAll();
+            };
+
+            const handoffSavedCustomerToActivate = async () => {
+                const cid = (state.customerWizard.savedCustomerId || '').trim();
+                let pid = (state.customerWizard.savedSubscriberProfileId || '').trim();
+                if (!cid) return;
+                if (!hubPermissions.value.canCreateOps) return;
+                state.customerWizard.handoffBusy = true;
+                try {
+                    if (!pid) {
+                        pid = await ensureSubscriberProfileForCustomerId(cid);
+                    }
+                    const name = state.customerWizard.savedCustomerName;
+                    closeCustomerWizard();
+                    await prefillActivateWizardForCustomer(
+                        cid,
+                        name,
+                        pid,
+                        subscriberTypeToCustomerKind(state.customerWizard.subscriberType)
+                    );
+                } catch (e) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: t('telecom.swal.errorTitle'),
+                            text: pickHttpErrorMessage(e),
+                        });
+                    }
+                } finally {
+                    state.customerWizard.handoffBusy = false;
+                }
+            };
+
+            const handoffExistingCustomerToActivate = async (c) => {
+                if (!c?.id || !hubPermissions.value.canCreateOps) return;
+                state.customerWizard.handoffBusy = true;
+                try {
+                    const profileId = await ensureSubscriberProfileForCustomerId(c.id);
+                    closeCustomerWizard();
+                    await prefillActivateWizardForCustomer(c.id, c.name, profileId);
+                } catch (e) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: t('telecom.swal.errorTitle'),
+                            text: pickHttpErrorMessage(e),
+                        });
+                    }
+                } finally {
+                    state.customerWizard.handoffBusy = false;
+                }
+            };
+
+            const closeWizard = async () => {
+                await releaseWizardActivateMsisdnIfAny();
                 state.wizard.visible = false;
                 resetWizardState();
             };
@@ -1458,8 +2587,18 @@ function createTelecomApp() {
                     }
                     return false;
                 }
-                if (secondaryRequired.value) {
-                    if (state.wizard.kind === 'activate' && !state.wizard.secondaryMsisdnAssetId) {
+                if (state.wizard.kind === 'activate') {
+                    if (!(state.wizard.activationLineTypeId || '').trim()) {
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.incompleteTitle'),
+                                text: t('telecom.wizard.lineType.required'),
+                            });
+                        }
+                        return false;
+                    }
+                    if (!state.wizard.secondaryMsisdnAssetId) {
                         if (window.Swal) {
                             Swal.fire({
                                 icon: 'warning',
@@ -1469,7 +2608,7 @@ function createTelecomApp() {
                         }
                         return false;
                     }
-                    if (state.wizard.kind === 'activate' && !(state.wizard.simIccid || '').trim()) {
+                    if (!(state.wizard.simIccid || '').trim()) {
                         if (window.Swal) {
                             Swal.fire({
                                 icon: 'warning',
@@ -1479,6 +2618,21 @@ function createTelecomApp() {
                         }
                         return false;
                     }
+                    if (
+                        isCorporatePrimary.value &&
+                        !(state.wizard.secondarySubscriberProfileId || '').trim()
+                    ) {
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: t('telecom.swal.secondaryPartyTitle'),
+                                text: t('telecom.wizard.corporateSecondPartyRequired'),
+                            });
+                        }
+                        return false;
+                    }
+                }
+                if (secondaryRequired.value) {
                     if (state.wizard.kind === 'takeover' && !(state.wizard.secondarySubscriberProfileId || '').trim()) {
                         if (window.Swal) {
                             Swal.fire({ icon: 'warning', title: t('telecom.swal.secondaryPartyTitle'), text: t('telecom.swal.secondaryPartyText') });
@@ -1718,12 +2872,13 @@ function createTelecomApp() {
                         }
                         return false;
                     }
-                    if (sel === 'OTHER' && !(state.wizard.targetOfferOtherText || '').trim()) {
+                    const hasOffering = (state.migrationEligibleProducts || []).some((p) => p?.id === sel);
+                    if (!hasOffering) {
                         if (window.Swal) {
                             Swal.fire({
                                 icon: 'warning',
-                                title: t('telecom.swal.targetOfferOtherTitle'),
-                                text: t('telecom.swal.targetOfferOtherText'),
+                                title: t('telecom.swal.targetOfferTitle'),
+                                text: t('telecom.swal.targetOfferText'),
                             });
                         }
                         return false;
@@ -1863,8 +3018,7 @@ function createTelecomApp() {
                         productId: null,
                         productOfferingId:
                             (state.wizard.kind === 'migrate' || state.wizard.kind === 'activate') &&
-                            state.wizard.migrationTargetProductId &&
-                            state.wizard.migrationTargetProductId !== 'OTHER'
+                            (state.migrationEligibleProducts || []).some((p) => p?.id === state.wizard.migrationTargetProductId)
                                 ? state.wizard.migrationTargetProductId
                                 : null,
                         notes: (state.wizard.notes || '').trim() || null,
@@ -1878,7 +3032,11 @@ function createTelecomApp() {
                         isLostOrStolenReport: state.wizard.kind === 'simswap' ? !!state.wizard.simLostOrStolen : false,
                         createdById: StorageManager.getUserId(),
                         targetSubscriptionTypeId:
-                            state.wizard.kind === 'changeGsm' ? state.wizard.cgtTargetTypeId || null : null,
+                            state.wizard.kind === 'changeGsm'
+                                ? state.wizard.cgtTargetTypeId || null
+                                : state.wizard.kind === 'activate'
+                                  ? (state.wizard.activationLineTypeId || '').trim() || null
+                                  : null,
                         gsmMigrationReason:
                             state.wizard.kind === 'changeGsm' ? (state.wizard.cgtMigrationReason || '').trim() || null : null,
                         transferReason:
@@ -1967,6 +3125,16 @@ function createTelecomApp() {
                                 ? Number(state.wizard.bdrPaymentPlanMonths)
                                 : null,
                         collectionApprovalConfirmed: false,
+                        activationChannel:
+                            state.wizard.kind === 'activate' ? Number(state.wizard.activationChannel) || 0 : null,
+                        dealerCode:
+                            state.wizard.kind === 'activate'
+                                ? (state.wizard.dealerCode || '').trim() || null
+                                : null,
+                        kycDocumentReferenceId:
+                            state.wizard.kind === 'activate'
+                                ? (state.wizard.kycDocumentReferenceId || '').trim() || null
+                                : null,
                     };
                     const res = await AxiosManager.post('/Telecom/CreateTelecomOperation', body);
                     const ok = res?.data?.code === 200;
@@ -2014,6 +3182,9 @@ function createTelecomApp() {
                                 state.wizard.documentMarkedUploaded = true;
                             }
                         }
+                        if (state.wizard.kind === 'activate' && state.wizard.kycDocumentReferenceId) {
+                            state.wizard.documentMarkedUploaded = true;
+                        }
                         if (window.Swal) {
                             Swal.fire({
                                 icon: 'success',
@@ -2037,6 +3208,130 @@ function createTelecomApp() {
             const onWizardIdentityFileChange = (ev) => {
                 const f = ev?.target?.files?.[0];
                 state.wizard.identityFile = f || null;
+            };
+
+            const KYC_ALLOWED_EXT = new Set(['.pdf', '.png', '.jpg', '.jpeg']);
+            const KYC_MAX_BYTES = 5 * 1024 * 1024;
+
+            const validateKycFile = (file) => {
+                if (!file) return t('telecom.wizard.kycUpload.required');
+                const name = (file.name || '').toLowerCase();
+                const ext = name.includes('.') ? name.slice(name.lastIndexOf('.')) : '';
+                if (!KYC_ALLOWED_EXT.has(ext)) {
+                    return t('telecom.wizard.kycUpload.badType');
+                }
+                if (file.size > KYC_MAX_BYTES) {
+                    return t('telecom.wizard.kycUpload.tooLarge');
+                }
+                return '';
+            };
+
+            const setKycThumbnailPreview = (file) => {
+                if (state.wizard.kycThumbnailUrl) {
+                    URL.revokeObjectURL(state.wizard.kycThumbnailUrl);
+                    state.wizard.kycThumbnailUrl = '';
+                }
+                const name = (file?.name || '').toLowerCase();
+                if (file && (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg'))) {
+                    state.wizard.kycThumbnailUrl = URL.createObjectURL(file);
+                }
+            };
+
+            const uploadKycDocument = async (file) => {
+                const validationError = validateKycFile(file);
+                if (validationError) {
+                    state.wizard.kycUploadError = validationError;
+                    return;
+                }
+
+                const msisdn = (state.wizard.activateMsisdnLabel || '').trim();
+                if (!msisdn) {
+                    state.wizard.kycUploadError = t('telecom.wizard.kycUpload.msisdnRequired');
+                    return;
+                }
+
+                state.wizard.kycUploadError = '';
+                state.wizard.kycUploadBusy = true;
+                state.wizard.kycUploadProgress = 0;
+                state.wizard.kycUploadFileName = file.name;
+
+                const form = new FormData();
+                form.append('msisdn', msisdn);
+                form.append('file', file);
+
+                try {
+                    const token = StorageManager.getAccessToken?.() || '';
+                    const baseUrl = (typeof AxiosManager !== 'undefined' && AxiosManager.getBaseUrl
+                        ? AxiosManager.getBaseUrl()
+                        : '/api').replace(/\/$/, '');
+                    const url = `${baseUrl}/Telecom/UploadKycDocument`;
+
+                    const payload = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', url, true);
+                        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                        xhr.upload.onprogress = (ev) => {
+                            if (ev.lengthComputable) {
+                                state.wizard.kycUploadProgress = Math.min(100, Math.round((ev.loaded / ev.total) * 100));
+                            }
+                        };
+                        xhr.onload = () => {
+                            let data = null;
+                            try {
+                                data = JSON.parse(xhr.responseText || '{}');
+                            } catch {
+                                data = null;
+                            }
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve(data);
+                            } else {
+                                reject(new Error(data?.message || data?.Message || xhr.statusText || 'Upload failed'));
+                            }
+                        };
+                        xhr.onerror = () => reject(new Error(t('telecom.wizard.kycUpload.network')));
+                        xhr.send(form);
+                    });
+
+                    const refId = payload?.documentReferenceId || payload?.DocumentReferenceId || '';
+                    const success = payload?.success ?? payload?.Success;
+                    if (!success || !refId) {
+                        throw new Error(pickApiUserMessage(payload, locale.value) || t('telecom.wizard.kycUpload.failed'));
+                    }
+
+                    state.wizard.kycDocumentReferenceId = refId;
+                    state.wizard.kycUploadLocked = true;
+                    state.wizard.kycUploadProgress = 100;
+                    setKycThumbnailPreview(file);
+                } catch (e) {
+                    state.wizard.kycUploadLocked = false;
+                    state.wizard.kycDocumentReferenceId = '';
+                    state.wizard.kycUploadError = e?.message || t('telecom.wizard.kycUpload.failed');
+                } finally {
+                    state.wizard.kycUploadBusy = false;
+                }
+            };
+
+            const onKycFileSelected = async (ev) => {
+                const file = ev?.target?.files?.[0];
+                if (!file || state.wizard.kycUploadLocked) return;
+                await uploadKycDocument(file);
+                if (ev?.target) ev.target.value = '';
+            };
+
+            const onKycDragEnter = () => {
+                if (!state.wizard.kycUploadLocked && !state.wizard.kycUploadBusy) state.wizard.kycDropHover = true;
+            };
+            const onKycDragOver = () => {
+                if (!state.wizard.kycUploadLocked && !state.wizard.kycUploadBusy) state.wizard.kycDropHover = true;
+            };
+            const onKycDragLeave = () => {
+                state.wizard.kycDropHover = false;
+            };
+            const onKycDrop = async (ev) => {
+                state.wizard.kycDropHover = false;
+                if (state.wizard.kycUploadLocked || state.wizard.kycUploadBusy) return;
+                const file = ev?.dataTransfer?.files?.[0];
+                if (file) await uploadKycDocument(file);
             };
 
             const uploadWizardIdentityDocument = async (operationId) => {
@@ -2114,6 +3409,206 @@ function createTelecomApp() {
                     }
                 } finally {
                     state.wizard.uploadBusy = false;
+                }
+            };
+
+            const pollActivateOperationAfterConfirm = async (operationId) => {
+                const terminal = new Set([3, 4, 'Completed', 'Failed']);
+                for (let i = 0; i < 12; i++) {
+                    await new Promise((r) => setTimeout(r, 1500));
+                    try {
+                        const res = await AxiosManager.get(
+                            '/Telecom/GetTelecomOperationDetail?id=' + encodeURIComponent(operationId),
+                            {}
+                        );
+                        const data = res?.data?.content?.data ?? res?.data?.content?.Data;
+                        const st = data?.status ?? data?.Status;
+                        state.wizard.operationCorrelationId =
+                            data?.correlationId ?? data?.CorrelationId ?? '';
+                        state.wizard.falloutTicketId =
+                            data?.technicalTicketId ?? data?.TechnicalTicketId ?? '';
+                        state.wizard.falloutTicketNumber =
+                            data?.technicalTicketNumber ?? data?.TechnicalTicketNumber ?? '';
+                        if (terminal.has(st)) {
+                            return data?.statusLabelAr ?? data?.StatusLabelAr ?? '';
+                        }
+                    } catch {
+                        /* retry */
+                    }
+                }
+                return '';
+            };
+
+            const fetchPaymentFromCashier = async () => {
+                const ref = (state.wizard.paymentReference || '').trim();
+                if (!ref) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.swal.incompleteTitle'),
+                            text: t('telecom.wizardUi.paymentRefPh', 'Payment reference'),
+                        });
+                    }
+                    return;
+                }
+                state.wizard.cashierFetchBusy = true;
+                try {
+                    const res = await AxiosManager.post('/Telecom/FetchCashierPayment', {
+                        paymentReference: ref,
+                        operationId: state.wizard.createdOperationId || null,
+                        expectedAmount: activateRequiredDeposit.value > 0 ? activateRequiredDeposit.value : null,
+                    });
+                    const data = res?.data?.content?.data ?? res?.data?.content?.Data;
+                    if (res?.data?.code === 200 && data) {
+                        const amt = data.amountPaid ?? data.AmountPaid;
+                        if (amt != null) state.wizard.paymentAmount = String(amt);
+                        const ch = data.paymentChannel ?? data.PaymentChannel;
+                        if (ch != null) state.wizard.paymentChannel = Number(ch);
+                        state.wizard.paymentReference = data.paymentReference ?? data.PaymentReference ?? ref;
+                        state.wizard.paymentCashierLocked = true;
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: t('telecom.wizardUi.cashierFetched', 'Loaded from cashier'),
+                                timer: 1200,
+                                showConfirmButton: false,
+                            });
+                        }
+                    } else {
+                        throw Object.assign(new Error(res?.data?.message || t('telecom.swal.failTitle')), { response: res });
+                    }
+                } catch (e) {
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'error', title: t('telecom.swal.failTitle'), text: pickHttpErrorMessage(e) });
+                    }
+                } finally {
+                    state.wizard.cashierFetchBusy = false;
+                }
+            };
+
+            const submitWizardRecordPayment = async () => {
+                if (!state.wizard.createdOperationId || state.wizard.kind !== 'activate') return;
+                const ref = (state.wizard.paymentReference || '').trim();
+                const amt = Number(state.wizard.paymentAmount);
+                if (!ref || !(amt > 0)) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.swal.incompleteTitle'),
+                            text: t('telecom.swal.paymentDownRequired'),
+                        });
+                    }
+                    return;
+                }
+                if (activateRequiredDeposit.value > 0 && !state.wizard.paymentCashierLocked) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.wizardUi.fetchFromCashier', 'Fetch from cashier'),
+                        });
+                    }
+                    return;
+                }
+                state.wizard.paymentBusy = true;
+                try {
+                    const res = await AxiosManager.post('/Telecom/RecordSellingLinePayment', {
+                        operationId: state.wizard.createdOperationId,
+                        paymentReference: ref,
+                        amountPaid: amt,
+                        paymentChannel: Number(state.wizard.paymentChannel) || 0,
+                        updatedById: StorageManager.getUserId(),
+                    });
+                    if (res?.data?.code === 200) {
+                        state.wizard.paymentRecorded = true;
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: t('telecom.swal.paymentRecordedOk'),
+                                timer: 1200,
+                                showConfirmButton: false,
+                            });
+                        }
+                    } else {
+                        throw Object.assign(new Error(res?.data?.message || t('telecom.swal.failTitle')), { response: res });
+                    }
+                } catch (e) {
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'error', title: t('telecom.swal.failTitle'), text: pickHttpErrorMessage(e) });
+                    }
+                } finally {
+                    state.wizard.paymentBusy = false;
+                }
+            };
+
+            const submitWizardConfirmCbs = async () => {
+                if (!state.wizard.createdOperationId || state.wizard.kind !== 'activate') return;
+                if (!hubPermissions.value.canConfirmCbs) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: t('telecom.swal.notAllowedTitle'),
+                            text: t('telecom.swal.permConfirmCbs'),
+                        });
+                    }
+                    return;
+                }
+                if (activateRequiredDeposit.value > 0 && !state.wizard.paymentRecorded) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.swal.incompleteTitle'),
+                            text: t('telecom.swal.paymentDownRequired'),
+                        });
+                    }
+                    return;
+                }
+                state.wizard.confirmBusy = true;
+                try {
+                    const res = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
+                        id: state.wizard.createdOperationId,
+                        updatedById: StorageManager.getUserId(),
+                    });
+                    if (res?.data?.code === 200) {
+                        state.wizard.confirmed = true;
+                        const content = res?.data?.content ?? res?.data?.Content ?? {};
+                        const hint =
+                            (locale.value === 'ar'
+                                ? (content.statusHintAr ?? content.StatusHintAr)
+                                : (content.statusHintEn ?? content.StatusHintEn))
+                            ?? content.userMessageAr
+                            ?? content.UserMessageAr
+                            ?? content.userMessageEn
+                            ?? content.UserMessageEn
+                            ?? t('telecom.swal.cbsConfirmHint');
+                        state.wizard.confirmStatusHint = hint;
+                        if (content.hlrCompletesAsynchronously ?? content.HlrCompletesAsynchronously) {
+                            const polled = await pollActivateOperationAfterConfirm(state.wizard.createdOperationId);
+                            if (polled) state.wizard.confirmStatusHint = polled;
+                        }
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: t('telecom.swal.cbsConfirmHint'),
+                                text: state.wizard.confirmStatusHint,
+                                timer: 2200,
+                                showConfirmButton: false,
+                            });
+                        }
+                        await refreshAll();
+                    } else if (window.Swal) {
+                        const content = res?.data?.content ?? res?.data?.Content ?? res?.data ?? {};
+                        Swal.fire({
+                            icon: 'warning',
+                            title: t('telecom.swal.provisioningIncomplete'),
+                            text: pickApiUserMessage(content, locale.value) || pickApiUserMessage(res?.data, locale.value) || '',
+                        });
+                    }
+                } catch (e) {
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'error', title: t('telecom.swal.failTitle'), text: pickHttpErrorMessage(e, locale.value) });
+                    }
+                } finally {
+                    state.wizard.confirmBusy = false;
                 }
             };
 
@@ -2562,12 +4057,16 @@ function createTelecomApp() {
 
             const queryHlrLiveStatus = async () => {
                 const pid = (state.subscriberDetail?.subscriberProfileId || '').trim();
-                if (!pid) return;
+                const msisdn = (state.subscriberDetail?.msisdn || '').trim();
+                if (!pid && !msisdn) return;
                 state.hlrLiveBusy = true;
                 state.hlrLiveData = null;
                 try {
+                    const q = msisdn
+                        ? 'msisdn=' + encodeURIComponent(msisdn)
+                        : 'subscriberProfileId=' + encodeURIComponent(pid);
                     const res = await AxiosManager.get(
-                        '/Telecom/QueryHlrLiveStatus?subscriberProfileId=' + encodeURIComponent(pid),
+                        '/Telecom/QueryHlrLiveStatus?' + q,
                         {}
                     );
                     state.hlrLiveData = res?.data?.content ?? null;
@@ -2580,11 +4079,15 @@ function createTelecomApp() {
 
             const resyncSubscriberFromHlr = async () => {
                 const pid = (state.subscriberDetail?.subscriberProfileId || '').trim();
+                const msisdn = (state.subscriberDetail?.msisdn || '').trim();
+                const msisdnAssetId = (state.subscriberDetail?.msisdnAssetId || '').trim();
                 if (!pid) return;
                 state.hlrResyncBusy = true;
                 try {
                     const res = await AxiosManager.post('/Telecom/ResyncSubscriberFromHlr', {
                         subscriberProfileId: pid,
+                        msisdnAssetId: msisdnAssetId || null,
+                        msisdn: msisdn || null,
                         actorUserId: StorageManager.getUserId(),
                     });
                     const body = res?.data?.content;
@@ -2622,19 +4125,26 @@ function createTelecomApp() {
             };
 
             const loadTelecomLineTypes = async () => {
+                if (state.telecomLineTypesBusy) return;
+                state.telecomLineTypesBusy = true;
                 try {
                     const res = await AxiosManager.get(
                         '/TelecomSubscriptionType/GetTelecomSubscriptionTypeList?isDeleted=false&activeOnly=true',
                         {}
                     );
-                    state.telecomLineTypes = res?.data?.content?.data || [];
+                    state.telecomLineTypes = parseTelecomSubscriptionTypeList(res);
                 } catch {
                     state.telecomLineTypes = [];
+                } finally {
+                    state.telecomLineTypesBusy = false;
                 }
             };
 
             Vue.onMounted(async () => {
                 document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
+                if (typeof ActivationChannelUi !== 'undefined') {
+                    await ActivationChannelUi.ensureLoaded();
+                }
                 try {
                     const params = new URLSearchParams(window.location.search);
                     if (params.get('entry') === 'subscriber') {
@@ -2656,7 +4166,7 @@ function createTelecomApp() {
                     const wizParam = params.get('wizard');
                     const prodParam = params.get('productId');
                     if (wizParam) {
-                        openWizard(wizParam);
+                        await openWizard(wizParam);
                         if (prodParam) {
                             state.wizard.migrationTargetProductId = prodParam;
                             state.preloadedProductId = prodParam;
@@ -2697,7 +4207,7 @@ function createTelecomApp() {
                         } else if (event.data?.action === 'syriatel-customer-saved-activate') {
                             closeRegistryModal();
                             await refreshAll();
-                            openWizard('activate');
+                            await openWizard('activate');
                         }
                     });
                 } finally {
@@ -2712,6 +4222,7 @@ function createTelecomApp() {
 
             Vue.onUnmounted(() => {
                 document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
+                closeActivateMsisdnModal();
             });
 
             return {
@@ -2726,10 +4237,61 @@ function createTelecomApp() {
                 productDisplayName,
                 needsSecondaryParty,
                 secondaryRequired,
-                migrateNeedsOtherText,
+                needsActivateMsisdn,
+                isCorporatePrimary,
+                MSISDN_CATEGORY_TABS,
+                activateMsisdnPoolDisplay,
+                activateMsisdnPoolTruncated,
+                activateMsisdnPoolEmptyDueToLineType,
+                filteredActivateMsisdnPool,
+                msisdnCategoryLabel,
+                msisdnCategoryBadgeClass,
+                resolveMsisdnCategory,
+                openActivateMsisdnModal,
+                closeActivateMsisdnModal,
+                setActivateMsisdnCategoryTab,
+                loadActivateMsisdnPool,
+                telecomLineTypesBusy: Vue.computed(() => state.telecomLineTypesBusy),
+                activationLineTypeOptions,
+                activationLineTypeLabel,
+                canPickActivateMsisdn,
+                lineTypeDisplayName,
+                onActivationLineTypeChange,
                 wizardPrimaryMultiProfileSameParty,
                 loadMigrationEligibleProducts,
+                onWizardOfferChanged,
+                wizardOfferDisplayName,
+                wizardOfferMonthlyPrice,
+                wizardOfferVoiceLine,
+                wizardOfferDataLine,
+                wizardOfferSmsLine,
+                wizardOfferSummaryText,
+                activateSimIccidLocked,
+                activationChannelUiMode: Vue.computed(() =>
+                    typeof ActivationChannelUi !== 'undefined' ? ActivationChannelUi.resolveMode() : 'showroom'),
+                activationChannelLabels: Vue.computed(() => {
+                    const loc = locale.value || 'ar';
+                    if (typeof ActivationChannelUi === 'undefined') {
+                        return {
+                            showroom: t('telecom.wizardUi.channelShowroom', 'POS'),
+                            dealer: t('telecom.wizardUi.channelDealer', 'Dealer'),
+                        };
+                    }
+                    return {
+                        showroom: ActivationChannelUi.label(0, loc),
+                        dealer: ActivationChannelUi.label(1, loc),
+                    };
+                }),
+                activationChannelLockedHint: Vue.computed(() => {
+                    if (typeof ActivationChannelUi === 'undefined') {
+                        return t('telecom.wizardUi.channelShowroomLockedHint', '');
+                    }
+                    return ActivationChannelUi.lockedHint(locale.value || 'ar');
+                }),
                 canWizardGoToStep3,
+                activateRequiredDeposit,
+                wizardCustomer360ProfileUrl,
+                openWizardCustomer360,
                 rowKey,
                 formatMoney,
                 formatDate,
@@ -2747,6 +4309,18 @@ function createTelecomApp() {
                 saveDetailPrimaryLine,
                 onDetailSubscriptionChange,
                 openWizard,
+                openCustomerWizard,
+                closeCustomerWizard,
+                runCustomerWizardSearch,
+                proceedCustomerWizardNew,
+                goBackCustomerWizardSearch,
+                onCustomerWizardSubscriberTypeChange,
+                onCustomerWizardCityChange,
+                submitCustomerWizardSave,
+                finishCustomerWizard,
+                handoffSavedCustomerToActivate,
+                handoffExistingCustomerToActivate,
+                customerWizard: state.customerWizard,
                 onDevicePicked,
                 recordDeviceDownPayment,
                 closeWizard,
@@ -2754,12 +4328,18 @@ function createTelecomApp() {
                 wizardStepPrev,
                 runWizardPrimarySearch,
                 runWizardSecondarySearch,
+                runWizardActivateMsisdnSearch,
                 selectWizardPrimary,
                 clearWizardPrimary,
+                selectWizardActivateMsisdn,
+                clearWizardActivateMsisdn,
                 selectWizardSecondary,
                 clearWizardSecondary,
                 submitCreateOperation,
                 submitMarkDocumentUploaded,
+                submitWizardRecordPayment,
+                fetchPaymentFromCashier,
+                submitWizardConfirmCbs,
                 finishWizard,
                 confirmFirstReadyDraft,
                 kindLabel,
@@ -2796,6 +4376,12 @@ function createTelecomApp() {
                 closeTakeOverApproval,
                 approveTakeOverOnNetwork,
                 onWizardIdentityFileChange,
+                onKycFileSelected,
+                onKycDragEnter,
+                onKycDragOver,
+                onKycDragLeave,
+                onKycDrop,
+                uploadKycDocument,
                 fetchHuaweiCbsData,
                 openHuaweiRechargeModal,
                 openRegistryModalNew,

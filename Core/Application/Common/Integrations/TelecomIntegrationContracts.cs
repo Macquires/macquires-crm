@@ -54,6 +54,7 @@ public interface IBillingSystemIntegration
     Task<BillingRechargeResult> RechargeAsync(BillingRechargeRequest request, CancellationToken cancellationToken = default);
     Task<BillingRechargeResult> ReverseRechargeAsync(BillingReverseRechargeRequest request, CancellationToken cancellationToken = default);
     Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default);
+    Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default);
 }
 
 public interface IChargingSystemIntegration

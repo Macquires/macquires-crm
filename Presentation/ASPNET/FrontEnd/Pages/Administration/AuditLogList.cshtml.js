@@ -220,7 +220,7 @@ const App = {
         const onLocaleChanged = () => {
             localeTick.value++;
             state.actionOptions = actionOptions();
-            window.TelecomI18n?.applyDom?.();
+            window.TelecomI18n?.refresh?.();
             remapRowsForLocale();
             refreshGridLocale();
         };
@@ -228,7 +228,7 @@ const App = {
         Vue.onMounted(async () => {
             try {
                 await window.TelecomI18n?.ensureLoaded?.();
-                window.TelecomI18n?.applyDom?.();
+                window.TelecomI18n?.refresh?.();
                 const pageTitle = window.TelecomI18n?.t?.('administration.auditLog.pageTitle');
                 if (pageTitle) document.title = pageTitle;
                 document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);

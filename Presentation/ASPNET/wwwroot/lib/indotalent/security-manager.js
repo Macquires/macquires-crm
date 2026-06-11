@@ -45,7 +45,8 @@
         ],
         '/telecom/integrationmonitor': ['admin.integration.monitor'],
         '/telecom/bulkimportmonitor': ['bulk.import.monitor', 'bulk.import.upload'],
-        '/telecom/msisdninventory': ['telecom.asset.manage'],
+        '/telecom/msisdninventory': ['telecom.asset.manage', 'telecom.line.activate'],
+        '/telecom/deviceinventory': ['telecom.device.inventory_manage'],
         '/telecom/technicalticketlist': [
             'customer.view',
             'bulk.import.upload',
@@ -64,6 +65,7 @@
         '/administration/userlist': ['admin.users.manage'],
         '/administration/rolelist': ['admin.roles.manage'],
         '/administration/globalsettings': ['admin.settings.manage'],
+        '/administration/citylist': ['admin.settings.manage'],
         '/administration/auditloglist': ['admin.audit.view'],
         '/companies/mycompany': ['admin.settings.manage'],
         '/numbersequences/numbersequencelist': ['admin.settings.manage'],

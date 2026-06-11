@@ -107,7 +107,7 @@
 
 <div class="proposal-p">
   <p>Macquires understands that Syriatel needs more than static report definitions: supervisors and back-office teams must see live workload, SLA adherence, and exception queues while agents work in the same system. Our proposal therefore describes reporting that is <strong>native to the CRM</strong>—fed directly from telecom operations, payments, inventory, integration attempts, and audit tables created at the counter—not a separate data mart that lags behind the business day.</p>
-  <p><strong>Macquires will provide</strong> showroom agents, back-office approvers, and management users with role-appropriate dashboards and filterable operational registers. Branch and regional scope, where configured, limits strategic views to the subscriber base each role may oversee. All figures shown in management MIS strips are traceable to underlying operation and payment rows, supporting audit questions without exporting to a third tool for routine supervision.</p>
+  <p><strong>Macquires will provide</strong> Point of Service (POS) agents, back-office approvers, and management users with role-appropriate dashboards and filterable operational registers. Branch and regional scope, where configured, limits strategic views to the subscriber base each role may oversee. All figures shown in management MIS strips are traceable to underlying operation and payment rows, supporting audit questions without exporting to a third tool for routine supervision.</p>
 </div>
 
 <div class="section-bar">Standard operational reports, data tables &amp; supervisor dashboards</div>
@@ -160,9 +160,9 @@
 </table>
 
 <div class="proposal-p">
-  <p>For <strong>Daily Sales</strong>, Macquires treats new line activations and device sales as first-class operation types (ACT- and DEV- prefixes). Supervisors see completion rate, fallout to failed or pending-external status, average handling time against a five-minute activation SLA, and ranked rejection reasons—equivalent to a branch daily sales quality report, not only a raw count.</p>
+  <p>For <strong>Daily Sales</strong>, Macquires treats new line activations and device sales as first-class operation types (ACT- and DEV- prefixes). Back-office supervisors see completion rate, fallout to failed or pending-external status, average handling time against a five-minute activation SLA, and ranked rejection reasons—equivalent to a branch daily sales quality report, not only a raw count.</p>
   <p>For <strong>Active Suspensions</strong>, the suspension panel reports volumes completed and failed, cases still awaiting back-office approval, fraud-related suspensions, and lines with auto-reconnect scheduled. The same data can be exported from the operations grid filtered by kind and status for a formal “log” extract at go-live if Syriatel requires a scheduled file.</p>
-  <p>For <strong>SIM Swap Audit</strong>, every completed swap writes an operational audit entry including old and new ICCID context (the “black box” snapshot). Lost or stolen swaps are counted separately in KPIs; identity documents remain linked to the operation for supervisor review before approval.</p>
+  <p>For <strong>SIM Swap Audit</strong>, every completed swap writes an operational audit entry including old and new ICCID context (the “black box” snapshot). Lost or stolen swaps are counted separately in KPIs; identity documents remain linked to the operation for Back-Office / Financial Clearance review before approval.</p>
 </div>
 
 <h2>Reporting architecture</h2>
@@ -204,7 +204,7 @@ flowchart LR
 <h3>Unified operator cockpit (persona-driven)</h3>
 
 <div class="proposal-p">
-  <p><strong>Macquires will configure</strong> the Syriatel unified dashboard (<code>/Dashboards/DefaultDashboard</code>) so each persona—Executive, Retail showroom, Back Office, Call Center, and system administration—sees only widgets relevant to their duties. Widgets are loaded dynamically from the platform dashboard service and refresh on a polling interval appropriate to operational use.</p>
+  <p><strong>Macquires will configure</strong> the Syriatel unified dashboard (<code>/Dashboards/DefaultDashboard</code>) so each persona—Executive, Retail POS (Point of Service), Back Office, Call Center, and system administration—sees only widgets relevant to their duties. Widgets are loaded dynamically from the platform dashboard service and refresh on a polling interval appropriate to operational use.</p>
   <p>Retail users receive quick links and status tiles oriented to activation and customer search. Back-office users see pending approval counts. Executives with MIS permission see an embedded strip for ARPU and churn proxies plus branch workload heat, and may open full <strong>Strategic Analytics</strong> for revenue index trends, technical-ticket SLA, subscriber segment mix, and a branch leaderboard scoped by region or branch.</p>
 </div>
 
@@ -237,8 +237,8 @@ flowchart LR
 <h3>Telecom Hub — agent and team-lead workbench</h3>
 
 <div class="proposal-p">
-  <p><strong>Macquires will provide</strong> the Telecom Hub as the day-to-day operational register for showroom and call-center staff. The grid lists all operation types with status, document state, MSISDN, approval requirements, and flags such as lost-or-stolen SIM swap. Navigation badges show how many cases await back-office action, reducing the need for informal escalation channels.</p>
-  <p>Team leads use the same grid with filters to answer “what failed today on this branch?”—functionally equivalent to a lightweight operational report with full drill-down to operation detail, audit history, and attached identity documents.</p>
+  <p><strong>Macquires will provide</strong> the Telecom Hub as the day-to-day operational register for Point of Service (POS) and call-center staff. The grid lists all operation types with status, document state, MSISDN, approval requirements, and flags such as lost-or-stolen SIM swap. Navigation badges show how many cases await back-office action, reducing the need for informal escalation channels.</p>
+  <p>Back-office supervisors and users with appropriate permissions use the same grid with filters to answer “what failed today on this branch?”—functionally equivalent to a lightweight operational report with full drill-down to operation detail, audit history, and attached identity documents.</p>
 </div>
 
 <div class="section-bar">Operational data tables &amp; audit registers</div>
@@ -327,6 +327,16 @@ flowchart LR
   <p>The Macquires platform also includes ERP-style dashboards (sales, inventory, purchase, leads) for enterprises that enable those modules. For Syriatel, <strong>telecom operational reporting described above is in scope</strong> for the CRM rollout; ERP widgets remain optional.</p>
   <p><strong>Macquires will work with Syriatel</strong> during design workshops to confirm any additional named reports (fixed PDF layouts, regulator submissions) and implement them as scheduled extracts or SSRS/Power BI datasets on the same operational tables. Revenue and ARPU figures in MIS and strategic views currently use documented operational proxies until full CBS revenue feeds are connected; labels and tooltips will make this clear to management users.</p>
   <p>Role-based access will be enforced: MIS and strategic analytics require <code>telecom.reports.mis</code>; billing and integration logs require dedicated telecom permissions; PII and national ID reveal remain audited.</p>
+</div>
+
+<div class="proposal-p">
+  <p><strong>Operational governance (Syriatel):</strong> Syriatel's current operating model does not include separate POS Supervisor or Call Center Supervisor approval tiers. Sensitive cases (lost/stolen SIM, high-value refunds, financial clearance) route directly to <strong>Back-Office / Financial Clearance</strong> (<code>TelecomBackOffice</code>) after the POS or call-center agent captures the draft. The Back Office Dashboard is the <strong>primary supervisor workstation</strong> for financial and operational clearance—not a branch-level approval layer.</p>
+  <p lang="ar" dir="rtl"><strong>الحوكمة التشغيلية (سيريتل):</strong> الهيكل التشغيلي الحالي لسيريتل لا يتضمن أدوار «مشرف فرع» أو «مشرف مركز اتصال». الحالات الحساسة (شريحة مفقودة/مسروقة، استردادات عالية القيمة، التسوية المالية) تنتقل مباشرة إلى <strong>الباك أوفيس / التسوية المالية</strong> بعد أن ينشئ موظف نقطة الخدمة (POS) أو مركز الاتصال المسودة. لوحة الباك أوفيس هي <strong>محطة الإشراف المركزية</strong> للتسوية المالية والتشغيلية — وليست طبقة اعتماد على مستوى الفرع.</p>
+</div>
+
+<div class="proposal-p">
+  <p><strong>Dynamic RBAC:</strong> Macquires CRM provides fully dynamic RBAC: Syriatel administrators can create, clone, and assign new roles and granular permissions from the administration console at any time—<strong>without backend code changes</strong>—when organizational needs evolve (e.g., a future branch approval officer or regional supervisor role).</p>
+  <p lang="ar" dir="rtl"><strong>RBAC ديناميكي:</strong> نظام الـ CRM مبني على RBAC ديناميكي بالكامل: إدارة سيريتل تقدر تنشئ وتستنسخ وتعيّن أدوار وصلاحيات جديدة من لوحة الإدارة في أي وقت — <strong>بدون تعديل كود بالخلفية</strong> — عند الحاجة التنظيمية مستقبلاً (مثلاً دور اعتماد فرع أو مشرف منطقة).</p>
 </div>
 
 <p class="note"><strong>Implementation note:</strong> Demo environments use mock CBS, HLR, and SMS connectors. Report structure, KPI definitions, and audit behavior are production-ready; only revenue depth and external gateway live traffic depend on Syriatel interface go-live.</p>

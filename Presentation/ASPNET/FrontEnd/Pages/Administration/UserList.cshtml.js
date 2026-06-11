@@ -8,8 +8,27 @@ const TELECOM_ROLES = [
 
 const PERSONA_OPTIONS = ['Executive', 'CallCenter', 'Retail', 'BackOffice', 'SysAdmin'];
 
+const I18N_PREFIX = 'administration.userList';
+
 const App = {
     setup() {
+        const localeTick = Vue.ref(0);
+
+        const t = (key, fallback = '') => {
+            localeTick.value;
+            const hit = window.TelecomI18n?.t?.(`${I18N_PREFIX}.${key}`);
+            return hit && hit !== `${I18N_PREFIX}.${key}` ? hit : fallback || key;
+        };
+
+        const isEn = () => document.documentElement.lang?.toLowerCase().startsWith('en');
+
+        const orgUnitLabel = (o) => {
+            if (!o) return '';
+            const ar = (o.nameAr || '').trim();
+            const en = (o.nameEn || '').trim();
+            return isEn() ? en || ar : ar || en;
+        };
+
         const state = Vue.reactive({
             mainData: [],
             orgUnits: [],
@@ -38,8 +57,7 @@ const App = {
         const services = {
             getUsers: async () => AxiosManager.get('/Security/GetUserList'),
             getOrgUnits: async () => AxiosManager.get('/Security/GetOrgUnitList'),
-            getRoles: async (userId) =>
-                AxiosManager.post('/Security/GetUserRoles', { userId }),
+            getRoles: async (userId) => AxiosManager.post('/Security/GetUserRoles', { userId }),
             createUser: async (body) => AxiosManager.post('/Security/CreateUser', body),
             updateUser: async (body) => AxiosManager.post('/Security/UpdateUser', body),
             updateUserRole: async (body) => AxiosManager.post('/Security/UpdateUserRole', body),
@@ -53,22 +71,24 @@ const App = {
                     label: `${u.firstName || ''} ${u.lastName || ''} (${u.email || ''})`.trim(),
                 }));
 
+        const mapUserRow = (u) => {
+            const isOnline = !!u.isOnline;
+            return {
+                ...u,
+                fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+                lastLoginAtUtc: u.lastLoginAtUtc ? new Date(u.lastLoginAtUtc) : null,
+                lastActivityAtUtc: u.lastActivityAtUtc ? new Date(u.lastActivityAtUtc) : null,
+                isOnline,
+                onlineStatus: isOnline ? t('online.connected') : t('online.disconnected'),
+                onlineStatusBadge: isOnline ? 'bg-success' : 'bg-secondary',
+            };
+        };
+
         const methods = {
             populateMainData: async () => {
                 const response = await services.getUsers();
                 const rows = response?.data?.content?.data || [];
-                state.mainData = rows.map((u) => {
-                    const isOnline = !!u.isOnline;
-                    return {
-                        ...u,
-                        fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
-                        lastLoginAtUtc: u.lastLoginAtUtc ? new Date(u.lastLoginAtUtc) : null,
-                        lastActivityAtUtc: u.lastActivityAtUtc ? new Date(u.lastActivityAtUtc) : null,
-                        isOnline,
-                        onlineStatus: isOnline ? 'متصل' : 'غير متصل',
-                        onlineStatusBadge: isOnline ? 'bg-success' : 'bg-secondary',
-                    };
-                });
+                state.mainData = rows.map(mapUserRow);
                 state.managerOptions = buildManagerOptions(state.mainData);
             },
             populateOrgUnits: async () => {
@@ -106,18 +126,18 @@ const App = {
                 } catch (e) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'فشل تحديث الدور',
+                        title: t('messages.roleUpdateFailed'),
                         text: e.response?.data?.message || e.message,
                     });
                 }
             },
             handleSubmit: async () => {
                 if (!state.firstName?.trim() || !state.lastName?.trim()) {
-                    Swal.fire({ icon: 'warning', title: 'الاسم مطلوب' });
+                    Swal.fire({ icon: 'warning', title: t('messages.nameRequired') });
                     return;
                 }
                 if (!state.userId && (!state.email?.trim() || !state.password)) {
-                    Swal.fire({ icon: 'warning', title: 'البريد وكلمة المرور مطلوبان' });
+                    Swal.fire({ icon: 'warning', title: t('messages.emailPasswordRequired') });
                     return;
                 }
 
@@ -154,23 +174,26 @@ const App = {
                               syncTelecomRoleFromPersona: true,
                           };
 
-                    const res = state.userId
-                        ? await services.updateUser(body)
-                        : await services.createUser(body);
+                    const res = state.userId ? await services.updateUser(body) : await services.createUser(body);
 
                     if (res?.data?.code === 200) {
                         await methods.populateMainData();
                         mainGrid.refresh();
                         mainModal.obj.hide();
                         resetForm();
-                        Swal.fire({ icon: 'success', title: 'تم الحفظ', timer: 1400, showConfirmButton: false });
+                        Swal.fire({
+                            icon: 'success',
+                            title: t('messages.saved'),
+                            timer: 1400,
+                            showConfirmButton: false,
+                        });
                     } else {
-                        Swal.fire({ icon: 'error', title: 'فشل الحفظ', text: res?.data?.message || '' });
+                        Swal.fire({ icon: 'error', title: t('messages.saveFailed'), text: res?.data?.message || '' });
                     }
                 } catch (e) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'خطأ',
+                        title: t('messages.error'),
                         text: e.response?.data?.message || e.message,
                     });
                 } finally {
@@ -179,9 +202,59 @@ const App = {
             },
         };
 
+        const gridColumns = () => [
+            { field: 'id', isPrimaryKey: true, visible: false },
+            { field: 'fullName', headerText: t('grid.fullName'), width: 160, minWidth: 120 },
+            { field: 'email', headerText: t('grid.email'), width: 180, minWidth: 140 },
+            { field: 'primaryMenuPersona', headerText: t('grid.persona'), width: 100, minWidth: 90 },
+            { field: 'rolesDisplay', headerText: t('grid.roles'), width: 200, minWidth: 120 },
+            { field: 'managerDisplayName', headerText: t('grid.manager'), width: 140, minWidth: 100 },
+            { field: 'orgUnitNameAr', headerText: t('grid.orgUnit'), width: 120, minWidth: 90 },
+            {
+                field: 'onlineStatus',
+                headerText: t('grid.status'),
+                width: 90,
+                minWidth: 80,
+                template: '<span class="badge ${onlineStatusBadge}">${onlineStatus}</span>',
+            },
+            {
+                field: 'lastLoginAtUtc',
+                headerText: t('grid.lastLogin'),
+                width: 150,
+                minWidth: 120,
+                format: 'yyyy-MM-dd HH:mm',
+                type: 'dateTime',
+            },
+            {
+                field: 'lastActivityAtUtc',
+                headerText: t('grid.lastActivity'),
+                width: 150,
+                minWidth: 120,
+                format: 'yyyy-MM-dd HH:mm',
+                type: 'dateTime',
+            },
+            {
+                field: 'isBlocked',
+                headerText: t('grid.blocked'),
+                width: 80,
+                minWidth: 70,
+                displayAsCheckBox: true,
+                type: 'boolean',
+            },
+        ];
+
+        const gridToolbar = () => [
+            'ExcelExport',
+            'Search',
+            { type: 'Separator' },
+            { text: t('toolbar.add'), prefixIcon: 'e-add', id: 'AddUser' },
+            { text: t('toolbar.edit'), prefixIcon: 'e-edit', id: 'EditUser' },
+        ];
+
         const mainGrid = {
             obj: null,
             create: async (dataSource) => {
+                localeTick.value;
                 mainGrid.obj = new ej.grids.Grid({
                     id: 'UserAdminGrid',
                     height: getDashminGridHeight(),
@@ -196,53 +269,8 @@ const App = {
                     pageSettings: { pageSize: 25, pageSizes: ['10', '25', '50', '100'] },
                     selectionSettings: { type: 'Single' },
                     gridLines: 'Horizontal',
-                    columns: [
-                        { field: 'id', isPrimaryKey: true, visible: false },
-                        { field: 'fullName', headerText: 'الاسم', width: 160, minWidth: 120 },
-                        { field: 'email', headerText: 'البريد', width: 180, minWidth: 140 },
-                        { field: 'primaryMenuPersona', headerText: 'Persona', width: 100, minWidth: 90 },
-                        { field: 'rolesDisplay', headerText: 'الأدوار', width: 200, minWidth: 120 },
-                        { field: 'managerDisplayName', headerText: 'المدير', width: 140, minWidth: 100 },
-                        { field: 'orgUnitNameAr', headerText: 'الوحدة', width: 120, minWidth: 90 },
-                        {
-                            field: 'onlineStatus',
-                            headerText: 'الحالة',
-                            width: 90,
-                            minWidth: 80,
-                            template: '<span class="badge ${onlineStatusBadge}">${onlineStatus}</span>',
-                        },
-                        {
-                            field: 'lastLoginAtUtc',
-                            headerText: 'آخر دخول',
-                            width: 150,
-                            minWidth: 120,
-                            format: 'yyyy-MM-dd HH:mm',
-                            type: 'dateTime',
-                        },
-                        {
-                            field: 'lastActivityAtUtc',
-                            headerText: 'آخر نشاط',
-                            width: 150,
-                            minWidth: 120,
-                            format: 'yyyy-MM-dd HH:mm',
-                            type: 'dateTime',
-                        },
-                        {
-                            field: 'isBlocked',
-                            headerText: 'موقوف',
-                            width: 80,
-                            minWidth: 70,
-                            displayAsCheckBox: true,
-                            type: 'boolean',
-                        },
-                    ],
-                    toolbar: [
-                        'ExcelExport',
-                        'Search',
-                        { type: 'Separator' },
-                        { text: 'إضافة', prefixIcon: 'e-add', id: 'AddUser' },
-                        { text: 'تعديل', prefixIcon: 'e-edit', id: 'EditUser' },
-                    ],
+                    columns: gridColumns(),
+                    toolbar: gridToolbar(),
                     dataBound: function () {
                         mainGrid.obj.toolbarModule.enableItems(['EditUser'], false);
                     },
@@ -262,13 +290,13 @@ const App = {
                         }
                         if (args.item.id === 'AddUser') {
                             resetForm();
-                            state.mainTitle = 'إضافة مستخدم';
+                            state.mainTitle = t('modal.addTitle');
                             state.managerOptions = buildManagerOptions(state.mainData);
                             mainModal.obj.show();
                         }
                         if (args.item.id === 'EditUser' && mainGrid.obj.getSelectedRecords().length) {
                             const r = mainGrid.obj.getSelectedRecords()[0];
-                            state.mainTitle = 'تعديل مستخدم';
+                            state.mainTitle = t('modal.editTitle');
                             state.userId = r.id;
                             state.firstName = r.firstName || '';
                             state.lastName = r.lastName || '';
@@ -290,7 +318,20 @@ const App = {
                 });
                 mainGrid.obj.appendTo(mainGridRef.value);
             },
-            refresh: () => mainGrid.obj?.setProperties({ dataSource: state.mainData }),
+            refresh: () => {
+                if (!mainGrid.obj) return;
+                mainGrid.obj.setProperties({ dataSource: state.mainData });
+            },
+            rebuild: async () => {
+                if (!mainGridRef.value) return;
+                const data = state.mainData.map(mapUserRow);
+                state.mainData = data;
+                if (mainGrid.obj) {
+                    mainGrid.obj.destroy();
+                    mainGrid.obj = null;
+                }
+                await mainGrid.create(data);
+            },
         };
 
         const mainModal = {
@@ -303,8 +344,21 @@ const App = {
             },
         };
 
+        const onLocaleChanged = async () => {
+            localeTick.value++;
+            await window.TelecomI18n?.ensureLoaded?.();
+            const title = t('pageTitle');
+            if (title) document.title = title;
+            state.mainData = state.mainData.map(mapUserRow);
+            await mainGrid.rebuild();
+        };
+
         Vue.onMounted(async () => {
+            document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
             try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                const title = t('pageTitle');
+                if (title) document.title = title;
                 await SecurityManager.authorizePage(['TelecomAdmin']);
                 await SecurityManager.validateToken();
                 await methods.populateOrgUnits();
@@ -318,7 +372,11 @@ const App = {
             }
         });
 
-        return { mainGridRef, mainModalRef, state, handler };
+        Vue.onUnmounted(() => {
+            document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
+        });
+
+        return { mainGridRef, mainModalRef, state, handler, t, orgUnitLabel };
     },
 };
 

@@ -1,16 +1,15 @@
 const DeviceInventoryApp = {
     setup() {
-        if (typeof SecurityManager !== 'undefined' && !SecurityManager.canAccessPortalPath(window.location.pathname)) {
-            SecurityManager.denyPageAccess();
-        }
-
         const isEn = () => document.documentElement.lang?.toLowerCase().startsWith('en');
         const t = (key) => window.TelecomI18n?.t?.(`deviceInventory.${key}`) || key;
 
         const state = Vue.reactive({
             loading: true,
             busy: false,
+            showDemoBanner: false,
             allRows: [],
+            branches: [],
+            branchById: {},
             statusFilter: '',
             quickSearch: '',
             searchPlaceholder: '',
@@ -57,9 +56,16 @@ const DeviceInventoryApp = {
             return hit && hit !== key ? hit : status || '—';
         };
 
+        const branchLabel = (branchId) => {
+            if (!branchId) return '—';
+            const hit = state.branchById[branchId];
+            if (hit) return hit;
+            return String(branchId);
+        };
+
         const mapRow = (row) => {
             const status = String(pick(row, 'status', 'Status') || '');
-            const branch = pick(row, 'branchId', 'BranchId');
+            const branchId = pick(row, 'branchId', 'BranchId');
             return {
                 id: pick(row, 'id', 'Id') || pick(row, 'imei', 'Imei'),
                 imei: pick(row, 'imei', 'Imei') || '—',
@@ -69,7 +75,8 @@ const DeviceInventoryApp = {
                 listPriceDisplay: formatMoney(pick(row, 'listPrice', 'ListPrice')),
                 statusName: status,
                 statusLabel: statusLabel(status),
-                branchDisplay: branch ? String(branch) : '—',
+                branchId: branchId || '',
+                branchDisplay: branchLabel(branchId),
             };
         };
 
@@ -147,6 +154,35 @@ const DeviceInventoryApp = {
             { field: 'statusLabel', headerText: t('columns.status'), width: 120, minWidth: 100 },
             { field: 'branchDisplay', headerText: t('columns.branch'), width: 120, minWidth: 90 },
         ];
+
+        const loadBranches = async () => {
+            try {
+                const res = await AxiosManager.get('/Security/GetOrgUnitList', {});
+                const list =
+                    (typeof StorageManager !== 'undefined' && StorageManager.apiList
+                        ? StorageManager.apiList(res)
+                        : res?.data?.content?.data ?? res?.data?.Content?.Data) || [];
+                const ar = !isEn();
+                const branches = list
+                    .filter((u) => {
+                        const name = String(u.nameAr || u.NameAr || '');
+                        return name.startsWith('فرع');
+                    })
+                    .map((u) => {
+                        const id = u.id || u.Id;
+                        const label = ar
+                            ? u.nameAr || u.NameAr || u.nameEn || u.NameEn || id
+                            : u.nameEn || u.NameEn || u.nameAr || u.NameAr || id;
+                        return { id, label };
+                    })
+                    .sort((a, b) => String(a.label).localeCompare(String(b.label), ar ? 'ar' : 'en'));
+                state.branches = branches;
+                state.branchById = Object.fromEntries(branches.map((b) => [b.id, b.label]));
+            } catch {
+                state.branches = [];
+                state.branchById = {};
+            }
+        };
 
         const methods = {
             load: async () => {
@@ -340,17 +376,48 @@ const DeviceInventoryApp = {
 
         const onWindowResize = () => applyGridHeight();
 
+        const ensurePageAccess = async () => {
+            if (!StorageManager.getAccessToken?.()) {
+                window.location.href = '/Accounts/Login';
+                return false;
+            }
+            if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
+                await PortalNavigation.syncOperatorSession(true);
+            }
+            const ok = await SecurityManager.authorizeTelecomAccess({
+                roles: ['TelecomAdmin', 'TelecomManagement', 'TelecomBackOffice'],
+                permissions: ['telecom.device.inventory_manage'],
+            });
+            if (!ok) {
+                SecurityManager.denyPageAccess();
+                return false;
+            }
+            return true;
+        };
+
         Vue.onMounted(async () => {
+            try {
+                const allowed = await ensurePageAccess();
+                if (!allowed) return;
+            } catch (e) {
+                console.warn('DeviceInventory: access check failed', e);
+                SecurityManager.denyPageAccess?.();
+                return;
+            }
             await window.TelecomI18n?.ensureLoaded?.();
             applyLocaleUi();
-            document.documentElement.addEventListener('syriatel-locale-changed', () => {
+            await loadDemoBanner();
+            await loadBranches();
+            document.documentElement.addEventListener('syriatel-locale-changed', async () => {
                 applyLocaleUi();
+                await loadBranches();
                 state.allRows = state.allRows.map((r) => {
                     const status = r.statusName;
                     return {
                         ...r,
                         statusLabel: statusLabel(status),
                         listPriceDisplay: formatMoney(r.listPrice),
+                        branchDisplay: branchLabel(r.branchId),
                     };
                 });
                 if (mainGrid.obj) {
@@ -378,7 +445,29 @@ const DeviceInventoryApp = {
             return window.TelecomUiBadges?.poolStatus(status, label) || label;
         };
 
-        return { state, handler, mainGridRef, kpiBadge };
+        const demoBannerTitle = Vue.computed(
+            () => window.TelecomIntegrationDemoBanner?.title?.() || ''
+        );
+        const demoBannerMessage = Vue.computed(
+            () => window.TelecomIntegrationDemoBanner?.message?.() || ''
+        );
+        const demoBannerChip = Vue.computed(
+            () => window.TelecomIntegrationDemoBanner?.chip?.() || ''
+        );
+
+        const loadDemoBanner = async () => {
+            state.showDemoBanner = !!(await window.TelecomIntegrationDemoBanner?.isDemoVersion?.());
+        };
+
+        return {
+            state,
+            handler,
+            mainGridRef,
+            kpiBadge,
+            demoBannerTitle,
+            demoBannerMessage,
+            demoBannerChip,
+        };
     },
 };
 

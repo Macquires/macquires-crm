@@ -1,6 +1,7 @@
 using Application.Tests.Dashboard;
 using Application.Common.Exceptions;
 using Application.Common.Integrations;
+using Application.Common.Settings;
 using Application.Common.Telecom.Reconnect;
 using Application.Common.Telecom.Suspension;
 using Domain.Entities;
@@ -12,6 +13,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class ReconnectEligibilityIntegrationTests
 {
     [Fact]
@@ -22,7 +25,7 @@ public class ReconnectEligibilityIntegrationTests
             ctx,
             SuspensionWellKnown.Billing,
             MsisdnPoolStatus.Suspended);
-        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(0m));
+        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(0m), new StubSettings());
 
         var result = await checker.ValidateForCreateAsync(
             profileId,
@@ -35,7 +38,8 @@ public class ReconnectEligibilityIntegrationTests
 
         Assert.True(result.Allowed);
         Assert.False(result.RequiresBackOfficeApproval);
-        Assert.Equal("Allowed", result.ValidationCode);
+        Assert.Equal("PaymentCleared", result.ValidationCode);
+        Assert.Contains("VAL-09-06", result.MessageAr);
     }
 
     [Fact]
@@ -46,7 +50,7 @@ public class ReconnectEligibilityIntegrationTests
             ctx,
             SuspensionWellKnown.Fraud,
             MsisdnPoolStatus.Suspended);
-        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(0m));
+        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(0m), new StubSettings());
 
         var pending = await checker.ValidateForCreateAsync(
             profileId,
@@ -88,7 +92,7 @@ public class ReconnectEligibilityIntegrationTests
         profile!.Terminate();
         await ctx.SaveChangesAsync();
 
-        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(0m));
+        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(0m), new StubSettings());
         var result = await checker.ValidateForCreateAsync(
             profileId,
             assetId,
@@ -111,7 +115,7 @@ public class ReconnectEligibilityIntegrationTests
             ctx,
             SuspensionWellKnown.Billing,
             MsisdnPoolStatus.Suspended);
-        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(-1200m));
+        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(-1200m), new StubSettings());
 
         var result = await checker.ValidateForCreateAsync(
             profileId,
@@ -128,6 +132,31 @@ public class ReconnectEligibilityIntegrationTests
     }
 
     [Fact]
+    public async Task ValidateForCreateAsync_operational_clearance_skips_payment_even_after_billing_suspension()
+    {
+        await using var ctx = CreateContext();
+        var (profileId, assetId, _) = await SeedSuspendedLineAsync(
+            ctx,
+            SuspensionWellKnown.Billing,
+            MsisdnPoolStatus.Suspended);
+        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(-5000m), new StubSettings());
+
+        var result = await checker.ValidateForCreateAsync(
+            profileId,
+            assetId,
+            "resolve connection issue",
+            ReconnectWellKnown.Operational,
+            null,
+            false,
+            null);
+
+        Assert.True(result.Allowed);
+        Assert.False(result.RequiresBackOfficeApproval);
+        Assert.Equal("OperationalAllowed", result.ValidationCode);
+        Assert.Contains("VAL-09-04", result.MessageAr);
+    }
+
+    [Fact]
     public void ReconnectEligibilityMatrix_maps_regulatory_to_back_office()
     {
         var matrix = ReconnectEligibilityMatrix.Evaluate(new ReconnectEligibilityMatrixInput(
@@ -138,7 +167,9 @@ public class ReconnectEligibilityIntegrationTests
             ReconnectWellKnown.Customer,
             false,
             0m,
-            false));
+            false,
+            null,
+            null));
 
         Assert.True(matrix.Allowed);
         Assert.True(matrix.RequiresBackOfficeApproval);
@@ -151,7 +182,7 @@ public class ReconnectEligibilityIntegrationTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static async Task<(string ProfileId, string AssetId, string Msisdn)> SeedSuspendedLineAsync(
@@ -226,6 +257,9 @@ public class ReconnectEligibilityIntegrationTests
         public Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default) =>
             Task.FromResult(balance);
 
+        public Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
@@ -237,5 +271,19 @@ public class ReconnectEligibilityIntegrationTests
 
         public Task<BillingRechargeResult> ReverseRechargeAsync(BillingReverseRechargeRequest request, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
+    }
+
+    private sealed class StubSettings : IGlobalSettingsProvider
+    {
+        public Task<string?> GetValueAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+        public Task<bool> GetBoolAsync(string key, bool defaultValue = false, CancellationToken cancellationToken = default) => Task.FromResult(defaultValue);
+        public Task<IReadOnlyList<string>> GetCsvListAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<string>>([]);
+        public Task<int> GetIntAsync(string key, int defaultValue, int min = int.MinValue, int max = int.MaxValue, CancellationToken cancellationToken = default) => Task.FromResult(defaultValue);
+        public Task<decimal> GetDecimalAsync(string key, decimal defaultValue, decimal min = decimal.MinValue, decimal max = decimal.MaxValue, CancellationToken cancellationToken = default) => Task.FromResult(defaultValue);
+        public Task<bool> GetCatalogBoolAsync(Application.Common.Settings.Telecom.SettingDefinition definition, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<int> GetCatalogIntAsync(Application.Common.Settings.Telecom.SettingDefinition definition, CancellationToken cancellationToken = default) => Task.FromResult(0);
+        public Task<decimal> GetCatalogDecimalAsync(Application.Common.Settings.Telecom.SettingDefinition definition, CancellationToken cancellationToken = default) => Task.FromResult(0m);
+        public Task<string> GetCatalogStringAsync(Application.Common.Settings.Telecom.SettingDefinition definition, CancellationToken cancellationToken = default) => Task.FromResult("");
+        public Task<IReadOnlyList<string>> GetCatalogCsvListAsync(Application.Common.Settings.Telecom.SettingDefinition definition, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<string>>([]);
     }
 }

@@ -122,7 +122,7 @@ const AxiosManager = (() => {
     );
 
     const request = async (method, url, options = {}) => {
-        const { data, headers = {}, responseType = 'json', params } = options;
+        const { data, headers = {}, responseType = 'json', params, signal, timeout } = options;
         try {
             const response = await axiosInstance({
                 method,
@@ -133,6 +133,8 @@ const AxiosManager = (() => {
                     ...headers,
                 },
                 responseType,
+                ...(signal !== undefined ? { signal } : {}),
+                ...(timeout !== undefined ? { timeout } : {}),
             });
             return response;
         } catch (error) {
@@ -141,12 +143,15 @@ const AxiosManager = (() => {
     };
 
     return {
+        getBaseUrl: () => axiosInstance.defaults.baseURL || '/api',
         request,
         get: (url, config = {}) =>
             request('get', url, {
                 headers: config.headers,
                 responseType: config.responseType,
                 params: config.params,
+                signal: config.signal,
+                timeout: config.timeout,
             }),
         post: (url, data, config = {}) =>
             request('post', url, {

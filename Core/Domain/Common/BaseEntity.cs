@@ -9,12 +9,16 @@ public class BaseEntity : IHasSequentialId, IHasIsDeleted, IHasAudit
     public DateTime? UpdatedAtUtc { get; set; }
     public string? UpdatedById { get; set; }
 
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    public void AddDomainEvent(IDomainEvent eventItem) => _domainEvents.Add(eventItem);
+    public void RemoveDomainEvent(IDomainEvent eventItem) => _domainEvents.Remove(eventItem);
+    public void ClearDomainEvents() => _domainEvents.Clear();
+
     public BaseEntity()
     {
-        // .NET 9.0 UUID Version 7 (RFC 9562): time-ordered, lock-free, GC-friendly.
-        // Replaces legacy COMB GUID that used lock(_lock) and caused thread contention.
         Id = Guid.CreateVersion7().ToString();
         IsDeleted = false;
     }
 }
-

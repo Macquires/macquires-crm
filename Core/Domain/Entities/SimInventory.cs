@@ -27,8 +27,8 @@ public class SimInventory : BaseEntity
     {
         [SimStatus.Available] = [SimStatus.Reserved, SimStatus.Active],
         [SimStatus.Reserved] = [SimStatus.Active, SimStatus.Available],
-        [SimStatus.Active] = [SimStatus.Suspended, SimStatus.Quarantined],
-        [SimStatus.Suspended] = [SimStatus.Active, SimStatus.Quarantined],
+        [SimStatus.Active] = [SimStatus.Suspended, SimStatus.Quarantined, SimStatus.Burned],
+        [SimStatus.Suspended] = [SimStatus.Active, SimStatus.Quarantined, SimStatus.Burned],
         [SimStatus.Quarantined] = [SimStatus.Available],
     };
 
@@ -57,7 +57,7 @@ public class SimInventory : BaseEntity
         };
     }
 
-    public void TransitionTo(SimStatus newStatus)
+    public void TransitionTo(SimStatus newStatus, int? quarantineDays = null)
     {
         if (Status == newStatus) return;
 
@@ -67,15 +67,95 @@ public class SimInventory : BaseEntity
                 $"انتقال غير مسموح لحالة الشريحة: {Status} → {newStatus}.");
         }
 
-        if (newStatus == SimStatus.Quarantined && QuarantineEndsUtc == null)
+        if (newStatus == SimStatus.Quarantined)
         {
-            QuarantineEndsUtc = DateTime.UtcNow.AddDays(90);
+            QuarantineEndsUtc = DateTime.UtcNow.AddDays(quarantineDays ?? 90);
         }
 
         Status = newStatus;
     }
 
+    /// <summary>Permanent death — used by MSISDN recycling (Case C).</summary>
+    public void MarkBurned(DateTime utcNow)
+    {
+        if (Status == SimStatus.Burned)
+        {
+            return;
+        }
+
+        QuarantineEndsUtc = null;
+        Status = SimStatus.Burned;
+    }
+
     public void AssignToProfile(string? subscriberProfileId) => SubscriberProfileId = subscriberProfileId;
+
+    public void ReleaseQuarantineIfExpired(DateTime utcNow)
+    {
+        if (Status != SimStatus.Quarantined || !QuarantineEndsUtc.HasValue || QuarantineEndsUtc > utcNow)
+        {
+            return;
+        }
+
+        QuarantineEndsUtc = null;
+        TransitionTo(SimStatus.Available);
+    }
+
+    /// <summary>Oracle/demo ingest — returns SIM to pool using only valid lifecycle transitions.</summary>
+    public void ResetToAvailableForInventoryIngest()
+    {
+        AssignToProfile(null);
+
+        if (Status == SimStatus.Burned)
+        {
+            return;
+        }
+
+        if (Status == SimStatus.Available)
+        {
+            QuarantineEndsUtc = null;
+            return;
+        }
+
+        var utcNow = DateTime.UtcNow;
+
+        if (Status == SimStatus.Reserved)
+        {
+            TransitionTo(SimStatus.Available);
+            QuarantineEndsUtc = null;
+            return;
+        }
+
+        if (Status == SimStatus.Quarantined)
+        {
+            QuarantineEndsUtc = utcNow.AddSeconds(-1);
+            ReleaseQuarantineIfExpired(utcNow);
+            return;
+        }
+
+        // Active or Suspended → Quarantined (expired) → Available
+        TransitionTo(SimStatus.Quarantined);
+        QuarantineEndsUtc = utcNow.AddSeconds(-1);
+        ReleaseQuarantineIfExpired(utcNow);
+    }
+
+    /// <summary>Rolls back a failed activation bind so the SIM can re-enter the warehouse.</summary>
+    public void RollbackFailedActivationBinding(DateTime utcNow)
+    {
+        AssignToProfile(null);
+
+        if (Status == SimStatus.Active)
+        {
+            TransitionTo(SimStatus.Quarantined);
+            QuarantineEndsUtc = utcNow.AddSeconds(-1);
+            ReleaseQuarantineIfExpired(utcNow);
+            return;
+        }
+
+        if (Status == SimStatus.Reserved)
+        {
+            TransitionTo(SimStatus.Available);
+        }
+    }
 
     internal void SetIccidForImport(string iccid) => Iccid = iccid;
     internal void SetImsiForImport(string? imsi) => Imsi = imsi;

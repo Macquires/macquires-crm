@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Telecom;
 using AutoMapper;
 using Domain.Entities;
 using FluentValidation;
@@ -65,9 +66,11 @@ public class GetBillingIntegrationLogListHandler : IRequestHandler<GetBillingInt
 
     public async Task<GetBillingIntegrationLogListResult> Handle(GetBillingIntegrationLogListRequest request, CancellationToken cancellationToken)
     {
+        var billingTargets = ProvisioningIntegrationLogTargets.BillingTargets;
         var query = _context.BillingIntegrationLog
             .AsNoTracking()
-            .IsDeletedEqualTo(request.IsDeleted);
+            .IsDeletedEqualTo(request.IsDeleted)
+            .Where(x => x.IntegrationTarget == null || billingTargets.Contains(x.IntegrationTarget));
 
         if (!string.IsNullOrEmpty(request.TelecomOperationRequestId))
         {
@@ -119,7 +122,7 @@ public class GetBillingIntegrationLogListHandler : IRequestHandler<GetBillingInt
         {
             Id = x.Id,
             TelecomOperationRequestId = x.TelecomOperationRequestId,
-            OperationNumber = opNumbers.TryGetValue(x.TelecomOperationRequestId, out var n) ? n : string.Empty,
+            OperationNumber = x.TelecomOperationRequestId != null && opNumbers.TryGetValue(x.TelecomOperationRequestId, out var n) ? n : string.Empty,
             AttemptNumber = x.AttemptNumber,
             Success = x.Success,
             Message = x.Message,

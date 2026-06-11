@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Telecom;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
@@ -12,6 +13,8 @@ namespace Application.Features.TelecomManager.Commands;
 public class ResyncSubscriberFromHlrRequest : IRequest<HlrResyncResult>
 {
     public string SubscriberProfileId { get; init; } = "";
+    public string? MsisdnAssetId { get; init; }
+    public string? Msisdn { get; init; }
     public string? ActorUserId { get; init; }
 }
 
@@ -44,11 +47,13 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
         var profile = await _profileRepository.GetAsync(request.SubscriberProfileId, cancellationToken)
             ?? throw new InvalidOperationException("Subscriber profile not found.");
 
-        var msisdn = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => s.SubscriberProfileId == profile.Id)
-            .Select(s => s.MsisdnAsset!.Msisdn)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new InvalidOperationException("No MSISDN for profile.");
+        var asset = await SubscriberLineResolver.ResolveAssetAsync(
+            _query,
+            profile.Id,
+            request.MsisdnAssetId,
+            request.Msisdn,
+            cancellationToken);
+        var msisdn = asset.Msisdn;
 
         var live = await _hlr.QueryLiveStatusAsync(msisdn, profile.OperationalStatus.ToString(), cancellationToken);
 
@@ -58,7 +63,7 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
         }
         else if (live.HlrSubscriberState == "SUSPENDED")
         {
-            profile.Suspend();
+            profile.Suspend(msisdn);
         }
 
         _profileRepository.Update(profile);

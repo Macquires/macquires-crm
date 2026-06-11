@@ -1,0 +1,80 @@
+@page "/Telecom/BackOfficeHistoricalLedger"
+@{
+    ViewData["Title"] = "Historical Audit Ledger - Back-Office";
+}
+
+<div id="app" v-cloak class="telecom-premium-page">
+    <div class="container-fluid py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-1 fw-bold text-danger">
+                    <i class="bi bi-archive me-2"></i>
+                    <span data-telecom-i18n="backOffice.historicalLedger.title">دفتر الأستاذ التاريخي (Historical Ledger)</span>
+                </h1>
+                <p class="text-muted small mb-0" data-telecom-i18n="backOffice.historicalLedger.subtitle">
+                    الأرشيف الكلي للطلبات المبتوت فيها (Approved / Rejected) مع كامل تفاصيل التدقيق.
+                </p>
+            </div>
+            <a href="/Telecom/BackOfficeDashboard" class="btn btn-outline-telecom btn-sm">
+                <i class="bi bi-arrow-right me-1"></i>
+                <span data-telecom-i18n="backOffice.historicalLedger.backToDashboard">لوحة العمليات</span>
+            </a>
+        </div>
+
+        <div class="telecom-bento-card mb-3">
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label small text-muted">بحث (رقم الخط / الطلب)</label>
+                        <input type="search" class="form-control" v-model="state.filters.searchTerm" v-on:keyup.enter="handler.search" placeholder="MSISDN / Request #…" />
+                    </div>
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label small text-muted">المجال (Domain)</label>
+                        <select class="form-select" v-model="state.filters.domain">
+                            <option value="">— الكل —</option>
+                            <option value="0">المالية والتحصيل</option>
+                            <option value="1">الشبكة والتقنية</option>
+                            <option value="2">الخدمات الإدارية</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label small text-muted">تجاوز SLA</label>
+                        <select class="form-select" v-model="state.filters.slaBreached">
+                            <option value="">— الكل —</option>
+                            <option value="true">نعم (Breached)</option>
+                            <option value="false">لا (Within SLA)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted">من</label>
+                        <input type="date" class="form-control" v-model="state.filters.fromDate" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted">إلى</label>
+                        <input type="date" class="form-control" v-model="state.filters.toDate" />
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-telecom-primary w-100" v-on:click="handler.search" v-bind:disabled="state.loading">
+                            <i class="fas fa-search" v-bind:class="{ 'fa-spin': state.loading }"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telecom-bento-card telecom-grid-panel bo-ledger-grid-panel mb-0">
+            <div class="card-body pt-2 pb-3">
+                <div class="grid-container">
+                    <div ref="mainGridRef"></div>
+                </div>
+                <p class="small text-muted mt-2 mb-0" v-if="state.totalCount > 0">
+                    إجمالي السجلات: <strong v-text="state.totalCount"></strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/FrontEnd/Pages/Telecom/BackOfficeHistoricalLedger.cshtml.js" asp-append-version="true"></script>
+}

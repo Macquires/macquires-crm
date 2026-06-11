@@ -32,6 +32,7 @@ app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocal
 app.UseMiddleware<GlobalApiExceptionHandlerMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<Infrastructure.Security.OperatorContextMiddleware>();
 app.UseMiddleware<ASPNET.BackEnd.Common.Middlewares.MaintenanceMiddleware>();
 app.UseMiddleware<ASPNET.BackEnd.Common.Middlewares.PermissionLandingRedirectMiddleware>();
@@ -44,3 +45,5 @@ app.MapFrontEndRoutes();
 app.MapBackEndRoutes();
 
 app.Run();
+
+public partial class Program;

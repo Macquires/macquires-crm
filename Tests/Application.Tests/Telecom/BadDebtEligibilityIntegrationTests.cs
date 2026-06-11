@@ -9,6 +9,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class BadDebtEligibilityIntegrationTests
 {
     [Fact]
@@ -222,7 +224,7 @@ public class BadDebtEligibilityIntegrationTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static async Task<(string ProfileId, string AssetId, IndividualCustomer Customer)> SeedLineAsync(
@@ -277,6 +279,9 @@ public class BadDebtEligibilityIntegrationTests
     {
         public Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default) =>
             Task.FromResult(balance);
+
+        public Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task<Application.Common.Integrations.BillingProvisionResult> ProvisionAsync(
             Application.Common.Integrations.BillingProvisionRequest request,

@@ -450,6 +450,7 @@ const Customer360ProfileApp = {
                 susBarringLevel: 'Full',
                 susAutoReconnectEnabled: false,
                 susEndDateLocal: '',
+                susEndDateValidationError: '',
                 susRequiresBackOffice: false,
                 rcnReconnectReason: '',
                 rcnClearanceType: 'Customer',
@@ -709,6 +710,32 @@ const Customer360ProfileApp = {
             return selectedLineSuspended.value;
         });
 
+        const selectedLineBdrStatus = Vue.computed(() => {
+            const sub = selectedSubscription.value;
+            if (!sub) return null;
+            const ops = state.profile?.telecomOperations || [];
+            const bdr = ops.find(o => o.kind === 'BadDebtRecovery' && (o.msisdnAssetId === sub.msisdnAssetId || o.msisdn === sub.msisdn));
+            return bdr ? bdr.status : null;
+        });
+
+        const selectedLineBdrPending = Vue.computed(() => {
+            const s = selectedLineBdrStatus.value;
+            return s === 'Draft' || s === 'PendingDocuments' || s === 'Confirmed' || s === 'Provisioning';
+        });
+
+        const selectedLineBdrApproved = Vue.computed(() => {
+            return selectedLineBdrStatus.value === 'Approved_Pending_Cash';
+        });
+
+        const selectedLineBdrPaidPending = Vue.computed(() => {
+            const s = selectedLineBdrStatus.value;
+            return s === 'Paid_Pending_BackOffice_Clearance';
+        });
+
+        const selectedLineBdrAwaitingAudit = Vue.computed(() => {
+            return selectedLineBdrPaidPending.value;
+        });
+
         const lineKey = (sub) =>
             `${sub.subscriberProfileId}|${sub.msisdn}|${sub.msisdnAssetId}`;
 
@@ -750,11 +777,46 @@ const Customer360ProfileApp = {
         const hlrStatusBtnClass = (sub) => {
             const data = hlrDataForSub(sub);
             if (!data) return 'btn-outline-secondary';
+            if (data.differsFromCrm) return 'btn-outline-danger';
             const s = normalizeHlrState(data.hlrSubscriberState);
             if (s === 'ACTIVE') return 'btn-outline-success';
-            if (isHlrRemediationState(s) || data.differsFromCrm) return 'btn-outline-danger';
+            if (isHlrRemediationState(s)) return 'btn-outline-danger';
             return 'btn-outline-warning';
         };
+
+        const selectedHlrRemediationCrmStatus = Vue.computed(() => {
+            const snap = selectedHlrSnapshot.value;
+            const sub = selectedSubscription.value;
+            return snap?.crmOperationalStatus ?? sub?.profileOperationalStatus ?? '';
+        });
+
+        const hlrRemediationCrmLabel = Vue.computed(() => {
+            const st = selectedHlrRemediationCrmStatus.value;
+            return `CRM: ${operationalStatusLabel(st)}`;
+        });
+
+        const hlrRemediationCrmBadgeClass = Vue.computed(() =>
+            operationalBadgeClass(selectedHlrRemediationCrmStatus.value)
+        );
+
+        const hlrRemediationHlrBadgeClass = Vue.computed(() => {
+            const s = normalizeHlrState(selectedHlrSnapshot.value?.hlrSubscriberState);
+            if (s === 'ACTIVE') return 'bg-success';
+            if (s === 'SUSPENDED') return 'bg-warning text-dark';
+            return 'bg-danger';
+        });
+
+        const hlrRemediationSubtitle = Vue.computed(() => {
+            const snap = selectedHlrSnapshot.value;
+            if (!snap) return '';
+            const crm = operationalStatusLabel(selectedHlrRemediationCrmStatus.value);
+            const hlr = snap.hlrSubscriberState || '—';
+            const tpl = t360(
+                'hlrRemediation.subtitlePattern',
+                'CRM shows {crm} but HLR reports {hlr} — choose a remediation action.'
+            );
+            return tpl.replace('{crm}', crm).replace('{hlr}', hlr);
+        });
 
         const getModal = (id, ref) => {
             if (!ref) ref = new bootstrap.Modal(document.getElementById(id));
@@ -1343,6 +1405,36 @@ const Customer360ProfileApp = {
             await executePaymentFlow(state.customerId, sub.id, sub.id, () => loadProfile(true));
         };
 
+        const loadProfileSupplements = async () => {
+            if (!state.customerId || !state.profile?.core) return;
+            try {
+                const res = await AxiosManager.get(
+                    '/Customer/GetCustomer360Supplements?customerId=' + encodeURIComponent(state.customerId),
+                    {}
+                );
+                const sup = res?.data?.content ?? res?.data?.Content ?? null;
+                if (!sup || !state.profile?.core) return;
+                state.profile = {
+                    ...state.profile,
+                    activeVasServices: sup.activeVasServices ?? sup.ActiveVasServices ?? [],
+                    supportTickets: sup.supportTickets ?? sup.SupportTickets ?? [],
+                    billingLogs: sup.billingLogs ?? sup.BillingLogs ?? [],
+                    activityLogs: sup.activityLogs ?? sup.ActivityLogs ?? [],
+                    telecomOperations: sup.telecomOperations ?? sup.TelecomOperations ?? [],
+                };
+            } catch {
+                /* supplements are non-blocking */
+            }
+        };
+
+        const loadSecondaryLineData = async () => {
+            const selected = selectedSubscription.value;
+            await Promise.all([
+                loadCbs(),
+                selected ? checkHlr(selected) : Promise.resolve(),
+            ]);
+        };
+
         const loadProfile = async (silent = false) => {
             if (!state.customerId) {
                 state.loadError = telecomT('swal.customerIdMissing', 'Missing id');
@@ -1355,21 +1447,18 @@ const Customer360ProfileApp = {
             state.loadError = null;
             try {
                 const res = await AxiosManager.get(
-                    '/Customer/GetCustomer360Profile?customerId=' + encodeURIComponent(state.customerId),
+                    '/Customer/GetCustomer360?customerId=' + encodeURIComponent(state.customerId),
                     {}
                 );
-                const content = res?.data?.content ?? res?.data?.Content ?? null;
-                state.profile = content;
+                const core = res?.data?.content ?? res?.data?.Content ?? null;
+                state.profile = core ? { core } : null;
                 if (!state.profile?.core) {
                     state.loadError = telecomT('swal.profileNotFound', 'Not found');
                 } else {
                     state.aiSim.msisdn = primaryMsisdn() || state.aiSim.msisdn;
                     ensureLineSelected();
-                    await loadCbs();
-                    const selected = selectedSubscription.value;
-                    if (selected) {
-                        await checkHlr(selected);
-                    }
+                    void loadProfileSupplements();
+                    void loadSecondaryLineData();
                 }
             } catch (e) {
                 state.profile = null;
@@ -1436,6 +1525,8 @@ const Customer360ProfileApp = {
             try {
                 const res = await AxiosManager.post('/Telecom/ReprovisionSubscriberToHlr', {
                     subscriberProfileId: profileId,
+                    msisdnAssetId: (sub?.msisdnAssetId || sub?.MsisdnAssetId || '').trim() || null,
+                    msisdn: (sub?.msisdn || '').trim() || null,
                     actorUserId: StorageManager.getUserId(),
                 });
                 const body = res?.data?.content ?? res?.data?.Content ?? {};
@@ -1829,6 +1920,7 @@ const Customer360ProfileApp = {
                 susBarringLevel: 'Full',
                 susAutoReconnectEnabled: false,
                 susEndDateLocal: '',
+                susEndDateValidationError: '',
                 susRequiresBackOffice: false,
                 rcnReconnectReason: '',
                 rcnClearanceType: 'Customer',
@@ -1895,6 +1987,57 @@ const Customer360ProfileApp = {
             };
             if (kind === 'activate' && typeof ActivationChannelUi !== 'undefined') {
                 ActivationChannelUi.applyDefaults(state.wizard);
+            }
+        };
+
+        const SUSPENSION_MAX_DAYS = 90;
+
+        const suspensionStartDateLocal = () => {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        const suspensionMaxEndDateLocal = () => {
+            const d = new Date();
+            d.setDate(d.getDate() + SUSPENSION_MAX_DAYS);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        const validateSuspensionEndDate = () => {
+            state.wizard.susEndDateValidationError = '';
+            if (!state.wizard.susAutoReconnectEnabled) return true;
+            const end = (state.wizard.susEndDateLocal || '').trim();
+            if (!end) {
+                state.wizard.susEndDateValidationError = t360('suspension.endDateRequired', 'End date required');
+                return false;
+            }
+            const start = suspensionStartDateLocal();
+            const max = suspensionMaxEndDateLocal();
+            if (end < start || end > max) {
+                state.wizard.susEndDateValidationError = t360(
+                    'suspension.endDateMaxExceeded',
+                    'Maximum 90 days'
+                );
+                return false;
+            }
+            return true;
+        };
+
+        const onSusAutoReconnectChange = () => {
+            if (state.wizard.susAutoReconnectEnabled && !(state.wizard.susEndDateLocal || '').trim()) {
+                const d = new Date();
+                d.setDate(d.getDate() + 30);
+                state.wizard.susEndDateLocal = d.toISOString().slice(0, 10);
+            }
+            if (!state.wizard.susAutoReconnectEnabled) {
+                state.wizard.susEndDateLocal = '';
+                state.wizard.susEndDateValidationError = '';
             }
         };
 
@@ -2335,7 +2478,7 @@ const Customer360ProfileApp = {
             }
         };
 
-        const openProvisioningWizard = async (kind) => {
+        const openProvisioningWizard = async (kind, options = {}) => {
             const permMap = {
                 takeover: () => can.value.takeover,
                 migrate: () => can.value.provisioning,
@@ -2343,7 +2486,7 @@ const Customer360ProfileApp = {
                 changeNumber: () => can.value.changeNumber,
                 termination: () => can.value.termination && !selectedLineTerminated.value,
                 suspension: () => can.value.suspension && selectedLineActive.value,
-                reconnect: () => can.value.reconnect && selectedLineSuspended.value,
+                reconnect: () => (can.value.reconnect || options.bypassToAdvance) && selectedLineSuspended.value,
                 refund: () => can.value.refund && !selectedLineTerminated.value,
                 badDebt: () => can.value.collection && selectedLineCollectionEligible.value,
                 deviceSale: () => can.value.deviceSale,
@@ -2359,6 +2502,7 @@ const Customer360ProfileApp = {
             ensureLineSelected();
             state.wizard.kind = kind;
             resetWizardState();
+            state.wizard.bypassToAdvance = !!options.bypassToAdvance;
             if (kind !== 'activate' && !bindPrimaryFromLine()) {
                 Swal.fire({ icon: 'warning', title: telecomT('swal.subscriptionLinkFailed', 'Link failed') });
                 return;
@@ -2435,10 +2579,15 @@ const Customer360ProfileApp = {
         };
 
         const finishProvisioningWizard = async () => {
+            const wasReconnect = state.wizard.kind === 'reconnect' && state.wizard.confirmed;
+            const reconnectSub = wasReconnect ? selectedSubscription.value : null;
             closeProvisioningWizard();
             state.activeTab = 'services';
             await loadProfile(true);
             await loadCbs();
+            if (reconnectSub) {
+                await checkHlr(reconnectSub);
+            }
         };
 
         const searchTakeoverTarget = async () => {
@@ -2581,12 +2730,18 @@ const Customer360ProfileApp = {
                 if (!(state.wizard.susSuspensionReason || '').trim()) {
                     return warn('suspension.suspensionReason', 'Reason required');
                 }
-                if (state.wizard.susAutoReconnectEnabled && !(state.wizard.susEndDateLocal || '').trim()) {
-                    return warn('suspension.endDateRequired', 'End date required');
+                if (!validateSuspensionEndDate()) {
+                    return warn(
+                        'suspension.endDateMaxExceeded',
+                        state.wizard.susEndDateValidationError || 'Invalid end date'
+                    );
                 }
                 onSusTypeChange();
             }
             if (k === 'reconnect') {
+                if (selectedLineBdrApproved.value && !(state.wizard.rcnPaymentReference || '').trim()) {
+                    return warn('reconnect.paymentReference', 'Receipt reference is mandatory for BDR clearance');
+                }
                 if (!(state.wizard.rcnReconnectReason || '').trim()) {
                     return warn('reconnect.reconnectReason', 'Reason required');
                 }
@@ -2718,9 +2873,10 @@ const Customer360ProfileApp = {
                 body.suspensionReason = (state.wizard.susSuspensionReason || '').trim() || null;
                 body.barringLevel = (state.wizard.susBarringLevel || 'Full').trim();
                 body.autoReconnectEnabled = !!state.wizard.susAutoReconnectEnabled;
+                body.suspensionStartDateUtc = new Date(suspensionStartDateLocal()).toISOString();
                 body.suspensionEndDateUtc =
                     state.wizard.susAutoReconnectEnabled && state.wizard.susEndDateLocal
-                        ? new Date(state.wizard.susEndDateLocal).toISOString()
+                        ? new Date(state.wizard.susEndDateLocal + 'T23:59:59').toISOString()
                         : null;
             } else if (k === 'reconnect') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
@@ -2728,6 +2884,12 @@ const Customer360ProfileApp = {
                 body.clearanceType = (state.wizard.rcnClearanceType || '').trim() || null;
                 body.fraudClearanceConfirmed = !!state.wizard.rcnFraudClearanceConfirmed;
                 body.paymentReference = (state.wizard.rcnPaymentReference || '').trim() || null;
+                
+                // GLOBAL HARDENING: Route B Bypass to Advance
+                if (state.wizard.bypassToAdvance) {
+                    body.notes = `${notes}|BypassToAdvance:true`;
+                    body.status = 9; // Paid_Pending_BackOffice_Clearance
+                }
             } else if (k === 'refund') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.refundType = (state.wizard.rfdRefundType || '').trim() || null;
@@ -3049,6 +3211,10 @@ const Customer360ProfileApp = {
                 Swal.fire({ icon: 'warning', title: telecomT('refund.boHint', 'Upload document') });
                 return;
             }
+            if (state.wizard.kind === 'suspension' && !state.wizard.identityFile) {
+                Swal.fire({ icon: 'warning', title: t360('suspension.kycRequired', 'Upload document') });
+                return;
+            }
             state.wizard.uploadBusy = true;
             try {
                 const uid = StorageManager.getUserId();
@@ -3058,7 +3224,8 @@ const Customer360ProfileApp = {
                         || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen)
                         || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
                         || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
-                        || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice))
+                        || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
+                        || state.wizard.kind === 'suspension')
                     && state.wizard.identityFile
                 ) {
                     const form = new FormData();
@@ -3082,6 +3249,7 @@ const Customer360ProfileApp = {
                         || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
                         || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
                         || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
+                        || (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice)
                             ? telecomT('swal.sentToBackOffice', 'Sent to BO')
                             : telecomT('swal.documentRecorded', 'Document recorded');
                     Swal.fire({ icon: 'success', title, timer: 1400, showConfirmButton: false });
@@ -3123,6 +3291,12 @@ const Customer360ProfileApp = {
                             toastSuccess(polled);
                         }
                     }
+                    if (state.wizard.kind === 'reconnect') {
+                        const sub = selectedSubscription.value;
+                        if (sub) {
+                            await checkHlr(sub);
+                        }
+                    }
                 } else {
                     throw Object.assign(
                         new Error(res?.data?.message || telecomT('customerList.swal.confirmFailed', 'Confirm failed')),
@@ -3151,6 +3325,18 @@ const Customer360ProfileApp = {
 
         Vue.onMounted(async () => {
             document.documentElement.addEventListener('syriatel-locale-changed', refreshPageI18n);
+            
+            // GLOBAL HARDENING: BDR Real-time state polling
+            const bdrPoll = setInterval(() => {
+                if (selectedLineBdrPending.value) {
+                    void loadProfileSupplements();
+                }
+            }, 10000);
+
+            Vue.onUnmounted(() => {
+                clearInterval(bdrPoll);
+            });
+
             if (typeof ActivationChannelUi !== 'undefined') {
                 await ActivationChannelUi.ensureLoaded();
             }
@@ -3238,9 +3424,17 @@ const Customer360ProfileApp = {
             selectedLineSuspended,
             selectedLineActive,
             selectedLineCollectionEligible,
+            selectedLineBdrStatus,
+            selectedLineBdrPending,
+            selectedLineBdrApproved,
+            selectedLineBdrAwaitingAudit,
             selectedLineOutstandingBalance,
             onTerminationTypeChange,
             onSusTypeChange,
+            onSusAutoReconnectChange,
+            suspensionStartDateLocal,
+            suspensionMaxEndDateLocal,
+            validateSuspensionEndDate,
             onRcnClearanceChange,
             onBdrActionChange,
             onRefundTypeChange,
@@ -3269,6 +3463,10 @@ const Customer360ProfileApp = {
             hlrNeedsRemediation,
             selectedHlrNeedsRemediation,
             selectedHlrSnapshot,
+            hlrRemediationSubtitle,
+            hlrRemediationCrmLabel,
+            hlrRemediationCrmBadgeClass,
+            hlrRemediationHlrBadgeClass,
             reprovisionSelectedHlr,
             quickSimSwapRemediation,
             openRemediationSuspension,

@@ -85,6 +85,12 @@
   <data name="Page_BillingIntegrationTitle" xml:space="preserve">
     <value>Billing integration</value>
   </data>
+  <data name="Page_InIntegrationTitle" xml:space="preserve">
+    <value>IN integration</value>
+  </data>
+  <data name="Page_HlrProvisioningTitle" xml:space="preserve">
+    <value>HLR provisioning</value>
+  </data>
   <data name="Login_PageTitle" xml:space="preserve">
     <value>Sign in — Syriatel</value>
   </data>
@@ -107,7 +113,7 @@
     <value>Service lifecycle automation: deep integration with network operations for resilient uptime and uninterrupted data flows.</value>
   </data>
   <data name="Auth_Feature2" xml:space="preserve">
-    <value>Unified front-to-back experience: an intelligent UX connecting showrooms, back office, and contact centers in a secure on-premises workspace.</value>
+    <value>Unified front-to-back experience: an intelligent UX connecting POS, back office, and contact centers in a secure on-premises workspace.</value>
   </data>
   <data name="Auth_Feature3Lead" xml:space="preserve">
     <value>Behavioral prediction engine</value>

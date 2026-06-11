@@ -6,6 +6,7 @@ using Domain.Common;
 using Domain.Entities;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Infrastructure.DataAccessManager.EFCore.Repositories;
+using Infrastructure.DataAccessManager.EFCore.SchemaPatches;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,9 +95,15 @@ public static class DI
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DI));
 
+        if (configuration.GetValue("Database:UseEfMigrations", false))
+        {
+            logger.LogInformation("Applying EF Core migrations (Database:UseEfMigrations=true).");
+            dataContext.Database.Migrate();
+            return host;
+        }
+
         dataContext.Database.EnsureCreated();
 
-        // EnsureCreated does not add tables to an existing database created before new entities (e.g. telecom).
         if (!RelationalSchemaTableExists(dataContext, "SubscriberProfile"))
         {
             var allowRecreate = configuration.GetValue(
@@ -122,6 +129,8 @@ public static class DI
 
         ApplyTelecomOperationRequestSchemaPatches(dataContext, logger);
         ApplyTelecomOperationIdentityDocumentSchemaPatch(dataContext, logger);
+        ApplyTelecomOperationKycDocumentReferenceSchemaPatch(dataContext, logger);
+        ApplyTelecomOperationComprehensivePatch(dataContext, logger);
         ApplyTelecomBssPrimaryLineSchemaPatches(dataContext, logger);
         ApplyTelecomSubscriptionTypeSchemaPatches(dataContext, logger);
         ApplyProductCompatibleSubscriptionTypeSchemaPatches(dataContext, logger);
@@ -130,16 +139,21 @@ public static class DI
         ApplySubscriberProfileCustomerIndexNonUniquePatch(dataContext, logger);
         ApplyDomainGateSubscriberProfileLegacyCleanupPatch(dataContext, logger);
         ApplyDashboardWidgetsSchemaPatch(dataContext, logger);
+        ApplyGeoCitySchemaPatch(dataContext, logger);
         ApplyAdministrationFoundationSchemaPatches(dataContext, logger);
         ApplyRolePermissionSchemaPatch(dataContext, logger);
         ApplyTelecomTechnicalTicketSchemaPatch(dataContext, logger);
         ApplyTelecomTechnicalTicketCreatedByChannelPatch(dataContext, logger);
         ApplyTelecomTechnicalTicketCategoryPatch(dataContext, logger);
+        ApplyTelecomTechnicalTicketQueueManagementPatch(dataContext, logger);
         ApplyMsisdnAssetPairedKitSchemaPatch(dataContext, logger);
+        MsisdnAssetSchemaPatches.EnsureIntendedSubscriptionTypeColumn(dataContext, logger);
         ApplyTelecomIntegrationLogSchemaPatch(dataContext, logger);
         ApplyBulkImportEnterpriseSchemaPatch(dataContext, logger);
         ApplyVasCatalogSchemaPatch(dataContext, logger);
         ApplyNullableBitColumnsDataPatch(dataContext, logger);
+        ApplyIntegrationInfrastructureSchemaPatch(dataContext, logger);
+        ApplyRowVersionColumnsSchemaPatch(dataContext, logger);
 
         return host;
     }
@@ -188,8 +202,8 @@ public static class DI
                        WHERE object_id = OBJECT_ID(N'dbo.TelecomOperationRequest')
                          AND name = N'IsLostOrStolenReport' AND is_nullable = 1)
                 BEGIN
-                    UPDATE dbo.TelecomOperationRequest SET IsLostOrStolenReport = 0 WHERE IsLostOrStolenReport IS NULL;
-                    ALTER TABLE dbo.TelecomOperationRequest ALTER COLUMN IsLostOrStolenReport bit NOT NULL;
+                    EXEC sp_executesql N'UPDATE dbo.TelecomOperationRequest SET IsLostOrStolenReport = 0 WHERE IsLostOrStolenReport IS NULL';
+                    EXEC sp_executesql N'ALTER TABLE dbo.TelecomOperationRequest ALTER COLUMN IsLostOrStolenReport bit NOT NULL';
                 END
                 """;
             cmd.ExecuteNonQuery();
@@ -243,13 +257,13 @@ public static class DI
                         SELECT 1 FROM sys.indexes i
                         WHERE i.object_id = OBJECT_ID(N'dbo.SubscriberProfile')
                           AND i.name = N'IX_SubscriberProfile_CommercialRegistration')
-                        DROP INDEX IX_SubscriberProfile_CommercialRegistration ON dbo.SubscriberProfile;
+                        EXEC sp_executesql N'DROP INDEX IX_SubscriberProfile_CommercialRegistration ON dbo.SubscriberProfile';
 
                     IF EXISTS (
                         SELECT 1 FROM sys.indexes i
                         WHERE i.object_id = OBJECT_ID(N'dbo.SubscriberProfile')
                           AND i.name = N'IX_SubscriberProfile_NationalId')
-                        DROP INDEX IX_SubscriberProfile_NationalId ON dbo.SubscriberProfile;
+                        EXEC sp_executesql N'DROP INDEX IX_SubscriberProfile_NationalId ON dbo.SubscriberProfile';
 
                     DECLARE @dropCol NVARCHAR(128);
                     DECLARE @cols TABLE (ColName NVARCHAR(128));
@@ -360,7 +374,7 @@ public static class DI
 
             using var alter = connection.CreateCommand();
             alter.CommandText = $"""
-                ALTER TABLE [{schemaName}].[{tableName}] ADD [TargetOfferName] NVARCHAR(255) NULL;
+                EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{tableName}] ADD [TargetOfferName] NVARCHAR(255) NULL';
                 """;
             alter.ExecuteNonQuery();
         }
@@ -435,7 +449,7 @@ public static class DI
 
             using var alter = connection.CreateCommand();
             alter.CommandText = $"""
-                ALTER TABLE [{schemaName}].[{tableName}] ADD [IdentityDocumentStorageKey] NVARCHAR(500) NULL;
+                EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{tableName}] ADD [IdentityDocumentStorageKey] NVARCHAR(500) NULL';
                 """;
             alter.ExecuteNonQuery();
         }
@@ -453,6 +467,356 @@ public static class DI
             {
                 connection.Close();
             }
+        }
+    }
+
+    private static void ApplyTelecomOperationKycDocumentReferenceSchemaPatch(
+        DataContext dataContext,
+        Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var entityType = dataContext.Model.FindEntityType(typeof(TelecomOperationRequest));
+        if (entityType == null)
+        {
+            return;
+        }
+
+        var tableName = entityType.GetTableName();
+        if (string.IsNullOrEmpty(tableName))
+        {
+            return;
+        }
+
+        var schema = entityType.GetSchema();
+        var schemaName = string.IsNullOrEmpty(schema) ? "dbo" : schema;
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = @schema AND TABLE_NAME = @table AND COLUMN_NAME = N'KycDocumentReferenceId'
+                    """;
+                var ps = cmd.CreateParameter();
+                ps.ParameterName = "@schema";
+                ps.Value = schemaName;
+                cmd.Parameters.Add(ps);
+                var pt = cmd.CreateParameter();
+                pt.ParameterName = "@table";
+                pt.Value = tableName;
+                cmd.Parameters.Add(pt);
+                var exists = Convert.ToInt32(cmd.ExecuteScalar() ?? 0) > 0;
+                if (exists)
+                {
+                    return;
+                }
+            }
+
+            logger.LogInformation(
+                "Applying schema patch: adding column KycDocumentReferenceId to {Schema}.{Table}.",
+                schemaName,
+                tableName);
+
+            using var alter = connection.CreateCommand();
+            alter.CommandText = $"""
+                EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{tableName}] ADD [KycDocumentReferenceId] NVARCHAR(50) NULL';
+                """;
+            alter.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Schema patch for KycDocumentReferenceId skipped or failed on {Schema}.{Table}.",
+                schemaName,
+                tableName);
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+    }
+
+    private static void ApplyTelecomOperationComprehensivePatch(
+        DataContext dataContext,
+        Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var entityType = dataContext.Model.FindEntityType(typeof(TelecomOperationRequest));
+        if (entityType == null) return;
+
+        var tableName = entityType.GetTableName();
+        if (string.IsNullOrEmpty(tableName)) return;
+
+        var schema = entityType.GetSchema();
+        var schemaName = string.IsNullOrEmpty(schema) ? "dbo" : schema;
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen) connection.Open();
+
+        try
+        {
+            var columns = new List<(string Name, string Type)>
+            {
+                // §8 Suspension
+                ("SuspensionType", "NVARCHAR(32) NULL"),
+                ("SuspensionReason", "NVARCHAR(256) NULL"),
+                ("SuspensionStartDateUtc", "DATETIME2 NULL"),
+                ("SuspensionEndDateUtc", "DATETIME2 NULL"),
+                ("BarringLevel", "NVARCHAR(32) NULL"),
+                ("AutoReconnectEnabled", "BIT NOT NULL DEFAULT 0"),
+                ("NotificationSuppressed", "BIT NOT NULL DEFAULT 0"),
+                ("BarStatus", "NVARCHAR(64) NULL"),
+                ("PriorOperationalStatus", "NVARCHAR(32) NULL"),
+
+                // §9 Reconnect
+                ("ReconnectReason", "NVARCHAR(256) NULL"),
+                ("ClearanceType", "NVARCHAR(32) NULL"),
+                ("SourceSuspensionOperationId", "NVARCHAR(128) NULL"),
+                ("FraudClearanceConfirmed", "BIT NOT NULL DEFAULT 0"),
+                ("FraudClearanceByUserId", "NVARCHAR(128) NULL"),
+                ("ReactivationAtUtc", "DATETIME2 NULL"),
+                ("ProvisioningResult", "NVARCHAR(64) NULL"),
+
+                // §7 Take-Over
+                ("TransferReason", "NVARCHAR(256) NULL"),
+                ("TakeOverObligationStatus", "NVARCHAR(64) NULL"),
+                ("DepositTransferPolicy", "INT NULL"),
+                ("ApprovalLevelRequired", "NVARCHAR(32) NULL"),
+                ("TakeOverEffectiveDateUtc", "DATETIME2 NULL"),
+                ("OldCustomerId", "NVARCHAR(50) NULL"),
+                ("NewCustomerId", "NVARCHAR(50) NULL"),
+                ("PriorSubscriberProfileId", "NVARCHAR(50) NULL"),
+
+                // §10 Termination
+                ("TerminationType", "NVARCHAR(32) NULL"),
+                ("TerminationReason", "NVARCHAR(256) NULL"),
+                ("TerminationEffectiveDateUtc", "DATETIME2 NULL"),
+                ("FinalBillAmount", "DECIMAL(18,2) NULL"),
+                ("DepositSettlementAmount", "DECIMAL(18,2) NULL"),
+                ("DepositSettlementStatus", "NVARCHAR(64) NULL"),
+                ("RetentionOfferOutcome", "NVARCHAR(128) NULL"),
+                ("DeprovisionStatus", "NVARCHAR(64) NULL"),
+
+                // §15 Refund
+                ("RefundType", "NVARCHAR(32) NULL"),
+                ("RefundReason", "NVARCHAR(256) NULL"),
+                ("RefundAmount", "DECIMAL(18,2) NULL"),
+                ("RefundMethod", "NVARCHAR(32) NULL"),
+                ("DepositBalanceSnapshot", "DECIMAL(18,2) NULL"),
+                ("WalletBalanceSnapshot", "DECIMAL(18,2) NULL"),
+                ("RefundSettlementStatus", "NVARCHAR(32) NULL"),
+                ("RefundCbsReference", "NVARCHAR(128) NULL"),
+                ("RefundGatewayReference", "NVARCHAR(128) NULL"),
+                ("RequiresDualApproval", "BIT NOT NULL DEFAULT 0"),
+
+                // §16 BDR
+                ("CollectionAction", "NVARCHAR(32) NULL"),
+                ("DunningStage", "NVARCHAR(32) NULL"),
+                ("PriorDunningStage", "NVARCHAR(32) NULL"),
+                ("OutstandingBalanceSnapshot", "DECIMAL(18,2) NULL"),
+                ("CollectedAmount", "DECIMAL(18,2) NULL"),
+                ("WriteOffAmount", "DECIMAL(18,2) NULL"),
+                ("AgencyReference", "NVARCHAR(128) NULL"),
+                ("PaymentPlanMonths", "INT NULL"),
+                ("NextDunningDueUtc", "DATETIME2 NULL"),
+                ("CollectionNote", "NVARCHAR(512) NULL"),
+                ("CollectionSettlementStatus", "NVARCHAR(32) NULL"),
+
+                // §14 Device Sales
+                ("DeviceInventoryId", "NVARCHAR(50) NULL"),
+                ("DeviceSaleType", "INT NULL"),
+                ("InstallmentPlanId", "NVARCHAR(50) NULL"),
+                ("DeviceDownPaymentAmount", "DECIMAL(18,2) NULL"),
+                ("DeviceMonthlyInstallmentAmount", "DECIMAL(18,2) NULL"),
+                ("DeviceCreditScoreSnapshot", "INT NULL"),
+                ("DeviceInstallmentContractId", "NVARCHAR(50) NULL"),
+                ("DeviceFinancingDecision", "INT NULL"),
+                ("DeviceOverrideReasonCode", "NVARCHAR(64) NULL"),
+                ("DeviceApprovalLevelRequired", "NVARCHAR(64) NULL"),
+                ("DeviceFinancingNoteAr", "NVARCHAR(512) NULL"),
+                ("DeviceWarrantyStartsAtUtc", "DATETIME2 NULL"),
+
+                // §5 Change Number
+                ("PriorMsisdnAssetId", "NVARCHAR(50) NULL"),
+                ("TargetMsisdnAssetId", "NVARCHAR(50) NULL"),
+                ("NumberChangeReason", "NVARCHAR(256) NULL"),
+                ("PremiumFeeAmount", "DECIMAL(18,2) NULL"),
+                ("NumberChangeMode", "NVARCHAR(32) NULL"),
+
+                // §6 Change GSM
+                ("SourceSubscriptionTypeId", "NVARCHAR(50) NULL"),
+                ("TargetSubscriptionTypeId", "NVARCHAR(50) NULL"),
+                ("GsmMigrationReason", "NVARCHAR(256) NULL"),
+                ("GsmEffectiveDateUtc", "DATETIME2 NULL"),
+                ("GsmCompatibilityStatus", "NVARCHAR(64) NULL"),
+
+                // §4 SIM Swap
+                ("ReplacementReason", "NVARCHAR(256) NULL"),
+                ("IsLostOrStolenReport", "BIT NOT NULL DEFAULT 0"),
+                ("PriorSimInventoryId", "NVARCHAR(50) NULL"),
+
+                // Selling Line
+                ("ActivationChannel", "INT NOT NULL DEFAULT 0"),
+                ("DealerCode", "NVARCHAR(64) NULL"),
+                ("BranchId", "NVARCHAR(50) NULL"),
+                ("PaymentReference", "NVARCHAR(128) NULL"),
+                ("InitialDepositAmount", "DECIMAL(18,2) NULL"),
+                ("OverrideReasonCode", "NVARCHAR(64) NULL"),
+                ("KycVerifiedAtUtc", "DATETIME2 NULL"),
+
+                // SLA & Queue
+                ("SlaExpirationTimeUtc", "DATETIME2(7) NULL"),
+                ("ClaimedByUserId", "NVARCHAR(450) NULL"),
+                ("AssignedAgentEmail", "NVARCHAR(128) NULL"),
+                ("ClaimedAt", "DATETIME2 NULL")
+            };
+
+            foreach (var col in columns)
+            {
+                using var check = connection.CreateCommand();
+                check.CommandText = $"""
+                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = '{schemaName}' AND TABLE_NAME = '{tableName}' AND COLUMN_NAME = '{col.Name}'
+                    """;
+                var exists = Convert.ToInt32(check.ExecuteScalar() ?? 0) > 0;
+                if (!exists)
+                {
+                    logger.LogInformation("Applying schema patch: adding column {Column} to {Schema}.{Table}.", col.Name, schemaName, tableName);
+                    using var alter = connection.CreateCommand();
+                    alter.CommandText = $"EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{tableName}] ADD [{col.Name}] {col.Type}';";
+                    alter.ExecuteNonQuery();
+                }
+                else
+                {
+                    // Ensure correct length for Id-referencing columns if they already exist with wrong length
+                    if (col.Type.Contains("NVARCHAR(50)"))
+                    {
+                        using var lengthCheck = connection.CreateCommand();
+                        lengthCheck.CommandText = $"""
+                            SELECT max_length FROM sys.columns 
+                            WHERE name = '{col.Name}' AND object_id = OBJECT_ID('[{schemaName}].[{tableName}]')
+                            """;
+                        var maxLength = Convert.ToInt32(lengthCheck.ExecuteScalar() ?? 0);
+                        if (maxLength != 100) // 50 * 2 for NVARCHAR
+                        {
+                            logger.LogInformation("Applying schema patch: correcting column length for {Column} in {Schema}.{Table}.", col.Name, schemaName, tableName);
+                            using var alter = connection.CreateCommand();
+                            alter.CommandText = $"EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{tableName}] ALTER COLUMN [{col.Name}] {col.Type}';";
+                            alter.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+
+            // Indexes for TelecomOperationRequest
+            var indexes = new List<(string Name, string Definition)>
+            {
+                ("IX_TelecomOperationRequest_Suspension", "(Kind, CreatedAtUtc DESC) WHERE Kind = 8 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_Reconnect", "(Kind, CreatedAtUtc DESC) WHERE Kind = 9 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_TakeOver", "(Kind, CreatedAtUtc DESC) WHERE Kind = 2 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_Termination", "(Kind, CreatedAtUtc DESC) WHERE Kind = 7 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_Refund", "(Kind, CreatedAtUtc DESC) WHERE Kind = 11 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_DeviceSale", "(Kind, CreatedAtUtc DESC) WHERE Kind = 10 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_ChangeNumber", "(Kind, CreatedAtUtc DESC) WHERE Kind = 5 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_ChangeGsm", "(Kind, CreatedAtUtc DESC) WHERE Kind = 6 AND IsDeleted = 0"),
+                ("IX_TelecomOperationRequest_SimSwap", "(Kind, CreatedAtUtc DESC) WHERE Kind = 3 AND IsDeleted = 0")
+            };
+
+            foreach (var idx in indexes)
+            {
+                using var check = connection.CreateCommand();
+                check.CommandText = $"SELECT COUNT(*) FROM sys.indexes WHERE name = '{idx.Name}' AND object_id = OBJECT_ID('[{schemaName}].[{tableName}]')";
+                var exists = Convert.ToInt32(check.ExecuteScalar() ?? 0) > 0;
+                if (!exists)
+                {
+                    logger.LogInformation("Applying schema patch: adding index {Index} to {Schema}.{Table}.", idx.Name, schemaName, tableName);
+                    using var alter = connection.CreateCommand();
+                    alter.CommandText = $"EXEC sp_executesql N'CREATE INDEX [{idx.Name}] ON [{schemaName}].[{tableName}] {idx.Definition}';";
+                    alter.ExecuteNonQuery();
+                }
+            }
+
+            // Audit Log Patches
+            var auditEntityType = dataContext.Model.FindEntityType(typeof(TelecomOperationAuditLog));
+            if (auditEntityType != null)
+            {
+                var auditTable = auditEntityType.GetTableName();
+                if (!string.IsNullOrEmpty(auditTable))
+                {
+                    var auditColumns = new List<(string Name, string Type)>
+                    {
+                        ("ActivationChannel", "INT NULL"),
+                        ("BranchId", "NVARCHAR(50) NULL"),
+                        ("DealerCode", "NVARCHAR(64) NULL"),
+                        ("OverrideReasonCode", "NVARCHAR(64) NULL"),
+                        ("CorrelationId", "NVARCHAR(450) NULL"),
+                        ("FieldChangesJson", "NVARCHAR(MAX) NULL")
+                    };
+
+                    foreach (var col in auditColumns)
+                    {
+                        using var check = connection.CreateCommand();
+                        check.CommandText = $"""
+                            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_SCHEMA = '{schemaName}' AND TABLE_NAME = '{auditTable}' AND COLUMN_NAME = '{col.Name}'
+                            """;
+                        var exists = Convert.ToInt32(check.ExecuteScalar() ?? 0) > 0;
+                        if (!exists)
+                        {
+                            logger.LogInformation("Applying schema patch: adding column {Column} to {Schema}.{Table}.", col.Name, schemaName, auditTable);
+                            using var alter = connection.CreateCommand();
+                            alter.CommandText = $"EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{auditTable}] ADD [{col.Name}] {col.Type}';";
+                            alter.ExecuteNonQuery();
+                        }
+                        else
+                        {
+                            if (col.Type.Contains("NVARCHAR(50)"))
+                            {
+                                using var lengthCheck = connection.CreateCommand();
+                                lengthCheck.CommandText = $"""
+                                    SELECT max_length FROM sys.columns 
+                                    WHERE name = '{col.Name}' AND object_id = OBJECT_ID('[{schemaName}].[{auditTable}]')
+                                    """;
+                                var maxLength = Convert.ToInt32(lengthCheck.ExecuteScalar() ?? 0);
+                                if (maxLength != 100)
+                                {
+                                    logger.LogInformation("Applying schema patch: correcting column length for {Column} in {Schema}.{Table}.", col.Name, schemaName, auditTable);
+                                    using var alter = connection.CreateCommand();
+                                    alter.CommandText = $"EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{auditTable}] ALTER COLUMN [{col.Name}] {col.Type}';";
+                                    alter.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Comprehensive schema patch for TelecomOperationRequest/AuditLog failed.");
+        }
+        finally
+        {
+            if (!wasOpen) connection.Close();
         }
     }
 
@@ -514,13 +878,13 @@ public static class DI
                     IF OBJECT_ID(N'dbo.MsisdnAsset', N'U') IS NULL RETURN;
 
                     IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.MsisdnAsset') AND name = N'IX_MsisdnAsset_Msisdn')
-                        DROP INDEX IX_MsisdnAsset_Msisdn ON dbo.MsisdnAsset;
+                        EXEC sp_executesql N'DROP INDEX IX_MsisdnAsset_Msisdn ON dbo.MsisdnAsset';
 
                     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.MsisdnAsset') AND name = N'IX_MsisdnAsset_Msisdn_ActiveOnly')
                     BEGIN
-                        CREATE UNIQUE NONCLUSTERED INDEX IX_MsisdnAsset_Msisdn_ActiveOnly
+                        EXEC sp_executesql N'CREATE UNIQUE NONCLUSTERED INDEX IX_MsisdnAsset_Msisdn_ActiveOnly
                         ON dbo.MsisdnAsset ([Msisdn])
-                        WHERE ([IsDeleted] = 0);
+                        WHERE ([IsDeleted] = 0)';
                     END
                     """;
                 try
@@ -625,52 +989,58 @@ public static class DI
             using (var alter = connection.CreateCommand())
             {
                 alter.CommandText = $"""
-                    IF COL_LENGTH(OBJECT_ID(N'dbo.{subTable}', N'U'), N'SubscriptionTypeId') IS NULL
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = N'SubscriptionTypeId' AND object_id = OBJECT_ID(N'dbo.{subTable}'))
                     BEGIN
-                        ALTER TABLE dbo.[{subTable}] ADD [SubscriptionTypeId] NVARCHAR(50) NULL;
+                        EXEC sp_executesql N'ALTER TABLE dbo.[{subTable}] ADD [SubscriptionTypeId] NVARCHAR(50) NULL';
                     END
-                    IF COL_LENGTH(OBJECT_ID(N'dbo.{subTable}', N'U'), N'SubscriptionType') IS NOT NULL
+                    
+                    -- Use dynamic SQL to avoid parse errors if column is missing
+                    IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'SubscriptionType' AND object_id = OBJECT_ID(N'dbo.{subTable}'))
                     BEGIN
-                        UPDATE dbo.[{subTable}]
+                        EXEC sp_executesql N'UPDATE dbo.[{subTable}]
                         SET [SubscriptionTypeId] = CASE [SubscriptionType]
-                            WHEN 0 THEN N'{prepaid}'
-                            WHEN 1 THEN N'{postpaid}'
-                            ELSE N'{hybrid}'
+                            WHEN 0 THEN N''{prepaid}''
+                            WHEN 1 THEN N''{postpaid}''
+                            ELSE N''{hybrid}''
                         END
-                        WHERE [SubscriptionTypeId] IS NULL;
+                        WHERE [SubscriptionTypeId] IS NULL';
                     END
                     ELSE
                     BEGIN
-                        UPDATE dbo.[{subTable}]
-                        SET [SubscriptionTypeId] = N'{prepaid}'
-                        WHERE [SubscriptionTypeId] IS NULL;
+                        EXEC sp_executesql N'UPDATE dbo.[{subTable}]
+                        SET [SubscriptionTypeId] = N''{prepaid}''
+                        WHERE [SubscriptionTypeId] IS NULL';
                     END
+
                     IF EXISTS (
                         SELECT 1 FROM sys.columns c
                         INNER JOIN sys.tables t ON c.object_id = t.object_id
                         WHERE SCHEMA_NAME(t.schema_id) = N'dbo' AND t.name = N'{subTable}'
                           AND c.name = N'SubscriptionTypeId' AND c.is_nullable = 1)
                     BEGIN
-                        UPDATE dbo.[{subTable}] SET [SubscriptionTypeId] = N'{prepaid}' WHERE [SubscriptionTypeId] IS NULL;
-                        ALTER TABLE dbo.[{subTable}] ALTER COLUMN [SubscriptionTypeId] NVARCHAR(50) NOT NULL;
+                        EXEC sp_executesql N'UPDATE dbo.[{subTable}] SET [SubscriptionTypeId] = N''{prepaid}'' WHERE [SubscriptionTypeId] IS NULL';
+                        EXEC sp_executesql N'ALTER TABLE dbo.[{subTable}] ALTER COLUMN [SubscriptionTypeId] NVARCHAR(50) NOT NULL';
                     END
+
                     IF NOT EXISTS (
                         SELECT 1 FROM sys.foreign_keys fk
                         WHERE fk.parent_object_id = OBJECT_ID(N'dbo.{subTable}')
                           AND fk.referenced_object_id = OBJECT_ID(N'dbo.TelecomSubscriptionTypes'))
                     BEGIN
-                        ALTER TABLE dbo.[{subTable}]
+                        EXEC sp_executesql N'ALTER TABLE dbo.[{subTable}]
                         ADD CONSTRAINT FK_{subTable}_TelecomSubscriptionTypes
-                        FOREIGN KEY ([SubscriptionTypeId]) REFERENCES dbo.TelecomSubscriptionTypes ([Id]);
+                        FOREIGN KEY ([SubscriptionTypeId]) REFERENCES dbo.TelecomSubscriptionTypes ([Id])';
                     END
-                    IF COL_LENGTH(OBJECT_ID(N'dbo.{subTable}', N'U'), N'SubscriptionType') IS NOT NULL
+
+                    IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'SubscriptionType' AND object_id = OBJECT_ID(N'dbo.{subTable}'))
                     BEGIN
-                        ALTER TABLE dbo.[{subTable}] DROP COLUMN [SubscriptionType];
+                        EXEC sp_executesql N'ALTER TABLE dbo.[{subTable}] DROP COLUMN [SubscriptionType]';
                     END
-                    IF COL_LENGTH(OBJECT_ID(N'dbo.TelecomMsisdnChangeLog', N'U'), N'OldSubscriptionType') IS NOT NULL
+
+                    IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'OldSubscriptionType' AND object_id = OBJECT_ID(N'dbo.TelecomMsisdnChangeLog'))
                     BEGIN
-                        ALTER TABLE dbo.TelecomMsisdnChangeLog ALTER COLUMN [OldSubscriptionType] NVARCHAR(50) NULL;
-                        ALTER TABLE dbo.TelecomMsisdnChangeLog ALTER COLUMN [NewSubscriptionType] NVARCHAR(50) NULL;
+                        EXEC sp_executesql N'ALTER TABLE dbo.TelecomMsisdnChangeLog ALTER COLUMN [OldSubscriptionType] NVARCHAR(50) NULL';
+                        EXEC sp_executesql N'ALTER TABLE dbo.TelecomMsisdnChangeLog ALTER COLUMN [NewSubscriptionType] NVARCHAR(50) NULL';
                     END
                     """;
                 alter.ExecuteNonQuery();
@@ -863,30 +1233,34 @@ public static class DI
         {
             logger.LogInformation("Applying schema patch: adding Smart Catalog columns to {Schema}.{Table}.", schemaName, tableName);
 
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = $"""
-                IF COL_LENGTH(OBJECT_ID(N'[{schemaName}].[{tableName}]', N'U'), N'EligibilityRules') IS NULL
-                BEGIN
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [EligibilityRules] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [AssetCompatibility] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [BillingCycle] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [TaxCategory] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [ServiceIdSocCode] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [SpeedQuotaLimitGb] FLOAT NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [VoiceMinutesLimit] INT NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [ThrottlingPolicy] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [IconClass] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [BadgeColor] NVARCHAR(100) NULL;
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [ShortDescription] NVARCHAR(500) NULL;
-                END
+            var columns = new List<(string Name, string Type)>
+            {
+                ("EligibilityRules", "NVARCHAR(100) NULL"),
+                ("AssetCompatibility", "NVARCHAR(100) NULL"),
+                ("BillingCycle", "NVARCHAR(100) NULL"),
+                ("TaxCategory", "NVARCHAR(100) NULL"),
+                ("ServiceIdSocCode", "NVARCHAR(100) NULL"),
+                ("SpeedQuotaLimitGb", "FLOAT NULL"),
+                ("VoiceMinutesLimit", "INT NULL"),
+                ("ThrottlingPolicy", "NVARCHAR(100) NULL"),
+                ("IconClass", "NVARCHAR(100) NULL"),
+                ("BadgeColor", "NVARCHAR(100) NULL"),
+                ("ShortDescription", "NVARCHAR(500) NULL"),
+                ("PaymentType", "INT NULL"),
+                ("BillingCycleEnum", "INT NULL")
+            };
 
-                IF COL_LENGTH(OBJECT_ID(N'[{schemaName}].[{tableName}]', N'U'), N'PaymentType') IS NULL
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [PaymentType] INT NULL;
-
-                IF COL_LENGTH(OBJECT_ID(N'[{schemaName}].[{tableName}]', N'U'), N'BillingCycleEnum') IS NULL
-                    ALTER TABLE [{schemaName}].[{tableName}] ADD [BillingCycleEnum] INT NULL;
-                """;
-            cmd.ExecuteNonQuery();
+            foreach (var col in columns)
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = $"""
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = N'{col.Name}' AND object_id = OBJECT_ID(N'[{schemaName}].[{tableName}]'))
+                    BEGIN
+                        EXEC sp_executesql N'ALTER TABLE [{schemaName}].[{tableName}] ADD [{col.Name}] {col.Type}';
+                    END
+                    """;
+                cmd.ExecuteNonQuery();
+            }
 
             ApplyProductOfferingComponentRequiresOfferingPatch(dataContext, connection, logger);
         }
@@ -991,25 +1365,28 @@ public static class DI
                 schemaNameOffering,
                 offeringTable);
 
-            try
+            // 1. ProductOffering.ProductId
+            using (var cmd = connection.CreateCommand())
             {
-                using var cmd = connection.CreateCommand();
                 cmd.CommandText = $"""
-                    IF COL_LENGTH(OBJECT_ID(N'[{schemaNameOffering}].[{offeringTable}]', N'U'), N'ProductId') IS NULL
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = N'ProductId' AND object_id = OBJECT_ID(N'[{schemaNameOffering}].[{offeringTable}]'))
                     BEGIN
-                        ALTER TABLE [{schemaNameOffering}].[{offeringTable}] ADD [ProductId] NVARCHAR(450) NULL;
+                        EXEC sp_executesql N'ALTER TABLE [{schemaNameOffering}].[{offeringTable}] ADD [ProductId] NVARCHAR(50) NULL';
+                    END
+                    ELSE
+                    BEGIN
+                        -- Ensure correct length if already exists
+                        IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'ProductId' AND object_id = OBJECT_ID(N'[{schemaNameOffering}].[{offeringTable}]') AND max_length <> 100)
+                        BEGIN
+                            EXEC sp_executesql N'ALTER TABLE [{schemaNameOffering}].[{offeringTable}] ALTER COLUMN [ProductId] NVARCHAR(50) NULL';
+                        END
                     END
                     """;
                 cmd.ExecuteNonQuery();
             }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Schema patch: add ProductOffering.ProductId failed.");
-            }
 
-            try
+            using (var fk = connection.CreateCommand())
             {
-                using var fk = connection.CreateCommand();
                 fk.CommandText = $"""
                     IF NOT EXISTS (
                         SELECT 1 FROM sys.foreign_keys
@@ -1023,31 +1400,29 @@ public static class DI
                     """;
                 fk.ExecuteNonQuery();
             }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Schema patch: FK_ProductOffering_Product_ProductId failed.");
-            }
 
-            try
+            // 2. TelecomOperationRequest.ProductOfferingId
+            using (var cmd = connection.CreateCommand())
             {
-                using var cmdOp = connection.CreateCommand();
-                cmdOp.CommandText = $"""
-                    IF COL_LENGTH(OBJECT_ID(N'[{schemaNameOp}].[{opTable}]', N'U'), N'ProductOfferingId') IS NULL
+                cmd.CommandText = $"""
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = N'ProductOfferingId' AND object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]'))
                     BEGIN
-                        ALTER TABLE [{schemaNameOp}].[{opTable}] ADD [ProductOfferingId] NVARCHAR(450) NULL;
+                        EXEC sp_executesql N'ALTER TABLE [{schemaNameOp}].[{opTable}] ADD [ProductOfferingId] NVARCHAR(50) NULL';
+                    END
+                    ELSE
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'ProductOfferingId' AND object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]') AND max_length <> 100)
+                        BEGIN
+                            EXEC sp_executesql N'ALTER TABLE [{schemaNameOp}].[{opTable}] ALTER COLUMN [ProductOfferingId] NVARCHAR(50) NULL';
+                        END
                     END
                     """;
-                cmdOp.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Schema patch: add TelecomOperationRequest.ProductOfferingId failed.");
+                cmd.ExecuteNonQuery();
             }
 
-            try
+            using (var fk = connection.CreateCommand())
             {
-                using var fkOp = connection.CreateCommand();
-                fkOp.CommandText = $"""
+                fk.CommandText = $"""
                     IF NOT EXISTS (
                         SELECT 1 FROM sys.foreign_keys
                         WHERE name = N'FK_TelecomOperationRequest_ProductOffering_ProductOfferingId'
@@ -1058,11 +1433,77 @@ public static class DI
                             FOREIGN KEY ([ProductOfferingId]) REFERENCES [{schemaNameOffering}].[{offeringTable}] ([Id]);
                     END
                     """;
-                fkOp.ExecuteNonQuery();
+                fk.ExecuteNonQuery();
             }
-            catch (Exception ex)
+
+            // 3. TelecomOperationRequest.PriorProductOfferingId
+            using (var cmd = connection.CreateCommand())
             {
-                logger.LogWarning(ex, "Schema patch: FK_TelecomOperationRequest_ProductOffering_ProductOfferingId failed.");
+                cmd.CommandText = $"""
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = N'PriorProductOfferingId' AND object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]'))
+                    BEGIN
+                        EXEC sp_executesql N'ALTER TABLE [{schemaNameOp}].[{opTable}] ADD [PriorProductOfferingId] NVARCHAR(50) NULL';
+                    END
+                    ELSE
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'PriorProductOfferingId' AND object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]') AND max_length <> 100)
+                        BEGIN
+                            EXEC sp_executesql N'ALTER TABLE [{schemaNameOp}].[{opTable}] ALTER COLUMN [PriorProductOfferingId] NVARCHAR(50) NULL';
+                        END
+                    END
+                    """;
+                cmd.ExecuteNonQuery();
+            }
+
+            using (var fk = connection.CreateCommand())
+            {
+                fk.CommandText = $"""
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.foreign_keys
+                        WHERE name = N'FK_TelecomOperationRequest_ProductOffering_PriorProductOfferingId'
+                          AND parent_object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]'))
+                    BEGIN
+                        ALTER TABLE [{schemaNameOp}].[{opTable}] WITH CHECK
+                        ADD CONSTRAINT [FK_TelecomOperationRequest_ProductOffering_PriorProductOfferingId]
+                            FOREIGN KEY ([PriorProductOfferingId]) REFERENCES [{schemaNameOffering}].[{offeringTable}] ([Id]);
+                    END
+                    """;
+                fk.ExecuteNonQuery();
+            }
+
+            // 4. TelecomOperationRequest.PriorProductId
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = $"""
+                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = N'PriorProductId' AND object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]'))
+                    BEGIN
+                        EXEC sp_executesql N'ALTER TABLE [{schemaNameOp}].[{opTable}] ADD [PriorProductId] NVARCHAR(50) NULL';
+                    END
+                    ELSE
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N'PriorProductId' AND object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]') AND max_length <> 100)
+                        BEGIN
+                            EXEC sp_executesql N'ALTER TABLE [{schemaNameOp}].[{opTable}] ALTER COLUMN [PriorProductId] NVARCHAR(50) NULL';
+                        END
+                    END
+                    """;
+                cmd.ExecuteNonQuery();
+            }
+
+            using (var fk = connection.CreateCommand())
+            {
+                fk.CommandText = $"""
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.foreign_keys
+                        WHERE name = N'FK_TelecomOperationRequest_Product_PriorProductId'
+                          AND parent_object_id = OBJECT_ID(N'[{schemaNameOp}].[{opTable}]'))
+                    BEGIN
+                        ALTER TABLE [{schemaNameOp}].[{opTable}] WITH CHECK
+                        ADD CONSTRAINT [FK_TelecomOperationRequest_Product_PriorProductId]
+                            FOREIGN KEY ([PriorProductId]) REFERENCES [{schemaNameProduct}].[{productTable}] ([Id]);
+                    END
+                    """;
+                fk.ExecuteNonQuery();
             }
         }
         finally
@@ -1132,6 +1573,63 @@ public static class DI
             {
                 logger.LogWarning(ex, "Schema patch SubscriberProfile.CustomerId index (non-unique) skipped or failed.");
             }
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+    }
+
+    private static void ApplyGeoCitySchemaPatch(DataContext dataContext, Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (RelationalSchemaTableExists(dataContext, "GeoCity"))
+        {
+            return;
+        }
+
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                IF OBJECT_ID(N'dbo.GeoCity', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE dbo.GeoCity (
+                        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
+                        IsDeleted BIT NOT NULL CONSTRAINT DF_GeoCity_IsDeleted DEFAULT 0,
+                        CreatedAtUtc DATETIME2 NULL,
+                        CreatedById NVARCHAR(450) NULL,
+                        UpdatedAtUtc DATETIME2 NULL,
+                        UpdatedById NVARCHAR(450) NULL,
+                        Name NVARCHAR(255) NULL,
+                        Governorate NVARCHAR(255) NULL,
+                        IsActive BIT NOT NULL CONSTRAINT DF_GeoCity_IsActive DEFAULT 1,
+                        SortOrder INT NOT NULL CONSTRAINT DF_GeoCity_SortOrder DEFAULT 0
+                    );
+                    CREATE INDEX IX_GeoCity_Name_Governorate ON dbo.GeoCity(Name, Governorate);
+                    CREATE INDEX IX_GeoCity_Active_Sort ON dbo.GeoCity(IsActive, SortOrder);
+                END
+                """;
+            cmd.ExecuteNonQuery();
+            logger.LogInformation("Schema patch: GeoCity table ensured.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Schema patch GeoCity failed.");
         }
         finally
         {
@@ -1370,6 +1868,60 @@ public static class DI
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Schema patch TelecomTechnicalTicket.TicketCategory failed.");
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+    }
+
+    private static void ApplyTelecomTechnicalTicketQueueManagementPatch(
+        DataContext dataContext,
+        Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!RelationalSchemaTableExists(dataContext, "TelecomTechnicalTicket"))
+        {
+            return;
+        }
+
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                IF NOT EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'TelecomTechnicalTicket' AND COLUMN_NAME = 'AssignedAgentEmail')
+                BEGIN
+                    ALTER TABLE dbo.TelecomTechnicalTicket ADD AssignedAgentEmail NVARCHAR(128) NULL;
+                END
+                IF NOT EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'TelecomTechnicalTicket' AND COLUMN_NAME = 'ClaimedAt')
+                BEGIN
+                    ALTER TABLE dbo.TelecomTechnicalTicket ADD ClaimedAt DATETIME2 NULL;
+                END
+                """;
+            cmd.ExecuteNonQuery();
+            logger.LogInformation("Schema patch: TelecomTechnicalTicket.AssignedAgentEmail/ClaimedAt ensured.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Schema patch TelecomTechnicalTicket queue management columns failed.");
         }
         finally
         {
@@ -1846,6 +2398,152 @@ public static class DI
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Schema patch Administration foundation skipped or failed.");
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+    }
+
+    private static void ApplyIntegrationInfrastructureSchemaPatch(DataContext dataContext, Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                IF OBJECT_ID(N'dbo.IntegrationOutboxMessage', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE dbo.IntegrationOutboxMessage (
+                        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
+                        IsDeleted BIT NOT NULL DEFAULT 0,
+                        CreatedAtUtc DATETIME2 NULL,
+                        CreatedById NVARCHAR(450) NULL,
+                        UpdatedAtUtc DATETIME2 NULL,
+                        UpdatedById NVARCHAR(450) NULL,
+                        EventType NVARCHAR(256) NOT NULL,
+                        PayloadJson NVARCHAR(MAX) NOT NULL,
+                        CorrelationId NVARCHAR(128) NULL,
+                        OccurredAtUtc DATETIME2 NOT NULL,
+                        ProcessedAtUtc DATETIME2 NULL,
+                        AttemptCount INT NOT NULL DEFAULT 0,
+                        LastError NVARCHAR(MAX) NULL
+                    );
+                    CREATE INDEX IX_IntegrationOutboxMessage_Processed ON dbo.IntegrationOutboxMessage(ProcessedAtUtc, OccurredAtUtc);
+                END
+
+                IF OBJECT_ID(N'dbo.IdempotencyRecord', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE dbo.IdempotencyRecord (
+                        Id NVARCHAR(450) NOT NULL PRIMARY KEY,
+                        IsDeleted BIT NOT NULL DEFAULT 0,
+                        CreatedAtUtc DATETIME2 NULL,
+                        CreatedById NVARCHAR(450) NULL,
+                        UpdatedAtUtc DATETIME2 NULL,
+                        UpdatedById NVARCHAR(450) NULL,
+                        [Key] NVARCHAR(256) NOT NULL,
+                        Scope NVARCHAR(128) NOT NULL,
+                        RequestHash NVARCHAR(512) NULL,
+                        ResponsePayload NVARCHAR(MAX) NULL,
+                        ExpiresAtUtc DATETIME2 NOT NULL
+                    );
+                    CREATE UNIQUE INDEX UX_IdempotencyRecord_Scope_Key ON dbo.IdempotencyRecord(Scope, [Key]) WHERE IsDeleted = 0;
+                END
+                """;
+            cmd.ExecuteNonQuery();
+            logger.LogInformation("Schema patch: IntegrationOutboxMessage and IdempotencyRecord ensured.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Schema patch Integration infrastructure skipped or failed.");
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+    }
+
+    private static void ApplyRowVersionColumnsSchemaPatch(DataContext dataContext, Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            // QUOTED_IDENTIFIER required: TelecomOperationRequest / TelecomTechnicalTicket have filtered indexes.
+            using (var setCmd = connection.CreateCommand())
+            {
+                setCmd.CommandText = "SET ANSI_NULLS ON; SET QUOTED_IDENTIFIER ON;";
+                setCmd.ExecuteNonQuery();
+            }
+
+            string[] tables =
+            [
+                "MsisdnAsset",
+                "SimInventory",
+                "TelecomOperationRequest",
+                "TelecomTechnicalTicket",
+                "DeviceInventory",
+            ];
+
+            foreach (var table in tables)
+            {
+                using var checkCmd = connection.CreateCommand();
+                checkCmd.CommandText = """
+                    SELECT CASE
+                        WHEN OBJECT_ID(N'dbo.' + @table, N'U') IS NOT NULL
+                             AND COL_LENGTH(N'dbo.' + @table, N'RowVersion') IS NULL
+                        THEN 1 ELSE 0 END
+                    """;
+                var tableParam = checkCmd.CreateParameter();
+                tableParam.ParameterName = "@table";
+                tableParam.Value = table;
+                checkCmd.Parameters.Add(tableParam);
+
+                var needsColumn = Convert.ToInt32(checkCmd.ExecuteScalar()) == 1;
+                if (!needsColumn)
+                {
+                    continue;
+                }
+
+                using var alterCmd = connection.CreateCommand();
+                alterCmd.CommandText = $"ALTER TABLE dbo.[{table}] ADD RowVersion rowversion;";
+                alterCmd.ExecuteNonQuery();
+                logger.LogInformation("Schema patch: added RowVersion to dbo.{Table}.", table);
+            }
+
+            logger.LogInformation("Schema patch: RowVersion columns ensured on concurrency-enabled tables.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Schema patch RowVersion columns failed.");
+            throw;
         }
         finally
         {

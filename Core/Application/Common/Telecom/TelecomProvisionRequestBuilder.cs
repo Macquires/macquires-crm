@@ -118,6 +118,23 @@ public static class TelecomProvisionRequestBuilder
                 subscriptionTypeCode = targetSubscriptionTypeCode;
             }
         }
+        else if (operation.Kind == TelecomOperationKind.NewActivation
+                 && !string.IsNullOrEmpty(operation.MsisdnAssetId))
+        {
+            subscriptionTypeCode = await (
+                from m in query.MsisdnAsset.AsNoTracking()
+                where !m.IsDeleted && m.Id == operation.MsisdnAssetId
+                join t in query.TelecomSubscriptionTypeLookup.AsNoTracking()
+                    on (m.IntendedSubscriptionTypeId ?? m.Product!.CompatibleSubscriptionTypeId) equals t.Id
+                select t.Code
+            ).FirstOrDefaultAsync(cancellationToken);
+
+            subscriptionTypeCode ??= await ResolveSubscriptionTypeCodeAsync(
+                query,
+                operation.SubscriberProfileId,
+                operation.MsisdnAssetId,
+                cancellationToken);
+        }
         else if (!string.IsNullOrEmpty(operation.SubscriberProfileId))
         {
             subscriptionTypeCode = await ResolveSubscriptionTypeCodeAsync(
@@ -125,6 +142,32 @@ public static class TelecomProvisionRequestBuilder
                 operation.SubscriberProfileId,
                 operation.MsisdnAssetId,
                 cancellationToken);
+        }
+
+        MsisdnAsset? kitAsset = null;
+        if (!string.IsNullOrEmpty(operation.MsisdnAssetId))
+        {
+            kitAsset = await query.MsisdnAsset.AsNoTracking()
+                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == operation.MsisdnAssetId, cancellationToken);
+        }
+        else if (operation.Kind == TelecomOperationKind.NumberPortability
+                 && !string.IsNullOrEmpty(operation.TargetMsisdnAssetId))
+        {
+            kitAsset = await query.MsisdnAsset.AsNoTracking()
+                .FirstOrDefaultAsync(m => !m.IsDeleted && m.Id == operation.TargetMsisdnAssetId, cancellationToken);
+        }
+
+        if (kitAsset != null)
+        {
+            var (resolvedIccid, resolvedImsi) = await MsisdnAssetKitResolver.ResolveForAssetAsync(
+                query,
+                kitAsset,
+                operation.SubscriberProfileId,
+                operation.SimInventoryId,
+                cancellationToken);
+            iccid = resolvedIccid ?? iccid;
+            imsi = resolvedImsi ?? imsi;
+            msisdn ??= kitAsset.Msisdn;
         }
 
         return new TelecomLineProvisionContext(

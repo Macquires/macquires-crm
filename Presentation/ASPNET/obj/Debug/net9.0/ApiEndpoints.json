@@ -240,6 +240,32 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.CustomerController",
+    "Method": "GetCustomer360SupplementsAsync",
+    "RelativePath": "api/Customer/GetCustomer360Supplements",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "customerId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.CustomerManager.Queries.GetCustomer360SupplementsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.CustomerController",
     "Method": "GetCustomerListAsync",
     "RelativePath": "api/Customer/GetCustomerList",
     "HttpMethod": "GET",
@@ -1018,6 +1044,115 @@
     ]
   },
   {
+    "ContainingType": "ASPNET.BackEnd.Controllers.GeoCityController",
+    "Method": "CreateGeoCityAsync",
+    "RelativePath": "api/GeoCity/CreateGeoCity",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.GeoCityManager.Commands.CreateGeoCityRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.GeoCityManager.Commands.CreateGeoCityResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.GeoCityController",
+    "Method": "DeleteGeoCityAsync",
+    "RelativePath": "api/GeoCity/DeleteGeoCity",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.GeoCityManager.Commands.DeleteGeoCityRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.GeoCityManager.Commands.DeleteGeoCityResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.GeoCityController",
+    "Method": "GetGeoCityListAsync",
+    "RelativePath": "api/GeoCity/GetGeoCityList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "isDeleted",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "activeOnly",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.GeoCityManager.Queries.GetGeoCityListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.GeoCityController",
+    "Method": "UpdateGeoCityAsync",
+    "RelativePath": "api/GeoCity/UpdateGeoCity",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.GeoCityManager.Commands.UpdateGeoCityRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.GeoCityManager.Commands.UpdateGeoCityResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "ASPNET.BackEnd.Controllers.HuaweiCbsMockController",
     "Method": "QueryBalanceAsync",
     "RelativePath": "api/huawei-cbs-mock/QueryBalance",
@@ -1261,6 +1396,11 @@
       },
       {
         "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "targetSubscriptionTypeId",
         "Type": "System.String",
         "IsRequired": false
       }
@@ -2399,6 +2539,37 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "CheckHlrStatusAsync",
+    "RelativePath": "api/Telecom/CheckHlrStatus",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "msisdn",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Common.Integrations.HlrLiveStatusResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "ConfirmPaymentTransactionAsync",
     "RelativePath": "api/Telecom/ConfirmPaymentTransaction",
     "HttpMethod": "POST",
@@ -2545,6 +2716,22 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "DownloadKycDocumentAsync",
+    "RelativePath": "api/Telecom/DownloadKycDocument",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "DownloadTelecomOperationIdentityDocumentAsync",
     "RelativePath": "api/Telecom/DownloadTelecomOperationIdentityDocument",
     "HttpMethod": "GET",
@@ -2587,6 +2774,32 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "EnsureSubscriberProfileForCustomerAsync",
+    "RelativePath": "api/Telecom/EnsureSubscriberProfileForCustomer",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.EnsureSubscriberProfileForCustomerRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.EnsureSubscriberProfileForCustomerResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "ExportInventoryBulkImportErrorsAsync",
     "RelativePath": "api/Telecom/ExportInventoryBulkImportErrors",
     "HttpMethod": "GET",
@@ -2600,6 +2813,52 @@
       }
     ],
     "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "FetchCashierPaymentAsync",
+    "RelativePath": "api/Telecom/FetchCashierPayment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Queries.FetchCashierPaymentRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.FetchCashierPaymentResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetActivationChannelLabelsAsync",
+    "RelativePath": "api/Telecom/GetActivationChannelLabels",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetActivationChannelLabelsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
@@ -2875,6 +3134,108 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetHlrProvisioningLogListAsync",
+    "RelativePath": "api/Telecom/GetHlrProvisioningLogList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "telecomOperationRequestId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "operationNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "success",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "skip",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "take",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "isDeleted",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetHlrProvisioningLogListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetInIntegrationLogListAsync",
+    "RelativePath": "api/Telecom/GetInIntegrationLogList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "telecomOperationRequestId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "operationNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "success",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "skip",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "take",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "isDeleted",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetInIntegrationLogListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "GetInstallmentPlanListAsync",
     "RelativePath": "api/Telecom/GetInstallmentPlanList",
     "HttpMethod": "GET",
@@ -2884,6 +3245,26 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetInstallmentPlanListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "GetIntegrationEnvironmentContextAsync",
+    "RelativePath": "api/Telecom/GetIntegrationEnvironmentContext",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetIntegrationEnvironmentContextResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -3087,6 +3468,11 @@
       },
       {
         "Name": "status",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "subscriptionTypeId",
         "Type": "System.String",
         "IsRequired": false
       }
@@ -3698,6 +4084,11 @@
         "Name": "subscriberProfileId",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "msisdn",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": [
@@ -3781,6 +4172,58 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.RegisterSubscriberProfileForCustomerResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "ReleaseMsisdnReservationAsync",
+    "RelativePath": "api/Telecom/ReleaseMsisdnReservation",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.ReleaseMsisdnReservationRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.ReleaseMsisdnReservationResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "ReprovisionSubscriberToHlrAsync",
+    "RelativePath": "api/Telecom/ReprovisionSubscriberToHlr",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.ReprovisionSubscriberToHlrRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Common.Integrations.HlrReprovisionResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -4020,6 +4463,37 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "Method": "UploadKycDocumentAsync",
+    "RelativePath": "api/Telecom/UploadKycDocument",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "msisdn",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "file",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Controllers.UploadKycDocumentResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
     "Method": "UploadTelecomOperationDocumentAsync",
     "RelativePath": "api/Telecom/UploadTelecomOperationDocument",
     "HttpMethod": "POST",
@@ -4092,6 +4566,58 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.ValidateVoucherResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
+    "Method": "ApproveRequestAsync",
+    "RelativePath": "api/TelecomBackOffice/ApproveRequest",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomBackOfficeManager.Commands.ApproveBackOfficeTelecomOperationRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomBackOfficeManager.Commands.ApproveBackOfficeTelecomOperationResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
+    "Method": "ClaimTicketAsync",
+    "RelativePath": "api/TelecomBackOffice/ClaimTicket",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomBackOfficeManager.Commands.ClaimTicketRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomBackOfficeManager.Commands.ClaimTicketResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -4207,6 +4733,32 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
+    "Method": "ForceHlrSyncAsync",
+    "RelativePath": "api/TelecomBackOffice/ForceHlrSync",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomBackOfficeManager.Commands.ForceHlrSyncByTicketRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomBackOfficeManager.Commands.ForceHlrSyncResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
     "Method": "GetBackOfficeAuditLogListAsync",
     "RelativePath": "api/TelecomBackOffice/GetBackOfficeAuditLogList",
     "HttpMethod": "GET",
@@ -4263,6 +4815,77 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
+    "Method": "GetPendingRequestsAsync",
+    "RelativePath": "api/TelecomBackOffice/GetPendingRequests",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Kind",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Domain",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "IncludeResolved",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "SearchTerm",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "SlaBreached",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "FromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "ToUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "Skip",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "Take",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "PermissionKey",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomBackOfficeManager.Queries.GetPendingBackOfficeOperationsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
     "Method": "GetTechnicalTicketsAsync",
     "RelativePath": "api/TelecomBackOffice/GetTechnicalTickets",
     "HttpMethod": "GET",
@@ -4290,8 +4913,18 @@
         "IsRequired": false
       },
       {
+        "Name": "Domain",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
         "Name": "IncludeResolved",
         "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "PermissionKey",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -4376,6 +5009,32 @@
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomBackOfficeManager.Queries.QueryLiveNetworkStatusByTicketResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomBackOfficeController",
+    "Method": "RejectRequestAsync",
+    "RelativePath": "api/TelecomBackOffice/RejectRequest",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomBackOfficeManager.Commands.RejectBackOfficeTelecomOperationRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomBackOfficeManager.Commands.RejectBackOfficeTelecomOperationResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",

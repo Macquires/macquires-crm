@@ -1,5 +1,6 @@
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Telecom.Billing;
 using Application.Common.Telecom.Suspension;
 using Domain.Entities;
 using Domain.Enums;
@@ -9,6 +10,7 @@ namespace Application.Common.Telecom;
 
 public sealed record HlrFailureCompensationResult(
     bool CbsReversed,
+    bool InReversed,
     bool LocalBindCompensated,
     string MessageAr);
 
@@ -28,7 +30,7 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
     private const string CompensationMessageAr =
         "فشل تزويد الشبكة (HLR) — تم عكس الحساب المالي (CBS) وإلغاء الربط المحلي.";
 
-    private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingRoutingOrchestrator _billingRouting;
     private readonly ISubscriptionBindingCompensator _bindingCompensator;
     private readonly ICommandRepository<TelecomSubscription> _subscriptionRepository;
     private readonly ICommandRepository<MsisdnAsset> _msisdnRepository;
@@ -38,7 +40,7 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
     private readonly IUnitOfWork _unitOfWork;
 
     public TelecomHlrFailureCompensator(
-        IBillingSystemIntegration billing,
+        IBillingRoutingOrchestrator billingRouting,
         ISubscriptionBindingCompensator bindingCompensator,
         ICommandRepository<TelecomSubscription> subscriptionRepository,
         ICommandRepository<MsisdnAsset> msisdnRepository,
@@ -47,7 +49,7 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
         ICommandRepository<TelecomOperationRequest> operationRepository,
         IUnitOfWork unitOfWork)
     {
-        _billing = billing;
+        _billingRouting = billingRouting;
         _bindingCompensator = bindingCompensator;
         _subscriptionRepository = subscriptionRepository;
         _msisdnRepository = msisdnRepository;
@@ -69,8 +71,20 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
             lineContext,
             TelecomBillingProvisionPhase.Reverse);
 
-        var reverse = await _billing.ReverseProvisionAsync(billingRequest, cancellationToken);
-        var cbsReversed = reverse.Success;
+        var routing = _billingRouting.ResolveProvisionRouting(
+            operation.Kind,
+            lineContext.SubscriptionTypeCode,
+            lineContext.SourceSubscriptionTypeCode,
+            lineContext.TargetSubscriptionTypeCode);
+
+        var compensation = await _billingRouting.CompensateProvisionAsync(
+            operation,
+            lineContext,
+            billingRequest,
+            cancellationToken);
+
+        var cbsReversed = routing.UsesCbs && compensation.Success;
+        var inReversed = routing.UsesIn && compensation.Success;
 
         var localCompensated = false;
         if (operation.Kind == TelecomOperationKind.ChangeGsmType
@@ -166,9 +180,11 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
                 $"VAL-08-ROLLBACK: فشل HLR — تم عكس CBS واستعادة حالة الخط ({hlrErrorMessage})",
             TelecomOperationKind.Reconnect =>
                 $"VAL-09-ROLLBACK: فشل HLR — تم عكس CBS وإعادة الحظر ({hlrErrorMessage})",
+            _ when routing.UsesIn && !routing.UsesCbs =>
+                $"فشل HLR — تم عكس IN (Quarantined) وإلغاء الربط المحلي ({hlrErrorMessage})",
             _ => $"{CompensationMessageAr} ({hlrErrorMessage})",
         };
-        return new HlrFailureCompensationResult(cbsReversed, localCompensated, msg);
+        return new HlrFailureCompensationResult(cbsReversed, inReversed, localCompensated, msg);
     }
 
     private async Task<bool> RevertSimSwapAsync(
@@ -517,11 +533,13 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
         }
 
         var changed = false;
+        var assetForMsisdn = await _msisdnRepository.GetAsync(msisdnId, cancellationToken);
+        var msisdn = assetForMsisdn?.Msisdn ?? "";
         var profile = await _profileRepository.GetAsync(operation.SubscriberProfileId, cancellationToken);
         if (profile != null && profile.OperationalStatus == SubscriberOperationalStatus.Active)
         {
             var barring = await ResolveBarringLevelForReconnectRollbackAsync(operation, cancellationToken);
-            ApplyBarringToProfile(profile, barring);
+            ApplyBarringToProfile(profile, barring, msisdn);
             profile.UpdatedById = actorUserId;
             _profileRepository.Update(profile);
             changed = true;
@@ -580,19 +598,23 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
         profile.Activate();
     }
 
-    private static void ApplyBarringToProfile(SubscriberProfile profile, string barringLevel)
+    private static void ApplyBarringToProfile(SubscriberProfile profile, string barringLevel, string msisdn)
     {
         if (string.Equals(barringLevel, SuspensionWellKnown.BarringInboundOnly, StringComparison.OrdinalIgnoreCase))
         {
-            profile.SuspendInbound();
+            profile.SuspendInbound(msisdn);
         }
         else if (string.Equals(barringLevel, SuspensionWellKnown.BarringOutboundOnly, StringComparison.OrdinalIgnoreCase))
         {
-            profile.SuspendOutbound();
+            profile.SuspendOutbound(msisdn);
+        }
+        else if (string.Equals(barringLevel, SuspensionWellKnown.BarringDataOnly, StringComparison.OrdinalIgnoreCase))
+        {
+            // Data-only bar — subscriber profile stays active for voice.
         }
         else
         {
-            profile.Suspend();
+            profile.Suspend(msisdn);
         }
     }
 }

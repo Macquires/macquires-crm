@@ -406,7 +406,7 @@ const StorageManager = {
         const personaLabels = {
             Executive: 'الإدارة العليا',
             CallCenter: 'مركز الاتصال',
-            Retail: 'المعرض',
+            Retail: 'نقطة البيع',
             BackOffice: 'العمليات',
             SysAdmin: 'الإدارة التقنية',
         };
@@ -419,7 +419,7 @@ const StorageManager = {
             ['TelecomAdmin', 'الإدارة التقنية'],
             ['TelecomBackOffice', 'العمليات'],
             ['TelecomCallCenter', 'مركز الاتصال'],
-            ['TelecomShowroom', 'المعرض'],
+            ['TelecomShowroom', 'نقطة البيع'],
         ];
         for (const [role, label] of order) {
             if (roles.includes(role)) {

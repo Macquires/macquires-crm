@@ -59,14 +59,22 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
         if (profileIds.Count == 0)
             return new GetCustomer360LineWalletsResult();
 
+        var customer = await _query.Customer.AsNoTracking().IsDeletedEqualTo()
+            .Where(c => c.Id == request.CustomerId)
+            .Select(c => new { c.CreatedById })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var simulateDemoUsage = Customer360WalletBuilder.ShouldSimulateDemoWallet(customer?.CreatedById);
+
         var profiles = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
             .Where(p => profileIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, cancellationToken);
 
-        var subscriptions = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => profileIds.Contains(s.SubscriberProfileId))
-            .Include(s => s.MsisdnAsset)
-            .ToListAsync(cancellationToken);
+        var subscriptions = GetCustomer360Handler.DeduplicateSubscriptionsByLine(
+            await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+                .Where(s => profileIds.Contains(s.SubscriberProfileId))
+                .Include(s => s.MsisdnAsset)
+                .ToListAsync(cancellationToken));
 
         var productIds = subscriptions
             .Select(s => s.ProductId)
@@ -82,9 +90,7 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
                 .GroupBy(o => o.ProductId!)
                 .ToDictionaryAsync(g => g.Key, g => g.OrderBy(x => x.SortOrder).First(), cancellationToken);
 
-        var wallets = new Dictionary<string, Customer360LineWalletDto>();
-
-        foreach (var sub in subscriptions)
+        var walletEntries = await Task.WhenAll(subscriptions.Select(async sub =>
         {
             ProductOffering? offering = null;
             if (!string.IsNullOrEmpty(sub.ProductId))
@@ -107,7 +113,8 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
             var built = Customer360WalletBuilder.Build(
                 sub.MsisdnAsset?.Msisdn,
                 profile?.PrepaidBalance,
-                components);
+                components,
+                simulateDemoUsage);
 
             decimal? outstanding = null;
             var msisdn = Customer360WalletBuilder.NormalizeMsisdn(sub.MsisdnAsset?.Msisdn);
@@ -116,9 +123,12 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
                 outstanding = await _billing.GetOutstandingBalanceAsync(msisdn, cancellationToken);
             }
 
-            wallets[sub.Id] = built with { OutstandingBalance = outstanding };
-        }
+            return KeyValuePair.Create(sub.Id, built with { OutstandingBalance = outstanding });
+        }));
 
-        return new GetCustomer360LineWalletsResult { WalletsBySubscriptionId = wallets };
+        return new GetCustomer360LineWalletsResult
+        {
+            WalletsBySubscriptionId = walletEntries.ToDictionary(e => e.Key, e => e.Value),
+        };
     }
 }

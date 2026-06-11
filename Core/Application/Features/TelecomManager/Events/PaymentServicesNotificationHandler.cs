@@ -1,4 +1,5 @@
 using Application.Common.Integrations;
+using Application.Common.Settings;
 using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -9,17 +10,27 @@ namespace Application.Features.TelecomManager.Events;
 public sealed class PaymentServicesNotificationHandler : INotificationHandler<PaymentTransactionStatusChangedNotification>
 {
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IGlobalSettingsProvider _settings;
     private readonly ILogger<PaymentServicesNotificationHandler> _logger;
 
-    public PaymentServicesNotificationHandler(ISmsGatewayIntegration sms, ILogger<PaymentServicesNotificationHandler> logger)
+    public PaymentServicesNotificationHandler(
+        ISmsGatewayIntegration sms,
+        IGlobalSettingsProvider settings,
+        ILogger<PaymentServicesNotificationHandler> logger)
     {
         _sms = sms;
+        _settings = settings;
         _logger = logger;
     }
 
     public async Task Handle(PaymentTransactionStatusChangedNotification notification, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(notification.Msisdn))
+        {
+            return;
+        }
+
+        if (!await NotificationSmsGate.IsCustomerOpsEnabledAsync(_settings, cancellationToken))
         {
             return;
         }

@@ -36,6 +36,9 @@ public class GetMigrationEligibleProductsRequest : IRequest<GetMigrationEligible
 {
     public string SubscriberProfileId { get; init; } = "";
     public string? MsisdnAssetId { get; init; }
+
+    /// <summary>When set (e.g. new-line activation), filters catalog by this line type instead of an existing subscription.</summary>
+    public string? TargetSubscriptionTypeId { get; init; }
 }
 
 public class GetMigrationEligibleProductsHandler
@@ -58,34 +61,55 @@ public class GetMigrationEligibleProductsHandler
             return new GetMigrationEligibleProductsResult();
         }
 
-        var subs = await _context.TelecomSubscription
-            .AsNoTracking()
-            .IsDeletedEqualTo(false)
-            .Where(s => s.SubscriberProfileId == profileId)
-            .Include(s => s.SubscriptionTypeLookup)
-            .Include(s => s.Product)
-            .ToListAsync(cancellationToken);
-
-        if (subs.Count == 0)
-        {
-            return new GetMigrationEligibleProductsResult();
-        }
-
-        var msisdnId = (request.MsisdnAssetId ?? string.Empty).Trim();
+        var targetOverride = (request.TargetSubscriptionTypeId ?? string.Empty).Trim();
         TelecomSubscription? chosen = null;
-        if (!string.IsNullOrEmpty(msisdnId))
+        string typeId;
+        string label;
+        string? currentProductName;
+
+        if (!string.IsNullOrEmpty(targetOverride))
         {
-            chosen = subs.FirstOrDefault(s => s.MsisdnAssetId == msisdnId);
+            typeId = targetOverride;
+            var typeLookup = await _context.TelecomSubscriptionTypeLookup
+                .AsNoTracking()
+                .IsDeletedEqualTo(false)
+                .FirstOrDefaultAsync(x => x.Id == targetOverride, cancellationToken);
+            label = typeLookup != null
+                ? $"{typeLookup.NameAr} ({typeLookup.NameEn})"
+                : targetOverride;
+            currentProductName = null;
         }
+        else
+        {
+            var subs = await _context.TelecomSubscription
+                .AsNoTracking()
+                .IsDeletedEqualTo(false)
+                .Where(s => s.SubscriberProfileId == profileId)
+                .Include(s => s.SubscriptionTypeLookup)
+                .Include(s => s.Product)
+                .ToListAsync(cancellationToken);
 
-        chosen ??= subs.FirstOrDefault(s => s.IsPrimaryLine);
-        chosen ??= subs[0];
+            if (subs.Count == 0)
+            {
+                return new GetMigrationEligibleProductsResult();
+            }
 
-        var typeId = chosen.SubscriptionTypeId;
-        var lookup = chosen.SubscriptionTypeLookup;
-        var label = lookup != null
-            ? $"{lookup.NameAr} ({lookup.NameEn})"
-            : typeId;
+            var msisdnId = (request.MsisdnAssetId ?? string.Empty).Trim();
+            if (!string.IsNullOrEmpty(msisdnId))
+            {
+                chosen = subs.FirstOrDefault(s => s.MsisdnAssetId == msisdnId);
+            }
+
+            chosen ??= subs.FirstOrDefault(s => s.IsPrimaryLine);
+            chosen ??= subs[0];
+
+            typeId = chosen.SubscriptionTypeId;
+            var lookup = chosen.SubscriptionTypeLookup;
+            label = lookup != null
+                ? $"{lookup.NameAr} ({lookup.NameEn})"
+                : typeId;
+            currentProductName = chosen.Product?.Name ?? "باقة الدفع المسبق التلقائية (Prepaid Default Plan)";
+        }
 
         var now = DateTime.UtcNow;
 
@@ -120,7 +144,7 @@ public class GetMigrationEligibleProductsHandler
             Data = offerings,
             ResolvedSubscriptionTypeId = typeId,
             ResolvedSubscriptionTypeLabel = label,
-            CurrentProductName = chosen.Product?.Name ?? "باقة الدفع المسبق التلقائية (Prepaid Default Plan)",
+            CurrentProductName = currentProductName,
         };
     }
 }

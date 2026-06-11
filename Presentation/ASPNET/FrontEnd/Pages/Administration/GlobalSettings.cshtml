@@ -5,130 +5,508 @@
 
 <div id="app" v-cloak class="telecom-premium-page container-fluid">
     <div class="telecom-bento-card mb-3">
-        <div class="card-body py-3">
-            <p class="text-muted small mb-0">
-                لوحة تحكم مركزية — صيانة، أمان، وتكاملات. التغييرات تُطبَّق فوراً (مع cache قصير).
-                <a href="/Administration">← الإدارة والنظام</a>
-            </p>
+        <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+                <h1 class="h5 mb-1">{{ t('pageTitle') }}</h1>
+                <p class="text-muted small mb-0">{{ t('pageSubtitle') }}</p>
+            </div>
+            <a href="/Administration" class="small text-decoration-none">{{ t('backAdmin') }}</a>
         </div>
     </div>
 
-    <form v-on:submit.prevent="handler.save">
-        <div class="row g-3">
-            <div class="col-lg-6">
-                <div class="telecom-bento-card h-100">
-                    <div class="card-header settings-section-header">
-                        <i class="bi bi-cone-striped me-1"></i> وضع الصيانة
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="MaintenanceMode" v-model="state.settings.maintenanceMode" />
-                            <label class="form-check-label" for="MaintenanceMode">تفعيل وضع الصيانة</label>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label" for="MsgAr">رسالة (عربي)</label>
-                            <textarea id="MsgAr" class="form-control" rows="2" v-model="state.settings.maintenanceMessageAr"></textarea>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label" for="MsgEn">Message (English)</label>
-                            <textarea id="MsgEn" class="form-control" rows="2" v-model="state.settings.maintenanceMessageEn"></textarea>
-                        </div>
-                        <div>
-                            <label class="form-label" for="BypassIps">عناوين IP المستثناة من وضع الصيانة</label>
-                            <textarea id="BypassIps" class="form-control font-monospace" rows="2" v-model="state.settings.maintenanceBypassIPs" placeholder="127.0.0.1&#10;192.168.1.10"></textarea>
-                            <div class="form-text">عناوين مسموح لها بالوصول الكامل أثناء الصيانة (مكتب العمليات، VPN، أو بيئة التطوير). عنوان واحد في كل سطر، أو مفصولة بفاصلة.</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <ul class="nav nav-pills mb-3 global-settings-tabs">
+        <li class="nav-item" v-for="tab in tabs" :key="tab.id">
+            <button type="button" class="nav-link" :class="{ active: state.activeTab === tab.id }" v-on:click="setActiveTab(tab.id)">
+                <i :class="tab.icon + ' me-1'"></i>{{ tab.label }}
+            </button>
+        </li>
+    </ul>
 
-            <div class="col-lg-6">
-                <div class="telecom-bento-card h-100">
-                    <div class="card-header settings-section-header">
-                        <i class="bi bi-shield-lock me-1"></i> الأمان
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="StrictPersona" v-model="state.settings.isStrictPersonaMode" />
-                            <label class="form-check-label" for="StrictPersona">
-                                <strong>Strict Persona Mode</strong> — الحاكم العسكري
-                            </label>
-                        </div>
-                        <p class="small text-muted">عند التفعيل: Persona تمنع المسارات والأوامر خارج حدود الموظف حتى لو الدور يسمح.</p>
-                        <div>
-                            <label class="form-label" for="JwtMin">مدة JWT (دقائق)</label>
-                            <input id="JwtMin" type="number" class="form-control" min="5" max="1440" v-model.number="state.settings.jwtAccessTokenMinutes" />
-                            <div class="form-text">قد يتطلب إعادة تسجيل الدخول بعد الحفظ.</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12">
-                <div class="telecom-bento-card global-settings-integrations">
-                    <div class="card-header settings-section-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <span>
-                            <i class="bi bi-plug me-1"></i>
-                            <strong>التكاملات (طوارئ)</strong>
-                            <span class="text-muted fw-normal small ms-1">— قاطع Circuit Breaker</span>
-                        </span>
-                        <a href="/Telecom/IntegrationMonitor" class="btn btn-sm btn-outline-telecom">
-                            <i class="bi bi-activity me-1"></i> سجل التكاملات
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        <div class="integration-legend mb-4">
-                            <div class="row g-2">
-                                <div class="col-md-6">
-                                    <div class="integration-legend-item integration-legend-on">
-                                        <span class="legend-key">ON</span>
-                                        <span>تشغيل حي — عند الحفظ تُزامَن العمليات المعلقة فوراً مع الشبكة.</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="integration-legend-item integration-legend-off">
-                                        <span class="legend-key">OFF</span>
-                                        <span>طوارئ Fallback — العمل يكمل محلياً والسجل يظهر <code>FALLBACK_MODE</code>.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-4" v-for="item in integrationToggles" :key="item.id">
-                                <div class="integration-toggle-card" :class="{ 'is-off': !item.enabled }">
-                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                        <div class="integration-toggle-icon" :class="item.iconClass">
-                                            <i :class="item.icon"></i>
-                                        </div>
-                                        <div class="form-check form-switch integration-switch-lg mb-0">
-                                            <input class="form-check-input" type="checkbox" :id="item.id" v-model="state.settings[item.field]" />
-                                        </div>
-                                    </div>
-                                    <h3 class="h6 mb-1 fw-bold" v-text="item.title"></h3>
-                                    <p class="small integration-toggle-hint mb-2" v-text="item.hint"></p>
-                                    <div v-html="integrationStatusBadge(item.enabled)"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Cities -->
+    <div v-show="state.activeTab === 'cities'" class="telecom-bento-card">
+        <div class="card-body">
+            <p class="text-muted small mb-3">{{ t('cities.hint') }}</p>
+            <div class="grid-container">
+                <div ref="cityGridRef" id="GeoCityGrid"></div>
             </div>
         </div>
+    </div>
 
-        <div class="telecom-bento-card mt-4 p-3 d-flex flex-wrap align-items-center justify-content-between gap-3 global-settings-save-bar">
-            <p class="small text-muted mb-0">
-                <i class="bi bi-info-circle me-1"></i>
-                اضغط حفظ لتطبيق التغييرات فوراً على كل الجلسات (مع cache قصير ~30 ثانية).
-            </p>
-            <button type="submit" class="btn btn-telecom-primary btn-lg px-4" v-bind:disabled="state.isSaving">
-                <span class="spinner-border spinner-border-sm me-2" v-if="state.isSaving"></span>
-                حفظ الإعدادات
+    <!-- Security -->
+    <div v-show="state.activeTab === 'security'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-shield-lock me-1"></i> {{ t('security.heading') }}
+        </div>
+        <div class="card-body">
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="StrictPersona" v-model="state.settings.isStrictPersonaMode" />
+                <label class="form-check-label" for="StrictPersona">{{ t('security.strictPersona') }}</label>
+            </div>
+            <p class="small text-muted">{{ t('security.strictPersonaHint') }}</p>
+            <div class="mb-0">
+                <label class="form-label" for="JwtMin">{{ t('security.jwtMinutes') }}</label>
+                <input id="JwtMin" type="number" class="form-control" min="5" max="1440" v-model.number="state.settings.jwtAccessTokenMinutes" />
+                <div class="form-text">{{ t('security.jwtHint') }}</div>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('security')" v-bind:disabled="state.savingTab === 'security'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'security'"></span>
+                {{ t('saveTab') }}
             </button>
         </div>
-    </form>
+    </div>
+
+    <!-- Maintenance -->
+    <div v-show="state.activeTab === 'maintenance'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-cone-striped me-1"></i> {{ t('maintenance.heading') }}
+        </div>
+        <div class="card-body">
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="MaintenanceMode" v-model="state.settings.maintenanceMode" />
+                <label class="form-check-label" for="MaintenanceMode">{{ t('maintenance.enable') }}</label>
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="MsgAr">{{ t('maintenance.msgAr') }}</label>
+                <textarea id="MsgAr" class="form-control" rows="2" v-model="state.settings.maintenanceMessageAr"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="MsgEn">{{ t('maintenance.msgEn') }}</label>
+                <textarea id="MsgEn" class="form-control" rows="2" v-model="state.settings.maintenanceMessageEn"></textarea>
+            </div>
+            <div>
+                <label class="form-label" for="BypassIps">{{ t('maintenance.bypassIps') }}</label>
+                <textarea id="BypassIps" class="form-control font-monospace" rows="2" v-model="state.settings.maintenanceBypassIPs" placeholder="127.0.0.1"></textarea>
+                <div class="form-text">{{ t('maintenance.bypassHint') }}</div>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('maintenance')" v-bind:disabled="state.savingTab === 'maintenance'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'maintenance'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div v-show="state.activeTab === 'notifications'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-bell me-1"></i> {{ t('notifications.heading') }}
+        </div>
+        <div class="card-body">
+            <p class="small text-muted">{{ t('notifications.intro') }}</p>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="NotifCustomerOps" v-model="state.settings.notificationSmsCustomerOpsEnabled" />
+                <label class="form-check-label" for="NotifCustomerOps">{{ t('notifications.customerOps') }}</label>
+            </div>
+            <p class="small text-muted mb-3">{{ t('notifications.customerOpsHint') }}</p>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="NotifWelcome" v-model="state.settings.notificationSmsWelcomeEnabled" />
+                <label class="form-check-label" for="NotifWelcome">{{ t('notifications.welcome') }}</label>
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="WelcomeAr">{{ t('notifications.welcomeAr') }}</label>
+                <textarea id="WelcomeAr" class="form-control" rows="2" v-model="state.settings.notificationSmsWelcomeTemplateAr"></textarea>
+                <div class="form-text">{{ t('notifications.templateHint') }}</div>
+            </div>
+            <div>
+                <label class="form-label" for="WelcomeEn">{{ t('notifications.welcomeEn') }}</label>
+                <textarea id="WelcomeEn" class="form-control" rows="2" v-model="state.settings.notificationSmsWelcomeTemplateEn"></textarea>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('notifications')" v-bind:disabled="state.savingTab === 'notifications'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'notifications'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Integrations -->
+    <div v-show="state.activeTab === 'integrations'" class="telecom-bento-card global-settings-integrations">
+        <div class="card-header settings-section-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>
+                <i class="bi bi-plug me-1"></i>
+                <strong>{{ t('integrations.heading') }}</strong>
+                <span class="text-muted fw-normal small ms-1">— {{ t('integrations.circuitBreaker') }}</span>
+            </span>
+            <a href="/Telecom/IntegrationMonitor" class="btn btn-sm btn-outline-telecom">
+                <i class="bi bi-activity me-1"></i> {{ t('integrations.monitorLink') }}
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="integration-demo-mode-card border rounded-3 p-3 mb-4">
+                <div class="form-check form-switch integration-switch-lg mb-2">
+                    <input class="form-check-input" type="checkbox" id="IsDemoVersion" v-model="state.settings.isDemoVersion" />
+                    <label class="form-check-label fw-semibold" for="IsDemoVersion">{{ t('integrations.demoVersion') }}</label>
+                </div>
+                <p class="small text-muted mb-0">{{ t('integrations.demoVersionHint') }}</p>
+            </div>
+            <div class="integration-legend mb-4">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="integration-legend-item integration-legend-on">
+                            <span class="legend-key">ON</span>
+                            <span>{{ t('integrations.legendOn') }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="integration-legend-item integration-legend-off">
+                            <span class="legend-key">OFF</span>
+                            <span>{{ t('integrations.legendOff') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3" v-for="item in integrationToggles" :key="item.id">
+                    <div class="integration-toggle-card" :class="{ 'is-off': !item.enabled }">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <div class="integration-toggle-icon" :class="item.iconClass">
+                                <i :class="item.icon"></i>
+                            </div>
+                            <div class="form-check form-switch integration-switch-lg mb-0">
+                                <input class="form-check-input" type="checkbox" :id="item.id" v-model="state.settings[item.field]" />
+                            </div>
+                        </div>
+                        <h3 class="h6 mb-1 fw-bold" v-text="item.title"></h3>
+                        <p class="small integration-toggle-hint mb-2" v-text="item.hint"></p>
+                        <div v-html="integrationStatusBadge(item.enabled)"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="integration-in-config border-top pt-4">
+                <h3 class="h6 fw-bold mb-3">
+                    <i class="bi bi-lightning-charge me-1"></i>
+                    {{ t('integrations.inConfigHeading', 'Huawei IN — إعدادات البوابة') }}
+                </h3>
+                <p class="small text-muted mb-3">{{ t('integrations.inConfigHint', '') }}</p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="InGatewayUrl">{{ t('integrations.inGatewayUrl', 'Gateway URL') }}</label>
+                        <input id="InGatewayUrl" type="url" class="form-control font-monospace" v-model="state.settings.integrationInGatewayUrl" placeholder="https://in-gateway.syriatel.local/api/v1" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="InTimeout">{{ t('integrations.inTimeoutMs', 'Timeout (ms)') }}</label>
+                        <input id="InTimeout" type="number" class="form-control" min="500" max="60000" v-model.number="state.settings.integrationInTimeoutMilliseconds" />
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="InSimulateDeduction" v-model="state.settings.integrationInSimulateRealTimeDeduction" />
+                            <label class="form-check-label" for="InSimulateDeduction">{{ t('integrations.inSimulateDeduction', 'محاكاة الخصم اللحظي') }}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i>{{ t('integrations.saveHint') }}</p>
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('integrations')" v-bind:disabled="state.savingTab === 'integrations'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'integrations'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Telecom — Lifecycle & Inventory -->
+    <div v-show="state.activeTab === 'telecom-lifecycle'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-arrow-repeat me-1"></i> {{ t('telecom.lifecycle.heading') }}
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">{{ t('telecom.lifecycle.intro') }}</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="MsisdnQuarantineDays">{{ t('telecom.lifecycle.msisdnQuarantineDays') }}</label>
+                    <input id="MsisdnQuarantineDays" type="number" class="form-control" min="1" max="365" v-model.number="state.settings.telecom.inventory.msisdnQuarantineDays" />
+                    <div class="form-text">{{ t('telecom.lifecycle.msisdnQuarantineHint') }}</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="SimQuarantineDays">{{ t('telecom.lifecycle.simQuarantineDays') }}</label>
+                    <input id="SimQuarantineDays" type="number" class="form-control" min="1" max="365" v-model.number="state.settings.telecom.inventory.simQuarantineDays" />
+                    <div class="form-text">{{ t('telecom.lifecycle.simQuarantineHint') }}</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="MsisdnReservationMinutes">{{ t('telecom.lifecycle.msisdnReservationMinutes') }}</label>
+                    <input id="MsisdnReservationMinutes" type="number" class="form-control" min="5" max="1440" v-model.number="state.settings.telecom.inventory.msisdnReservationMinutes" />
+                    <div class="form-text">{{ t('telecom.lifecycle.msisdnReservationMinutesHint') }}</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="MsisdnReservationHours">{{ t('telecom.lifecycle.msisdnReservationHours') }}</label>
+                    <input id="MsisdnReservationHours" type="number" class="form-control" min="1" max="168" v-model.number="state.settings.telecom.inventory.msisdnReservationHours" />
+                    <div class="form-text">{{ t('telecom.lifecycle.msisdnReservationHoursHint') }}</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="SuspensionLongReviewDays">{{ t('telecom.lifecycle.suspensionLongReviewDays') }}</label>
+                    <input id="SuspensionLongReviewDays" type="number" class="form-control" min="1" max="365" v-model.number="state.settings.telecom.suspension.longReviewDays" />
+                    <div class="form-text">{{ t('telecom.lifecycle.suspensionLongReviewHint') }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('telecom-lifecycle')" v-bind:disabled="state.savingTab === 'telecom-lifecycle'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'telecom-lifecycle'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Telecom — Activation (ACT) -->
+    <div v-show="state.activeTab === 'telecom-activation'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-phone me-1"></i> {{ t('telecom.activation.heading') }}
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">{{ t('telecom.activation.intro') }}</p>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="MaxLinesIndividual">{{ t('telecom.activation.maxLinesIndividual') }}</label>
+                    <input id="MaxLinesIndividual" type="number" class="form-control" min="1" max="20" v-model.number="state.settings.telecom.activation.maxLinesIndividual" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="MaxLinesCorporate">{{ t('telecom.activation.maxLinesCorporate') }}</label>
+                    <input id="MaxLinesCorporate" type="number" class="form-control" min="1" max="200" v-model.number="state.settings.telecom.activation.maxLinesCorporate" />
+                </div>
+            </div>
+            <hr class="my-3" />
+            <h3 class="h6 fw-bold mb-2">{{ t('telecom.activation.channelLabelsSection') }}</h3>
+            <p class="small text-muted mb-3">{{ t('telecom.activation.channelLabelsIntro') }}</p>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="ChannelPosAr">{{ t('telecom.activation.channelPosAr') }}</label>
+                    <input id="ChannelPosAr" type="text" class="form-control" maxlength="64" v-model="state.settings.telecom.activation.channelShowroomLabelAr" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="ChannelPosEn">{{ t('telecom.activation.channelPosEn') }}</label>
+                    <input id="ChannelPosEn" type="text" class="form-control" maxlength="64" v-model="state.settings.telecom.activation.channelShowroomLabelEn" />
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="ChannelDealerAr">{{ t('telecom.activation.channelDealerAr') }}</label>
+                    <input id="ChannelDealerAr" type="text" class="form-control" maxlength="64" v-model="state.settings.telecom.activation.channelDealerLabelAr" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="ChannelDealerEn">{{ t('telecom.activation.channelDealerEn') }}</label>
+                    <input id="ChannelDealerEn" type="text" class="form-control" maxlength="64" v-model="state.settings.telecom.activation.channelDealerLabelEn" />
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="ChannelDigitalAr">{{ t('telecom.activation.channelDigitalAr') }}</label>
+                    <input id="ChannelDigitalAr" type="text" class="form-control" maxlength="64" v-model="state.settings.telecom.activation.channelDigitalLabelAr" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="ChannelDigitalEn">{{ t('telecom.activation.channelDigitalEn') }}</label>
+                    <input id="ChannelDigitalEn" type="text" class="form-control" maxlength="64" v-model="state.settings.telecom.activation.channelDigitalLabelEn" />
+                </div>
+            </div>
+            <hr class="my-3" />
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="DealerCodeRequired" v-model="state.settings.telecom.activation.dealerCodeRequired" />
+                <label class="form-check-label" for="DealerCodeRequired">{{ t('telecom.activation.dealerCodeRequired') }}</label>
+            </div>
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="RequireKyc" v-model="state.settings.telecom.activation.requireKycBeforeConfirm" />
+                <label class="form-check-label" for="RequireKyc">{{ t('telecom.activation.requireKyc') }}</label>
+            </div>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="RequirePaymentRef" v-model="state.settings.telecom.activation.requirePaymentReferenceWhenDepositDue" />
+                <label class="form-check-label" for="RequirePaymentRef">{{ t('telecom.activation.requirePaymentRef') }}</label>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('telecom-activation')" v-bind:disabled="state.savingTab === 'telecom-activation'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'telecom-activation'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Telecom — Financial (RFD / TRM) -->
+    <div v-show="state.activeTab === 'telecom-financial'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-cash-stack me-1"></i> {{ t('telecom.financial.heading') }}
+        </div>
+        <div class="card-body">
+            <h3 class="h6 fw-bold">{{ t('telecom.financial.refundSection') }}</h3>
+            <p class="small text-muted">{{ t('telecom.financial.refundIntro') }}</p>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label" for="DualApprovalThreshold">{{ t('telecom.financial.dualApprovalThreshold') }}</label>
+                    <input id="DualApprovalThreshold" type="number" class="form-control" min="0" step="1000" v-model.number="state.settings.telecom.refund.dualApprovalThresholdSyp" />
+                    <div class="form-text">{{ t('telecom.financial.dualApprovalHint') }}</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="HighRiskMethods">{{ t('telecom.financial.highRiskMethods') }}</label>
+                    <input id="HighRiskMethods" type="text" class="form-control font-monospace" v-model="state.settings.telecom.refund.highRiskMethods" />
+                    <div class="form-text">{{ t('telecom.financial.csvHint') }}</div>
+                </div>
+            </div>
+            <h3 class="h6 fw-bold">{{ t('telecom.financial.terminationSection') }}</h3>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="DefaultFinalBill">{{ t('telecom.financial.defaultFinalBill') }}</label>
+                    <input id="DefaultFinalBill" type="number" class="form-control" min="0" step="100" v-model.number="state.settings.telecom.termination.defaultFinalBillAmountSyp" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('telecom-financial')" v-bind:disabled="state.savingTab === 'telecom-financial'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'telecom-financial'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Telecom — Operations & Routing -->
+    <div v-show="state.activeTab === 'telecom-operations'" class="telecom-bento-card">
+        <div class="card-header settings-section-header">
+            <i class="bi bi-sliders me-1"></i> {{ t('telecom.operations.heading') }}
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">{{ t('telecom.operations.intro') }}</p>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="TrmBackOfficeTypes">{{ t('telecom.operations.trmBackOfficeTypes') }}</label>
+                    <input id="TrmBackOfficeTypes" class="form-control font-monospace" v-model="state.settings.telecom.termination.backOfficeTypes" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="SusBackOfficeTypes">{{ t('telecom.operations.susBackOfficeTypes') }}</label>
+                    <input id="SusBackOfficeTypes" class="form-control font-monospace" v-model="state.settings.telecom.suspension.backOfficeTypes" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="PremiumCategories">{{ t('telecom.operations.premiumCategories') }}</label>
+                    <input id="PremiumCategories" class="form-control font-monospace" v-model="state.settings.telecom.changeNumber.premiumCategories" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="TkoDepositPolicy">{{ t('telecom.operations.tkoDepositPolicy') }}</label>
+                    <input id="TkoDepositPolicy" class="form-control font-monospace" v-model="state.settings.telecom.takeOver.defaultDepositTransferPolicy" />
+                </div>
+            </div>
+            <div class="row g-2 mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="TrmCorporateBo" v-model="state.settings.telecom.termination.corporateRequiresBackOffice" />
+                        <label class="form-check-label" for="TrmCorporateBo">{{ t('telecom.operations.trmCorporateBo') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="TrmVoluntaryRetention" v-model="state.settings.telecom.termination.voluntaryRequiresRetentionOutcome" />
+                        <label class="form-check-label" for="TrmVoluntaryRetention">{{ t('telecom.operations.trmVoluntaryRetention') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="SusCorporateBo" v-model="state.settings.telecom.suspension.corporateRequiresBackOffice" />
+                        <label class="form-check-label" for="SusCorporateBo">{{ t('telecom.operations.susCorporateBo') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="SimLostStolenBo" v-model="state.settings.telecom.simSwap.lostStolenRequiresBackOffice" />
+                        <label class="form-check-label" for="SimLostStolenBo">{{ t('telecom.operations.simLostStolenBo') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="CnrBlockQuarantine" v-model="state.settings.telecom.changeNumber.blockQuarantinedTarget" />
+                        <label class="form-check-label" for="CnrBlockQuarantine">{{ t('telecom.operations.cnrBlockQuarantine') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="TkoAlwaysBo" v-model="state.settings.telecom.takeOver.alwaysRequiresBackOffice" />
+                        <label class="form-check-label" for="TkoAlwaysBo">{{ t('telecom.operations.tkoAlwaysBo') }}</label>
+                    </div>
+                </div>
+            </div>
+            <h3 class="h6 fw-bold mb-2">{{ t('telecom.operations.deviceSalesSection') }}</h3>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">{{ t('telecom.operations.creditLow') }}</label>
+                    <input type="number" class="form-control" min="300" max="900" v-model.number="state.settings.telecom.deviceSales.creditScoreLowThreshold" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ t('telecom.operations.creditGood') }}</label>
+                    <input type="number" class="form-control" min="300" max="900" v-model.number="state.settings.telecom.deviceSales.creditScoreGoodThreshold" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ t('telecom.operations.dpReject') }}</label>
+                    <input type="number" class="form-control" min="0" max="100" v-model.number="state.settings.telecom.deviceSales.downPaymentPercentReject" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ t('telecom.operations.dpVip') }}</label>
+                    <input type="number" class="form-control" min="0" max="100" v-model.number="state.settings.telecom.deviceSales.downPaymentPercentVip" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ t('telecom.operations.dpLow') }}</label>
+                    <input type="number" class="form-control" min="0" max="100" v-model.number="state.settings.telecom.deviceSales.downPaymentPercentLow" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ t('telecom.operations.dpGood') }}</label>
+                    <input type="number" class="form-control" min="0" max="100" v-model.number="state.settings.telecom.deviceSales.downPaymentPercentGood" />
+                </div>
+            </div>
+            <div class="form-text mt-2">{{ t('telecom.financial.csvHint') }}</div>
+        </div>
+        <div class="card-footer global-settings-tab-save d-flex justify-content-end">
+            <button type="button" class="btn btn-telecom-primary" v-on:click="handler.saveTab('telecom-operations')" v-bind:disabled="state.savingTab === 'telecom-operations'">
+                <span class="spinner-border spinner-border-sm me-2" v-if="state.savingTab === 'telecom-operations'"></span>
+                {{ t('saveTab') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- City modal -->
+    <div class="modal fade" ref="cityModalRef" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-text="cityState.mainTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label>{{ t('cities.fieldName') }} <span class="text-danger">*</span></label>
+                            <input class="form-control" v-model="cityState.name" maxlength="255" />
+                            <label class="text-danger small" v-text="cityState.errors.name"></label>
+                        </div>
+                        <div class="col-md-6">
+                            <label>{{ t('cities.fieldGovernorate') }} <span class="text-danger">*</span></label>
+                            <input class="form-control" v-model="cityState.governorate" maxlength="255" />
+                            <label class="text-danger small" v-text="cityState.errors.governorate"></label>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <label>{{ t('cities.fieldSort') }}</label>
+                            <input type="number" class="form-control" v-model.number="cityState.sortOrder" min="0" />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="CityIsActive" v-model="cityState.isActive" />
+                                <label class="form-check-label" for="CityIsActive">{{ t('cities.fieldActive') }}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close') }}</button>
+                    <button type="button" class="btn" v-bind:class="cityState.deleteMode ? 'btn-danger' : 'btn-primary'" v-on:click="cityHandler.handleSubmit" v-bind:disabled="cityState.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="cityState.isSubmitting"></span>
+                        <span v-if="cityState.deleteMode">{{ t('cities.confirmDelete') }}</span>
+                        <span v-else>{{ t('saveTab') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section scripts {
-    <script src="~/FrontEnd/Pages/Administration/GlobalSettings.cshtml.js"></script>
+    <script src="~/FrontEnd/Pages/Administration/GlobalSettings.cshtml.js" asp-append-version="true"></script>
 }

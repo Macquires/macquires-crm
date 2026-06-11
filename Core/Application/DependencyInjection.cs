@@ -15,7 +15,10 @@ using Application.Common.Telecom.SimSwap;
 using Application.Common.Telecom.TakeOver;
 using Application.Common.Telecom.DeviceSales;
 using Application.Common.Telecom.Refund;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.BadDebt;
+using Application.Common.Telecom.Billing;
+using Application.Common.Telecom.Inventory;
 using Domain.Services;
 using FluentValidation;
 using MediatR;
@@ -42,7 +45,10 @@ public static class DependencyInjection
         services.AddScoped<ITechnicalTicketQueueIngestionService, TechnicalTicketQueueIngestionService>();
         services.AddScoped<ISubscriptionBindingCompensator, SubscriptionBindingCompensator>();
         services.AddScoped<ITelecomHlrFailureCompensator, TelecomHlrFailureCompensator>();
+        services.AddScoped<IBillingRoutingOrchestrator, BillingRoutingOrchestrator>();
         services.AddScoped<ISellingLineEligibilityChecker, SellingLineEligibilityChecker>();
+        services.AddScoped<IMsisdnPoolSimKitProvisioner, MsisdnPoolSimKitProvisioner>();
+        services.AddScoped<IActivationChannelLabelProvider, ActivationChannelLabelProvider>();
         services.AddScoped<IChangeGsmEligibilityChecker, ChangeGsmEligibilityChecker>();
         services.AddScoped<ISimSwapEligibilityChecker, SimSwapEligibilityChecker>();
         services.AddScoped<ISimSwapCompletionService, SimSwapCompletionService>();
@@ -71,14 +77,19 @@ public static class DependencyInjection
         services.AddScoped<IRefundCompletionService, RefundCompletionService>();
         services.AddScoped<IBadDebtEligibilityChecker, BadDebtEligibilityChecker>();
         services.AddScoped<IBadDebtCompletionService, BadDebtCompletionService>();
+        services.AddScoped<IBackOfficePaymentReferenceValidator, BackOfficePaymentReferenceValidator>();
         services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
         services.AddSingleton<VasMsisdnLock>();
         services.AddScoped<ISubscriberAccessAuditService, SubscriberAccessAuditService>();
+        services.AddScoped<ITelecomInventoryRulesProvider, TelecomInventoryRulesProvider>();
+        services.AddScoped<IMsisdnRecyclingService, MsisdnRecyclingService>();
 
         //>>> MediatR
         services.AddMediatR(x =>
         {
             x.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+            x.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CreateCustomerPosQuickRegisterNormalizerBehaviour<,>));
+            x.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CreateTelecomOperationRequestActivationChannelNormalizerBehaviour<,>));
             x.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehaviour<,>));
             x.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
             x.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PersonaStrictAuthorizationBehaviour<,>));

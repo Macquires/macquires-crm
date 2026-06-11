@@ -4,7 +4,6 @@ using Application.Common.Extensions;
 using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
-using Domain.Enums;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -53,15 +52,18 @@ public class FindCustomerCandidatesHandler : IRequestHandler<FindCustomerCandida
     private readonly IQueryContext _context;
     private readonly IFieldEncryptionService _encryption;
     private readonly ISubscriberAccessAuditService _subscriberAudit;
+    private readonly INationalIdSearchHashBackfillService _nationalIdBackfill;
 
     public FindCustomerCandidatesHandler(
         IQueryContext context,
         IFieldEncryptionService encryption,
-        ISubscriberAccessAuditService subscriberAudit)
+        ISubscriberAccessAuditService subscriberAudit,
+        INationalIdSearchHashBackfillService nationalIdBackfill)
     {
         _context = context;
         _encryption = encryption;
         _subscriberAudit = subscriberAudit;
+        _nationalIdBackfill = nationalIdBackfill;
     }
 
     public async Task<FindCustomerCandidatesResult> Handle(
@@ -86,6 +88,60 @@ public class FindCustomerCandidatesHandler : IRequestHandler<FindCustomerCandida
             return new FindCustomerCandidatesResult();
         }
 
+        var identityMatchIds = new HashSet<string>();
+        if (nationalOk)
+        {
+            if (nationalHash != null)
+            {
+                var individualIds = await _context.Customer
+                    .AsNoTracking()
+                    .IsDeletedEqualTo(false)
+                    .OfType<IndividualCustomer>()
+                    .Where(c => c.NationalIdSearchHash == nationalHash)
+                    .Select(c => c.Id)
+                    .ToListAsync(cancellationToken);
+                foreach (var id in individualIds)
+                {
+                    identityMatchIds.Add(id);
+                }
+
+                if (individualIds.Count == 0)
+                {
+                    var legacyId = await _nationalIdBackfill.TryResolveLegacyIndividualIdAsync(
+                        national,
+                        cancellationToken);
+                    if (!string.IsNullOrEmpty(legacyId))
+                    {
+                        identityMatchIds.Add(legacyId);
+                    }
+                }
+            }
+
+            var corporateIds = await _context.Customer
+                .AsNoTracking()
+                .IsDeletedEqualTo(false)
+                .OfType<CorporateCustomer>()
+                .Where(c => c.CommercialRegistryNumber != null && c.CommercialRegistryNumber.Contains(national))
+                .Select(c => c.Id)
+                .ToListAsync(cancellationToken);
+            foreach (var id in corporateIds)
+            {
+                identityMatchIds.Add(id);
+            }
+        }
+
+        if (nationalOk && !phoneOk && identityMatchIds.Count == 0)
+        {
+            await _subscriberAudit.LogSearchAsync(
+                "CustomerRegistry",
+                national,
+                null,
+                null,
+                [],
+                cancellationToken);
+            return new FindCustomerCandidatesResult();
+        }
+
         var query = _context.Customer
             .AsNoTracking()
             .IsDeletedEqualTo(false)
@@ -97,24 +153,22 @@ public class FindCustomerCandidatesHandler : IRequestHandler<FindCustomerCandida
         if (nationalOk && phoneOk)
         {
             var phoneNeedle = phoneCanon ?? phoneDigits;
-            query = query.Where(c =>
-                (nationalHash != null
-                 && EF.Property<CustomerKind>(c, nameof(Customer.CustomerKind)) == CustomerKind.Individual
-                 && EF.Property<string>(c, nameof(IndividualCustomer.NationalIdSearchHash)) == nationalHash)
-                || (EF.Property<CustomerKind>(c, nameof(Customer.CustomerKind)) == CustomerKind.Corporate
-                    && EF.Property<string>(c, nameof(CorporateCustomer.CommercialRegistryNumber)) != null
-                    && EF.Property<string>(c, nameof(CorporateCustomer.CommercialRegistryNumber)).Contains(national))
-                || (c.PrimaryPhone != null && c.PrimaryPhone.Contains(phoneNeedle)));
+            var ids = identityMatchIds.ToList();
+            if (ids.Count > 0)
+            {
+                query = query.Where(c =>
+                    ids.Contains(c.Id)
+                    || (c.PrimaryPhone != null && c.PrimaryPhone.Contains(phoneNeedle)));
+            }
+            else
+            {
+                query = query.Where(c => c.PrimaryPhone != null && c.PrimaryPhone.Contains(phoneNeedle));
+            }
         }
         else if (nationalOk)
         {
-            query = query.Where(c =>
-                (nationalHash != null
-                 && EF.Property<CustomerKind>(c, nameof(Customer.CustomerKind)) == CustomerKind.Individual
-                 && EF.Property<string>(c, nameof(IndividualCustomer.NationalIdSearchHash)) == nationalHash)
-                || (EF.Property<CustomerKind>(c, nameof(Customer.CustomerKind)) == CustomerKind.Corporate
-                    && EF.Property<string>(c, nameof(CorporateCustomer.CommercialRegistryNumber)) != null
-                    && EF.Property<string>(c, nameof(CorporateCustomer.CommercialRegistryNumber)).Contains(national)));
+            var ids = identityMatchIds.ToList();
+            query = query.Where(c => ids.Contains(c.Id));
         }
         else
         {

@@ -481,6 +481,44 @@
         }
       }
     },
+    "/api/Customer/GetCustomer360Supplements": {
+      "get": {
+        "tags": [
+          "Customer"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCustomer360SupplementsResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCustomer360SupplementsResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCustomer360SupplementsResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Customer/GetCustomer360LineWallets": {
       "get": {
         "tags": [
@@ -1731,6 +1769,197 @@
         }
       }
     },
+    "/api/GeoCity/CreateGeoCity": {
+      "post": {
+        "tags": [
+          "GeoCity"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGeoCityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGeoCityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGeoCityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateGeoCityResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateGeoCityResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateGeoCityResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/GeoCity/UpdateGeoCity": {
+      "post": {
+        "tags": [
+          "GeoCity"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGeoCityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGeoCityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGeoCityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateGeoCityResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateGeoCityResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateGeoCityResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/GeoCity/DeleteGeoCity": {
+      "post": {
+        "tags": [
+          "GeoCity"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteGeoCityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteGeoCityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteGeoCityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteGeoCityResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteGeoCityResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteGeoCityResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/GeoCity/GetGeoCityList": {
+      "get": {
+        "tags": [
+          "GeoCity"
+        ],
+        "parameters": [
+          {
+            "name": "isDeleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetGeoCityListResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetGeoCityListResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetGeoCityListResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/huawei-cbs-mock/QueryBalance": {
       "get": {
         "tags": [
@@ -2061,6 +2290,13 @@
           },
           {
             "name": "msisdnAssetId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetSubscriptionTypeId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -4047,6 +4283,54 @@
         }
       }
     },
+    "/api/Telecom/ReleaseMsisdnReservation": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseMsisdnReservationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseMsisdnReservationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseMsisdnReservationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseMsisdnReservationResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseMsisdnReservationResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseMsisdnReservationResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Telecom/CreateTelecomOperation": {
       "post": {
         "tags": [
@@ -4198,6 +4482,61 @@
         }
       }
     },
+    "/api/Telecom/UploadKycDocument": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "msisdn": {
+                    "type": "string"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "msisdn": {
+                  "style": "form"
+                },
+                "file": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadKycDocumentResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadKycDocumentResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadKycDocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Telecom/ConfirmTelecomOperation": {
       "post": {
         "tags": [
@@ -4239,6 +4578,54 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConfirmTelecomOperationRequestResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/FetchCashierPayment": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchCashierPaymentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchCashierPaymentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchCashierPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchCashierPaymentResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchCashierPaymentResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchCashierPaymentResultApiSuccessResult"
                 }
               }
             }
@@ -5892,6 +6279,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "msisdn",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -5911,6 +6305,99 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HlrLiveStatusResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/CheckHlrStatus": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "msisdn",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriberProfileId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/HlrLiveStatusResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HlrLiveStatusResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HlrLiveStatusResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/ReprovisionSubscriberToHlr": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReprovisionSubscriberToHlrRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReprovisionSubscriberToHlrRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReprovisionSubscriberToHlrRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/HlrReprovisionResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HlrReprovisionResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HlrReprovisionResultApiSuccessResult"
                 }
               }
             }
@@ -6110,6 +6597,54 @@
         }
       }
     },
+    "/api/Telecom/EnsureSubscriberProfileForCustomer": {
+      "post": {
+        "tags": [
+          "Telecom"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Telecom/GetTelecomOperationList": {
       "get": {
         "tags": [
@@ -6142,6 +6677,35 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GetTelecomOperationListResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetActivationChannelLabels": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetActivationChannelLabelsResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetActivationChannelLabelsResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetActivationChannelLabelsResultApiSuccessResult"
                 }
               }
             }
@@ -6204,6 +6768,183 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Telecom/DownloadKycDocument": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetInIntegrationLogList": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "telecomOperationRequestId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operationNumber",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "success",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          },
+          {
+            "name": "isDeleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInIntegrationLogListResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInIntegrationLogListResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInIntegrationLogListResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Telecom/GetHlrProvisioningLogList": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "parameters": [
+          {
+            "name": "telecomOperationRequestId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operationNumber",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "success",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          },
+          {
+            "name": "isDeleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetHlrProvisioningLogListResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetHlrProvisioningLogListResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetHlrProvisioningLogListResultApiSuccessResult"
+                }
+              }
+            }
           }
         }
       }
@@ -6315,6 +7056,35 @@
         }
       }
     },
+    "/api/Telecom/GetIntegrationEnvironmentContext": {
+      "get": {
+        "tags": [
+          "Telecom"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetIntegrationEnvironmentContextResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetIntegrationEnvironmentContextResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetIntegrationEnvironmentContextResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Telecom/GetIntegrationLogList": {
       "get": {
         "tags": [
@@ -6415,6 +7185,13 @@
           },
           {
             "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriptionTypeId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -6784,10 +7561,24 @@
             }
           },
           {
+            "name": "Domain",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BackOfficeDomain"
+            }
+          },
+          {
             "name": "IncludeResolved",
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "PermissionKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -7093,6 +7884,54 @@
         }
       }
     },
+    "/api/TelecomBackOffice/ForceHlrSync": {
+      "post": {
+        "tags": [
+          "TelecomBackOffice"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForceHlrSyncByTicketRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForceHlrSyncByTicketRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForceHlrSyncByTicketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForceHlrSyncResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForceHlrSyncResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForceHlrSyncResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/TelecomBackOffice/QueryLiveNetworkStatus": {
       "get": {
         "tags": [
@@ -7368,6 +8207,255 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResolveAuditDisplayNamesResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/TelecomBackOffice/GetPendingRequests": {
+      "get": {
+        "tags": [
+          "TelecomBackOffice"
+        ],
+        "parameters": [
+          {
+            "name": "Kind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TelecomOperationKind"
+            }
+          },
+          {
+            "name": "Domain",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BackOfficeDomain"
+            }
+          },
+          {
+            "name": "IncludeResolved",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "SearchTerm",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "SlaBreached",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "FromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "ToUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "Skip",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PermissionKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPendingBackOfficeOperationsResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPendingBackOfficeOperationsResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPendingBackOfficeOperationsResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/TelecomBackOffice/ApproveRequest": {
+      "post": {
+        "tags": [
+          "TelecomBackOffice"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/TelecomBackOffice/RejectRequest": {
+      "post": {
+        "tags": [
+          "TelecomBackOffice"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/TelecomBackOffice/ClaimTicket": {
+      "post": {
+        "tags": [
+          "TelecomBackOffice"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimTicketRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimTicketRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimTicketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimTicketResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimTicketResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimTicketResultApiSuccessResult"
                 }
               }
             }
@@ -7898,6 +8986,93 @@
         "type": "integer",
         "format": "int32"
       },
+      "ActivationChannelLabelEntryDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "labelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "labelEn": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivationChannelLabelsDto": {
+        "type": "object",
+        "properties": {
+          "showroom": {
+            "$ref": "#/components/schemas/ActivationChannelLabelEntryDto"
+          },
+          "dealer": {
+            "$ref": "#/components/schemas/ActivationChannelLabelEntryDto"
+          },
+          "digital": {
+            "$ref": "#/components/schemas/ActivationChannelLabelEntryDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApproveBackOfficeTelecomOperationRequest": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "comments": {
+            "type": "string",
+            "nullable": true
+          },
+          "permissionKey": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApproveBackOfficeTelecomOperationResult": {
+        "type": "object",
+        "properties": {
+          "confirmResult": {
+            "$ref": "#/components/schemas/ConfirmTelecomOperationRequestResult"
+          },
+          "pipelineState": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApproveBackOfficeTelecomOperationResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ApproveBackOfficeTelecomOperationResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "ApproveDeviceInstallmentRequest": {
         "type": "object",
         "properties": {
@@ -7963,6 +9138,23 @@
           }
         },
         "additionalProperties": false
+      },
+      "BackOfficeDomain": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "BillingConsolidationMode": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "BillingCycle": {
         "enum": [
@@ -8049,6 +9241,31 @@
         },
         "additionalProperties": false
       },
+      "CashierPaymentResultDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountPaid": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "paymentChannel": {
+            "$ref": "#/components/schemas/PaymentChannel"
+          }
+        },
+        "additionalProperties": false
+      },
       "ChangeGsmReasonCountDto": {
         "type": "object",
         "properties": {
@@ -8077,6 +9294,68 @@
           "premiumCount": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClaimTicketRequest": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "nullable": true
+          },
+          "agentEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClaimTicketResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/TelecomOperationStatus"
+          },
+          "assignedAgentEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "pipelineState": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClaimTicketResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ClaimTicketResult"
           }
         },
         "additionalProperties": false
@@ -8176,6 +9455,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "name": {
             "type": "string",
             "nullable": true
@@ -8226,6 +9513,18 @@
           }
         },
         "additionalProperties": false
+      },
+      "CompanyLegalStatus": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "ConfirmEmailResult": {
         "type": "object",
@@ -8334,6 +9633,10 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "overrideReasonCode": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8354,6 +9657,18 @@
             "type": "boolean"
           },
           "statusHintAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusHintEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "userMessageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "userMessageEn": {
             "type": "string",
             "nullable": true
           },
@@ -8638,6 +9953,20 @@
           "authorizedSignatory": {
             "type": "string",
             "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "occupation": {
+            "type": "string",
+            "nullable": true
+          },
+          "posQuickRegister": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -8823,6 +10152,58 @@
           "documentName": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateGeoCityRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorate": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateGeoCityResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GeoCity"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateGeoCityResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/CreateGeoCityResult"
           }
         },
         "additionalProperties": false
@@ -9541,6 +10922,10 @@
           },
           "collectionApprovalConfirmed": {
             "type": "boolean"
+          },
+          "kycDocumentReferenceId": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -9860,6 +11245,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "customerKind": {
             "$ref": "#/components/schemas/CustomerKind"
           },
@@ -10177,7 +11570,15 @@
             "type": "string",
             "nullable": true
           },
+          "productOfferingNameEn": {
+            "type": "string",
+            "nullable": true
+          },
           "subscriptionTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "subscriptionTypeNameEn": {
             "type": "string",
             "nullable": true
           },
@@ -10248,6 +11649,14 @@
           "createdAtUtc": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          },
+          "documentOperationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentSource": {
+            "type": "string",
             "nullable": true
           },
           "packageComponents": {
@@ -10362,6 +11771,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "name": {
             "type": "string",
             "nullable": true
@@ -10400,6 +11817,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "name": {
             "type": "string",
@@ -10463,6 +11888,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "name": {
             "type": "string",
             "nullable": true
@@ -10501,6 +11934,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "customerId": {
             "type": "string",
@@ -10586,6 +12027,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "widgetKey": {
             "type": "string",
@@ -10978,6 +12427,47 @@
         },
         "additionalProperties": false
       },
+      "DeleteGeoCityRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "deletedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeleteGeoCityResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GeoCity"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeleteGeoCityResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/DeleteGeoCityResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "DeleteProductOfferingRequest": {
         "type": "object",
         "properties": {
@@ -11230,6 +12720,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "telecomOperationRequestId": {
             "type": "string",
             "nullable": true
@@ -11315,6 +12813,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "deviceInstallmentContractId": {
             "type": "string",
             "nullable": true
@@ -11376,6 +12882,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "imei": {
             "type": "string",
@@ -11494,6 +13008,51 @@
           },
           "content": {
             "$ref": "#/components/schemas/EnqueueInventoryBulkImportResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EnsureSubscriberProfileForCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EnsureSubscriberProfileForCustomerResult": {
+        "type": "object",
+        "properties": {
+          "subscriberProfileId": {
+            "type": "string",
+            "nullable": true
+          },
+          "created": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EnsureSubscriberProfileForCustomerResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/EnsureSubscriberProfileForCustomerResult"
           }
         },
         "additionalProperties": false
@@ -11641,6 +13200,52 @@
         },
         "additionalProperties": false
       },
+      "FetchCashierPaymentRequest": {
+        "type": "object",
+        "properties": {
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FetchCashierPaymentResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CashierPaymentResultDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FetchCashierPaymentResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/FetchCashierPaymentResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "FileDocument": {
         "type": "object",
         "properties": {
@@ -11668,6 +13273,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "name": {
             "type": "string",
@@ -11832,6 +13445,71 @@
         },
         "additionalProperties": false
       },
+      "ForceHlrSyncByTicketRequest": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "permissionKey": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ForceHlrSyncResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "ticketNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "ticketAutoResolved": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ForceHlrSyncResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ForceHlrSyncResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "ForgotPasswordConfirmationResult": {
         "type": "object",
         "properties": {
@@ -11897,6 +13575,96 @@
           },
           "content": {
             "$ref": "#/components/schemas/ForgotPasswordResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Gender": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "GeoCity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorate": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetActivationChannelLabelsResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ActivationChannelLabelsDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetActivationChannelLabelsResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetActivationChannelLabelsResult"
           }
         },
         "additionalProperties": false
@@ -12736,9 +14504,18 @@
             "type": "string",
             "nullable": true
           },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
           "genderLabel": {
             "type": "string",
             "nullable": true
+          },
+          "legalStatus": {
+            "$ref": "#/components/schemas/CompanyLegalStatus"
+          },
+          "billingConsolidationMode": {
+            "$ref": "#/components/schemas/BillingConsolidationMode"
           },
           "occupation": {
             "type": "string",
@@ -12812,6 +14589,65 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetCustomer360Result"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetCustomer360SupplementsResult": {
+        "type": "object",
+        "properties": {
+          "activeVasServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Customer360VasServiceDto"
+            },
+            "nullable": true
+          },
+          "supportTickets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicalTicketListItemDto"
+            },
+            "nullable": true
+          },
+          "billingLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetBillingIntegrationLogListDto"
+            },
+            "nullable": true
+          },
+          "activityLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserAuditLogListItemDto"
+            },
+            "nullable": true
+          },
+          "telecomOperations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TelecomOperationListItemDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetCustomer360SupplementsResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetCustomer360SupplementsResult"
           }
         },
         "additionalProperties": false
@@ -13729,6 +15565,67 @@
         },
         "additionalProperties": false
       },
+      "GetGeoCityListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorate": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetGeoCityListResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetGeoCityListDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetGeoCityListResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetGeoCityListResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetGlobalSettingsResult": {
         "type": "object",
         "properties": {
@@ -13752,6 +15649,152 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetGlobalSettingsResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetHlrProvisioningLogListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "telecomOperationRequestId": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "attemptNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "integrationTarget": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetHlrProvisioningLogListResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetHlrProvisioningLogListDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetHlrProvisioningLogListResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetHlrProvisioningLogListResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetInIntegrationLogListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "telecomOperationRequestId": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "attemptNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "integrationTarget": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetInIntegrationLogListResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetInIntegrationLogListDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetInIntegrationLogListResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetInIntegrationLogListResult"
           }
         },
         "additionalProperties": false
@@ -13817,6 +15860,33 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetInstallmentPlanListResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetIntegrationEnvironmentContextResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntegrationEnvironmentContextDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetIntegrationEnvironmentContextResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetIntegrationEnvironmentContextResult"
           }
         },
         "additionalProperties": false
@@ -14126,6 +16196,22 @@
             "nullable": true
           },
           "productName": {
+            "type": "string",
+            "nullable": true
+          },
+          "compatibleSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "compatibleSubscriptionTypeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "compatibleSubscriptionTypeNameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "compatibleSubscriptionTypeNameEn": {
             "type": "string",
             "nullable": true
           },
@@ -14664,6 +16750,41 @@
           },
           "content": {
             "$ref": "#/components/schemas/GetPaymentTransactionListResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPendingBackOfficeOperationsResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingBackOfficeOperationDto"
+            },
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPendingBackOfficeOperationsResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/GetPendingBackOfficeOperationsResult"
           }
         },
         "additionalProperties": false
@@ -16285,6 +18406,14 @@
           "collectionNote": {
             "type": "string",
             "nullable": true
+          },
+          "technicalTicketId": {
+            "type": "string",
+            "nullable": true
+          },
+          "technicalTicketNumber": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -17006,6 +19135,9 @@
           "isStrictPersonaMode": {
             "type": "boolean"
           },
+          "isDemoVersion": {
+            "type": "boolean"
+          },
           "jwtAccessTokenMinutes": {
             "type": "integer",
             "format": "int32"
@@ -17018,6 +19150,37 @@
           },
           "integrationSmsEnabled": {
             "type": "boolean"
+          },
+          "integrationInEnabled": {
+            "type": "boolean"
+          },
+          "integrationInGatewayUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "integrationInTimeoutMilliseconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integrationInSimulateRealTimeDeduction": {
+            "type": "boolean"
+          },
+          "notificationSmsCustomerOpsEnabled": {
+            "type": "boolean"
+          },
+          "notificationSmsWelcomeEnabled": {
+            "type": "boolean"
+          },
+          "notificationSmsWelcomeTemplateAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "notificationSmsWelcomeTemplateEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "telecom": {
+            "$ref": "#/components/schemas/TelecomBusinessRulesDto"
           }
         },
         "additionalProperties": false
@@ -17071,6 +19234,45 @@
           },
           "content": {
             "$ref": "#/components/schemas/HlrLiveStatusResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HlrReprovisionResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "logEntry": {
+            "type": "string",
+            "nullable": true
+          },
+          "hlrSubscriberState": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "HlrReprovisionResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/HlrReprovisionResult"
           }
         },
         "additionalProperties": false
@@ -17166,6 +19368,17 @@
           },
           "content": {
             "$ref": "#/components/schemas/HlrResyncResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "IDomainEvent": {
+        "type": "object",
+        "properties": {
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
           }
         },
         "additionalProperties": false
@@ -17277,6 +19490,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "code": {
             "type": "string",
             "nullable": true
@@ -17315,6 +19536,15 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "IntegrationEnvironmentContextDto": {
+        "type": "object",
+        "properties": {
+          "isDemoVersion": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "IntegrationHealthItemDto": {
         "type": "object",
@@ -17436,6 +19666,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "jobStatus": {
             "$ref": "#/components/schemas/InventoryBulkImportJobStatus"
@@ -17909,6 +20147,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "msisdn": {
             "type": "string",
             "nullable": true
@@ -17967,6 +20213,13 @@
           },
           "product": {
             "$ref": "#/components/schemas/Product"
+          },
+          "intendedSubscriptionTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "intendedSubscriptionTypeLookup": {
+            "$ref": "#/components/schemas/TelecomSubscriptionTypeLookup"
           }
         },
         "additionalProperties": false
@@ -18038,6 +20291,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "parentId": {
             "type": "string",
@@ -18186,6 +20447,128 @@
         "type": "integer",
         "format": "int32"
       },
+      "PendingBackOfficeOperationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TelecomOperationKind"
+          },
+          "kindNameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "pipelineState": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "subscriberName": {
+            "type": "string",
+            "nullable": true
+          },
+          "suspensionType": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearanceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentReferenceValidated": {
+            "type": "boolean"
+          },
+          "paymentValidationMessageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasIdentityDocument": {
+            "type": "boolean"
+          },
+          "documentStatus": {
+            "$ref": "#/components/schemas/TelecomDocumentStatus"
+          },
+          "canApprove": {
+            "type": "boolean"
+          },
+          "blockReasonAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "outstandingBalanceSnapshot": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "writeOffAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "collectedAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "collectionAction": {
+            "type": "string",
+            "nullable": true
+          },
+          "dunningStage": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountType": {
+            "type": "string",
+            "nullable": true
+          },
+          "slaExpirationTimeUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "claimedByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "auditorDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "slaBreached": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "PendingExternalSyncSummaryDto": {
         "type": "object",
         "properties": {
@@ -18283,6 +20666,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "productOfferingId": {
             "type": "string",
@@ -18406,6 +20797,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "name": {
             "type": "string",
             "nullable": true
@@ -18468,6 +20867,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "name": {
             "type": "string",
@@ -18612,6 +21019,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "productOfferingId": {
             "type": "string",
@@ -19207,6 +21622,116 @@
         },
         "additionalProperties": false
       },
+      "RejectBackOfficeTelecomOperationRequest": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "permissionKey": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RejectBackOfficeTelecomOperationResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelecomOperationRequest"
+          },
+          "pipelineState": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RejectBackOfficeTelecomOperationResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/RejectBackOfficeTelecomOperationResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReleaseMsisdnReservationRequest": {
+        "type": "object",
+        "properties": {
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "releasedByUserId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReleaseMsisdnReservationResult": {
+        "type": "object",
+        "properties": {
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "poolStatus": {
+            "$ref": "#/components/schemas/MsisdnPoolStatus"
+          },
+          "released": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReleaseMsisdnReservationResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ReleaseMsisdnReservationResult"
+          }
+        },
+        "additionalProperties": false
+      },
       "ReorderDashboardWidgetItem": {
         "type": "object",
         "properties": {
@@ -19262,6 +21787,33 @@
           },
           "content": {
             "$ref": "#/components/schemas/ReorderDashboardWidgetsResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReprovisionSubscriberToHlrRequest": {
+        "type": "object",
+        "properties": {
+          "subscriberProfileId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "permissionKey": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
           }
         },
         "additionalProperties": false
@@ -19413,6 +21965,14 @@
         "type": "object",
         "properties": {
           "subscriberProfileId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
             "type": "string",
             "nullable": true
           },
@@ -19575,6 +22135,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "iccid": {
             "type": "string",
             "nullable": true,
@@ -19675,7 +22243,8 @@
           1,
           2,
           3,
-          4
+          4,
+          5
         ],
         "type": "integer",
         "format": "int32"
@@ -19904,6 +22473,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "telecomSubscriptionId": {
             "type": "string",
             "nullable": true
@@ -19978,6 +22555,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "customerId": {
             "type": "string",
@@ -20152,7 +22737,8 @@
           6,
           7,
           8,
-          9
+          9,
+          10
         ],
         "type": "integer",
         "format": "int32"
@@ -20247,6 +22833,142 @@
         "type": "integer",
         "format": "int32"
       },
+      "TelecomActivationRulesDto": {
+        "type": "object",
+        "properties": {
+          "maxLinesIndividual": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxLinesCorporate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dealerCodeRequired": {
+            "type": "boolean"
+          },
+          "requireKycBeforeConfirm": {
+            "type": "boolean"
+          },
+          "requirePaymentReferenceWhenDepositDue": {
+            "type": "boolean"
+          },
+          "channelShowroomLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "channelShowroomLabelEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "channelDealerLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "channelDealerLabelEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "channelDigitalLabelAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "channelDigitalLabelEn": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomBadDebtRulesDto": {
+        "type": "object",
+        "properties": {
+          "postpaidBadDebtThresholdMonths": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomBusinessRulesDto": {
+        "type": "object",
+        "properties": {
+          "inventory": {
+            "$ref": "#/components/schemas/TelecomInventoryRulesDto"
+          },
+          "activation": {
+            "$ref": "#/components/schemas/TelecomActivationRulesDto"
+          },
+          "termination": {
+            "$ref": "#/components/schemas/TelecomTerminationRulesDto"
+          },
+          "refund": {
+            "$ref": "#/components/schemas/TelecomRefundRulesDto"
+          },
+          "suspension": {
+            "$ref": "#/components/schemas/TelecomSuspensionRulesDto"
+          },
+          "simSwap": {
+            "$ref": "#/components/schemas/TelecomSimSwapRulesDto"
+          },
+          "changeNumber": {
+            "$ref": "#/components/schemas/TelecomChangeNumberRulesDto"
+          },
+          "takeOver": {
+            "$ref": "#/components/schemas/TelecomTakeOverRulesDto"
+          },
+          "deviceSales": {
+            "$ref": "#/components/schemas/TelecomDeviceSalesRulesDto"
+          },
+          "badDebt": {
+            "$ref": "#/components/schemas/TelecomBadDebtRulesDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomChangeNumberRulesDto": {
+        "type": "object",
+        "properties": {
+          "premiumCategories": {
+            "type": "string",
+            "nullable": true
+          },
+          "blockQuarantinedTarget": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomDeviceSalesRulesDto": {
+        "type": "object",
+        "properties": {
+          "creditScoreLowThreshold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "creditScoreGoodThreshold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "downPaymentPercentReject": {
+            "type": "number",
+            "format": "double"
+          },
+          "downPaymentPercentVip": {
+            "type": "number",
+            "format": "double"
+          },
+          "downPaymentPercentLow": {
+            "type": "number",
+            "format": "double"
+          },
+          "downPaymentPercentGood": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "TelecomDocumentStatus": {
         "enum": [
           0,
@@ -20261,10 +22983,41 @@
         "enum": [
           0,
           1,
-          2
+          2,
+          3
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "TelecomInventoryRulesDto": {
+        "type": "object",
+        "properties": {
+          "msisdnQuarantineDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simQuarantineDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dormantLineScanIntervalHours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dormantLineInactivityDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msisdnReservationHours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msisdnReservationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
       },
       "TelecomOperationAuditLog": {
         "type": "object",
@@ -20293,6 +23046,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "telecomOperationRequestId": {
             "type": "string",
@@ -20388,6 +23149,40 @@
         "type": "integer",
         "format": "int32"
       },
+      "TelecomOperationListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdnAssetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "TelecomOperationRequest": {
         "type": "object",
         "properties": {
@@ -20415,6 +23210,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "kind": {
             "$ref": "#/components/schemas/TelecomOperationKind"
@@ -20497,6 +23300,10 @@
             "nullable": true
           },
           "identityDocumentStorageKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "kycDocumentReferenceId": {
             "type": "string",
             "nullable": true
           },
@@ -20863,6 +23670,29 @@
             "type": "string",
             "nullable": true
           },
+          "slaExpirationTimeUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "claimedByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "assignedAgentEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          },
           "auditLogs": {
             "type": "array",
             "items": {
@@ -20881,10 +23711,37 @@
           3,
           4,
           5,
-          6
+          6,
+          7,
+          8,
+          9,
+          10
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "TelecomRefundRulesDto": {
+        "type": "object",
+        "properties": {
+          "dualApprovalThresholdSyp": {
+            "type": "number",
+            "format": "double"
+          },
+          "highRiskMethods": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomSimSwapRulesDto": {
+        "type": "object",
+        "properties": {
+          "lostStolenRequiresBackOffice": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "TelecomSubscription": {
         "type": "object",
@@ -20913,6 +23770,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "subscriberProfileId": {
             "type": "string",
@@ -21027,6 +23892,14 @@
             "type": "string",
             "nullable": true
           },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
           "code": {
             "type": "string",
             "nullable": true
@@ -21052,6 +23925,36 @@
           },
           "isDefault": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomSuspensionRulesDto": {
+        "type": "object",
+        "properties": {
+          "longReviewDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "backOfficeTypes": {
+            "type": "string",
+            "nullable": true
+          },
+          "corporateRequiresBackOffice": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomTakeOverRulesDto": {
+        "type": "object",
+        "properties": {
+          "alwaysRequiresBackOffice": {
+            "type": "boolean"
+          },
+          "defaultDepositTransferPolicy": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -21083,6 +23986,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "ticketNumber": {
             "type": "string",
@@ -21141,9 +24052,43 @@
             "format": "date-time",
             "nullable": true
           },
+          "assignedAgentEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          },
           "createdByChannel": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TelecomTerminationRulesDto": {
+        "type": "object",
+        "properties": {
+          "defaultFinalBillAmountSyp": {
+            "type": "number",
+            "format": "double"
+          },
+          "backOfficeTypes": {
+            "type": "string",
+            "nullable": true
+          },
+          "corporateRequiresBackOffice": {
+            "type": "boolean"
+          },
+          "voluntaryRequiresRetentionOutcome": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -21278,6 +24223,14 @@
           "updatedById": {
             "type": "string",
             "nullable": true
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IDomainEvent"
+            },
+            "nullable": true,
+            "readOnly": true
           },
           "serviceCode": {
             "type": "string",
@@ -22004,6 +24957,62 @@
           },
           "content": {
             "$ref": "#/components/schemas/UpdateDashboardWidgetResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateGeoCityRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorate": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateGeoCityResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GeoCity"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateGeoCityResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/UpdateGeoCityResult"
           }
         },
         "additionalProperties": false
@@ -22967,6 +25976,31 @@
           },
           "content": {
             "$ref": "#/components/schemas/UploadInventoryBulkImportResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UploadKycDocumentResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "documentReferenceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageEn": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

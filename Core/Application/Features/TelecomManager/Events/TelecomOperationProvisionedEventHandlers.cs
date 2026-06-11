@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Events;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Settings;
 using Application.Common.Telecom;
 using Application.Common.Telecom.ChangeGsm;
 using Application.Common.Telecom.ChangeNumber;
@@ -180,9 +181,16 @@ public sealed class TelecomOperationHlrHandler : INotificationHandler<TelecomOpe
                 result.Message,
                 cancellationToken);
 
+            var remediationStatus = compensation.LocalBindCompensated
+                ? TelecomOperationStatus.Failed
+                : TelecomOperationStatus.ProvisioningError;
+            op.ProvisioningResult = remediationStatus == TelecomOperationStatus.ProvisioningError
+                ? "Provisioning_Error"
+                : op.ProvisioningResult;
+
             await _orchestrator.TransitionAsync(
                 op,
-                TelecomOperationStatus.Failed,
+                remediationStatus,
                 notification.ActorUserId,
                 compensation.MessageAr,
                 cancellationToken);
@@ -194,11 +202,12 @@ public sealed class TelecomOperationHlrHandler : INotificationHandler<TelecomOpe
                 cancellationToken);
 
             _logger.LogWarning(
-                "HLR failed for operation {OperationId} ({Kind}): {Message}. CBS reversed={CbsReversed}, local={Local}",
+                "HLR failed for operation {OperationId} ({Kind}): {Message}. CBS reversed={CbsReversed}, IN reversed={InReversed}, local={Local}",
                 notification.TelecomOperationRequestId,
                 notification.Kind,
                 result.Message,
                 compensation.CbsReversed,
+                compensation.InReversed,
                 compensation.LocalBindCompensated);
         }
 
@@ -210,11 +219,16 @@ public sealed class TelecomOperationHlrHandler : INotificationHandler<TelecomOpe
 public sealed class TelecomOperationSmsHandler : INotificationHandler<TelecomOperationProvisionedNotification>
 {
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IGlobalSettingsProvider _settings;
     private readonly ILogger<TelecomOperationSmsHandler> _logger;
 
-    public TelecomOperationSmsHandler(ISmsGatewayIntegration sms, ILogger<TelecomOperationSmsHandler> logger)
+    public TelecomOperationSmsHandler(
+        ISmsGatewayIntegration sms,
+        IGlobalSettingsProvider settings,
+        ILogger<TelecomOperationSmsHandler> logger)
     {
         _sms = sms;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -225,7 +239,14 @@ public sealed class TelecomOperationSmsHandler : INotificationHandler<TelecomOpe
             return;
         }
 
-        var body = $"مرحباً بك في سيريتل. تم تفعيل خطك {notification.Msisdn} بنجاح.";
+        if (!await NotificationSmsGate.IsCustomerOpsEnabledAsync(_settings, cancellationToken)
+            || !await NotificationSmsGate.IsWelcomeEnabledAsync(_settings, cancellationToken))
+        {
+            _logger.LogInformation("Welcome SMS skipped for {Msisdn} (notification settings).", notification.Msisdn);
+            return;
+        }
+
+        var body = await NotificationSmsGate.ResolveWelcomeBodyAsync(_settings, notification.Msisdn, cancellationToken);
         var result = await _sms.SendAsync(notification.Msisdn, body, cancellationToken);
         _logger.LogInformation("Welcome SMS for {Msisdn}: {Message}", notification.Msisdn, result.Message);
     }

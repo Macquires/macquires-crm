@@ -20,7 +20,9 @@ public class BillingIntegrationLogConfiguration : BaseEntityConfiguration<Billin
         builder.Property(x => x.RequestPayload).HasMaxLength(DescriptionConsts.MaxLength);
         builder.Property(x => x.ResponsePayload).HasMaxLength(DescriptionConsts.MaxLength);
 
-        builder.HasIndex(x => x.CorrelationId).HasFilter("[CorrelationId] IS NOT NULL");
+        builder.HasIndex(x => x.CorrelationId)
+            .IsUnique()
+            .HasFilter("[CorrelationId] IS NOT NULL AND [Success] = 1 AND [IsDeleted] = 0");
 
         builder.HasOne(x => x.TelecomOperationRequest)
             .WithMany()

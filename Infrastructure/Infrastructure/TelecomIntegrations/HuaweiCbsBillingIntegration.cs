@@ -20,6 +20,7 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
     private readonly IOptions<TelecomBillingOptions> _options;
     private readonly ILogger<HuaweiCbsBillingIntegration> _logger;
     private readonly IntegrationEnablement _integrations;
+    private readonly IIdempotencyStore _idempotency;
 
     public HuaweiCbsBillingIntegration(
         ICommandRepository<BillingIntegrationLog> logRepository,
@@ -27,7 +28,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         IUnitOfWork unitOfWork,
         IOptions<TelecomBillingOptions> options,
         ILogger<HuaweiCbsBillingIntegration> logger,
-        IntegrationEnablement integrations)
+        IntegrationEnablement integrations,
+        IIdempotencyStore idempotency)
     {
         _logRepository = logRepository;
         _integrationLog = integrationLog;
@@ -35,6 +37,7 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         _options = options;
         _logger = logger;
         _integrations = integrations;
+        _idempotency = idempotency;
     }
 
     public async Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default)
@@ -299,11 +302,18 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         return new BillingRechargeResult(true, message, null);
     }
 
+    private decimal _saadoonBalance = -15_000m;
+
     public async Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default)
     {
-        await Task.Delay(500, cancellationToken);
+        await Task.Delay(80, cancellationToken);
 
-        if (msisdn == "0931112223" || msisdn == "0939000002")
+        if (msisdn == "0939000002")
+        {
+            return _saadoonBalance;
+        }
+
+        if (msisdn == "0931112223")
         {
             return -15_000m;
         }
@@ -314,6 +324,73 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         }
 
         return 1000m;
+    }
+
+    public async Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            var cached = await _idempotency.GetCompletedResponseAsync("CbsAdjustBalance", idempotencyKey, cancellationToken);
+            if (!string.IsNullOrEmpty(cached))
+            {
+                _logger.LogInformation("CBS idempotent replay for {Msisdn} key {Key}", msisdn, idempotencyKey);
+                return;
+            }
+
+            if (!await _idempotency.TryBeginAsync(
+                    "CbsAdjustBalance",
+                    idempotencyKey,
+                    $"{msisdn}|{newBalance}",
+                    TimeSpan.FromHours(24),
+                    cancellationToken))
+            {
+                _logger.LogInformation("CBS idempotency lock held for key {Key}", idempotencyKey);
+                return;
+            }
+        }
+
+        // GLOBAL HARDENING: Mock CBS Balance Adjustment
+        await Task.Delay(150, cancellationToken);
+        _logger.LogInformation("Huawei CBS Balance Adjusted for {Msisdn} to {NewBalance} SYP. Reason: {Reason}", msisdn, newBalance, reason ?? "Manual adjustment");
+        
+        if (msisdn == "0939000002")
+        {
+            _saadoonBalance = newBalance;
+        }
+
+        // Demo specific: if it's Saadoon and it's a rejection, we force the mock to return the deficit
+        if (msisdn == "0939000002" && reason?.Contains("BDR Rejected") == true)
+        {
+            _logger.LogWarning("Saadoon BDR Rejected: Deficit balance of {NewBalance} SYP applied.", newBalance);
+        }
+
+        var sw = Stopwatch.StartNew();
+        await _integrationLog.WriteAsync(
+            TelecomIntegrationSystem.Huawei_CBS,
+            "CbsAdjustBalance",
+            msisdn,
+            $"newBalance={newBalance}|reason={reason}|idempotencyKey={idempotencyKey}",
+            "Balance adjustment successful (Mock)",
+            true,
+            "200",
+            sw.ElapsedMilliseconds,
+            cancellationToken);
+
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            await _idempotency.CompleteAsync("CbsAdjustBalance", idempotencyKey, "OK", cancellationToken);
+            var row = new BillingIntegrationLog
+            {
+                CorrelationId = idempotencyKey,
+                Success = true,
+                Message = $"AdjustBalance: {reason}",
+                IntegrationTarget = _options.Value.IntegrationTarget,
+                RequestPayload = $"msisdn={msisdn}|newBalance={newBalance}",
+                ResponsePayload = "OK"
+            };
+            await _logRepository.CreateAsync(row, cancellationToken);
+            await _unitOfWork.SaveAsync(cancellationToken);
+        }
     }
 
     private async Task<bool> HasSuccessfulProvisionAsync(string operationId, CancellationToken cancellationToken)

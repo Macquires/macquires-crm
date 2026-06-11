@@ -41,8 +41,11 @@ public static class SuspensionWellKnown
     public const string BarringFull = "Full";
     public const string BarringInboundOnly = "InboundOnly";
     public const string BarringOutboundOnly = "OutboundOnly";
+    public const string BarringDataOnly = "DataOnly";
 
     public static readonly TimeSpan LongSuspensionThreshold = TimeSpan.FromDays(90);
+    public const string MaxSuspensionPeriodMessageAr =
+        "حسب الأنظمة السيادية لسيريتل، الحد الأقصى للفصل المؤقت هو 90 يوماً فقط";
 
     public static bool IsBackOfficeType(string? suspensionType) =>
         string.Equals(suspensionType, Fraud, StringComparison.OrdinalIgnoreCase)
@@ -57,5 +60,6 @@ public static class SuspensionWellKnown
     public static bool IsKnownBarringLevel(string? level) =>
         string.Equals(level, BarringFull, StringComparison.OrdinalIgnoreCase)
         || string.Equals(level, BarringInboundOnly, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(level, BarringOutboundOnly, StringComparison.OrdinalIgnoreCase);
+        || string.Equals(level, BarringOutboundOnly, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(level, BarringDataOnly, StringComparison.OrdinalIgnoreCase);
 }

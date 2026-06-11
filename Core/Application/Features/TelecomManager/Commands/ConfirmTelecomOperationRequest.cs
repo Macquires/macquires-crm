@@ -3,6 +3,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Repositories;
 using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Common.Telecom.SellingLine;
@@ -24,6 +25,12 @@ public class ConfirmTelecomOperationRequestResult
     /// <summary>Arabic hint for UI (CBS done; HLR may complete asynchronously).</summary>
     public string? StatusHintAr { get; set; }
 
+    /// <summary>English hint for UI.</summary>
+    public string? StatusHintEn { get; set; }
+
+    public string? UserMessageAr { get; set; }
+    public string? UserMessageEn { get; set; }
+
     public bool HlrCompletesAsynchronously { get; set; }
 }
 
@@ -31,6 +38,9 @@ public class ConfirmTelecomOperationRequest : IRequest<ConfirmTelecomOperationRe
 {
     public string Id { get; init; } = null!;
     public string? UpdatedById { get; init; }
+
+    /// <summary>BackOffice override for VAL-02-01 KYC gate (Selling Line only).</summary>
+    public string? OverrideReasonCode { get; init; }
 }
 
 public class ConfirmTelecomOperationRequestValidator : AbstractValidator<ConfirmTelecomOperationRequest>
@@ -49,6 +59,8 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
     private readonly IOperatorContext _operator;
     private readonly IPermissionEvaluator _permissions;
     private readonly ISellingLineEligibilityChecker _sellingLineEligibility;
+    private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ConfirmTelecomOperationRequestHandler(
         ITelecomActivationWorkflow workflow,
@@ -56,7 +68,9 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
         IQueryContext query,
         IOperatorContext operatorContext,
         IPermissionEvaluator permissions,
-        ISellingLineEligibilityChecker sellingLineEligibility)
+        ISellingLineEligibilityChecker sellingLineEligibility,
+        ICommandRepository<TelecomOperationRequest> operationRepository,
+        IUnitOfWork unitOfWork)
     {
         _workflow = workflow;
         _audit = audit;
@@ -64,6 +78,8 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
         _operator = operatorContext;
         _permissions = permissions;
         _sellingLineEligibility = sellingLineEligibility;
+        _operationRepository = operationRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ConfirmTelecomOperationRequestResult> Handle(
@@ -76,6 +92,15 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
         await EnsurePermissionAsync(operation, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(request.OverrideReasonCode))
+        {
+            await ApplySellingLineOverrideAsync(operation, request, cancellationToken);
+            operation = await _query.TelecomOperationRequest.AsNoTracking()
+                .Include(o => o.MsisdnAsset)
+                .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == request.Id, cancellationToken)
+                ?? throw new InvalidOperationException("Telecom operation not found.");
+        }
 
         await _sellingLineEligibility.ValidateForConfirmAsync(operation, cancellationToken);
 
@@ -106,18 +131,30 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
 
         var op = result.Operation;
         var status = op?.Status ?? TelecomOperationStatus.Failed;
-        var hint = status switch
+        var (hintAr, hintEn) = status switch
         {
-            TelecomOperationStatus.Completed =>
+            TelecomOperationStatus.Completed => (
                 "تم تسجيل العملية واكتمل التزامن مع CBS وHLR.",
-            TelecomOperationStatus.PendingExternal =>
+                "Operation recorded; CBS and HLR sync completed."),
+            TelecomOperationStatus.PendingExternal => (
                 "تم تسجيل العملية؛ المزامنة مع CBS/HLR قيد الانتظار (شبكة أو إعدادات تكامل).",
-            TelecomOperationStatus.Provisioning =>
+                "Operation recorded; CBS/HLR sync is pending (network or integration settings)."),
+            TelecomOperationStatus.Provisioning => (
                 "تم تأكيد CBS؛ جاري تزويد الشبكة (HLR) في الخلفية.",
-            TelecomOperationStatus.Failed =>
-                "فشلت العملية — راجع سجل التكامل أو أعد المحاولة من الباك أوفيس.",
-            _ => "تم استلام الطلب."
+                "CBS confirmed; network provisioning (HLR) is running in the background."),
+            TelecomOperationStatus.Failed => (
+                result.MessageAr ?? result.Message,
+                result.MessageEn ?? result.Message),
+            _ => ("تم استلام الطلب.", "Request received.")
         };
+
+        if (status == TelecomOperationStatus.Failed
+            && string.IsNullOrWhiteSpace(result.MessageAr)
+            && string.IsNullOrWhiteSpace(result.MessageEn))
+        {
+            hintAr = "فشلت العملية — راجع سجل التكامل أو أعد المحاولة من الباك أوفيس.";
+            hintEn = "Operation failed — review the integration log or retry from back office.";
+        }
 
         return new ConfirmTelecomOperationRequestResult
         {
@@ -125,7 +162,10 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
             BillingResult = result.BillingResult,
             NetworkResult = result.NetworkResult,
             IdempotentReplay = result.IdempotentReplay,
-            StatusHintAr = hint,
+            StatusHintAr = hintAr,
+            StatusHintEn = hintEn,
+            UserMessageAr = result.MessageAr ?? result.Message,
+            UserMessageEn = result.MessageEn ?? result.Message,
             HlrCompletesAsynchronously = status is TelecomOperationStatus.Provisioning
                 or TelecomOperationStatus.PendingExternal
         };
@@ -241,5 +281,35 @@ public class ConfirmTelecomOperationRequestHandler : IRequestHandler<ConfirmTele
         }
 
         yield return TelecomOperationPermissionResolver.PermissionKeyForKind(operation.Kind);
+    }
+
+    private async Task ApplySellingLineOverrideAsync(
+        TelecomOperationRequest operation,
+        ConfirmTelecomOperationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (operation.Kind != TelecomOperationKind.NewActivation)
+        {
+            throw new BusinessRuleViolationException("سبب الاستثناء متاح لعمليات تفعيل خط جديد فقط.");
+        }
+
+        var canOverride = _operator.Roles.Any(r =>
+            r.Equals("TelecomBackOffice", StringComparison.OrdinalIgnoreCase)
+            || r.Equals("TelecomAdmin", StringComparison.OrdinalIgnoreCase));
+        if (!canOverride)
+        {
+            throw new BusinessRuleViolationException("تسجيل سبب الاستثناء متاح لموظفي الباك أوفيس فقط.");
+        }
+
+        var tracked = await _operationRepository.GetAsync(request.Id, cancellationToken)
+            ?? throw new InvalidOperationException("Telecom operation not found.");
+
+        SellingLineOperationMutationGuard.EnsureEditableInventoryFields(
+            tracked, tracked.MsisdnAssetId, tracked.SimInventoryId, tracked.ProductOfferingId, tracked.ProductId);
+
+        tracked.OverrideReasonCode = request.OverrideReasonCode!.Trim();
+        tracked.UpdatedById = request.UpdatedById;
+        _operationRepository.Update(tracked);
+        await _unitOfWork.SaveAsync(cancellationToken);
     }
 }

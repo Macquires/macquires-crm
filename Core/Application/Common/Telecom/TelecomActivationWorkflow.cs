@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Integrations;
@@ -18,6 +19,7 @@ using Application.Common.Telecom.DeviceSales;
 using Application.Common.Telecom.Refund;
 using Application.Common.Telecom.BadDebt;
 using Application.Common.Telecom.OfferSubscription;
+using Application.Common.Telecom.Billing;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -39,9 +41,9 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
     private readonly ITelecomOperationOrchestrator _orchestrator;
     private readonly ISubscriptionBindingExecutor _bindingExecutor;
     private readonly ISubscriptionBindingCompensator _compensator;
-    private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingRoutingOrchestrator _billingRouting;
     private readonly IESimDpPlusService _eSimDpPlus;
-    private readonly IPublisher _publisher;
+    private readonly ITelecomProvisionedEventDispatcher _provisionedDispatcher;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IQueryContext _query;
     private readonly ILogger<TelecomActivationWorkflow> _logger;
@@ -61,6 +63,7 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
     private readonly IRefundCompletionService _refundCompletion;
     private readonly IBadDebtEligibilityChecker _badDebtEligibility;
     private readonly IBadDebtCompletionService _badDebtCompletion;
+    private readonly ITelecomInventoryRulesProvider _inventoryRules;
 
     public TelecomActivationWorkflow(
         ICommandRepository<TelecomOperationRequest> operationRepository,
@@ -71,9 +74,9 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         ITelecomOperationOrchestrator orchestrator,
         ISubscriptionBindingExecutor bindingExecutor,
         ISubscriptionBindingCompensator compensator,
-        IBillingSystemIntegration billing,
+        IBillingRoutingOrchestrator billingRouting,
         IESimDpPlusService eSimDpPlus,
-        IPublisher publisher,
+        ITelecomProvisionedEventDispatcher provisionedDispatcher,
         IUnitOfWork unitOfWork,
         IQueryContext query,
         ILogger<TelecomActivationWorkflow> logger,
@@ -92,7 +95,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         IRefundEligibilityChecker refundEligibility,
         IRefundCompletionService refundCompletion,
         IBadDebtEligibilityChecker badDebtEligibility,
-        IBadDebtCompletionService badDebtCompletion)
+        IBadDebtCompletionService badDebtCompletion,
+        ITelecomInventoryRulesProvider inventoryRules)
     {
         _operationRepository = operationRepository;
         _profileRepository = profileRepository;
@@ -102,9 +106,9 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         _orchestrator = orchestrator;
         _bindingExecutor = bindingExecutor;
         _compensator = compensator;
-        _billing = billing;
+        _billingRouting = billingRouting;
         _eSimDpPlus = eSimDpPlus;
-        _publisher = publisher;
+        _provisionedDispatcher = provisionedDispatcher;
         _unitOfWork = unitOfWork;
         _query = query;
         _logger = logger;
@@ -124,6 +128,7 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         _refundCompletion = refundCompletion;
         _badDebtEligibility = badDebtEligibility;
         _badDebtCompletion = badDebtCompletion;
+        _inventoryRules = inventoryRules;
     }
 
     public async Task<TelecomActivationWorkflowResult> ConfirmActivationAsync(
@@ -181,6 +186,11 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
 
         if (entity.Kind == TelecomOperationKind.NewActivation)
         {
+            if (!HasKycProofForActivation(entity))
+            {
+                return Fail(entity, TelecomUserMessages.ValAct12KycRequired);
+            }
+
             var requiredDeposit = await ResolveRequiredDepositAsync(entity, cancellationToken);
             if (requiredDeposit > 0 && string.IsNullOrWhiteSpace(entity.PaymentReference))
             {
@@ -532,7 +542,11 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         }
         else
         {
-            billingResult = await _billing.ProvisionAsync(billingRequest, cancellationToken);
+            billingResult = await _billingRouting.ProvisionAsync(
+                entity,
+                lineContext,
+                billingRequest,
+                cancellationToken);
         }
 
         if (!billingResult.Success)
@@ -558,7 +572,12 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
                     entity.SimInventoryId!,
                     entity.SubscriberProfileId,
                     cancellationToken);
-                await _billing.ReverseProvisionAsync(billingRequest, cancellationToken);
+
+                await _billingRouting.CompensateProvisionAsync(
+                    entity,
+                    lineContext,
+                    billingRequest,
+                    cancellationToken);
             }
             else if (entity.Kind is TelecomOperationKind.NumberPortability
                      or TelecomOperationKind.Termination
@@ -576,8 +595,9 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             await _orchestrator.TransitionAsync(entity, TelecomOperationStatus.Failed, actorUserId, billingResult.Message, cancellationToken);
             _operationRepository.Update(entity);
             await _unitOfWork.SaveAsync(cancellationToken);
+            var falloutSource = _billingRouting.IntegrationFalloutSource(entity.Kind, lineContext.SubscriptionTypeCode);
             await _ticketQueue.EnqueueProvisioningFalloutAsync(
-                entity, $"CBS: {billingResult.Message}", actorUserId, cancellationToken);
+                entity, $"{falloutSource}: {billingResult.Message}", actorUserId, cancellationToken);
             return Fail(entity, billingResult.Message);
         }
 
@@ -677,7 +697,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
 
         if (asset.PoolStatus == MsisdnPoolStatus.Available)
         {
-            asset.ReserveForCustomer(customerId, utcNow);
+            var reservationDuration = await _inventoryRules.GetMsisdnReservationDurationAsync(cancellationToken);
+            asset.ReserveForCustomer(customerId, utcNow, reservationDuration);
             asset.UpdatedById = actorUserId;
             _msisdnRepository.Update(asset);
         }
@@ -698,14 +719,7 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new BusinessRuleViolationException("ملف المشترك غير مرتبط بعميل.");
 
-        var customerKind = await _profileRepository.GetQuery()
-            .Where(p => p.Id == entity.SubscriberProfileId)
-            .Select(p => p.Customer!.CustomerKind)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var subscriptionTypeId = customerKind == CustomerKind.Corporate
-            ? TelecomSubscriptionTypeWellKnownIds.Postpaid
-            : TelecomSubscriptionTypeWellKnownIds.Prepaid;
+        var subscriptionTypeId = await ResolveActivationSubscriptionTypeIdAsync(entity, cancellationToken);
 
         return await _bindingExecutor.ExecuteAsync(
             new BindSubscriptionCommand(
@@ -715,7 +729,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
                 entity.SimInventoryId!,
                 entity.ProductOfferingId ?? string.Empty,
                 entity.Id,
-                entity.CorrelationId),
+                entity.CorrelationId,
+                entity.DocumentStatus),
             subscriptionTypeId,
             actorUserId,
             requireStrictReservation: true,
@@ -755,23 +770,69 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         msisdnAsset.TransitionTo(MsisdnPoolStatus.Active);
         _msisdnRepository.Update(msisdnAsset);
 
-        var customerKind = await _profileRepository.GetQuery()
-            .Where(p => p.Id == entity.SubscriberProfileId)
-            .Select(p => p.Customer!.CustomerKind)
-            .FirstOrDefaultAsync(cancellationToken);
+        var subscriptionTypeId = await ResolveActivationSubscriptionTypeIdAsync(entity, cancellationToken);
 
         await _subscriptionRepository.CreateAsync(new TelecomSubscription
         {
             SubscriberProfileId = entity.SubscriberProfileId,
             MsisdnAssetId = entity.MsisdnAssetId!,
             ProductId = entity.ProductId,
-            SubscriptionTypeId = customerKind == CustomerKind.Corporate
-                ? TelecomSubscriptionTypeWellKnownIds.Postpaid
-                : TelecomSubscriptionTypeWellKnownIds.Prepaid,
+            SubscriptionTypeId = subscriptionTypeId,
             DocumentStatus = entity.DocumentStatus,
             IsPrimaryLine = false,
             CreatedById = actorUserId
         }, cancellationToken);
+    }
+
+    private const string LostStolenPreSwapSuspensionReason =
+        "Automated pre-swap lockdown for lost/stolen asset recovery";
+
+    private async Task EnsureLostStolenPreSwapSuspensionAsync(
+        TelecomOperationRequest entity,
+        string? actorUserId,
+        CancellationToken cancellationToken)
+    {
+        if (!entity.IsLostOrStolenReport)
+        {
+            return;
+        }
+
+        var profile = await _profileRepository.GetAsync(entity.SubscriberProfileId, cancellationToken)
+            ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
+
+        MsisdnAsset? msisdnAsset = null;
+        if (!string.IsNullOrEmpty(entity.MsisdnAssetId))
+        {
+            msisdnAsset = await _msisdnRepository.GetAsync(entity.MsisdnAssetId, cancellationToken);
+        }
+
+        var alreadySuspended = profile.OperationalStatus is SubscriberOperationalStatus.Suspended
+            or SubscriberOperationalStatus.SuspendedInbound
+            or SubscriberOperationalStatus.SuspendedOutbound
+            || msisdnAsset?.PoolStatus == MsisdnPoolStatus.Suspended;
+
+        if (alreadySuspended)
+        {
+            return;
+        }
+
+        entity.SuspensionType ??= SuspensionWellKnown.Operational;
+        entity.SuspensionReason ??= LostStolenPreSwapSuspensionReason;
+        entity.BarringLevel ??= SuspensionWellKnown.BarringFull;
+        entity.PriorOperationalStatus ??= profile.OperationalStatus.ToString();
+        entity.BarStatus ??= "Pending";
+        entity.SuspensionStartDateUtc ??= DateTime.UtcNow;
+
+        profile.Suspend(msisdnAsset?.Msisdn ?? "");
+        profile.UpdatedById = actorUserId;
+        _profileRepository.Update(profile);
+
+        if (msisdnAsset != null && msisdnAsset.PoolStatus == MsisdnPoolStatus.Active)
+        {
+            msisdnAsset.TransitionTo(MsisdnPoolStatus.Suspended);
+            msisdnAsset.UpdatedById = actorUserId;
+            _msisdnRepository.Update(msisdnAsset);
+        }
     }
 
     private async Task<OperationProvisionContext> ApplySimSwapAsync(
@@ -779,6 +840,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         string? actorUserId,
         CancellationToken cancellationToken)
     {
+        await EnsureLostStolenPreSwapSuspensionAsync(entity, actorUserId, cancellationToken);
+
         var newSim = await _simRepository.GetAsync(entity.SimInventoryId!, cancellationToken)
             ?? throw new BusinessRuleViolationException("الشريحة الجديدة غير موجودة.");
 
@@ -794,7 +857,15 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             var priorSim = await _simRepository.GetAsync(entity.PriorSimInventoryId, cancellationToken);
             if (priorSim != null && priorSim.Status == SimStatus.Active)
             {
-                priorSim.TransitionTo(SimStatus.Quarantined);
+                if (entity.IsLostOrStolenReport)
+                {
+                    priorSim.MarkBurned(DateTime.UtcNow);
+                }
+                else
+                {
+                    priorSim.TransitionTo(SimStatus.Quarantined);
+                }
+
                 priorSim.UpdatedById = actorUserId;
                 _simRepository.Update(priorSim);
             }
@@ -825,6 +896,23 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         newSim.AssignToProfile(entity.SubscriberProfileId);
         newSim.UpdatedById = actorUserId;
         _simRepository.Update(newSim);
+
+        if (!string.IsNullOrEmpty(entity.MsisdnAssetId))
+        {
+            var msisdnAsset = await _msisdnRepository.GetAsync(entity.MsisdnAssetId, cancellationToken);
+            if (msisdnAsset != null)
+            {
+                msisdnAsset.PairedIccid = newSim.Iccid;
+                msisdnAsset.PairedImsi = newSim.Imsi;
+                if (msisdnAsset.PoolStatus == MsisdnPoolStatus.Suspended)
+                {
+                    msisdnAsset.TransitionTo(MsisdnPoolStatus.Active);
+                }
+
+                msisdnAsset.UpdatedById = actorUserId;
+                _msisdnRepository.Update(msisdnAsset);
+            }
+        }
 
         return await BuildProvisionContextAsync(entity, cancellationToken, newSim.Iccid);
     }
@@ -907,7 +995,7 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         string? actorUserId,
         CancellationToken cancellationToken)
     {
-        await _publisher.Publish(
+        await _provisionedDispatcher.DispatchAsync(
             new TelecomOperationProvisionedNotification(
                 entity.Kind,
                 entity.Id,
@@ -1053,7 +1141,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
 
         entity.PriorOperationalStatus ??= profile.OperationalStatus.ToString();
-        ApplyBarringToProfile(profile, entity.BarringLevel ?? SuspensionWellKnown.BarringFull);
+        var msisdn = (await _msisdnRepository.GetAsync(msisdnAssetId, cancellationToken))?.Msisdn ?? "";
+        ApplyBarringToProfile(profile, entity.BarringLevel ?? SuspensionWellKnown.BarringFull, msisdn);
         profile.UpdatedById = actorUserId;
         _profileRepository.Update(profile);
 
@@ -1127,7 +1216,8 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             entity.PriorOperationalStatus ??= profile.OperationalStatus.ToString();
             if (profile.OperationalStatus == SubscriberOperationalStatus.Active)
             {
-                profile.Suspend();
+                var msisdnForSuspend = (await _msisdnRepository.GetAsync(msisdnAssetId, cancellationToken))?.Msisdn ?? "";
+                profile.Suspend(msisdnForSuspend);
                 profile.UpdatedById = actorUserId;
                 _profileRepository.Update(profile);
             }
@@ -1145,22 +1235,34 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             entity.BarStatus = "BillingBar";
         }
 
+        // GLOBAL HARDENING: BDR Settled Stage
+        if (string.Equals(entity.CollectionAction, BadDebtWellKnown.WriteOffPartial, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(entity.CollectionAction, BadDebtWellKnown.WriteOffFull, StringComparison.OrdinalIgnoreCase))
+        {
+            entity.CollectionSettlementStatus = BadDebtWellKnown.SettlementCompleted;
+            entity.DunningStage = BadDebtWellKnown.Settled;
+        }
+
         entity.ProvisioningResult = "Pending";
     }
 
-    private static void ApplyBarringToProfile(SubscriberProfile profile, string barringLevel)
+    private static void ApplyBarringToProfile(SubscriberProfile profile, string barringLevel, string msisdn)
     {
         if (string.Equals(barringLevel, SuspensionWellKnown.BarringInboundOnly, StringComparison.OrdinalIgnoreCase))
         {
-            profile.SuspendInbound();
+            profile.SuspendInbound(msisdn);
         }
         else if (string.Equals(barringLevel, SuspensionWellKnown.BarringOutboundOnly, StringComparison.OrdinalIgnoreCase))
         {
-            profile.SuspendOutbound();
+            profile.SuspendOutbound(msisdn);
+        }
+        else if (string.Equals(barringLevel, SuspensionWellKnown.BarringDataOnly, StringComparison.OrdinalIgnoreCase))
+        {
+            // Voice/SMS remain active; data context is barred at HLR/CBS.
         }
         else
         {
-            profile.Suspend();
+            profile.Suspend(msisdn);
         }
     }
 
@@ -1427,6 +1529,74 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
         return unitPrice is > 0 ? (decimal)unitPrice : 0m;
     }
 
+    private async Task<string> ResolveActivationSubscriptionTypeIdAsync(
+        TelecomOperationRequest entity,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrEmpty(entity.MsisdnAssetId))
+        {
+            var intended = await _msisdnRepository.GetQuery()
+                .AsNoTracking()
+                .Where(m => !m.IsDeleted && m.Id == entity.MsisdnAssetId)
+                .Select(m => m.IntendedSubscriptionTypeId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (!string.IsNullOrEmpty(intended))
+            {
+                return intended;
+            }
+        }
+
+        var customerKind = await _profileRepository.GetQuery()
+            .Where(p => p.Id == entity.SubscriberProfileId)
+            .Select(p => p.Customer!.CustomerKind)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return customerKind == CustomerKind.Corporate
+            ? TelecomSubscriptionTypeWellKnownIds.Postpaid
+            : TelecomSubscriptionTypeWellKnownIds.Prepaid;
+    }
+
+    private static bool HasKycProofForActivation(TelecomOperationRequest entity)
+    {
+        if (!string.IsNullOrWhiteSpace(entity.KycDocumentReferenceId))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(entity.OverrideReasonCode))
+        {
+            return true;
+        }
+
+        if (entity.KycVerifiedAtUtc.HasValue)
+        {
+            return true;
+        }
+
+        if (entity.DocumentStatus is TelecomDocumentStatus.Uploaded or TelecomDocumentStatus.Verified)
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(entity.IdentityDocumentStorageKey))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     private static TelecomActivationWorkflowResult Fail(TelecomOperationRequest entity, string message) =>
-        new(entity, new BillingProvisionResult(false, message), null, false, message);
+        Fail(entity, new BilingualUserMessage(message, message));
+
+    private static TelecomActivationWorkflowResult Fail(TelecomOperationRequest entity, BilingualUserMessage message) =>
+        new(
+            entity,
+            new BillingProvisionResult(false, message.ResolveForCurrentCulture()),
+            null,
+            false,
+            message.ResolveForCurrentCulture(),
+            message.Ar,
+            message.En);
 }

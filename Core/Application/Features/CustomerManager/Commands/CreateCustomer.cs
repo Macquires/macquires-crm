@@ -48,6 +48,13 @@ public class CreateCustomerRequest : IRequest<CreateCustomerResult>
     public string? CommercialRegistration { get; set; }
     public string? TaxNumber { get; set; }
     public string? AuthorizedSignatory { get; set; }
+    public string? Nationality { get; set; }
+    public Gender? Gender { get; set; }
+    public string? Occupation { get; set; }
+
+    /// <summary>Telecom Hub / POS onboarding — minimal fields; defaults applied before validation.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("posQuickRegister")]
+    public bool PosQuickRegister { get; set; }
 }
 
 public class CreateCustomerValidator : AbstractValidator<CreateCustomerRequest>
@@ -55,27 +62,46 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerRequest>
     public CreateCustomerValidator()
     {
         RuleFor(x => x.Name).NotEmpty();
-        RuleFor(x => x.Street).NotEmpty();
-        RuleFor(x => x.City).NotEmpty();
-        RuleFor(x => x.State).NotEmpty();
-        RuleFor(x => x.ZipCode).NotEmpty();
-        RuleFor(x => x.PhoneNumber).NotEmpty();
-        RuleFor(x => x.EmailAddress).NotEmpty();
-        RuleFor(x => x.CustomerGroupId).NotEmpty();
-        RuleFor(x => x.CustomerCategoryId).NotEmpty();
 
-        When(x => x.CustomerKind != CustomerKind.Corporate, () =>
+        When(x => x.PosQuickRegister, () =>
         {
-            RuleFor(x => x.NationalId)
-                .NotEmpty().WithMessage("الرقم الوطني مطلوب للأفراد.")
-                .Length(10).WithMessage("الرقم الوطني يجب أن يتكون من 10 خانات.");
+            When(x => x.CustomerKind != CustomerKind.Corporate, () =>
+            {
+                RuleFor(x => x.NationalId)
+                    .NotEmpty().WithMessage("الرقم الوطني مطلوب للأفراد.")
+                    .Length(10).WithMessage("الرقم الوطني يجب أن يتكون من 10 خانات.");
+            });
+
+            When(x => x.CustomerKind == CustomerKind.Corporate, () =>
+            {
+                RuleFor(x => x.CommercialRegistration)
+                    .NotEmpty().WithMessage("رقم السجل التجاري مطلوب للشركات.")
+                    .Matches(@"^[A-Za-z0-9\-\s]{4,20}$").WithMessage("صيغة السجل التجاري غير صالحة.");
+            });
         });
 
-        When(x => x.CustomerKind == CustomerKind.Corporate, () =>
+        When(x => !x.PosQuickRegister, () =>
         {
-            RuleFor(x => x.CommercialRegistration)
-                .NotEmpty().WithMessage("رقم السجل التجاري مطلوب للشركات.")
-                .Matches(@"^[A-Za-z0-9\-\s]{4,20}$").WithMessage("صيغة السجل التجاري غير صالحة.");
+            RuleFor(x => x.Street).NotEmpty();
+            RuleFor(x => x.City).NotEmpty();
+            RuleFor(x => x.State).NotEmpty();
+            RuleFor(x => x.ZipCode).NotEmpty();
+            RuleFor(x => x.CustomerGroupId).NotEmpty();
+            RuleFor(x => x.CustomerCategoryId).NotEmpty();
+
+            When(x => x.CustomerKind != CustomerKind.Corporate, () =>
+            {
+                RuleFor(x => x.NationalId)
+                    .NotEmpty().WithMessage("الرقم الوطني مطلوب للأفراد.")
+                    .Length(10).WithMessage("الرقم الوطني يجب أن يتكون من 10 خانات.");
+            });
+
+            When(x => x.CustomerKind == CustomerKind.Corporate, () =>
+            {
+                RuleFor(x => x.CommercialRegistration)
+                    .NotEmpty().WithMessage("رقم السجل التجاري مطلوب للشركات.")
+                    .Matches(@"^[A-Za-z0-9\-\s]{4,20}$").WithMessage("صيغة السجل التجاري غير صالحة.");
+            });
         });
     }
 }
@@ -135,8 +161,11 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
                 request.CustomerGroupId,
                 request.CustomerCategoryId,
                 request.TaxNumber,
-                request.AuthorizedSignatory);
+                request.AuthorizedSignatory,
+                CompanyLegalStatus.Unknown,
+                request.Description);
             entity.CreatedById = request.CreatedById;
+            entity.UpdateContact(request.EmailAddress, request.PhoneNumber, request.FaxNumber, request.Website);
             entity.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
             await _repository.CreateAsync(entity, cancellationToken);
             await _unitOfWork.SaveAsync(cancellationToken);
@@ -164,9 +193,14 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
             request.PhoneNumber,
             request.CustomerGroupId,
             request.CustomerCategoryId,
-            request.DateOfBirth.HasValue ? DateOnly.FromDateTime(request.DateOfBirth.Value) : null);
+            request.DateOfBirth.HasValue ? DateOnly.FromDateTime(request.DateOfBirth.Value) : null,
+            string.IsNullOrWhiteSpace(request.Nationality) ? null : request.Nationality.Trim(),
+            request.Gender ?? Gender.Unknown,
+            string.IsNullOrWhiteSpace(request.Occupation) ? null : request.Occupation.Trim(),
+            request.Description);
         individual.CreatedById = request.CreatedById;
         individual.SetNationalIdSearchHash(nationalIdHash);
+        individual.UpdateContact(request.EmailAddress, request.PhoneNumber, request.FaxNumber, request.Website);
         individual.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
         await _repository.CreateAsync(individual, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);

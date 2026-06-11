@@ -1,9 +1,18 @@
+const waitForSyncfusion = async (maxMs = 8000) => {
+    const step = 100;
+    let waited = 0;
+    while (typeof ej === 'undefined' || !ej.grids) {
+        if (waited >= maxMs) return false;
+        await new Promise((r) => setTimeout(r, step));
+        waited += step;
+    }
+    return true;
+};
+
+const plainRows = (rows) => (Array.isArray(rows) ? rows.map((r) => ({ ...r })) : []);
+
 const App = {
     setup() {
-        if (typeof SecurityManager !== 'undefined' && !SecurityManager.canAccessPortalPath(window.location.pathname)) {
-            SecurityManager.denyPageAccess();
-        }
-
         const localeTick = Vue.ref(0);
         const ti = (key) => {
             localeTick.value;
@@ -29,12 +38,12 @@ const App = {
             document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
 
         const formatDt = (utc) => {
-            if (!utc) return '';
+            if (!utc) return '—';
             try {
                 const loc = contentLang() === 'ar' ? 'ar-SY' : 'en-US';
                 return new Date(utc).toLocaleString(loc, { dateStyle: 'short', timeStyle: 'medium' });
             } catch {
-                return utc;
+                return String(utc);
             }
         };
 
@@ -47,14 +56,41 @@ const App = {
             return q;
         };
 
-        const statusBadge = (code) =>
-            window.TelecomUiBadges?.responseStatus(code) || code || '—';
+        const mapRow = (r) => {
+            const occurredAtUtc = r.occurredAtUtc ?? r.OccurredAtUtc;
+            const isSuccess = r.isSuccess ?? r.IsSuccess;
+            return {
+                id: r.id ?? r.Id,
+                msisdn: r.msisdn ?? r.Msisdn,
+                integrationSystem: r.integrationSystem ?? r.IntegrationSystem,
+                operationName: r.operationName ?? r.OperationName,
+                requestPayload: r.requestPayload ?? r.RequestPayload,
+                responsePayload: r.responsePayload ?? r.ResponsePayload,
+                executionTimeMs: r.executionTimeMs ?? r.ExecutionTimeMs,
+                isSuccess,
+                responseStatusCode: r.responseStatusCode ?? r.ResponseStatusCode,
+                occurredAtUtc,
+                occurredDisplay: formatDt(occurredAtUtc),
+                resultLabel: isSuccess ? ti('grid.success') : ti('grid.fail'),
+            };
+        };
+
+        const parseRows = (res) => {
+            const fromHelper =
+                typeof StorageManager?.apiList === 'function' ? StorageManager.apiList(res) : [];
+            if (fromHelper.length) return fromHelper.map(mapRow);
+            const content = res?.data?.content ?? res?.data?.Content;
+            const raw = content?.data ?? content?.Data ?? [];
+            return (Array.isArray(raw) ? raw : []).map(mapRow);
+        };
+
+        const parseTotal = (res, rowCount) => {
+            const content = res?.data?.content ?? res?.data?.Content;
+            return content?.totalCount ?? content?.TotalCount ?? rowCount;
+        };
 
         const healthBadge = (item) => {
-            const short =
-                item.mode === 'live'
-                    ? 'Live'
-                    : 'Fallback';
+            const short = item.mode === 'live' ? 'Live' : 'Fallback';
             return window.TelecomUiBadges?.integrationHealth(item.mode, short) || short;
         };
 
@@ -62,24 +98,43 @@ const App = {
             loadHealth: async () => {
                 try {
                     const res = await AxiosManager.get('/Telecom/GetIntegrationHealthStatus');
-                    state.healthItems = res?.data?.content?.items || [];
+                    state.healthItems = res?.data?.content?.items ?? res?.data?.content?.Items ?? [];
                 } catch {
                     state.healthItems = [];
                 }
             },
             load: async () => {
-                const res = await AxiosManager.get('/Telecom/GetIntegrationLogList', { params: buildQuery() });
-                state.rows = res?.data?.content?.data || [];
-                state.totalCount = res?.data?.content?.totalCount ?? state.rows.length;
+                try {
+                    const res = await AxiosManager.get('/Telecom/GetIntegrationLogList', { params: buildQuery() });
+                    state.rows = parseRows(res);
+                    state.totalCount = parseTotal(res, state.rows.length);
+                } catch (e) {
+                    console.error('IntegrationMonitor load:', e);
+                    state.rows = [];
+                    state.totalCount = 0;
+                }
             },
+        };
+
+        const escapeHtml = (s) =>
+            String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+        const bindGrid = () => {
+            if (!mainGrid.obj) return;
+            const rows = plainRows(state.rows);
+            mainGrid.obj.dataSource = rows;
+            applyGridHeight();
+            if (typeof mainGrid.obj.dataBind === 'function') mainGrid.obj.dataBind();
+            else mainGrid.obj.refresh();
         };
 
         const handler = {
             search: async () => {
                 await Promise.all([methods.loadHealth(), methods.load()]);
-                if (!mainGrid.obj) return;
-                mainGrid.obj.dataSource = state.rows;
-                mainGrid.obj.refresh();
+                bindGrid();
             },
             showPayload: (row) => {
                 const req = row.requestPayload || '—';
@@ -93,83 +148,140 @@ const App = {
             },
         };
 
-        const escapeHtml = (s) =>
-            String(s)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+        const applyGridHeight = () => {
+            if (!mainGrid.obj) return;
+            const h =
+                typeof computeTelecomGridHeight === 'function'
+                    ? computeTelecomGridHeight('.integration-grid-panel')
+                    : Math.max(320, Math.min(480, (window.innerHeight || 800) - 360));
+            mainGrid.obj.height = h;
+        };
+
+        const paintCells = (args) => {
+            if (!args?.cell || !args?.data) return;
+            const row = args.data;
+            if (args.column.field === 'resultLabel') {
+                args.cell.innerHTML =
+                    window.TelecomUiBadges?.resultSuccess(row.isSuccess) ||
+                    escapeHtml(row.resultLabel || '—');
+            } else if (args.column.field === 'responseStatusCode') {
+                args.cell.innerHTML =
+                    window.TelecomUiBadges?.responseStatus(row.responseStatusCode) ||
+                    escapeHtml(row.responseStatusCode || '—');
+            }
+        };
+
+        const resolveGridHost = () => mainGridRef.value || document.querySelector('.integration-grid-panel .grid-container > div');
 
         const createGrid = () => {
+            localeTick.value;
+            const host = resolveGridHost();
+            if (!host || mainGrid.obj) return;
+            const gridHeight =
+                typeof computeTelecomGridHeight === 'function'
+                    ? computeTelecomGridHeight('.integration-grid-panel')
+                    : Math.max(320, Math.min(480, (window.innerHeight || 800) - 360));
             mainGrid.obj = new ej.grids.Grid({
                 id: 'IntegrationLogGrid',
-                height: getDashminGridHeight(),
-                dataSource: state.rows,
+                height: gridHeight,
+                width: '100%',
+                dataSource: plainRows(state.rows),
                 allowPaging: true,
                 allowSorting: true,
                 allowResizing: true,
-                pageSettings: { pageSize: 25 },
+                gridLines: 'Horizontal',
+                pageSettings: { pageSize: 25, pageSizes: ['10', '25', '50', '100'] },
                 columns: [
+                    { field: 'id', isPrimaryKey: true, visible: false },
+                    { field: 'occurredDisplay', headerText: ti('grid.time'), width: 165, minWidth: 140 },
+                    { field: 'integrationSystem', headerText: ti('grid.system'), width: 130, minWidth: 100 },
+                    { field: 'operationName', headerText: ti('grid.operation'), width: 150, minWidth: 110 },
+                    { field: 'msisdn', headerText: 'MSISDN', width: 120, minWidth: 100 },
+                    { field: 'resultLabel', headerText: ti('grid.result'), width: 100, minWidth: 80, allowSorting: false },
+                    { field: 'executionTimeMs', headerText: 'ms', width: 70, minWidth: 60, textAlign: 'Right' },
+                    { field: 'responseStatusCode', headerText: 'Status', width: 130, minWidth: 100, allowSorting: false },
                     {
-                        field: 'occurredAtUtc',
-                        headerText: ti('grid.time'),
-                        width: 160,
-                        template: (d) => formatDt(d.occurredAtUtc),
-                    },
-                    { field: 'integrationSystem', headerText: ti('grid.system'), width: 120 },
-                    { field: 'operationName', headerText: ti('grid.operation'), width: 140 },
-                    { field: 'msisdn', headerText: 'MSISDN', width: 120 },
-                    {
-                        field: 'isSuccess',
-                        headerText: ti('grid.result'),
-                        width: 90,
-                        template: (d) =>
-                            window.TelecomUiBadges?.resultSuccess(d.isSuccess) ||
-                            (d.isSuccess ? ti('grid.success') : ti('grid.fail')),
-                    },
-                    { field: 'executionTimeMs', headerText: 'ms', width: 70 },
-                    {
-                        field: 'responseStatusCode',
-                        headerText: 'Status',
-                        width: 130,
-                        template: (d) => statusBadge(d.responseStatusCode),
-                    },
-                    {
+                        field: '_details',
                         headerText: ti('grid.details'),
-                        width: 90,
-                        template: () =>
-                            `<button type="button" class="btn btn-sm btn-outline-telecom integration-payload-btn">${escapeHtml(ti('grid.view'))}</button>`,
+                        width: 95,
+                        minWidth: 85,
+                        allowSorting: false,
+                        template: `<button type="button" class="btn btn-sm btn-outline-telecom integration-payload-btn">${escapeHtml(ti('grid.view'))}</button>`,
                     },
                 ],
+                queryCellInfo: paintCells,
                 recordClick: (args) => {
                     if (args?.target?.classList?.contains('integration-payload-btn')) {
                         handler.showPayload(args.rowData);
                     }
                 },
             });
-            mainGrid.obj.appendTo(mainGridRef.value);
+            mainGrid.obj.appendTo(host);
         };
 
         const onLocaleChanged = () => {
             localeTick.value++;
             window.TelecomI18n?.applyDom?.();
             if (!mainGrid.obj) return;
-            const rows = state.rows;
+            state.rows = state.rows.map((r) => ({
+                ...r,
+                occurredDisplay: formatDt(r.occurredAtUtc),
+                resultLabel: r.isSuccess ? ti('grid.success') : ti('grid.fail'),
+            }));
+            const rows = plainRows(state.rows);
             mainGrid.obj.destroy();
             mainGrid.obj = null;
             createGrid();
-            mainGrid.obj.dataSource = rows;
-            mainGrid.obj.refresh();
+            if (mainGrid.obj) {
+                mainGrid.obj.dataSource = rows;
+                if (typeof mainGrid.obj.dataBind === 'function') mainGrid.obj.dataBind();
+                else mainGrid.obj.refresh();
+            }
         };
 
         Vue.onMounted(async () => {
-            await window.TelecomI18n?.ensureLoaded?.();
-            const title = window.TelecomI18n?.t?.('integrationMonitor.pageTitle');
-            if (title) document.title = title;
-            window.TelecomI18n?.applyDom?.();
-            document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
-            await Promise.all([methods.loadHealth(), methods.load()]);
-            createGrid();
-            if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
+            try {
+                if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
+                    await PortalNavigation.syncOperatorSession(true);
+                }
+            } catch (e) {
+                console.warn('IntegrationMonitor: session sync failed', e);
+            }
+
+            try {
+                await window.TelecomI18n?.ensureLoaded?.();
+                const title = window.TelecomI18n?.t?.('integrationMonitor.pageTitle');
+                if (title) document.title = title;
+                window.TelecomI18n?.applyDom?.();
+                document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
+
+                await SecurityManager.authorizePage(['TelecomAdmin', 'TelecomManagement', 'TelecomBackOffice']);
+                await SecurityManager.validateToken?.();
+
+                await Promise.all([methods.loadHealth(), methods.load()]);
+
+                const sfReady = await waitForSyncfusion();
+                if (!sfReady) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Grid library not ready',
+                        text: 'Reload the page or check Syncfusion scripts.',
+                    });
+                    return;
+                }
+
+                await Vue.nextTick();
+                createGrid();
+                bindGrid();
+                requestAnimationFrame(() => applyGridHeight());
+                const onResize = () => applyGridHeight();
+                window.addEventListener('resize', onResize);
+                Vue.onUnmounted(() => window.removeEventListener('resize', onResize));
+            } catch (e) {
+                console.error('IntegrationMonitor init:', e);
+            } finally {
+                if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
+            }
         });
 
         Vue.onUnmounted(() => {
@@ -180,4 +292,10 @@ const App = {
     },
 };
 
-Vue.createApp(App).mount('#app');
+try {
+    Vue.createApp(App).mount('#app');
+} catch (mountErr) {
+    console.error('IntegrationMonitor mount failed:', mountErr);
+    document.getElementById('app')?.removeAttribute('v-cloak');
+    if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
+}

@@ -23,6 +23,7 @@ public static class TechnicalTicketCategoryMapper
         TechnicalTicketCategory.LineActivation => TechnicalTicketIssueType.Provisioning,
         TechnicalTicketCategory.VasActivation => TechnicalTicketIssueType.Provisioning,
         TechnicalTicketCategory.FraudPayment => TechnicalTicketIssueType.Billing,
+        TechnicalTicketCategory.RevenueAssurance => TechnicalTicketIssueType.Network,
         _ => TechnicalTicketIssueType.Network,
     };
 
@@ -32,6 +33,7 @@ public static class TechnicalTicketCategoryMapper
         TechnicalTicketCategory.LineActivation => TechnicalTicketPriority.High,
         TechnicalTicketCategory.FraudPayment => TechnicalTicketPriority.Critical,
         TechnicalTicketCategory.OwnershipTransfer => TechnicalTicketPriority.Medium,
+        TechnicalTicketCategory.RevenueAssurance => TechnicalTicketPriority.High,
         _ => TechnicalTicketPriority.Medium,
     };
 
@@ -43,6 +45,7 @@ public static class TechnicalTicketCategoryMapper
         TechnicalTicketCategory.LineActivation => "تفعيل خط",
         TechnicalTicketCategory.VasActivation => "إضافة خدمة / VAS",
         TechnicalTicketCategory.FraudPayment => "احتيال شحن / دفع",
+        TechnicalTicketCategory.RevenueAssurance => "تصحيح فني (Revenue Leakage)",
         _ => "شكوى",
     };
 }

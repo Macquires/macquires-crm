@@ -12,7 +12,7 @@ const App = {
             jobs: [],
             loading: true,
             uploading: false,
-            uploadJobType: '0',
+            uploadJobType: '1',
             selectedFile: null,
             errorJobId: null,
             errorJobLabel: '',

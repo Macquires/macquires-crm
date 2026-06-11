@@ -4,10 +4,10 @@ public interface IFileImageService
     Task<string> UploadAsync(
         string? originalFileName,
         string? docExtension,
-        byte[]? fileData,
+        Stream fileStream,
         long? size,
         string? description = "",
         string? createdById = "",
         CancellationToken cancellationToken = default);
-    Task<byte[]> GetFileAsync(string fileName, CancellationToken cancellationToken = default);
+    Task<Stream> GetFileStreamAsync(string fileName, CancellationToken cancellationToken = default);
 }

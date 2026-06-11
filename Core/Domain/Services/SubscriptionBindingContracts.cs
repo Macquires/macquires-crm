@@ -10,7 +10,8 @@ public sealed record BindSubscriptionCommand(
     string SimInventoryId,
     string ProductOfferingId,
     string TelecomOperationRequestId,
-    string? CorrelationId = null);
+    string? CorrelationId = null,
+    TelecomDocumentStatus DocumentStatus = TelecomDocumentStatus.Missing);
 
 public sealed class SubscriptionBindingContext
 {

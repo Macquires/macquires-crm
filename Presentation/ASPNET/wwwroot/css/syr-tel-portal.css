@@ -189,6 +189,77 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
     padding: 0.15rem 0.65rem 0.35rem;
 }
 
+.syr-nav-accordion-header-row {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    width: 100%;
+    margin: 0.06rem 0;
+    border-radius: calc(var(--sys-radius) - 6px);
+    transition: background 0.15s ease;
+}
+
+.syr-nav-accordion-header-row[aria-expanded="true"],
+.syr-nav-accordion-header-row.is-hub-active {
+    background: var(--sys-bg);
+}
+
+.syr-nav-accordion-hub {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.5rem 0.35rem 0.5rem 0.55rem;
+    border-radius: calc(var(--sys-radius) - 6px);
+    color: var(--sys-text-main);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.syr-nav-accordion-hub:hover {
+    background: var(--sys-bg);
+    color: var(--sys-text-main);
+}
+
+.syr-nav-accordion-hub.active {
+    color: var(--sys-brand-red);
+}
+
+.syr-nav-accordion-header-row[aria-expanded="true"] .syr-nav-accordion-hub .syr-nav-module-icon,
+.syr-nav-accordion-header-row.is-hub-active .syr-nav-accordion-hub .syr-nav-module-icon {
+    background: var(--sys-brand-red-ring);
+    color: var(--sys-brand-red);
+    border-color: color-mix(in srgb, var(--sys-brand-red) 30%, var(--sys-border));
+}
+
+.syr-nav-accordion-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    margin-inline-end: 0.2rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--sys-text-muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.syr-nav-accordion-toggle:hover {
+    background: color-mix(in srgb, var(--sys-bg) 80%, var(--sys-border));
+    color: var(--sys-text-main);
+}
+
+.syr-nav-accordion-header-row[aria-expanded="true"] .syr-nav-accordion-toggle .syr-nav-chevron {
+    color: var(--sys-brand-red);
+}
+
 .syr-nav-accordion-header {
     display: flex;
     align-items: center;
@@ -205,6 +276,10 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
     cursor: pointer;
     text-align: inherit;
     transition: background 0.15s ease, color 0.15s ease;
+}
+
+.syr-nav-accordion-header--solo {
+    margin: 0;
 }
 
 .syr-nav-accordion-header:hover {

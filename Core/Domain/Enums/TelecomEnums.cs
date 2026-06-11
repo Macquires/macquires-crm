@@ -49,13 +49,28 @@ public enum TelecomOperationStatus
   /// <summary>Documents uploaded; awaiting confirmation.</summary>
     PendingDocuments = 5,
   /// <summary>Provisioning in progress (CBS/HLR).</summary>
-    Provisioning = 6
+    Provisioning = 6,
+    /// <summary>Local CRM state committed but downstream CBS/HLR failed — manual remediation required.</summary>
+    ProvisioningError = 7,
+  /// <summary>§16 BDR approved by BackOffice; awaiting FrontOffice cash collection.</summary>
+    Approved_Pending_Cash = 8,
+  /// <summary>§16 BDR advance cash collected by FrontOffice; awaiting BackOffice audit.</summary>
+    Paid_Pending_BackOffice_Clearance = 9,
+    /// <summary>Claimed by agent and currently being processed.</summary>
+    In_Progress = 10
 }
 
 public enum SubscriberType
 {
     Individual = 0,
     Corporate = 1
+}
+
+public enum BackOfficeDomain
+{
+    FinanceAndRevenue = 0,
+    NetworkAndTechnical = 1,
+    CoreAdministrative = 2
 }
 
 /// <summary>§7 Transfer of ownership — deposit / guarantee handling policy.</summary>

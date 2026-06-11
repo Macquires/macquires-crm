@@ -22,6 +22,7 @@ public static class TelecomBssOperations
     public const string CbsUnbarSubscriber = "CbsUnbarSubscriber";
     public const string HlrSuspendSubscriber = "HlrSuspendSubscriber";
     public const string HlrReactivateSubscriber = "HlrReactivateSubscriber";
+    public const string HlrKillLeakySubscriber = "HlrKillLeakySubscriber";
     public const string CbsChangePrimaryOffer = "CbsChangePrimaryOffer";
     public const string CbsPostDeviceSale = "CbsPostDeviceSale";
     public const string CbsCreateDeviceInstallmentContract = "CbsCreateDeviceInstallmentContract";

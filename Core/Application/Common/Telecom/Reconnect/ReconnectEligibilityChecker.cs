@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Settings;
 using Application.Common.Telecom.Suspension;
 using Domain.Entities;
 using Domain.Enums;
@@ -22,11 +23,13 @@ public sealed class ReconnectEligibilityChecker : IReconnectEligibilityChecker
 
     private readonly IQueryContext _query;
     private readonly IBillingSystemIntegration _billing;
+    private readonly IGlobalSettingsProvider _settings;
 
-    public ReconnectEligibilityChecker(IQueryContext query, IBillingSystemIntegration billing)
+    public ReconnectEligibilityChecker(IQueryContext query, IBillingSystemIntegration billing, IGlobalSettingsProvider settings)
     {
         _query = query;
         _billing = billing;
+        _settings = settings;
     }
 
     public async Task<ReconnectEligibilityResult> ValidateForCreateAsync(
@@ -71,18 +74,33 @@ public sealed class ReconnectEligibilityChecker : IReconnectEligibilityChecker
             sourceSuspensionOperationId,
             cancellationToken);
 
-        var lastSuspensionType = sourceOpId == null
+        var sourceOp = sourceOpId == null
             ? null
             : await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
                 .Where(o => o.Id == sourceOpId)
-                .Select(o => o.SuspensionType)
+                .Select(o => new { o.SuspensionType, o.SuspensionStartDateUtc, o.ConfirmedAtUtc, o.CreatedAtUtc })
                 .FirstOrDefaultAsync(cancellationToken);
+
+        var lastSuspensionType = sourceOp?.SuspensionType;
+        var suspensionDate = sourceOp?.SuspensionStartDateUtc ?? sourceOp?.ConfirmedAtUtc ?? sourceOp?.CreatedAtUtc;
 
         var outstandingBalance = 0m;
         if (!string.IsNullOrEmpty(asset.Msisdn))
         {
             outstandingBalance = await _billing.GetOutstandingBalanceAsync(asset.Msisdn, cancellationToken);
         }
+
+        var bdrStatus = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .Where(o => o.Kind == TelecomOperationKind.BadDebtRecovery && o.MsisdnAssetId == assetId)
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Select(o => o.Status.ToString())
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // DYNAMIC SYNC: Update static GlobalSettings from provider for the matrix to use
+        GlobalSettings.PostpaidBadDebtThresholdMonths = await _settings.GetIntAsync(
+            GlobalSettingKeys.TelecomPostpaidBadDebtThresholdMonths,
+            GlobalSettings.PostpaidBadDebtThresholdMonths,
+            cancellationToken: cancellationToken);
 
         var matrix = ReconnectEligibilityMatrix.Evaluate(new ReconnectEligibilityMatrixInput(
             profile.OperationalStatus,
@@ -92,7 +110,9 @@ public sealed class ReconnectEligibilityChecker : IReconnectEligibilityChecker
             clearance,
             !string.IsNullOrWhiteSpace(paymentReference),
             outstandingBalance,
-            fraudClearanceConfirmed));
+            fraudClearanceConfirmed,
+            bdrStatus,
+            suspensionDate));
 
         if (!matrix.Allowed)
         {

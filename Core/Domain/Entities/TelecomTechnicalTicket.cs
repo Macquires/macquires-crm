@@ -21,6 +21,10 @@ public class TelecomTechnicalTicket : BaseEntity
     public string? ResolutionNotes { get; set; }
     public string? PayloadJson { get; set; }
     public DateTime? ResolvedAtUtc { get; set; }
+    public string? AssignedAgentEmail { get; set; }
+    public DateTime? ClaimedAt { get; set; }
+
+    public byte[] RowVersion { get; set; } = null!;
 
     /// <summary>Creation channel: CallCenter_Agent, Customer_Care_Voice_AI, Showroom_Agent, Self_Care_App.</summary>
     public string CreatedByChannel { get; set; } = "CallCenter_Agent";

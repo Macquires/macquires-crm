@@ -10,6 +10,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class TerminationEligibilityIntegrationTests
 {
     [Fact]
@@ -113,7 +115,7 @@ public class TerminationEligibilityIntegrationTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static async Task<(string ProfileId, string AssetId, string Msisdn)> SeedActiveLineAsync(
@@ -176,6 +178,9 @@ public class TerminationEligibilityIntegrationTests
     {
         public Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default) =>
             Task.FromResult(balance);
+
+        public Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();

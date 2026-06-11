@@ -815,7 +815,7 @@
     "refreshFail": "Some data could not load. Check connectivity or your session and try again.",
     "bulkImport": {
       "title": "Bulk Import Monitor",
-      "subtitle": "Track background imports up to 100,000 rows — live refresh while jobs are active.",
+      "subtitle": "Legacy CRM data migration (customers · packages) — inventory syncs exclusively from Oracle Fusion SCM.",
       "upload": "Upload CSV file",
       "jobType": "Import type",
       "jobTypes": {
@@ -842,7 +842,7 @@
       "exportErrors": "Export CSV",
       "noJobs": "No import jobs found.",
       "uploadOk": "File uploaded; processing started in the background.",
-      "templatesHint": "Download the approved template, fill it in, then upload to avoid column rejection.",
+      "templatesHint": "Legacy system migration only — MSISDN/SIM inventory is synced from Oracle Fusion SCM.",
       "templateMsisdn": "Approved MSISDN import template",
       "templateCustomers": "Customer profiles template",
       "templatePackages": "Package migration template",
@@ -951,6 +951,22 @@
         "catalogAdvanced": "Product catalog",
         "catalogHint": "Enable or disable offers in catalog",
         "refresh": "Refresh",
+        "telecomQueue": {
+          "request": "Request",
+          "kind": "Kind",
+          "clearance": "Clearance",
+          "payment": "Payment ref",
+          "state": "State",
+          "approve": "Approve",
+          "reject": "Reject",
+          "empty": "No requests awaiting back-office approval",
+          "rejectTitle": "Reject request",
+          "rejectPlaceholder": "Rejection reason (min. 5 characters)…",
+          "approved": "Request approved — CBS/HLR execution started",
+          "rejected": "Request rejected",
+          "paymentOk": "Verified",
+          "paymentPending": "Not verified"
+        },
         "openCountHint": "Open + in progress",
         "techToolbar": "Technical actions toolbar",
         "networkPing": "Query live network status",
@@ -1038,6 +1054,8 @@
           "suffixLostStolen": "lost/stolen"
         },
         "panels": {
+          "telecomQueue": "Telecom approval queue (SUS / RCN)",
+          "telecomQueueHint": "Sensitive requests (Fraud / Regulatory / Payment) stay in Pending_BackOffice_Approval until a supervisor approves; CBS then HLR run automatically.",
           "paymentServices": "Financial performance (Payment Services)",
           "changeGsm": "Line technology migration (CGT)",
           "changeNumber": "Change MSISDN (CNR)",
@@ -1051,7 +1069,7 @@
           "simSwap": "SIM swap analytics",
           "takeOver": "Ownership transfer (TKO)",
           "sellingLine": "Line activation KPIs (Selling Line)",
-          "bulkImportHint": "MSISDN · customers · packages"
+          "bulkImportHint": "Legacy migration · customers · packages"
         },
         "grid": {
           "ticketNumber": "Ticket #",
@@ -1214,6 +1232,7 @@
       "gridTitle": "Asset list",
       "loading": "Loading inventory…",
       "showroomStock": "POS stock",
+      "unboundCell": "Unbound — warehouse stock",
       "kpi": {
         "total": "Total MSISDNs",
         "available": "Available",
@@ -1348,12 +1367,19 @@
       "typeRegulatory": "Regulatory",
       "typeOperational": "Operational",
       "barringLevel": "Barring level",
-      "barringFull": "Full bar",
-      "barringInbound": "Inbound only",
-      "barringOutbound": "Outbound only",
+      "barringFull": "Full bar (total isolation)",
+      "barringInbound": "Inbound bar only",
+      "barringOutbound": "Outgoing bar only (collections)",
+      "barringDataOnly": "Data bar only",
       "suspensionReason": "Suspension reason",
       "autoReconnect": "Auto-reconnect when period ends",
+      "startDate": "Suspension start date",
+      "endDate": "Suspension end date",
       "endDateRequired": "Suspension end date is required",
+      "endDateMaxExceeded": "Per Syriatel policy, the maximum temporary suspension period is 90 days only",
+      "kycDocument": "Legal request / subscriber ID document",
+      "kycDocumentHint": "Upload signed suspension request or national ID before completing (legal compliance).",
+      "kycRequired": "Suspension proof document is required",
       "boHint": "VAL-08-02/03: Back-office approval required before execution."
     },
     "refund": {
@@ -1724,6 +1750,7 @@
       "hlrRemediation": {
         "title": "HLR desync troubleshooting",
         "subtitle": "CRM shows Active but HLR reports a mismatched state — choose a remediation action.",
+        "subtitlePattern": "CRM shows {crm} but HLR reports {hlr} — choose a remediation action.",
         "crmActive": "CRM: Active",
         "hlrState": "HLR",
         "reprovision": "HLR reprovision",
@@ -2528,8 +2555,10 @@
             "msisdnQuarantineHint": "After termination or number change before returning to the pool.",
             "simQuarantineDays": "SIM quarantine (days)",
             "simQuarantineHint": "After SIM swap before ICCID returns to stock.",
-            "msisdnReservationHours": "MSISDN reservation (hours)",
-            "msisdnReservationHint": "Expired reservation releases the number to available.",
+            "msisdnReservationMinutes": "POS MSISDN lock (minutes)",
+            "msisdnReservationMinutesHint": "When an agent picks a number at POS, it is reserved for this customer for this duration to prevent double-selling. Default 15 minutes.",
+            "msisdnReservationHours": "Fallback — MSISDN reservation (hours)",
+            "msisdnReservationHoursHint": "Used only when minutes is set to 0.",
             "suspensionLongReviewDays": "Long suspension threshold (days)",
             "suspensionLongReviewHint": "Beyond this duration triggers a Back-Office review ticket."
           },

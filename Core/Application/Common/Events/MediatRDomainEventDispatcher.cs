@@ -1,4 +1,5 @@
 using Domain.Common;
+using Domain.Events;
 using MediatR;
 
 namespace Application.Common.Events;
@@ -13,9 +14,16 @@ public sealed class MediatRDomainEventDispatcher : IDomainEventDispatcher
     {
         foreach (var domainEvent in events)
         {
-            if (domainEvent is INotification notification)
+            switch (domainEvent)
             {
-                await _publisher.Publish(notification, cancellationToken);
+                case SubscriberSuspendedEvent suspended:
+                    await _publisher.Publish(
+                        SubscriberSuspendedNotification.FromDomain(suspended),
+                        cancellationToken);
+                    break;
+                case INotification notification:
+                    await _publisher.Publish(notification, cancellationToken);
+                    break;
             }
         }
     }

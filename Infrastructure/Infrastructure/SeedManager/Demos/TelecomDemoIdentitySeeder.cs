@@ -22,7 +22,7 @@ public sealed class TelecomDemoIdentitySeeder
     {
         var accounts = new (string Email, string First, string Last, string Role, TelecomMenuPersona? Persona)[]
         {
-            ("st-showroom@syriatelecom-demo.local", "معرض", "سيريتل", TelecomRoles.Showroom, null),
+            ("st-showroom@syriatelecom-demo.local", "POS", "سيريتل", TelecomRoles.Showroom, null),
             ("st-backoffice@syriatelecom-demo.local", "مكتب", "خلفي", TelecomRoles.BackOffice, null),
             ("st-callcenter@syriatelecom-demo.local", "دعم", "خط", TelecomRoles.CallCenter, null),
             ("st-mis@syriatelecom-demo.local", "أحمد", "الشوا", TelecomRoles.Management, TelecomMenuPersona.Executive),

@@ -1,4 +1,6 @@
+using System.Globalization;
 using Application.Common.Settings;
+using Application.Common.Settings.Telecom;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -45,6 +47,17 @@ public class GlobalSettingsProvider : IGlobalSettingsProvider
         return Math.Clamp(value, min, max);
     }
 
+    public async Task<decimal> GetDecimalAsync(string key, decimal defaultValue, decimal min = decimal.MinValue, decimal max = decimal.MaxValue, CancellationToken cancellationToken = default)
+    {
+        var raw = await GetValueAsync(key, cancellationToken);
+        if (!decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
+        {
+            value = defaultValue;
+        }
+
+        return Math.Clamp(value, min, max);
+    }
+
     public async Task<IReadOnlyList<string>> GetCsvListAsync(string key, CancellationToken cancellationToken = default)
     {
         var raw = await GetValueAsync(key, cancellationToken);
@@ -56,6 +69,49 @@ public class GlobalSettingsProvider : IGlobalSettingsProvider
         return raw.Split([',', ';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(x => x.Length > 0)
             .ToList();
+    }
+
+    public Task<bool> GetCatalogBoolAsync(SettingDefinition definition, CancellationToken cancellationToken = default)
+    {
+        var fallback = bool.TryParse(definition.DefaultValue, out var def) && def;
+        return GetBoolAsync(definition.Key, fallback, cancellationToken);
+    }
+
+    public async Task<int> GetCatalogIntAsync(SettingDefinition definition, CancellationToken cancellationToken = default)
+    {
+        var fallback = int.TryParse(definition.DefaultValue, out var def) ? def : 0;
+        var min = definition.Min.HasValue ? (int)definition.Min.Value : int.MinValue;
+        var max = definition.Max.HasValue ? (int)definition.Max.Value : int.MaxValue;
+        return await GetIntAsync(definition.Key, fallback, min, max, cancellationToken);
+    }
+
+    public async Task<decimal> GetCatalogDecimalAsync(SettingDefinition definition, CancellationToken cancellationToken = default)
+    {
+        var fallback = decimal.TryParse(definition.DefaultValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var def)
+            ? def
+            : 0m;
+        var min = definition.Min ?? decimal.MinValue;
+        var max = definition.Max ?? decimal.MaxValue;
+        return await GetDecimalAsync(definition.Key, fallback, min, max, cancellationToken);
+    }
+
+    public async Task<string> GetCatalogStringAsync(SettingDefinition definition, CancellationToken cancellationToken = default)
+    {
+        var raw = await GetValueAsync(definition.Key, cancellationToken);
+        return string.IsNullOrWhiteSpace(raw) ? definition.DefaultValue : raw;
+    }
+
+    public async Task<IReadOnlyList<string>> GetCatalogCsvListAsync(SettingDefinition definition, CancellationToken cancellationToken = default)
+    {
+        var list = await GetCsvListAsync(definition.Key, cancellationToken);
+        if (list.Count == 0 && !string.IsNullOrWhiteSpace(definition.DefaultValue))
+        {
+            return definition.DefaultValue
+                .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+
+        return list;
     }
 
     private async Task<IReadOnlyDictionary<string, string>> GetAllCachedAsync(CancellationToken cancellationToken)

@@ -31,7 +31,7 @@ public class ForceCbsSyncByTicketRequest : IRequest<ForceCbsSyncResult>, IRequir
     public string TicketId { get; init; } = "";
     public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
-    public string PermissionKey => PermissionCatalog.TelecomTicketForceSync;
+    public string PermissionKey => PermissionCatalog.NetworkTechnicalSync;
 }
 
 public class ForceCbsSyncByTicketValidator : AbstractValidator<ForceCbsSyncByTicketRequest>

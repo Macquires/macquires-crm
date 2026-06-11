@@ -1,5 +1,6 @@
 using Domain.Common;
 using Domain.Enums;
+using Domain.Events;
 
 namespace Domain.Entities;
 
@@ -37,11 +38,23 @@ public class SubscriberProfile : BaseEntity
         ActivationDateUtc ??= DateTime.UtcNow;
     }
 
-    public void Suspend() => OperationalStatus = SubscriberOperationalStatus.Suspended;
+    public void Suspend(string msisdn)
+    {
+        OperationalStatus = SubscriberOperationalStatus.Suspended;
+        AddDomainEvent(new SubscriberSuspendedEvent(Id, msisdn, CustomerId, OperationalStatus));
+    }
 
-    public void SuspendInbound() => OperationalStatus = SubscriberOperationalStatus.SuspendedInbound;
+    public void SuspendInbound(string msisdn)
+    {
+        OperationalStatus = SubscriberOperationalStatus.SuspendedInbound;
+        AddDomainEvent(new SubscriberSuspendedEvent(Id, msisdn, CustomerId, OperationalStatus));
+    }
 
-    public void SuspendOutbound() => OperationalStatus = SubscriberOperationalStatus.SuspendedOutbound;
+    public void SuspendOutbound(string msisdn)
+    {
+        OperationalStatus = SubscriberOperationalStatus.SuspendedOutbound;
+        AddDomainEvent(new SubscriberSuspendedEvent(Id, msisdn, CustomerId, OperationalStatus));
+    }
 
     public void Deactivate() => OperationalStatus = SubscriberOperationalStatus.Deactivated;
 

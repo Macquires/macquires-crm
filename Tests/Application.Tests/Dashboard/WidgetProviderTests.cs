@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Tests.Dashboard;
 
+using Application.Tests.TestSupport;
+
 public class WidgetProviderTests
 {
     public WidgetProviderTests() => DashboardTestEncryption.EnsureInitialized();
@@ -51,7 +53,7 @@ public class WidgetProviderTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 
     private static TelecomOperationRequest Op(TelecomOperationStatus status) =>

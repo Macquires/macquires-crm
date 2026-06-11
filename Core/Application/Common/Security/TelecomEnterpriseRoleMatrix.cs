@@ -11,6 +11,9 @@ public static class TelecomEnterpriseRoleMatrix
     public const string RoleBackOffice = "TelecomBackOffice";
     public const string RoleShowroom = "TelecomShowroom";
     public const string RoleCallCenter = "TelecomCallCenter";
+    public const string RoleFinancialSupervisor = "Financial_Supervisor";
+    public const string RoleNetworkTechnicalAdmin = "Network_Technical_Admin";
+    public const string RoleOperationsManager = "Operations_Manager";
 
     public static readonly string[] StandardRoles =
     [
@@ -45,9 +48,9 @@ public static class TelecomEnterpriseRoleMatrix
             [RoleShowroom] = new(
                 RoleShowroom,
                 "Retail",
-                "المعرض / خدمة العملاء",
-                "Retail showroom (front desk)",
-                "موظفو المعارض — بحث، تعديل أساسي، تفعيل خطوط وتبديل SIM."),
+                "نقطة البيع / خدمة العملاء",
+                "Retail POS (front desk)",
+                "موظفو نقاط البيع — بحث، تعديل أساسي، تفعيل خطوط وتبديل SIM."),
             [RoleCallCenter] = new(
                 RoleCallCenter,
                 "CallCenter",

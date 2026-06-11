@@ -25,6 +25,10 @@ public class MsisdnAsset : BaseEntity
     public string? ProductId { get; set; }
     public Product? Product { get; set; }
 
+    /// <summary>Provisioning line type stamped at pool ingest (IN vs CBS routing) — required before sale/reservation.</summary>
+    public string? IntendedSubscriptionTypeId { get; set; }
+    public TelecomSubscriptionTypeLookup? IntendedSubscriptionTypeLookup { get; set; }
+
     private static readonly Dictionary<MsisdnPoolStatus, MsisdnPoolStatus[]> AllowedTransitions = new()
     {
         [MsisdnPoolStatus.Available] = [MsisdnPoolStatus.Reserved, MsisdnPoolStatus.Active],
@@ -34,7 +38,7 @@ public class MsisdnAsset : BaseEntity
         [MsisdnPoolStatus.Quarantined] = [MsisdnPoolStatus.Available],
     };
 
-    public void TransitionTo(MsisdnPoolStatus newStatus)
+    public void TransitionTo(MsisdnPoolStatus newStatus, int? quarantineDays = null)
     {
         if (PoolStatus == newStatus) return;
 
@@ -45,9 +49,9 @@ public class MsisdnAsset : BaseEntity
                 $"الانتقالات المتاحة: {string.Join(", ", allowed ?? [])}");
         }
 
-        if (newStatus == MsisdnPoolStatus.Quarantined && QuarantineEndsUtc == null)
+        if (newStatus == MsisdnPoolStatus.Quarantined)
         {
-            QuarantineEndsUtc = DateTime.UtcNow.AddDays(90);
+            QuarantineEndsUtc = DateTime.UtcNow.AddDays(quarantineDays ?? 90);
         }
 
         if (newStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Active)
@@ -74,5 +78,80 @@ public class MsisdnAsset : BaseEntity
         }
 
         TransitionTo(MsisdnPoolStatus.Available);
+    }
+
+    public void ReleaseReservation()
+    {
+        if (PoolStatus == MsisdnPoolStatus.Reserved)
+        {
+            TransitionTo(MsisdnPoolStatus.Available);
+        }
+    }
+
+    public void ReleaseQuarantineIfExpired(DateTime utcNow)
+    {
+        if (PoolStatus != MsisdnPoolStatus.Quarantined || !QuarantineEndsUtc.HasValue || QuarantineEndsUtc > utcNow)
+        {
+            return;
+        }
+
+        QuarantineEndsUtc = null;
+        TransitionTo(MsisdnPoolStatus.Available);
+    }
+
+    /// <summary>Oracle/demo ingest — returns asset to pool using only valid lifecycle transitions.</summary>
+    public void ResetToAvailableForInventoryIngest()
+    {
+        SubscriberProfileId = null;
+        PairedIccid = null;
+        PairedImsi = null;
+        ReservedForCustomerId = null;
+        ReservedUntilUtc = null;
+
+        if (PoolStatus == MsisdnPoolStatus.Available)
+        {
+            QuarantineEndsUtc = null;
+            return;
+        }
+
+        var utcNow = DateTime.UtcNow;
+
+        if (PoolStatus == MsisdnPoolStatus.Reserved)
+        {
+            TransitionTo(MsisdnPoolStatus.Available);
+            QuarantineEndsUtc = null;
+            return;
+        }
+
+        if (PoolStatus == MsisdnPoolStatus.Quarantined)
+        {
+            QuarantineEndsUtc = utcNow.AddSeconds(-1);
+            ReleaseQuarantineIfExpired(utcNow);
+            return;
+        }
+
+        // Active or Suspended → Quarantined (expired) → Available
+        TransitionTo(MsisdnPoolStatus.Quarantined);
+        QuarantineEndsUtc = utcNow.AddSeconds(-1);
+        ReleaseQuarantineIfExpired(utcNow);
+    }
+
+    /// <summary>Rolls back a failed activation bind so the number can re-enter the pool.</summary>
+    public void RollbackFailedActivationBinding(DateTime utcNow)
+    {
+        SubscriberProfileId = null;
+
+        if (PoolStatus == MsisdnPoolStatus.Active)
+        {
+            TransitionTo(MsisdnPoolStatus.Quarantined);
+            QuarantineEndsUtc = utcNow.AddSeconds(-1);
+            ReleaseQuarantineIfExpired(utcNow);
+            return;
+        }
+
+        if (PoolStatus == MsisdnPoolStatus.Reserved)
+        {
+            ReleaseReservation();
+        }
     }
 }

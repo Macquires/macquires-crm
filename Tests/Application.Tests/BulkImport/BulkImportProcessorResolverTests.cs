@@ -26,13 +26,12 @@ public class BulkImportProcessorResolverTests
     {
         IBulkImportJobProcessor[] processors =
         [
-            new StubProcessor(BulkImportJobType.MsisdnAsset),
             new StubProcessor(BulkImportJobType.CustomerProfiles),
             new StubProcessor(BulkImportJobType.PackageMigration)
         ];
         var resolver = new BulkImportProcessorResolver(processors);
 
-        Assert.Equal(BulkImportJobType.MsisdnAsset, resolver.Resolve(BulkImportJobType.MsisdnAsset).JobType);
+        Assert.Throws<InvalidOperationException>(() => resolver.Resolve(BulkImportJobType.MsisdnAsset));
         Assert.Equal(BulkImportJobType.CustomerProfiles, resolver.Resolve(BulkImportJobType.CustomerProfiles).JobType);
         Assert.Equal(BulkImportJobType.PackageMigration, resolver.Resolve(BulkImportJobType.PackageMigration).JobType);
     }

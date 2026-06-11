@@ -7,6 +7,8 @@ using Xunit;
 
 namespace Application.Tests.Telecom;
 
+using Application.Tests.TestSupport;
+
 public class GetEligibleVasOfferingsHandlerTests
 {
     [Fact]
@@ -58,6 +60,6 @@ public class GetEligibleVasOfferingsHandlerTests
         var options = new DbContextOptionsBuilder<DataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new QueryContext(options);
+        return new QueryContext(options, TestOperatorContext.Instance);
     }
 }

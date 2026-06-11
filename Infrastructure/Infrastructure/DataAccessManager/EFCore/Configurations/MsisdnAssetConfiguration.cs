@@ -22,7 +22,10 @@ public class MsisdnAssetConfiguration : BaseEntityConfiguration<MsisdnAsset>
         builder.Property(x => x.PoolStatus).HasConversion<int>();
         builder.Property(x => x.SubscriberProfileId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.ProductId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.IntendedSubscriptionTypeId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.RowVersion).IsRowVersion();
+
+        builder.HasIndex(x => x.IntendedSubscriptionTypeId);
 
         builder.HasIndex(x => x.Msisdn)
             .IsUnique()
@@ -40,6 +43,11 @@ public class MsisdnAssetConfiguration : BaseEntityConfiguration<MsisdnAsset>
         builder.HasOne(x => x.Product)
             .WithMany()
             .HasForeignKey(x => x.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.IntendedSubscriptionTypeLookup)
+            .WithMany()
+            .HasForeignKey(x => x.IntendedSubscriptionTypeId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
