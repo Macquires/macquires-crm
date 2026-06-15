@@ -29,7 +29,7 @@ public class GetTechnicalTicketsResult
     public int ActiveOpenCount { get; init; }
 }
 
-public class GetTechnicalTicketsRequest : IRequest<GetTechnicalTicketsResult>, IRequirePermission
+public class GetTechnicalTicketsRequest : IRequest<GetTechnicalTicketsResult>, IRequireAnyPermission
 {
     /// <summary>Dashboard quick queue: Open + InProgress only.</summary>
     public bool ActiveQueueOnly { get; init; }
@@ -42,7 +42,7 @@ public class GetTechnicalTicketsRequest : IRequest<GetTechnicalTicketsResult>, I
     /// <summary>When false and not ActiveQueueOnly, excludes Resolved only (legacy).</summary>
     public bool IncludeResolved { get; init; }
 
-    public string PermissionKey => PermissionCatalog.NetworkTechnicalView;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalTicketListAny;
 }
 
 public class GetTechnicalTicketsHandler : IRequestHandler<GetTechnicalTicketsRequest, GetTechnicalTicketsResult>

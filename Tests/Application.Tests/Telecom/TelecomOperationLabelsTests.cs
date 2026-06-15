@@ -17,4 +17,8 @@ public class TelecomOperationLabelsTests
         Assert.Equal(
             "قيد التدقيق القانوني",
             TelecomOperationLabels.StatusLabelAr(TelecomOperationStatus.PendingDocuments));
+
+    [Fact]
+    public void StatusLabelAr_Scheduled() =>
+        Assert.Equal("مجدول", TelecomOperationLabels.StatusLabelAr(TelecomOperationStatus.Scheduled));
 }

@@ -22,7 +22,6 @@ public class UpdateValueAddedServiceRequest : IRequest<UpdateValueAddedServiceRe
     public bool IsActive { get; init; } = true;
     public string HlrCommandTemplate { get; init; } = "";
     public int SortOrder { get; init; }
-    public string? UpdatedById { get; init; }
 }
 
 public class UpdateValueAddedServiceValidator : AbstractValidator<UpdateValueAddedServiceRequest>
@@ -40,11 +39,16 @@ public class UpdateValueAddedServiceHandler : IRequestHandler<UpdateValueAddedSe
 {
     private readonly ICommandRepository<TelecomValueAddedService> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
-    public UpdateValueAddedServiceHandler(ICommandRepository<TelecomValueAddedService> repository, IUnitOfWork unitOfWork)
+    public UpdateValueAddedServiceHandler(
+        ICommandRepository<TelecomValueAddedService> repository,
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateValueAddedServiceResult> Handle(
@@ -61,7 +65,7 @@ public class UpdateValueAddedServiceHandler : IRequestHandler<UpdateValueAddedSe
         entity.IsActive = request.IsActive;
         entity.HlrCommandTemplate = request.HlrCommandTemplate.Trim();
         entity.SortOrder = request.SortOrder;
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.UpdatedAtUtc = DateTime.UtcNow;
 
         _repository.Update(entity);

@@ -79,6 +79,9 @@
             async function getAvatar() {
                 try {
                     const avatar = StorageManager.getAvatar();
+                    if (!avatar) {
+                        return;
+                    }
                     const response = await AxiosManager.get('/FileImage/GetImage?imageName=' + avatar, {
                         responseType: 'blob'
                     });

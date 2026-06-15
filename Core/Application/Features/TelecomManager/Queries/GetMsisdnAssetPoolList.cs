@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using AutoMapper;
 using Domain.Entities;
@@ -57,9 +58,10 @@ public class GetMsisdnAssetPoolListResult
     public List<GetMsisdnAssetPoolListDto>? Data { get; init; }
 }
 
-/// <summary>Read-only pool list; authorization is enforced at the API controller (telecom roles).</summary>
-public class GetMsisdnAssetPoolListRequest : IRequest<GetMsisdnAssetPoolListResult>
+/// <summary>Read-only pool list aligned with <c>RequireTelecomRead</c>.</summary>
+public class GetMsisdnAssetPoolListRequest : IRequest<GetMsisdnAssetPoolListResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
     public bool IsDeleted { get; init; }
     public string? Status { get; init; }
     public string? SubscriptionTypeId { get; init; }

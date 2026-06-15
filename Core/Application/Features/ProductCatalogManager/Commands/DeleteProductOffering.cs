@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -12,10 +13,10 @@ public class DeleteProductOfferingResult
 }
 
 // ─── Request ───
-public class DeleteProductOfferingRequest : IRequest<DeleteProductOfferingResult>
+public class DeleteProductOfferingRequest : IRequest<DeleteProductOfferingResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
-    public string? DeletedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ManageAny;
 }
 
 // ─── Validator ───
@@ -32,11 +33,16 @@ public class DeleteProductOfferingHandler : IRequestHandler<DeleteProductOfferin
 {
     private readonly ICommandRepository<ProductOffering> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
-    public DeleteProductOfferingHandler(ICommandRepository<ProductOffering> repository, IUnitOfWork unitOfWork)
+    public DeleteProductOfferingHandler(
+        ICommandRepository<ProductOffering> repository,
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<DeleteProductOfferingResult> Handle(DeleteProductOfferingRequest request, CancellationToken cancellationToken)
@@ -44,7 +50,7 @@ public class DeleteProductOfferingHandler : IRequestHandler<DeleteProductOfferin
         var entity = await _repository.GetAsync(request.Id!, cancellationToken)
             ?? throw new InvalidOperationException("ProductOffering not found.");
 
-        entity.UpdatedById = request.DeletedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         _repository.Delete(entity);
         await _unitOfWork.SaveAsync(cancellationToken);
 

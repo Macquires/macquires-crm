@@ -22,7 +22,7 @@ public class GetSellingLineActivationKpisHandlerTests
             Op("ACT-3", TelecomOperationStatus.PendingExternal, now, null, null));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetSellingLineActivationKpisHandler(ctx);
+        var handler = new GetSellingLineActivationKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetSellingLineActivationKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -37,7 +37,7 @@ public class GetSellingLineActivationKpisHandlerTests
 
     private static QueryContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -49,16 +49,14 @@ public class GetSellingLineActivationKpisHandlerTests
         DateTime created,
         DateTime? confirmed,
         string? overrideReason) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.NewActivation,
-            Status = status,
-            CreatedAtUtc = created,
-            ConfirmedAtUtc = confirmed,
-            OverrideReasonCode = overrideReason,
-            SubscriberProfileId = "prof-seed",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.NewActivation;
+            op.Status = status;
+            op.CreatedAtUtc = created;
+            op.ConfirmedAtUtc = confirmed;
+            op.OverrideReasonCode = overrideReason;
+            op.SubscriberProfileId = "prof-seed";
+        });
 }

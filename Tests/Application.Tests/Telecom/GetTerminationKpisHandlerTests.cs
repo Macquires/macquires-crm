@@ -23,7 +23,7 @@ public class GetTerminationKpisHandlerTests
             Op("TRM-3", TelecomOperationStatus.PendingDocuments, TerminationWellKnown.Fraud, "B", now, null, "BackOffice"));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetTerminationKpisHandler(ctx);
+        var handler = new GetTerminationKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetTerminationKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -39,7 +39,7 @@ public class GetTerminationKpisHandlerTests
 
     private static QueryContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -53,19 +53,17 @@ public class GetTerminationKpisHandlerTests
         DateTime created,
         decimal? finalBill,
         string? approval = null) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.Termination,
-            Status = status,
-            TerminationType = terminationType,
-            TerminationReason = reason,
-            CreatedAtUtc = created,
-            ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(5) : null,
-            FinalBillAmount = finalBill,
-            ApprovalLevelRequired = approval,
-            SubscriberProfileId = "prof-seed",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.Termination;
+            op.Status = status;
+            op.TerminationType = terminationType;
+            op.TerminationReason = reason;
+            op.CreatedAtUtc = created;
+            op.ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(5) : null;
+            op.FinalBillAmount = finalBill;
+            op.ApprovalLevelRequired = approval;
+            op.SubscriberProfileId = "prof-seed";
+        });
 }

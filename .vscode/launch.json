@@ -1,15 +1,41 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "chrome",
-            "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
-            "webRoot": "${workspaceFolder}"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ASPNET (CRM)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "network-simulator",
+      "program": "${workspaceFolder}/Presentation/ASPNET/bin/Debug/net9.0/ASPNET.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Presentation/ASPNET",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "Network Simulator",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/NetworkSimulator/bin/Debug/net9.0/NetworkSimulator.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/tools/NetworkSimulator",
+      "stopAtEntry": false
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome against localhost",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "CRM + Network Simulator",
+      "configurations": ["Network Simulator", "ASPNET (CRM)"],
+      "stopAll": true
+    }
+  ]
 }

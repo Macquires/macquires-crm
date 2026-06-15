@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Application.Common.Security;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.SecurityManager.Queries;
@@ -10,7 +11,7 @@ public class ValidateTokenResult
     public string? Data { get; init; }
 }
 
-public class ValidateTokenRequest : IRequest<ValidateTokenResult>
+public class ValidateTokenRequest : IRequest<ValidateTokenResult>, IRequireAuthenticatedOperator
 {
 }
 

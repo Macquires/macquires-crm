@@ -2,9 +2,12 @@ using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
+using Application.Common.Telecom.RevenueAssurance;
 using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Distributed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -39,68 +42,104 @@ public sealed class RevenueAssuranceReconciliationJob : BackgroundService
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
-                var hlr = scope.ServiceProvider.GetRequiredService<IHLRLiveStatusService>();
-                var ticketRepo = scope.ServiceProvider.GetRequiredService<ICommandRepository<TelecomTechnicalTicket>>();
-                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-                // 1. Scan suspended subscriptions (potential leakage if HLR is still active)
-                var suspendedSubs = await query.TelecomSubscription
-                    .Include(s => s.MsisdnAsset)
-                    .Include(s => s.SubscriberProfile)
-                    .Where(s => s.SubscriberProfile.OperationalStatus == SubscriberOperationalStatus.Suspended
-                             || s.SubscriberProfile.OperationalStatus == SubscriberOperationalStatus.SuspendedInbound
-                             || s.SubscriberProfile.OperationalStatus == SubscriberOperationalStatus.SuspendedOutbound)
-                    .ToListAsync(stoppingToken);
-
-                foreach (var sub in suspendedSubs)
+                using (scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>().Enter())
                 {
-                    if (string.IsNullOrEmpty(sub.MsisdnAsset?.Msisdn)) continue;
-
-                    // 2. Query HLR Live Status
-                    var hlrStatus = await hlr.QueryLiveStatusAsync(
-                        sub.MsisdnAsset.Msisdn, 
-                        sub.SubscriberProfile.OperationalStatus.ToString(), 
-                        stoppingToken);
-
-                    // 3. CONDITION FOR ALERT: IF CRM/CBS Billing Status == Suspended AND HLR Live Status == ACTIVE
-                    if (hlrStatus.Success && hlrStatus.IsOnline && hlrStatus.HlrSubscriberState == "ACTIVE")
-                    {
-                        _logger.LogWarning("Revenue Leakage detected for MSISDN {Msisdn}. CRM: {CrmStatus}, HLR: ACTIVE.", 
-                            sub.MsisdnAsset.Msisdn, sub.SubscriberProfile.OperationalStatus);
-
-                        // 4. ACTION REQUIRED: Spawn a TelecomTechnicalTicket (RevenueAssurance)
-                        // Check if an open ticket already exists for this MSISDN and category
-                        var openExists = await query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
-                            .AnyAsync(t => t.Msisdn == sub.MsisdnAsset.Msisdn 
-                                           && t.TicketCategory == TechnicalTicketCategory.RevenueAssurance
-                                           && (t.Status == TechnicalTicketStatus.Open || t.Status == TechnicalTicketStatus.InProgress), 
-                                      stoppingToken);
-
-                        if (!openExists)
+                    await scope.TryRunUnderDistributedLockAsync(
+                        "hosted-revenue-assurance-reconciliation",
+                        TimeSpan.FromHours(2),
+                        async ct =>
                         {
-                            var ticket = new TelecomTechnicalTicket
-                            {
-                                TicketNumber = $"RA-{DateTime.UtcNow:yyyyMMdd}-{sub.MsisdnAsset.Msisdn.Substring(Math.Max(0, sub.MsisdnAsset.Msisdn.Length - 4))}",
-                                Msisdn = sub.MsisdnAsset.Msisdn,
-                                CustomerId = sub.SubscriberProfile.CustomerId,
-                                SubscriberProfileId = sub.SubscriberProfileId,
-                                TicketCategory = TechnicalTicketCategory.RevenueAssurance,
-                                IssueType = TechnicalTicketIssueType.Network,
-                                Priority = TechnicalTicketPriority.High,
-                                Status = TechnicalTicketStatus.Open,
-                                Notes = $"Revenue Leakage Alert: CRM status is {sub.SubscriberProfile.OperationalStatus} but HLR status is ACTIVE. Technical sync required to prevent unauthorized usage.",
-                                CreatedById = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
-                                OpenedByUserId = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
-                                CreatedByChannel = TechnicalTicketCreatedByChannel.SystemJob
-                            };
+                            var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+                            var scanner = scope.ServiceProvider.GetRequiredService<IRevenueAssuranceLeakageScanner>();
+                            var ticketRepo = scope.ServiceProvider.GetRequiredService<ICommandRepository<TelecomTechnicalTicket>>();
+                            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-                            await ticketRepo.CreateAsync(ticket, stoppingToken);
-                            await unitOfWork.SaveAsync(stoppingToken);
-                            
-                            _logger.LogInformation("Created RevenueLeakageAlert ticket {TicketNumber} for {Msisdn}.", ticket.TicketNumber, sub.MsisdnAsset.Msisdn);
-                        }
-                    }
+                            var suspendedSubs = await query.TelecomSubscription
+                                .Include(s => s.MsisdnAsset)
+                                .Include(s => s.SubscriberProfile)
+                                .Where(s => s.SubscriberProfile != null
+                                         && s.MsisdnAsset != null
+                                         && s.MsisdnAsset.Msisdn != null
+                                         && (s.SubscriberProfile.OperationalStatus == SubscriberOperationalStatus.Suspended
+                                          || s.SubscriberProfile.OperationalStatus == SubscriberOperationalStatus.SuspendedInbound
+                                          || s.SubscriberProfile.OperationalStatus == SubscriberOperationalStatus.SuspendedOutbound))
+                                .ToListAsync(ct);
+
+                            if (suspendedSubs.Count == 0)
+                            {
+                                return;
+                            }
+
+                            var leakageCandidates = await scanner.ScanAsync(suspendedSubs, ct);
+                            if (leakageCandidates.Count == 0)
+                            {
+                                return;
+                            }
+
+                            var msisdns = leakageCandidates
+                                .Select(c => c.Subscription.MsisdnAsset!.Msisdn!)
+                                .Distinct()
+                                .ToList();
+
+                            var openTicketMsisdns = await query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
+                                .Where(t => t.Msisdn != null
+                                            && msisdns.Contains(t.Msisdn)
+                                            && t.TicketCategory == TechnicalTicketCategory.RevenueAssurance
+                                            && (t.Status == TechnicalTicketStatus.Open || t.Status == TechnicalTicketStatus.InProgress))
+                                .Select(t => t.Msisdn!)
+                                .Distinct()
+                                .ToListAsync(ct);
+
+                            var openTicketSet = openTicketMsisdns.ToHashSet(StringComparer.Ordinal);
+
+                            foreach (var candidate in leakageCandidates)
+                            {
+                                var sub = candidate.Subscription;
+                                var profile = sub.SubscriberProfile;
+                                var msisdnAsset = sub.MsisdnAsset;
+                                if (profile == null || msisdnAsset?.Msisdn == null)
+                                {
+                                    continue;
+                                }
+
+                                var msisdn = msisdnAsset.Msisdn;
+
+                                _logger.LogWarning(
+                                    "Revenue Leakage detected for MSISDN {Msisdn}. CRM: {CrmStatus}, HLR: ACTIVE.",
+                                    msisdn,
+                                    profile.OperationalStatus);
+
+                                if (openTicketSet.Contains(msisdn))
+                                {
+                                    continue;
+                                }
+
+                                var ticket = new TelecomTechnicalTicket
+                                        {
+                                            TicketNumber = $"RA-{DateTime.UtcNow:yyyyMMdd}-{msisdn.Substring(Math.Max(0, msisdn.Length - 4))}",
+                                            Msisdn = msisdn,
+                                            CustomerId = profile.CustomerId,
+                                            SubscriberProfileId = sub.SubscriberProfileId,
+                                            TicketCategory = TechnicalTicketCategory.RevenueAssurance,
+                                            IssueType = TechnicalTicketIssueType.Network,
+                                            Priority = TechnicalTicketPriority.High,
+                                            Status = TechnicalTicketStatus.Open,
+                                            Notes = $"Revenue Leakage Alert: CRM status is {profile.OperationalStatus} but HLR status is ACTIVE. Technical sync required to prevent unauthorized usage.",
+                                            CreatedById = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
+                                            OpenedByUserId = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
+                                            CreatedByChannel = TechnicalTicketCreatedByChannel.SystemJob
+                                        };
+
+                                        await ticketRepo.CreateAsync(ticket, ct);
+                                        await unitOfWork.SaveAsync(ct);
+
+                                        _logger.LogInformation(
+                                            "Created RevenueLeakageAlert ticket {TicketNumber} for {Msisdn}.",
+                                            ticket.TicketNumber,
+                                            msisdn);
+                            }
+                        },
+                        stoppingToken);
                 }
             }
             catch (Exception ex)
@@ -108,7 +147,6 @@ public sealed class RevenueAssuranceReconciliationJob : BackgroundService
                 _logger.LogError(ex, "RevenueAssuranceReconciliationJob iteration failed.");
             }
 
-            // Run every 12 hours
             await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
         }
     }

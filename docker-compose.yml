@@ -30,7 +30,7 @@ services:
   simulator:
     build:
       context: .
-      dockerfile: Tools/NetworkSimulator/Dockerfile
+      dockerfile: tools/NetworkSimulator/Dockerfile
     ports:
       - "5099:8080"
 
@@ -47,10 +47,17 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=nSuite;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True"
-      Redis__ConnectionString: "redis:6379"
+      ConnectionStrings__Redis: "redis:6379"
+      RabbitMq__Enabled: "true"
+      RabbitMq__ConnectionString: "amqp://guest:guest@rabbitmq:5672/"
       TelecomIntegrations__Mode: "Http"
       TelecomIntegrations__SimulatorBaseUrl: "http://simulator:8080"
-      Database__UseEfMigrations: "false"
+      Serilog__WriteTo__2__Name: "Seq"
+      Serilog__WriteTo__2__Args__serverUrl: "http://seq:80"
+      Database__UseEfMigrations: "true"
+      Database__ApplyLegacyPatchesAfterMigrations: "false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://seq:80/ingest/otlp/v1/traces"
+      OTEL_SERVICE_NAME: "nsuite-telecom"
     ports:
       - "8080:8080"
 

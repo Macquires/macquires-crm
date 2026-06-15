@@ -2,8 +2,8 @@
 using Application.Features.CustomerCategoryManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -15,7 +15,7 @@ public class CustomerCategoryController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("CreateCustomerCategory")]
     public async Task<ActionResult<ApiSuccessResult<CreateCustomerCategoryResult>>> CreateCustomerCategoryAsync(CreateCustomerCategoryRequest request, CancellationToken cancellationToken)
     {
@@ -29,7 +29,7 @@ public class CustomerCategoryController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("UpdateCustomerCategory")]
     public async Task<ActionResult<ApiSuccessResult<UpdateCustomerCategoryResult>>> UpdateCustomerCategoryAsync(UpdateCustomerCategoryRequest request, CancellationToken cancellationToken)
     {
@@ -43,7 +43,7 @@ public class CustomerCategoryController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("DeleteCustomerCategory")]
     public async Task<ActionResult<ApiSuccessResult<DeleteCustomerCategoryResult>>> DeleteCustomerCategoryAsync(DeleteCustomerCategoryRequest request, CancellationToken cancellationToken)
     {
@@ -57,7 +57,7 @@ public class CustomerCategoryController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataRead]
     [HttpGet("GetCustomerCategoryList")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomerCategoryListResult>>> GetCustomerCategoryListAsync(
         CancellationToken cancellationToken,
@@ -74,8 +74,4 @@ public class CustomerCategoryController : BaseApiController
             Content = response
         });
     }
-
-
 }
-
-

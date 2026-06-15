@@ -120,15 +120,16 @@ public sealed class StrategicMisDemoSeeder
 
         var rnd = new Random(42);
 
-        var extras = new (string BranchKeyword, string City, string Name)[]
+        // Exact branch names — avoid legacy flat branches (e.g. «فرع الحجاز») matching keyword Contains.
+        var branchExtras = new Dictionary<string, (string City, string Name)>(StringComparer.Ordinal)
         {
-            ("المزة", "دمشق", "عمر حمود — المزة"),
-            ("أبو رمانة", "دمشق", "سلمى قاسم — أبو رمانة"),
-            ("الحجاز", "دمشق", "فادي ناصر — الحجاز"),
-            ("حلب", "حلب", "كريم الأسعد — حلب"),
-            ("إدلب", "إدلب", "نور الهدى — إدلب"),
-            ("اللاذقية", "اللاذقية", "لينا يوسف — اللاذقية"),
-            ("طرطوس", "طرطوس", "بسام جولاني — طرطوس"),
+            ["فرع دمشق — المزة"] = ("دمشق", "عمر حمود — المزة"),
+            ["فرع دمشق — أبو رمانة"] = ("دمشق", "سلمى قاسم — أبو رمانة"),
+            ["فرع دمشق — الحجاز"] = ("دمشق", "فادي ناصر — الحجاز"),
+            ["فرع حلب"] = ("حلب", "كريم الأسعد — حلب"),
+            ["فرع إدلب"] = ("إدلب", "نور الهدى — إدلب"),
+            ["فرع اللاذقية"] = ("اللاذقية", "لينا يوسف — اللاذقية"),
+            ["فرع طرطوس"] = ("طرطوس", "بسام جولاني — طرطوس"),
         };
 
         foreach (var branch in branches)
@@ -139,13 +140,13 @@ public sealed class StrategicMisDemoSeeder
                 continue;
             }
 
-            var match = extras.FirstOrDefault(e => branch.NameAr.Contains(e.BranchKeyword, StringComparison.Ordinal));
-            if (match == default)
+            if (!branchExtras.TryGetValue(branch.NameAr, out var match))
             {
                 continue;
             }
 
             var alreadySeeded = await _context.Customer
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(c => !c.IsDeleted && c.DisplayName == match.Name);
             if (alreadySeeded)
@@ -153,14 +154,20 @@ public sealed class StrategicMisDemoSeeder
                 continue;
             }
 
-            var nationalId = $"NID-STR-{branch.Id.Replace("-", string.Empty, StringComparison.Ordinal)}";
+            var nationalId = $"NID-STR-{Guid.CreateVersion7():N}";
             var nationalIdHash = _encryption.ComputeSearchHash(nationalId);
             if (!reservedNationalIdHashes.Add(nationalIdHash))
             {
                 continue;
             }
 
+            if (await IsNationalIdHashTakenAsync(nationalIdHash))
+            {
+                continue;
+            }
+
             var nationalIdExists = await _context.Customer
+                .IgnoreQueryFilters()
                 .OfType<IndividualCustomer>()
                 .AsNoTracking()
                 .AnyAsync(c => !c.IsDeleted && c.NationalId == nationalId);
@@ -170,7 +177,7 @@ public sealed class StrategicMisDemoSeeder
             }
 
             var address = new PostalAddress("شارع تجاري", match.City, match.City, "10001", "سوريا");
-            var account = _numberSequence.GenerateNumber(nameof(Customer), "", "CST");
+            var account = await _numberSequence.GenerateNumberAsync(nameof(Customer), "", "CST");
             var phone = $"093{rnd.Next(1000000, 9999999)}";
             var email = $"strategic.{branch.Id[..Math.Min(8, branch.Id.Length)]}@syriatel-demo.local";
 
@@ -191,9 +198,17 @@ public sealed class StrategicMisDemoSeeder
         }
     }
 
+    private Task<bool> IsNationalIdHashTakenAsync(string nationalIdHash) =>
+        _context.Customer
+            .IgnoreQueryFilters()
+            .OfType<IndividualCustomer>()
+            .AsNoTracking()
+            .AnyAsync(c => !c.IsDeleted && c.NationalIdSearchHash == nationalIdHash);
+
     private async Task<HashSet<string>> LoadReservedNationalIdHashesAsync()
     {
         var individuals = await _context.Customer
+            .IgnoreQueryFilters()
             .OfType<IndividualCustomer>()
             .AsNoTracking()
             .Where(c => !c.IsDeleted)

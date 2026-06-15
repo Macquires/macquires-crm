@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.Analytics;
 using MediatR;
 
 namespace Application.Common.Behaviors;
@@ -39,6 +40,31 @@ public class PermissionAuthorizationBehaviour<TRequest, TResponse> : IPipelineBe
             }
 
             throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
+        }
+
+        if (request is IOperationalKpiRequest)
+        {
+            if (!_operator.IsAuthenticated || string.IsNullOrEmpty(_operator.UserId))
+            {
+                throw new BusinessRuleViolationException("يجب تسجيل الدخول لتنفيذ هذه العملية.");
+            }
+
+            if (!await _permissions.HasPermissionAsync(_operator.UserId, PermissionCatalog.TelecomReportsMis, cancellationToken))
+            {
+                throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
+            }
+
+            return await next();
+        }
+
+        if (request is IRequireAuthenticatedOperator)
+        {
+            if (!_operator.IsAuthenticated || string.IsNullOrEmpty(_operator.UserId))
+            {
+                throw new BusinessRuleViolationException("يجب تسجيل الدخول لتنفيذ هذه العملية.");
+            }
+
+            return await next();
         }
 
         if (request is not IRequirePermission secured || string.IsNullOrWhiteSpace(secured.PermissionKey))

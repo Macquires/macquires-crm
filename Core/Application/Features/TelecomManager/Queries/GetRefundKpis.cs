@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Application.Common.Telecom.Refund;
 using Domain.Enums;
 using MediatR;
@@ -21,10 +22,12 @@ public class GetRefundKpisResult
     public List<RefundRejectionDto> RejectionReasons { get; init; } = new();
 }
 
-public class GetRefundKpisRequest : IRequest<GetRefundKpisResult>
+public class GetRefundKpisRequest : IRequest<GetRefundKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetRefundKpisHandler : IRequestHandler<GetRefundKpisRequest, GetRefundKpisResult>
@@ -32,17 +35,32 @@ public class GetRefundKpisHandler : IRequestHandler<GetRefundKpisRequest, GetRef
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(45);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetRefundKpisHandler(IQueryContext context) => _context = context;
+    public GetRefundKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetRefundKpisResult> Handle(
         GetRefundKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetRefundKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.DepositRefundSettlement
                         && o.CreatedAtUtc >= from

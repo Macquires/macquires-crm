@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
 using FluentValidation;
@@ -26,8 +27,9 @@ public class GetInIntegrationLogListResult
     public int TotalCount { get; init; }
 }
 
-public class GetInIntegrationLogListRequest : IRequest<GetInIntegrationLogListResult>
+public class GetInIntegrationLogListRequest : IRequest<GetInIntegrationLogListResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
     public string? TelecomOperationRequestId { get; init; }
     public string? OperationNumber { get; init; }
     public bool? Success { get; init; }

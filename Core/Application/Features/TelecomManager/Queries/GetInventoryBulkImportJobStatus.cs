@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +12,10 @@ public class GetInventoryBulkImportJobStatusResult
     public InventoryBulkImportJob? Job { get; init; }
 }
 
-public class GetInventoryBulkImportJobStatusRequest : IRequest<GetInventoryBulkImportJobStatusResult>
+public class GetInventoryBulkImportJobStatusRequest : IRequest<GetInventoryBulkImportJobStatusResult>, IRequireAnyPermission
 {
     public string JobId { get; init; } = "";
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.InventoryManageAny;
 }
 
 public class GetInventoryBulkImportJobStatusHandler

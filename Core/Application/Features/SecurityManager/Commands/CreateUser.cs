@@ -12,9 +12,9 @@ public class CreateUserResult
     public CreateUserResultDto? Data { get; set; }
 }
 
-public class CreateUserRequest : IRequest<CreateUserResult>, IRequirePermission
+public class CreateUserRequest : IRequest<CreateUserResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminUsersManage;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? Email { get; init; }
     public string? Password { get; init; }
     public string? ConfirmPassword { get; init; }
@@ -23,7 +23,6 @@ public class CreateUserRequest : IRequest<CreateUserResult>, IRequirePermission
     public bool? EmailConfirmed { get; init; }
     public bool? IsBlocked { get; init; }
     public bool? IsDeleted { get; init; }
-    public string? CreatedById { get; init; }
     public string? PrimaryMenuPersona { get; init; }
     public string? ManagerUserId { get; init; }
     public string? OrgUnitId { get; init; }
@@ -65,11 +64,16 @@ public class CreateUserHandler : IRequestHandler<CreateUserRequest, CreateUserRe
 {
     private readonly ISecurityService _securityService;
     private readonly IUserAuditService _audit;
+    private readonly IOperatorContext _operator;
 
-    public CreateUserHandler(ISecurityService securityService, IUserAuditService audit)
+    public CreateUserHandler(
+        ISecurityService securityService,
+        IUserAuditService audit,
+        IOperatorContext operatorContext)
     {
         _securityService = securityService;
         _audit = audit;
+        _operator = operatorContext;
     }
 
     public async Task<CreateUserResult> Handle(CreateUserRequest request, CancellationToken cancellationToken)
@@ -81,6 +85,8 @@ public class CreateUserHandler : IRequestHandler<CreateUserRequest, CreateUserRe
             persona = parsed;
         }
 
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var result = await _securityService.CreateUserAsync(
             request.Email ?? "",
             request.Password ?? "",
@@ -90,7 +96,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserRequest, CreateUserRe
             request.EmailConfirmed ?? true,
             request.IsBlocked ?? false,
             request.IsDeleted ?? false,
-            request.CreatedById ?? "",
+            actorUserId,
             persona,
             request.ManagerUserId,
             request.OrgUnitId,
@@ -101,7 +107,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserRequest, CreateUserRe
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.CreatedById ?? result?.UserId ?? "system",
+                ActorUserId = actorUserId,
                 UserId = result?.UserId,
                 ActionType = UserAuditActionTypes.UserCreated,
                 EntityType = "ApplicationUser",

@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom.PaymentServices;
 using Domain.Enums;
 using MediatR;
@@ -26,9 +27,10 @@ public class GetPaymentTransactionListResult
     public List<PaymentTransactionListItemDto> Items { get; init; } = new();
 }
 
-public class GetPaymentTransactionListRequest : IRequest<GetPaymentTransactionListResult>
+public class GetPaymentTransactionListRequest : IRequest<GetPaymentTransactionListResult>, IRequireAnyPermission
 {
     public int Take { get; init; } = 30;
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.PaymentAny;
 }
 
 public class GetPaymentTransactionListHandler : IRequestHandler<GetPaymentTransactionListRequest, GetPaymentTransactionListResult>

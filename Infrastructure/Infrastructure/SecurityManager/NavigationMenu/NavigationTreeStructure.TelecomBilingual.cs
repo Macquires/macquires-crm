@@ -9,6 +9,13 @@ public static partial class NavigationTreeStructure
         new(StringComparer.OrdinalIgnoreCase)
         {
             ["/dashboards/defaultdashboard"] = ("لوحة القيادة الرئيسية", "Executive dashboard"),
+            ["/telecom/strategicanalytics"] = ("التحليلات الاستراتيجية", "Strategic analytics"),
+            ["/dashboards/defaultdashboard#strategic-analytics"] = ("MIS — لوحة موحّدة", "Unified MIS cockpit"),
+            ["/dashboards/defaultdashboard#mis-reports"] = ("تقارير MIS السريعة", "Quick MIS reports"),
+            ["/dashboards/defaultdashboard#executive-exceptions"] = ("تنبيهات الإدارة العليا", "Executive exception alerts"),
+            ["/telecom/executiveexceptions"] = ("مركز الاستثناءات التشغيلية", "Operational exception center"),
+            ["/dashboards/defaultdashboard#supervisor-interventions"] = ("تدقيق تدخلات المشرف", "Supervisor intervention audit"),
+            ["/dashboards/defaultdashboard#branch-geo-heatmap"] = ("خريطة حرارة الفروع", "Branch geo heatmap"),
             ["/telecom/telecommisreports"] = ("تقارير ضمان الخدمة (MIS)", "Service assurance reports (MIS)"),
             ["/telecom/telecomhub"] = ("مركز عمليات الشبكة (NOC)", "Network operations center (NOC)"),
             ["/telecom/unifiedsearch"] = ("سجل الخطوط والاشتراكات", "Subscriber lines & assets"),

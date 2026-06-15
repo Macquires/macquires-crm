@@ -24,7 +24,6 @@ public class CreateValueAddedServiceRequest : IRequest<CreateValueAddedServiceRe
     public bool IsActive { get; init; } = true;
     public string HlrCommandTemplate { get; init; } = "";
     public int SortOrder { get; init; }
-    public string? CreatedById { get; init; }
 }
 
 public class CreateValueAddedServiceValidator : AbstractValidator<CreateValueAddedServiceRequest>
@@ -43,15 +42,18 @@ public class CreateValueAddedServiceHandler : IRequestHandler<CreateValueAddedSe
     private readonly ICommandRepository<TelecomValueAddedService> _repository;
     private readonly IQueryContext _query;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public CreateValueAddedServiceHandler(
         ICommandRepository<TelecomValueAddedService> repository,
         IQueryContext query,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _query = query;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<CreateValueAddedServiceResult> Handle(
@@ -76,7 +78,7 @@ public class CreateValueAddedServiceHandler : IRequestHandler<CreateValueAddedSe
             IsActive = request.IsActive,
             HlrCommandTemplate = request.HlrCommandTemplate.Trim(),
             SortOrder = request.SortOrder,
-            CreatedById = request.CreatedById,
+            CreatedById = OperatorActor.RequireUserId(_operator),
         };
 
         await _repository.CreateAsync(entity, cancellationToken);

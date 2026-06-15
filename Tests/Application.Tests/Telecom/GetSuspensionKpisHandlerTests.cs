@@ -24,7 +24,7 @@ public class GetSuspensionKpisHandlerTests
             Op("SUS-3", TelecomOperationStatus.PendingDocuments, SuspensionWellKnown.Fraud, "C", now, false, "BackOffice"));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetSuspensionKpisHandler(ctx);
+        var handler = new GetSuspensionKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetSuspensionKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -41,7 +41,7 @@ public class GetSuspensionKpisHandlerTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -55,19 +55,17 @@ public class GetSuspensionKpisHandlerTests
         DateTime created,
         bool autoReconnect,
         string? approval = null) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.TemporarySuspension,
-            Status = status,
-            SuspensionType = suspensionType,
-            SuspensionReason = reason,
-            AutoReconnectEnabled = autoReconnect,
-            CreatedAtUtc = created,
-            ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(5) : null,
-            ApprovalLevelRequired = approval,
-            SubscriberProfileId = "prof-sus",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.TemporarySuspension;
+            op.Status = status;
+            op.SuspensionType = suspensionType;
+            op.SuspensionReason = reason;
+            op.AutoReconnectEnabled = autoReconnect;
+            op.CreatedAtUtc = created;
+            op.ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(5) : null;
+            op.ApprovalLevelRequired = approval;
+            op.SubscriberProfileId = "prof-sus";
+        });
 }

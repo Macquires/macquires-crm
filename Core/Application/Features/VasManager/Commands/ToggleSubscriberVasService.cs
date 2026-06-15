@@ -31,7 +31,6 @@ public class ToggleSubscriberVasServiceRequest : IRequest<ToggleSubscriberVasSer
     public string Msisdn { get; init; } = "";
     public string ServiceCode { get; init; } = "";
     public VasToggleAction Action { get; init; }
-    public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
 }
 
@@ -56,6 +55,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
     private readonly NumberSequenceService _numberSequenceService;
     private readonly IOfferSubscriptionEligibilityChecker _offerEligibility;
     private readonly IVasCompletionService _vasCompletion;
+    private readonly IOperatorContext _operator;
 
     public ToggleSubscriberVasServiceHandler(
         IQueryContext query,
@@ -67,7 +67,8 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         IUserAuditService audit,
         NumberSequenceService numberSequenceService,
         IOfferSubscriptionEligibilityChecker offerEligibility,
-        IVasCompletionService vasCompletion)
+        IVasCompletionService vasCompletion,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _activeRepository = activeRepository;
@@ -79,6 +80,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         _numberSequenceService = numberSequenceService;
         _offerEligibility = offerEligibility;
         _vasCompletion = vasCompletion;
+        _operator = operatorContext;
     }
 
     public Task<ToggleSubscriberVasServiceResult> Handle(
@@ -99,6 +101,8 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         string msisdn,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var subscription = await _query.TelecomSubscription
             .Include(s => s.MsisdnAsset)
             .Include(s => s.SubscriberProfile)
@@ -121,7 +125,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
             msisdn,
             serviceCode,
             activate,
-            cancellationToken);
+            cancellationToken: cancellationToken);
         if (!eligibility.Allowed)
         {
             throw new BusinessRuleViolationException(eligibility.MessageAr);
@@ -171,7 +175,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
             subscription,
             vas,
             activate,
-            request.ActorUserId,
+            actorUserId,
             cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
 
@@ -195,7 +199,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
                 serviceCode,
                 activate,
                 msisdn,
-                request.ActorUserId,
+                actorUserId,
                 cancellationToken);
         }
 
@@ -213,7 +217,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
                 existing.Msisdn = msisdn;
                 existing.ActivatedAtUtc = DateTime.UtcNow;
                 existing.DeactivatedAtUtc = null;
-                existing.UpdatedById = request.ActorUserId;
+                existing.UpdatedById = actorUserId;
                 existing.UpdatedAtUtc = DateTime.UtcNow;
                 _activeRepository.Update(existing);
             }
@@ -227,7 +231,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
                         Msisdn = msisdn,
                         Status = SubscriberVasStatus.Active,
                         ActivatedAtUtc = DateTime.UtcNow,
-                        CreatedById = request.ActorUserId,
+                        CreatedById = actorUserId,
                     },
                     cancellationToken);
             }
@@ -255,7 +259,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
             {
                 row.Status = SubscriberVasStatus.Suspended;
                 row.DeactivatedAtUtc = DateTime.UtcNow;
-                row.UpdatedById = request.ActorUserId;
+                row.UpdatedById = actorUserId;
                 row.UpdatedAtUtc = DateTime.UtcNow;
                 _activeRepository.Update(row);
             }
@@ -267,7 +271,7 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.NetworkCommandExecuted,
                 EntityType = "VAS",
                 EntityId = subscription.Id,
@@ -328,11 +332,11 @@ public class ToggleSubscriberVasServiceHandler : IRequestHandler<ToggleSubscribe
         Domain.Entities.TelecomSubscription subscription,
         TelecomValueAddedService vas,
         bool activate,
-        string? actorUserId,
+        string actorUserId,
         CancellationToken cancellationToken)
     {
         var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.ServiceModification);
-        var number = _numberSequenceService.GenerateNumber(entityName, prefix, "", useDate: false);
+        var number = await _numberSequenceService.GenerateNumberAsync(entityName, prefix, "", useDate: false, cancellationToken: cancellationToken);
 
         var entity = new TelecomOperationRequest
         {

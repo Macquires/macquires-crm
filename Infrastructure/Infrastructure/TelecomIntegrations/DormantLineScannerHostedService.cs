@@ -1,5 +1,7 @@
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Common.Telecom.Inventory;
+using Infrastructure.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -31,20 +33,30 @@ public sealed class DormantLineScannerHostedService : BackgroundService
             try
             {
                 using var scope = _serviceProvider.CreateScope();
+                using (scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>().Enter())
+                {
+                    await scope.TryRunUnderDistributedLockAsync(
+                        "hosted-dormant-line-scanner",
+                        TimeSpan.FromMinutes(30),
+                        async ct =>
+                        {
                 var rules = scope.ServiceProvider.GetRequiredService<ITelecomInventoryRulesProvider>();
-                var hours = await rules.GetDormantLineScanIntervalHoursAsync(stoppingToken);
+                var hours = await rules.GetDormantLineScanIntervalHoursAsync(ct);
                 if (hours > 0)
                 {
                     delay = TimeSpan.FromHours(hours);
                 }
 
                 var recycling = scope.ServiceProvider.GetRequiredService<IMsisdnRecyclingService>();
-                var recycled = await recycling.ScanAndRecycleDormantLinesAsync(stoppingToken);
+                var recycled = await recycling.ScanAndRecycleDormantLinesAsync(ct);
                 if (recycled > 0)
                 {
                     _logger.LogInformation(
                         "Dormant line scanner recycled {Count} prepaid lines into quarantine.",
                         recycled);
+                }
+                        },
+                        stoppingToken);
                 }
             }
             catch (Exception ex)

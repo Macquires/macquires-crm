@@ -62,7 +62,7 @@ public class CustomerSeeder
         foreach (var (name, corporate, idKey, city) in names)
         {
             var address = new PostalAddress("شارع الحجاز", city, city, "10001", "سوريا");
-            var account = _numberSequenceService.GenerateNumber(nameof(Customer), "", "CST");
+            var account = await _numberSequenceService.GenerateNumberAsync(nameof(Customer), "", "CST");
             var phone = $"093{random.Next(1000000, 9999999)}";
             var email = $"subscriber{random.Next(10000, 999999)}@syriatel-demo.local";
             var groupId = groups[random.Next(groups.Length)];

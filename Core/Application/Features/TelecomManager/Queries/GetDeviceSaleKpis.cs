@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -22,27 +23,44 @@ public class GetDeviceSaleKpisResult
     public List<DeviceSaleRejectionDto> RejectionReasons { get; init; } = new();
 }
 
-public class GetDeviceSaleKpisRequest : IRequest<GetDeviceSaleKpisResult>
+public class GetDeviceSaleKpisRequest : IRequest<GetDeviceSaleKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetDeviceSaleKpisHandler : IRequestHandler<GetDeviceSaleKpisRequest, GetDeviceSaleKpisResult>
 {
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(30);
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetDeviceSaleKpisHandler(IQueryContext context) => _context = context;
+    public GetDeviceSaleKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetDeviceSaleKpisResult> Handle(
         GetDeviceSaleKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetDeviceSaleKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.DeviceSale
                         && o.CreatedAtUtc >= from

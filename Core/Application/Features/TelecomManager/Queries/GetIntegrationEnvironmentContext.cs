@@ -1,3 +1,4 @@
+using Application.Common.Security;
 using Application.Common.Settings;
 using MediatR;
 
@@ -13,7 +14,10 @@ public class GetIntegrationEnvironmentContextResult
     public IntegrationEnvironmentContextDto? Data { get; init; }
 }
 
-public class GetIntegrationEnvironmentContextRequest : IRequest<GetIntegrationEnvironmentContextResult>;
+public class GetIntegrationEnvironmentContextRequest : IRequest<GetIntegrationEnvironmentContextResult>, IRequireAnyPermission
+{
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
+}
 
 public class GetIntegrationEnvironmentContextHandler
     : IRequestHandler<GetIntegrationEnvironmentContextRequest, GetIntegrationEnvironmentContextResult>

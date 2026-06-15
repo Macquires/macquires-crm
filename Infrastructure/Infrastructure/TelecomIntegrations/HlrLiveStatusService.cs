@@ -1,9 +1,12 @@
+using System.Net.Http;
+using System.Net.Sockets;
 using Application.Common.Integrations;
 using Application.Common.Telecom;
 using Infrastructure.TelecomIntegrations.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly.Timeout;
 
 namespace Infrastructure.TelecomIntegrations;
 
@@ -36,10 +39,28 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
 
         if (_useHttp && _simulator != null)
         {
-            return await _simulator.QueryLiveStatusAsync(msisdn, crmOperationalStatus, cancellationToken);
+            try
+            {
+                return await _simulator.QueryLiveStatusAsync(msisdn, crmOperationalStatus, cancellationToken);
+            }
+            catch (Exception ex) when (IsSimulatorUnreachable(ex))
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Network Simulator unreachable for HLR on {Msisdn}; using in-process demo fallback.",
+                    msisdn);
+            }
         }
 
-        var forcedState = await _cache.GetStringAsync($"{CachePrefix}{msisdn.Trim()}", cancellationToken);
+        return await ResolveMockLiveStatusAsync(msisdn, crmOperationalStatus, cancellationToken);
+    }
+
+    private async Task<HlrLiveStatusResult> ResolveMockLiveStatusAsync(
+        string msisdn,
+        string? crmOperationalStatus,
+        CancellationToken cancellationToken)
+    {
+        var forcedState = await TryGetCachedHlrStateAsync(msisdn, cancellationToken);
         if (!string.IsNullOrEmpty(forcedState))
         {
             return BuildResult(msisdn, forcedState, crmOperationalStatus, "HLR live query OK (reprovisioned/cached)");
@@ -81,6 +102,67 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
         return BuildResult(msisdn, fallbackState, crmOperationalStatus, "HLR live query OK (fallback)");
     }
 
+    private static bool IsSimulatorUnreachable(Exception ex)
+    {
+        if (ex is TimeoutRejectedException)
+        {
+            return true;
+        }
+
+        for (var current = ex; current != null; current = current.InnerException)
+        {
+            if (current is HttpRequestException or SocketException)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<string?> TryGetCachedHlrStateAsync(string msisdn, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _cache.GetStringAsync($"{CachePrefix}{msisdn.Trim()}", cancellationToken);
+        }
+        catch (Exception ex) when (IsCacheUnavailable(ex))
+        {
+            _logger.LogDebug(ex, "HLR cache read skipped for {Msisdn} (distributed cache unavailable).", msisdn);
+            return null;
+        }
+    }
+
+    private async Task TrySetCachedHlrStateAsync(
+        string msisdn,
+        string state,
+        DistributedCacheEntryOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (options is null)
+            {
+                await _cache.SetStringAsync($"{CachePrefix}{msisdn}", state, cancellationToken);
+            }
+            else
+            {
+                await _cache.SetStringAsync($"{CachePrefix}{msisdn}", state, options, cancellationToken);
+            }
+        }
+        catch (Exception ex) when (IsCacheUnavailable(ex))
+        {
+            _logger.LogDebug(ex, "HLR cache write skipped for {Msisdn} (distributed cache unavailable).", msisdn);
+        }
+    }
+
+    private static bool IsCacheUnavailable(Exception ex)
+    {
+        var typeName = ex.GetType().FullName ?? string.Empty;
+        return typeName.Contains("RedisConnectionException", StringComparison.Ordinal)
+               || typeName.Contains("RedisTimeoutException", StringComparison.Ordinal);
+    }
+
     public Task<HlrResyncResult> ResyncFromHlrAsync(HlrResyncRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("HLR re-sync profile {ProfileId} MSISDN {Msisdn}", request.SubscriberProfileId, request.Msisdn);
@@ -100,7 +182,7 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
 
         if (!string.IsNullOrWhiteSpace(request.Msisdn))
         {
-            await _cache.SetStringAsync($"{CachePrefix}{request.Msisdn.Trim()}", "ACTIVE", new DistributedCacheEntryOptions
+            await TrySetCachedHlrStateAsync(request.Msisdn.Trim(), "ACTIVE", new DistributedCacheEntryOptions
             {
                 SlidingExpiration = TimeSpan.FromHours(24)
             }, cancellationToken);
@@ -120,7 +202,7 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
     {
         if (!string.IsNullOrWhiteSpace(msisdn))
         {
-            await _cache.SetStringAsync($"{CachePrefix}{msisdn.Trim()}", "ACTIVE", cancellationToken);
+            await TrySetCachedHlrStateAsync(msisdn.Trim(), "ACTIVE", cancellationToken: cancellationToken);
             _logger.LogInformation("HLR mock state forced ACTIVE for {Msisdn}", msisdn);
         }
     }
@@ -129,7 +211,7 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
     {
         if (!string.IsNullOrWhiteSpace(msisdn))
         {
-            await _cache.SetStringAsync($"{CachePrefix}{msisdn.Trim()}", "SUSPENDED", cancellationToken);
+            await TrySetCachedHlrStateAsync(msisdn.Trim(), "SUSPENDED", cancellationToken: cancellationToken);
             _logger.LogInformation("HLR mock state forced SUSPENDED for {Msisdn}", msisdn);
         }
     }
@@ -138,7 +220,7 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
     {
         if (!string.IsNullOrWhiteSpace(msisdn))
         {
-            await _cache.SetStringAsync($"{CachePrefix}{msisdn.Trim()}", "INACTIVE", cancellationToken);
+            await TrySetCachedHlrStateAsync(msisdn.Trim(), "INACTIVE", cancellationToken: cancellationToken);
             _logger.LogInformation("HLR mock state forced INACTIVE (Killed) for {Msisdn}", msisdn);
         }
     }

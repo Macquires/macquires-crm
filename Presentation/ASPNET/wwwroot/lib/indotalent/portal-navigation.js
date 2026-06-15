@@ -471,6 +471,8 @@ const PortalNavigation = (function () {
                     overdueTickets: Number(dto.overdueTickets ?? dto.OverdueTickets ?? 0) || 0,
                     openTechnicalTickets: Number(dto.openTechnicalTickets ?? dto.OpenTechnicalTickets ?? 0) || 0,
                     bulkImportActive: Number(dto.bulkImportActive ?? dto.BulkImportActive ?? 0) || 0,
+                    criticalExecutiveExceptions:
+                        Number(dto.criticalExecutiveExceptions ?? dto.CriticalExecutiveExceptions ?? 0) || 0,
                 };
                 StorageManager.saveMenuBadges(map);
             } else {

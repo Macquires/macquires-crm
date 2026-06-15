@@ -34,6 +34,7 @@ public sealed class TakeOverEligibilityChecker : ITakeOverEligibilityChecker
         string? msisdnAssetId,
         string transferReason,
         string? excludeOperationId = null,
+        string? obligationSettlementReference = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(transferReason))
@@ -81,7 +82,7 @@ public sealed class TakeOverEligibilityChecker : ITakeOverEligibilityChecker
 
         if (!string.IsNullOrEmpty(asset.Msisdn))
         {
-            await EnsureNoOutstandingDebtAsync(asset.Msisdn, cancellationToken);
+            await EnsureNoOutstandingDebtAsync(asset.Msisdn, obligationSettlementReference, cancellationToken);
         }
 
         await EnsureNoBlockingTakeOverAsync(msisdnId, excludeOperationId, cancellationToken);
@@ -130,6 +131,9 @@ public sealed class TakeOverEligibilityChecker : ITakeOverEligibilityChecker
             operation.MsisdnAssetId,
             operation.TransferReason,
             operation.Id,
+            string.Equals(operation.TakeOverObligationStatus, "Settled", StringComparison.OrdinalIgnoreCase)
+                ? operation.PaymentReference
+                : null,
             cancellationToken);
     }
 
@@ -151,11 +155,19 @@ public sealed class TakeOverEligibilityChecker : ITakeOverEligibilityChecker
         }
     }
 
-    private async Task EnsureNoOutstandingDebtAsync(string msisdn, CancellationToken cancellationToken)
+    private async Task EnsureNoOutstandingDebtAsync(
+        string msisdn,
+        string? obligationSettlementReference,
+        CancellationToken cancellationToken)
     {
         var balance = await _billing.GetOutstandingBalanceAsync(msisdn, cancellationToken);
         if (balance < 0)
         {
+            if (!string.IsNullOrWhiteSpace(obligationSettlementReference))
+            {
+                return;
+            }
+
             throw new BusinessRuleViolationException(
                 $"VAL-07-02: لا يمكن نقل الملكية — ذمم مالية معلقة بقيمة {-balance:N0} ل.س على الخط {msisdn}.");
         }

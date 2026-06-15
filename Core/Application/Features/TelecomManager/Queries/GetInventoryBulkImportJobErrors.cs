@@ -21,12 +21,12 @@ public class GetInventoryBulkImportJobErrorsResult
     public int TotalCount { get; init; }
 }
 
-public class GetInventoryBulkImportJobErrorsRequest : IRequest<GetInventoryBulkImportJobErrorsResult>
+public class GetInventoryBulkImportJobErrorsRequest : IRequest<GetInventoryBulkImportJobErrorsResult>, IRequireAnyPermission
 {
     public string JobId { get; init; } = "";
     public int Skip { get; init; }
     public int Take { get; init; } = 50;
-    public string? ActorUserId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => BulkImportPermissionSets.MonitorAny;
 }
 
 public class GetInventoryBulkImportJobErrorsValidator : AbstractValidator<GetInventoryBulkImportJobErrorsRequest>
@@ -42,11 +42,16 @@ public class GetInventoryBulkImportJobErrorsHandler
 {
     private readonly IQueryContext _query;
     private readonly IUserScopeService _userScope;
+    private readonly IOperatorContext _operator;
 
-    public GetInventoryBulkImportJobErrorsHandler(IQueryContext query, IUserScopeService userScope)
+    public GetInventoryBulkImportJobErrorsHandler(
+        IQueryContext query,
+        IUserScopeService userScope,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _userScope = userScope;
+        _operator = operatorContext;
     }
 
     public async Task<GetInventoryBulkImportJobErrorsResult> Handle(
@@ -60,10 +65,10 @@ public class GetInventoryBulkImportJobErrorsHandler
             return new GetInventoryBulkImportJobErrorsResult();
         }
 
-        if (!string.IsNullOrEmpty(request.ActorUserId)
-            && !string.IsNullOrEmpty(job.CreatedById)
-            && !await _userScope.CanAccessUserAsync(request.ActorUserId, job.CreatedById, cancellationToken)
-            && !await _userScope.IsUnrestrictedAdminAsync(request.ActorUserId, cancellationToken))
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        if (!string.IsNullOrEmpty(job.CreatedById)
+            && !await _userScope.CanAccessUserAsync(actorUserId, job.CreatedById, cancellationToken)
+            && !await _userScope.IsUnrestrictedAdminAsync(actorUserId, cancellationToken))
         {
             return new GetInventoryBulkImportJobErrorsResult();
         }

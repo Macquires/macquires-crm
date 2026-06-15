@@ -24,7 +24,7 @@ public class GetRefundKpisHandlerTests
             Op("RFD-3", TelecomOperationStatus.PendingDocuments, RefundWellKnown.TypeWalletBalance, 200m, null, now, false, "BackOffice"));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetRefundKpisHandler(ctx);
+        var handler = new GetRefundKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetRefundKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -41,7 +41,7 @@ public class GetRefundKpisHandlerTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -56,21 +56,19 @@ public class GetRefundKpisHandlerTests
         DateTime created,
         bool dualApproval,
         string? approval = null) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.DepositRefundSettlement,
-            Status = status,
-            RefundType = refundType,
-            RefundReason = status == TelecomOperationStatus.Failed ? "Rejected-KYC" : "OK",
-            RefundAmount = amount,
-            RefundSettlementStatus = settlement,
-            RequiresDualApproval = dualApproval,
-            CreatedAtUtc = created,
-            ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(10) : null,
-            ApprovalLevelRequired = approval,
-            SubscriberProfileId = "prof-rfd",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.DepositRefundSettlement;
+            op.Status = status;
+            op.RefundType = refundType;
+            op.RefundReason = status == TelecomOperationStatus.Failed ? "Rejected-KYC" : "OK";
+            op.RefundAmount = amount;
+            op.RefundSettlementStatus = settlement;
+            op.RequiresDualApproval = dualApproval;
+            op.CreatedAtUtc = created;
+            op.ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(10) : null;
+            op.ApprovalLevelRequired = approval;
+            op.SubscriberProfileId = "prof-rfd";
+        });
 }

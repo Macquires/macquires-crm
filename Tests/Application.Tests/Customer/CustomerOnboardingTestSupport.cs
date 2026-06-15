@@ -23,7 +23,7 @@ internal static class CustomerOnboardingTestSupport
     internal static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -51,7 +51,7 @@ internal static class CustomerOnboardingTestSupport
     {
         var uow = new CtxUnitOfWork(ctx);
         var repo = new EfCommandRepository<SubscriberProfile>(ctx.SubscriberProfile);
-        return new EnsureSubscriberProfileForCustomerHandler(ctx, repo, uow);
+        return new EnsureSubscriberProfileForCustomerHandler(ctx, repo, uow, TestOperatorContext.Instance);
     }
 
     internal static CreateCustomerHandler CreateCreateHandler(QueryContext ctx)
@@ -68,7 +68,8 @@ internal static class CustomerOnboardingTestSupport
             numberSequence,
             ctx,
             new PassthroughEncryption(),
-            new NoopUserAudit());
+            new NoopUserAudit(),
+            TestOperatorContext.Instance);
     }
 
     internal static CreateCustomerRequest BuildValidIndividualCreateRequest(
@@ -88,7 +89,6 @@ internal static class CustomerOnboardingTestSupport
             EmailAddress = "pos@demo.local",
             CustomerGroupId = groupId,
             CustomerCategoryId = categoryId,
-            CreatedById = "pos-user",
             CustomerKind = CustomerKind.Individual,
             NationalId = nationalId,
         };
@@ -110,7 +110,6 @@ internal static class CustomerOnboardingTestSupport
             EmailAddress = "pos@demo.local",
             CustomerGroupId = groupId,
             CustomerCategoryId = categoryId,
-            CreatedById = "pos-user",
             CustomerKind = CustomerKind.Individual,
             NationalId = nationalId,
         };
@@ -121,7 +120,6 @@ internal static class CustomerOnboardingTestSupport
             PosQuickRegister = true,
             Name = "مشترك POS",
             PhoneNumber = "0937004321",
-            CreatedById = "pos-user",
             CustomerKind = CustomerKind.Individual,
             NationalId = nationalId,
         };

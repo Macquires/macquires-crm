@@ -1,5 +1,6 @@
 ﻿using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
@@ -30,9 +31,10 @@ public class GetNumberSequenceListResult
     public List<GetNumberSequenceListDto>? Data { get; init; }
 }
 
-public class GetNumberSequenceListRequest : IRequest<GetNumberSequenceListResult>
+public class GetNumberSequenceListRequest : IRequest<GetNumberSequenceListResult>, IRequirePermission
 {
     public bool IsDeleted { get; init; } = false;
+    public string PermissionKey => PermissionCatalog.AdminSettingsManage;
 }
 
 

@@ -71,7 +71,6 @@ const App = {
                         throw new Error('Upload failed');
                     }
                     await services.saveAvatar({
-                        userId: StorageManager.getUserId(),
                         avatar: imageName,
                     });
                     StorageManager.saveAvatar(imageName);
@@ -91,7 +90,6 @@ const App = {
                 state.isSavingProfile = true;
                 try {
                     const res = await services.saveProfile({
-                        userId: StorageManager.getUserId(),
                         firstName: state.firstName,
                         lastName: state.lastName,
                         companyName: state.companyName || '',
@@ -123,7 +121,6 @@ const App = {
                 state.isSavingPassword = true;
                 try {
                     const res = await services.changePassword({
-                        userId: StorageManager.getUserId(),
                         oldPassword: state.oldPassword,
                         newPassword: state.newPassword,
                         confirmNewPassword: state.confirmPassword,

@@ -14,7 +14,7 @@ public class GetOperatorSessionResult
     public string? PrimaryMenuPersona { get; init; }
 }
 
-public class GetOperatorSessionRequest : IRequest<GetOperatorSessionResult>
+public class GetOperatorSessionRequest : IRequest<GetOperatorSessionResult>, IRequireAuthenticatedOperator
 {
     public string UserId { get; init; } = null!;
     public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();

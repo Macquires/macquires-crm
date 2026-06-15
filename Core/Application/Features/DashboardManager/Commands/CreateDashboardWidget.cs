@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Dashboard;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -15,7 +16,7 @@ public class CreateDashboardWidgetResult
     public DashboardWidget? Data { get; set; }
 }
 
-public class CreateDashboardWidgetRequest : IRequest<CreateDashboardWidgetResult>
+public class CreateDashboardWidgetRequest : IRequest<CreateDashboardWidgetResult>, IRequireAnyPermission
 {
     public string? WidgetKey { get; init; }
     public string? TitleAr { get; init; }
@@ -31,7 +32,7 @@ public class CreateDashboardWidgetRequest : IRequest<CreateDashboardWidgetResult
     public string? CtaLabelAr { get; init; }
     public string? CtaLabelEn { get; init; }
     public bool IsActive { get; init; } = true;
-    public string? CreatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.AdminAny;
 }
 
 public class CreateDashboardWidgetValidator : AbstractValidator<CreateDashboardWidgetRequest>
@@ -51,19 +52,22 @@ public class CreateDashboardWidgetHandler : IRequestHandler<CreateDashboardWidge
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDashboardWidgetRegistry _registry;
     private readonly IDashboardWidgetCatalogReader _catalog;
+    private readonly IOperatorContext _operator;
 
     public CreateDashboardWidgetHandler(
         ICommandRepository<DashboardWidget> repository,
         IQueryContext query,
         IUnitOfWork unitOfWork,
         IDashboardWidgetRegistry registry,
-        IDashboardWidgetCatalogReader catalog)
+        IDashboardWidgetCatalogReader catalog,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _query = query;
         _unitOfWork = unitOfWork;
         _registry = registry;
         _catalog = catalog;
+        _operator = operatorContext;
     }
 
     public async Task<CreateDashboardWidgetResult> Handle(
@@ -94,7 +98,7 @@ public class CreateDashboardWidgetHandler : IRequestHandler<CreateDashboardWidge
 
         var entity = new DashboardWidget
         {
-            CreatedById = request.CreatedById,
+            CreatedById = OperatorActor.RequireUserId(_operator),
             WidgetKey = widgetKey,
             TitleAr = (request.TitleAr ?? string.Empty).Trim(),
             TitleEn = string.IsNullOrWhiteSpace(request.TitleEn) ? null : request.TitleEn.Trim(),

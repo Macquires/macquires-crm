@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,11 +13,12 @@ public class ResolveAuditDisplayNamesResult
     public string? CustomerDisplayName { get; init; }
 }
 
-public class ResolveAuditDisplayNamesRequest : IRequest<ResolveAuditDisplayNamesResult>
+public class ResolveAuditDisplayNamesRequest : IRequest<ResolveAuditDisplayNamesResult>, IRequireAnyPermission
 {
     public string? ProfileId { get; init; }
     public string? TechnicalTicketId { get; init; }
     public string? CustomerId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.OperationsAny;
 }
 
 public class ResolveAuditDisplayNamesHandler : IRequestHandler<ResolveAuditDisplayNamesRequest, ResolveAuditDisplayNamesResult>

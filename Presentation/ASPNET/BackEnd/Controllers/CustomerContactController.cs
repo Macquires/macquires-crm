@@ -2,8 +2,8 @@
 using Application.Features.CustomerContactManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -15,7 +15,7 @@ public class CustomerContactController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireCustomerManage]
     [HttpPost("CreateCustomerContact")]
     public async Task<ActionResult<ApiSuccessResult<CreateCustomerContactResult>>> CreateCustomerContactAsync(CreateCustomerContactRequest request, CancellationToken cancellationToken)
     {
@@ -29,7 +29,7 @@ public class CustomerContactController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerManage]
     [HttpPost("UpdateCustomerContact")]
     public async Task<ActionResult<ApiSuccessResult<UpdateCustomerContactResult>>> UpdateCustomerContactAsync(UpdateCustomerContactRequest request, CancellationToken cancellationToken)
     {
@@ -43,7 +43,7 @@ public class CustomerContactController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerManage]
     [HttpPost("DeleteCustomerContact")]
     public async Task<ActionResult<ApiSuccessResult<DeleteCustomerContactResult>>> DeleteCustomerContactAsync(DeleteCustomerContactRequest request, CancellationToken cancellationToken)
     {
@@ -57,7 +57,7 @@ public class CustomerContactController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("GetCustomerContactList")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomerContactListResult>>> GetCustomerContactListAsync(
         CancellationToken cancellationToken,
@@ -75,7 +75,7 @@ public class CustomerContactController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("GetCustomerContactByCustomerIdList")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomerContactByCustomerIdListResult>>> GetCustomerContactByCustomerIdListAsync(
     CancellationToken cancellationToken,
@@ -92,8 +92,4 @@ public class CustomerContactController : BaseApiController
             Content = response
         });
     }
-
-
 }
-
-

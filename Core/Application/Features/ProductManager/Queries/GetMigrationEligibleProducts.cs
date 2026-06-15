@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -32,13 +33,15 @@ public class GetMigrationEligibleProductsResult
     public string? CurrentProductName { get; init; }
 }
 
-public class GetMigrationEligibleProductsRequest : IRequest<GetMigrationEligibleProductsResult>
+public class GetMigrationEligibleProductsRequest : IRequest<GetMigrationEligibleProductsResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = "";
     public string? MsisdnAssetId { get; init; }
 
     /// <summary>When set (e.g. new-line activation), filters catalog by this line type instead of an existing subscription.</summary>
     public string? TargetSubscriptionTypeId { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 public class GetMigrationEligibleProductsHandler

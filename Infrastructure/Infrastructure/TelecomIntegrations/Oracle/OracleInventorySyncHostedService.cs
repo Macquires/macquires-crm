@@ -1,5 +1,7 @@
 using Application.Common.Integrations;
+using Application.Common.Security;
 using Application.Common.Settings;
+using Infrastructure.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -25,26 +27,36 @@ public sealed class OracleInventorySyncHostedService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var intervalMinutes = 60;
+
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var settings = scope.ServiceProvider.GetRequiredService<IGlobalSettingsProvider>();
-                var enabled = await settings.GetBoolAsync(GlobalSettingKeys.IntegrationOracleFusionEnabled, defaultValue: true, stoppingToken);
-                var intervalMinutes = await settings.GetIntAsync(
-                    GlobalSettingKeys.IntegrationOracleFusionSyncIntervalMinutes,
-                    defaultValue: 60,
-                    min: 5,
-                    max: 1440,
-                    cancellationToken: stoppingToken);
-
-                if (enabled)
+                using (scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>().Enter())
                 {
-                    var sync = scope.ServiceProvider.GetRequiredService<IOracleInventorySyncService>();
-                    var result = await sync.SyncAsync(stoppingToken);
-                    _logger.LogInformation("Oracle inventory sync: {Message}", result.Message);
-                }
+                    var settings = scope.ServiceProvider.GetRequiredService<IGlobalSettingsProvider>();
+                    var enabled = await settings.GetBoolAsync(GlobalSettingKeys.IntegrationOracleFusionEnabled, defaultValue: true, stoppingToken);
+                    intervalMinutes = await settings.GetIntAsync(
+                        GlobalSettingKeys.IntegrationOracleFusionSyncIntervalMinutes,
+                        defaultValue: 60,
+                        min: 5,
+                        max: 1440,
+                        cancellationToken: stoppingToken);
 
-                await Task.Delay(TimeSpan.FromMinutes(intervalMinutes), stoppingToken);
+                    if (enabled)
+                    {
+                        await scope.TryRunUnderDistributedLockAsync(
+                            "hosted-oracle-inventory-sync",
+                            TimeSpan.FromMinutes(Math.Max(intervalMinutes - 1, 5)),
+                            async ct =>
+                            {
+                                var sync = scope.ServiceProvider.GetRequiredService<IOracleInventorySyncService>();
+                                var result = await sync.SyncAsync(ct);
+                                _logger.LogInformation("Oracle inventory sync: {Message}", result.Message);
+                            },
+                            stoppingToken);
+                    }
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -53,8 +65,10 @@ public sealed class OracleInventorySyncHostedService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Oracle inventory sync failed.");
-                await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken);
+                intervalMinutes = Math.Min(intervalMinutes, 15);
             }
+
+            await Task.Delay(TimeSpan.FromMinutes(intervalMinutes), stoppingToken);
         }
     }
 }

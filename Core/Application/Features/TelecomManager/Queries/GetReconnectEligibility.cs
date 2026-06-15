@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom.Reconnect;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ public class GetReconnectEligibilityResult
     public GetReconnectEligibilityDto? Data { get; init; }
 }
 
-public class GetReconnectEligibilityRequest : IRequest<GetReconnectEligibilityResult>
+public class GetReconnectEligibilityRequest : IRequest<GetReconnectEligibilityResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = null!;
     public string MsisdnAssetId { get; init; } = null!;
@@ -31,6 +32,7 @@ public class GetReconnectEligibilityRequest : IRequest<GetReconnectEligibilityRe
     public string? PaymentReference { get; init; }
     public bool FraudClearanceConfirmed { get; init; }
     public string? SourceSuspensionOperationId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => TelecomEligibilityPermissionSets.ReconnectAny;
 }
 
 public class GetReconnectEligibilityHandler : IRequestHandler<GetReconnectEligibilityRequest, GetReconnectEligibilityResult>

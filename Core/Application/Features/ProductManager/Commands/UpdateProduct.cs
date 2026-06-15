@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,16 +11,16 @@ public class UpdateProductResult
     public Product? Data { get; set; }
 }
 
-public class UpdateProductRequest : IRequest<UpdateProductResult>
+public class UpdateProductRequest : IRequest<UpdateProductResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
     public string? Name { get; init; }
     public string? Description { get; init; }
     public double? UnitPrice { get; init; }
     public bool? Physical { get; init; }
-    public string? UpdatedById { get; init; }
     public string? CompatibleSubscriptionTypeId { get; init; }
     public string? ServiceCode { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ManageAny;
 }
 
 public class UpdateProductValidator : AbstractValidator<UpdateProductRequest>
@@ -36,11 +37,16 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductRequest, Update
 {
     private readonly ICommandRepository<Product> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
-    public UpdateProductHandler(ICommandRepository<Product> repository, IUnitOfWork unitOfWork)
+    public UpdateProductHandler(
+        ICommandRepository<Product> repository,
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateProductResult> Handle(UpdateProductRequest request, CancellationToken cancellationToken)
@@ -51,7 +57,7 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductRequest, Update
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.Name = request.Name;
         entity.UnitPrice = request.UnitPrice;
         entity.Physical = request.Physical;

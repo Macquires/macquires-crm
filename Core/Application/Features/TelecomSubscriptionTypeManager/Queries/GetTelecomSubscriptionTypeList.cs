@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using Application.Common.Extensions;
 using AutoMapper;
 using Domain.Entities;
@@ -33,12 +34,14 @@ public class GetTelecomSubscriptionTypeListResult
     public List<GetTelecomSubscriptionTypeListDto>? Data { get; init; }
 }
 
-public class GetTelecomSubscriptionTypeListRequest : IRequest<GetTelecomSubscriptionTypeListResult>
+public class GetTelecomSubscriptionTypeListRequest : IRequest<GetTelecomSubscriptionTypeListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; }
 
     /// <summary>When true, only <see cref="TelecomSubscriptionTypeLookup.IsActive"/> rows (for dropdowns).</summary>
     public bool ActiveOnly { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ReadAny;
 }
 
 public class GetTelecomSubscriptionTypeListHandler

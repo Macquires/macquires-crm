@@ -5,6 +5,7 @@ using Application.Common.Services.SecurityManager;
 using Application.Common.Settings;
 using Application.Common.Telecom;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Infrastructure.SecurityManager.NavigationMenu;
 using Infrastructure.SecurityManager.Roles;
@@ -124,6 +125,12 @@ public class SecurityService : ISecurityService
         if (primaryPersona.HasValue)
         {
             jwtClaims.Add(new Claim(TelecomAuthClaims.PrimaryMenuPersona, primaryPersona.Value.ToString()));
+        }
+
+        var branchId = await ResolveOperatorBranchIdAsync(user, cancellationToken);
+        if (!string.IsNullOrEmpty(branchId))
+        {
+            jwtClaims.Add(new Claim(TelecomAuthClaims.BranchId, branchId));
         }
 
         var jwtMinutes = await GetJwtExpiryMinutesAsync(cancellationToken);
@@ -392,6 +399,12 @@ public class SecurityService : ISecurityService
             jwtClaims.Add(new Claim(TelecomAuthClaims.PrimaryMenuPersona, primaryPersona.Value.ToString()));
         }
 
+        var branchId = await ResolveOperatorBranchIdAsync(user, cancellationToken);
+        if (!string.IsNullOrEmpty(branchId))
+        {
+            jwtClaims.Add(new Claim(TelecomAuthClaims.BranchId, branchId));
+        }
+
         var jwtMinutes = await GetJwtExpiryMinutesAsync(cancellationToken);
         var newAccessToken = _tokenService.GenerateToken(user, jwtClaims, jwtMinutes);
         var newRefreshToken = _tokenService.GenerateRefreshToken();
@@ -485,7 +498,7 @@ public class SecurityService : ISecurityService
         user.CompanyName = companyName;
 
         _context.Update(user);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
     public async Task ChangePasswordAsync(
         string userId,
@@ -1057,6 +1070,23 @@ public class SecurityService : ISecurityService
         {
             throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
+    }
+
+    private async Task<string?> ResolveOperatorBranchIdAsync(
+        ApplicationUser user,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(user.OrgUnitId))
+        {
+            return null;
+        }
+
+        var kind = await _context.OrgUnit.AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Id == user.OrgUnitId)
+            .Select(o => (OrgUnitKind?)o.Kind)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return kind == OrgUnitKind.Branch ? user.OrgUnitId.Trim() : null;
     }
 
 }

@@ -1,6 +1,7 @@
 using Application.Common.Audit;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -13,14 +14,15 @@ public class UpdateTechnicalTicketStatusResult
     public TelecomTechnicalTicket? Data { get; init; }
 }
 
-public class UpdateTechnicalTicketStatusRequest : IRequest<UpdateTechnicalTicketStatusResult>
+public class UpdateTechnicalTicketStatusRequest : IRequest<UpdateTechnicalTicketStatusResult>, IRequireAnyPermission
 {
     public string TicketId { get; init; } = "";
     public TechnicalTicketStatus NewStatus { get; init; }
     public TechnicalTicketPriority? NewPriority { get; init; }
     public string? OperatorNotesAr { get; init; }
-    public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalTicketManageAny;
 }
 
 public class UpdateTechnicalTicketStatusValidator : AbstractValidator<UpdateTechnicalTicketStatusRequest>
@@ -28,7 +30,6 @@ public class UpdateTechnicalTicketStatusValidator : AbstractValidator<UpdateTech
     public UpdateTechnicalTicketStatusValidator()
     {
         RuleFor(x => x.TicketId).NotEmpty();
-        RuleFor(x => x.ActorUserId).NotEmpty();
         RuleFor(x => x.OperatorNotesAr)
             .NotEmpty()
             .MinimumLength(5)
@@ -44,23 +45,28 @@ public class UpdateTechnicalTicketStatusHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserAuditService _audit;
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IOperatorContext _operator;
 
     public UpdateTechnicalTicketStatusHandler(
         ICommandRepository<TelecomTechnicalTicket> repository,
         IUnitOfWork unitOfWork,
         IUserAuditService audit,
-        ISmsGatewayIntegration sms)
+        ISmsGatewayIntegration sms,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _audit = audit;
         _sms = sms;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateTechnicalTicketStatusResult> Handle(
         UpdateTechnicalTicketStatusRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var ticket = await _repository.GetAsync(request.TicketId, cancellationToken)
             ?? throw new InvalidOperationException("التذكرة غير موجودة.");
 
@@ -71,12 +77,12 @@ public class UpdateTechnicalTicketStatusHandler
         {
             ticket.Priority = request.NewPriority.Value;
         }
-        ticket.UpdatedById = request.ActorUserId;
+        ticket.UpdatedById = actorUserId;
 
         if (request.NewStatus == TechnicalTicketStatus.Resolved)
         {
             ticket.ResolutionNotes = request.OperatorNotesAr?.Trim();
-            ticket.ResolvedByUserId = request.ActorUserId;
+            ticket.ResolvedByUserId = actorUserId;
             ticket.ResolvedAtUtc = DateTime.UtcNow;
         }
         else if (!string.IsNullOrWhiteSpace(request.OperatorNotesAr))
@@ -103,7 +109,7 @@ public class UpdateTechnicalTicketStatusHandler
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId!,
+                ActorUserId = actorUserId,
                 ActionType = request.NewStatus == TechnicalTicketStatus.Resolved
                     ? UserAuditActionTypes.TicketResolved
                     : UserAuditActionTypes.TelecomOperationConfirmed,

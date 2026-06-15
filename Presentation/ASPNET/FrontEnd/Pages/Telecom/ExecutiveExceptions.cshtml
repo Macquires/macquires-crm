@@ -1,0 +1,28 @@
+@page "/Telecom/ExecutiveExceptions"
+@{
+    ViewData["Title"] = "Operational exception center";
+}
+
+<div class="form-card telecom-premium-page py-4" id="formcard">
+    <div id="executiveExceptionsGate" class="text-center py-5 d-none">
+        <p class="text-muted" data-telecom-i18n="defaultDashboard.noPermission">لا صلاحية</p>
+        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-danger btn-sm">العودة للوحة</a>
+    </div>
+    <div class="container-fluid">
+        <div id="executiveExceptionsApp" v-cloak class="strategic-exec-root">
+            @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_ExecutiveExceptionsEmbed.cshtml")
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script src="~/lib/indotalent/executive-exceptions-panel.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            if (typeof ExecutiveExceptionsPanel !== 'undefined') {
+                await ExecutiveExceptionsPanel.initStandalone();
+            }
+        });
+    </script>
+}

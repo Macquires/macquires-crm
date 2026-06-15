@@ -20461,7 +20461,14 @@
           "kind": {
             "$ref": "#/components/schemas/TelecomOperationKind"
           },
+          "status": {
+            "$ref": "#/components/schemas/TelecomOperationStatus"
+          },
           "kindNameAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "kindNameEn": {
             "type": "string",
             "nullable": true
           },
@@ -20506,6 +20513,14 @@
             "type": "boolean"
           },
           "blockReasonAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "blockReasonEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "blockReasonCode": {
             "type": "string",
             "nullable": true
           },
@@ -24008,6 +24023,10 @@
             "nullable": true
           },
           "subscriberProfileId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
             "type": "string",
             "nullable": true
           },

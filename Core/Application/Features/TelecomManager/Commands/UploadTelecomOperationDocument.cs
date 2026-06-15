@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Common.Telecom.BackOffice;
 using Domain.Entities;
@@ -13,10 +14,11 @@ public class UploadTelecomOperationDocumentResult
     public TelecomOperationRequest? Data { get; set; }
 }
 
-public class UploadTelecomOperationDocumentRequest : IRequest<UploadTelecomOperationDocumentResult>
+public class UploadTelecomOperationDocumentRequest : IRequest<UploadTelecomOperationDocumentResult>, IRequireAnyPermission
 {
     public string Id { get; init; } = null!;
-    public string? UpdatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CreateAny;
 }
 
 public class UploadTelecomOperationDocumentValidator : AbstractValidator<UploadTelecomOperationDocumentRequest>
@@ -33,15 +35,18 @@ public class UploadTelecomOperationDocumentHandler : IRequestHandler<UploadTelec
     private readonly ICommandRepository<TelecomOperationRequest> _repository;
     private readonly ITelecomOperationOrchestrator _orchestrator;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UploadTelecomOperationDocumentHandler(
         ICommandRepository<TelecomOperationRequest> repository,
         ITelecomOperationOrchestrator orchestrator,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _orchestrator = orchestrator;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UploadTelecomOperationDocumentResult> Handle(
@@ -62,7 +67,7 @@ public class UploadTelecomOperationDocumentHandler : IRequestHandler<UploadTelec
             await _orchestrator.TransitionAsync(
                 entity,
                 TelecomOperationStatus.PendingDocuments,
-                request.UpdatedById,
+                OperatorActor.RequireUserId(_operator),
                 "رفع الوثائق",
                 cancellationToken);
         }

@@ -22,7 +22,7 @@ public sealed class ExecuteCustomer360TechnicalActionResult
     public bool Success { get; init; } = true;
 }
 
-public sealed class ExecuteCustomer360TechnicalActionRequest : IRequest<ExecuteCustomer360TechnicalActionResult>
+public sealed class ExecuteCustomer360TechnicalActionRequest : IRequest<ExecuteCustomer360TechnicalActionResult>, IRequireAnyPermission
 {
     public string CustomerId { get; init; } = "";
     public string ActionType { get; init; } = "";
@@ -32,7 +32,7 @@ public sealed class ExecuteCustomer360TechnicalActionRequest : IRequest<ExecuteC
     public string? ProductOfferingId { get; init; }
     public string? SimIccid { get; init; }
     public string? Notes { get; init; }
-    public string? ActorUserId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CustomerProvisioningAny;
 }
 
 public sealed class ExecuteCustomer360TechnicalActionValidator : AbstractValidator<ExecuteCustomer360TechnicalActionRequest>
@@ -90,6 +90,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
             throw new BusinessRuleViolationException("يجب تسجيل الدخول لتنفيذ هذه العملية.");
         }
 
+        var actorId = OperatorActor.RequireUserId(_operator);
         var customerId = request.CustomerId.Trim();
         var action = (request.ActionType ?? "").Trim();
         if (string.IsNullOrEmpty(action))
@@ -105,7 +106,6 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
         }
 
         var ctx = await ResolveLineContextAsync(customerId, request, cancellationToken);
-        var actorId = request.ActorUserId ?? _operator.UserId;
 
         return action.ToUpperInvariant() switch
         {
@@ -120,7 +120,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
     private async Task<ExecuteCustomer360TechnicalActionResult> ActivateVasAsync(
         ExecuteCustomer360TechnicalActionRequest request,
         LineContext ctx,
-        string? actorId,
+        string actorId,
         CancellationToken cancellationToken)
     {
         await EnsureAnyPermissionAsync(ProvisioningPermissions, cancellationToken);
@@ -142,7 +142,6 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
                 Msisdn = ctx.Msisdn,
                 ServiceCode = code,
                 Action = VasToggleAction.Activate,
-                ActorUserId = actorId,
             },
             cancellationToken);
 
@@ -164,7 +163,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
     private async Task<ExecuteCustomer360TechnicalActionResult> PackageMigrationAsync(
         ExecuteCustomer360TechnicalActionRequest request,
         LineContext ctx,
-        string? actorId,
+        string actorId,
         CancellationToken cancellationToken)
     {
         await EnsureAnyPermissionAsync(ProvisioningPermissions, cancellationToken);
@@ -178,12 +177,11 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
                 MsisdnAssetId = ctx.MsisdnAssetId,
                 ProductOfferingId = offeringId,
                 Notes = request.Notes,
-                CreatedById = actorId,
             },
             cancellationToken);
 
         var op = create.Data ?? throw new BusinessRuleViolationException("تعذّر إنشاء طلب الترحيل.");
-        await MarkDocumentAndConfirmAsync(op.Id, actorId, cancellationToken);
+        await MarkDocumentAndConfirmAsync(op.Id, cancellationToken);
 
         await LogCustomer360ActionAsync(
             actorId,
@@ -203,7 +201,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
     private async Task<ExecuteCustomer360TechnicalActionResult> SimSwapAsync(
         ExecuteCustomer360TechnicalActionRequest request,
         LineContext ctx,
-        string? actorId,
+        string actorId,
         CancellationToken cancellationToken)
     {
         await EnsureAnyPermissionAsync(NetworkPermissions, cancellationToken);
@@ -222,12 +220,11 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
                 MsisdnAssetId = ctx.MsisdnAssetId,
                 SimIccid = iccid,
                 Notes = request.Notes,
-                CreatedById = actorId,
             },
             cancellationToken);
 
         var op = create.Data ?? throw new BusinessRuleViolationException("تعذّر إنشاء طلب تبديل الشريحة.");
-        await MarkDocumentAndConfirmAsync(op.Id, actorId, cancellationToken);
+        await MarkDocumentAndConfirmAsync(op.Id, cancellationToken);
 
         await LogCustomer360ActionAsync(actorId, "SimSwap", ctx, new { iccid, op.Number }, cancellationToken);
 
@@ -242,7 +239,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
     private async Task<ExecuteCustomer360TechnicalActionResult> LineActivationAsync(
         ExecuteCustomer360TechnicalActionRequest request,
         LineContext ctx,
-        string? actorId,
+        string actorId,
         CancellationToken cancellationToken)
     {
         await EnsureAnyPermissionAsync(NetworkPermissions, cancellationToken);
@@ -259,12 +256,11 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
                 ProductOfferingId = offeringId,
                 SimIccid = string.IsNullOrEmpty(iccid) ? null : iccid,
                 Notes = request.Notes,
-                CreatedById = actorId,
             },
             cancellationToken);
 
         var op = create.Data ?? throw new BusinessRuleViolationException("تعذّر إنشاء طلب التفعيل.");
-        await MarkDocumentAndConfirmAsync(op.Id, actorId, cancellationToken);
+        await MarkDocumentAndConfirmAsync(op.Id, cancellationToken);
 
         await LogCustomer360ActionAsync(actorId, "LineActivation", ctx, new { offeringId, op.Number }, cancellationToken);
 
@@ -276,14 +272,14 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
         };
     }
 
-    private async Task MarkDocumentAndConfirmAsync(string operationId, string? actorId, CancellationToken cancellationToken)
+    private async Task MarkDocumentAndConfirmAsync(string operationId, CancellationToken cancellationToken)
     {
         await _mediator.Send(
-            new UploadTelecomOperationDocumentRequest { Id = operationId, UpdatedById = actorId },
+            new UploadTelecomOperationDocumentRequest { Id = operationId },
             cancellationToken);
 
         await _mediator.Send(
-            new ConfirmTelecomOperationRequest { Id = operationId, UpdatedById = actorId },
+            new ConfirmTelecomOperationRequest { Id = operationId },
             cancellationToken);
     }
 
@@ -408,7 +404,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
     }
 
     private async Task LogCustomer360ActionAsync(
-        string? actorId,
+        string actorId,
         string actionType,
         LineContext ctx,
         object payload,
@@ -417,7 +413,7 @@ public sealed class ExecuteCustomer360TechnicalActionHandler
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = actorId ?? "system",
+                ActorUserId = actorId,
                 ActionType = UserAuditActionTypes.TelecomOperationConfirmed,
                 EntityType = "Customer360",
                 EntityId = ctx.SubscriberProfileId,

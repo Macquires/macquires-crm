@@ -1,5 +1,6 @@
 ﻿using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
@@ -39,9 +40,10 @@ public class GetCustomerContactByCustomerIdListResult
     public List<GetCustomerContactByCustomerIdListDto>? Data { get; init; }
 }
 
-public class GetCustomerContactByCustomerIdListRequest : IRequest<GetCustomerContactByCustomerIdListResult>
+public class GetCustomerContactByCustomerIdListRequest : IRequest<GetCustomerContactByCustomerIdListResult>, IRequireAnyPermission
 {
     public string? CustomerId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => CustomerPermissionSets.ViewAny;
 }
 
 

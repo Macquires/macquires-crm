@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +20,10 @@ public class GetInstallmentPlanListResult
     public List<GetInstallmentPlanListDto>? Data { get; init; }
 }
 
-public class GetInstallmentPlanListRequest : IRequest<GetInstallmentPlanListResult>;
+public class GetInstallmentPlanListRequest : IRequest<GetInstallmentPlanListResult>, IRequireAnyPermission
+{
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.OperationsViewAny;
+}
 
 public class GetInstallmentPlanListHandler : IRequestHandler<GetInstallmentPlanListRequest, GetInstallmentPlanListResult>
 {

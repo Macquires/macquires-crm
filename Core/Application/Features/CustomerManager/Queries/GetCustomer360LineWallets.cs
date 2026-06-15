@@ -1,7 +1,9 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Security;
 using Application.Common.Telecom;
+using Application.Common.Telecom.Customer360;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -31,9 +33,10 @@ public class GetCustomer360LineWalletsResult
     public Dictionary<string, Customer360LineWalletDto> WalletsBySubscriptionId { get; init; } = new();
 }
 
-public class GetCustomer360LineWalletsRequest : IRequest<GetCustomer360LineWalletsResult>
+public class GetCustomer360LineWalletsRequest : IRequest<GetCustomer360LineWalletsResult>, IRequirePermission
 {
     public string CustomerId { get; init; } = "";
+    public string PermissionKey => PermissionCatalog.CustomerView;
 }
 
 public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360LineWalletsRequest, GetCustomer360LineWalletsResult>
@@ -70,7 +73,7 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
             .Where(p => profileIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, cancellationToken);
 
-        var subscriptions = GetCustomer360Handler.DeduplicateSubscriptionsByLine(
+        var subscriptions = Customer360SubscriptionDeduplicator.DeduplicateByLine(
             await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
                 .Where(s => profileIds.Contains(s.SubscriberProfileId))
                 .Include(s => s.MsisdnAsset)
@@ -120,7 +123,14 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
             var msisdn = Customer360WalletBuilder.NormalizeMsisdn(sub.MsisdnAsset?.Msisdn);
             if (!string.IsNullOrEmpty(msisdn))
             {
-                outstanding = await _billing.GetOutstandingBalanceAsync(msisdn, cancellationToken);
+                try
+                {
+                    outstanding = await _billing.GetOutstandingBalanceAsync(msisdn, cancellationToken);
+                }
+                catch
+                {
+                    outstanding = null;
+                }
             }
 
             return KeyValuePair.Create(sub.Id, built with { OutstandingBalance = outstanding });

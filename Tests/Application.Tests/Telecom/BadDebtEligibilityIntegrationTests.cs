@@ -112,18 +112,16 @@ public class BadDebtEligibilityIntegrationTests
         await using var ctx = CreateContext();
         var (profileId, assetId, _) = await SeedLineAsync(ctx, SubscriberOperationalStatus.Active, MsisdnPoolStatus.Active);
 
-        ctx.TelecomOperationRequest.Add(new TelecomOperationRequest
+        ctx.TelecomOperationRequest.Add(TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Kind = TelecomOperationKind.BadDebtRecovery,
-            Number = "BDR-OPEN-1",
-            Status = TelecomOperationStatus.PendingDocuments,
-            DocumentStatus = TelecomDocumentStatus.Uploaded,
-            SubscriberProfileId = profileId,
-            MsisdnAssetId = assetId,
-            CollectionAction = BadDebtWellKnown.WriteOffPartial,
-            IsDeleted = false,
-        });
+            op.Kind = TelecomOperationKind.BadDebtRecovery;
+            op.Number = "BDR-OPEN-1";
+            op.Status = TelecomOperationStatus.PendingDocuments;
+            op.DocumentStatus = TelecomDocumentStatus.Uploaded;
+            op.SubscriberProfileId = profileId;
+            op.MsisdnAssetId = assetId;
+            op.CollectionAction = BadDebtWellKnown.WriteOffPartial;
+        }));
         await ctx.SaveChangesAsync();
 
         var checker = new BadDebtEligibilityChecker(ctx, new StubBilling(-500m));
@@ -221,7 +219,7 @@ public class BadDebtEligibilityIntegrationTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);

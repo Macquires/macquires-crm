@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -17,26 +18,43 @@ public class GetBadDebtKpisResult
     public decimal FailureRatePercent { get; init; }
 }
 
-public class GetBadDebtKpisRequest : IRequest<GetBadDebtKpisResult>
+public class GetBadDebtKpisRequest : IRequest<GetBadDebtKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetBadDebtKpisHandler : IRequestHandler<GetBadDebtKpisRequest, GetBadDebtKpisResult>
 {
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetBadDebtKpisHandler(IQueryContext context) => _context = context;
+    public GetBadDebtKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetBadDebtKpisResult> Handle(
         GetBadDebtKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetBadDebtKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.BadDebtRecovery
                         && o.CreatedAtUtc >= from

@@ -1,14 +1,22 @@
 is_global = true
 build_property.TargetFramework = net9.0
-build_property.TargetFrameworkIdentifier = .NETCoreApp
-build_property.TargetFrameworkVersion = v9.0
+build_property.TargetFramework = net9.0
+build_property.TargetPlatformMinVersion = 
 build_property.TargetPlatformMinVersion = 
 build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
 build_property.ProjectTypeGuids = 
 build_property.InvariantGlobalization = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
 build_property.PlatformNeutralAssembly = 
 build_property.EnforceExtendedAnalyzerRules = 
+build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v9.0
 build_property.RootNamespace = ASPNET
 build_property.RootNamespace = ASPNET
 build_property.ProjectDir = C:\Users\HP\Source\Repos\macquires-crm\Presentation\ASPNET\
@@ -106,12 +114,20 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xEZWZhdWx0RGFzaGJvYXJkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_ExecutiveExceptionsEmbed.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xfRXhlY3V0aXZlRXhjZXB0aW9uc0VtYmVkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xfTWlzUmVwb3J0c0VtYmVkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRGFzaGJvYXJkc1xfU3RyYXRlZ2ljQW5hbHl0aWNzRW1iZWQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Executive/CommandCenter.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcRXhlY3V0aXZlXENvbW1hbmRDZW50ZXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Index.cshtml]
@@ -200,6 +216,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/DeviceInventory.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxEZXZpY2VJbnZlbnRvcnkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/ExecutiveExceptions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcVGVsZWNvbVxFeGVjdXRpdmVFeGNlcHRpb25zLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Telecom/HlrProvisioning.cshtml]

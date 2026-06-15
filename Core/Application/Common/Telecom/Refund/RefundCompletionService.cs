@@ -12,6 +12,7 @@ public sealed class RefundCompletionService : IRefundCompletionService
 {
     private readonly IQueryContext _query;
     private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingPostingIntegration _billingPosting;
     private readonly IPaymentGatewayIntegration _paymentGateway;
     private readonly ISmsGatewayIntegration _sms;
     private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
@@ -19,12 +20,14 @@ public sealed class RefundCompletionService : IRefundCompletionService
     public RefundCompletionService(
         IQueryContext query,
         IBillingSystemIntegration billing,
+        IBillingPostingIntegration billingPosting,
         IPaymentGatewayIntegration paymentGateway,
         ISmsGatewayIntegration sms,
         ICommandRepository<TelecomOperationRequest> operationRepository)
     {
         _query = query;
         _billing = billing;
+        _billingPosting = billingPosting;
         _paymentGateway = paymentGateway;
         _sms = sms;
         _operationRepository = operationRepository;
@@ -57,7 +60,8 @@ public sealed class RefundCompletionService : IRefundCompletionService
                 TelecomOperationKind.DepositRefundSettlement,
                 operation.CorrelationId,
                 amount,
-                ProductServiceCode: TelecomBssOperations.CbsPostRefundCreditNote),
+                ProductServiceCode: TelecomBssOperations.CbsPostRefundCreditNote,
+                BranchId: operation.BranchId),
             cancellationToken);
 
         if (!cbsResult.Success)
@@ -67,6 +71,23 @@ public sealed class RefundCompletionService : IRefundCompletionService
         }
 
         operation.RefundCbsReference = cbsResult.Message ?? $"CBS-RFD-{operation.Number}";
+
+        var journal = await _billingPosting.PostJournalEntryAsync(
+            new BillingJournalPostRequest(
+                operation.Id,
+                operation.Number,
+                msisdn,
+                TelecomOperationKind.DepositRefundSettlement,
+                amount,
+                TelecomBssOperations.CbsPostRefundCreditNote,
+                operation.CorrelationId,
+                operation.BranchId),
+            cancellationToken);
+
+        if (journal.Success && !string.IsNullOrEmpty(journal.JournalEntryId))
+        {
+            operation.RefundCbsReference = journal.JournalEntryId;
+        }
 
         if (string.Equals(operation.RefundMethod, RefundWellKnown.MethodWalletCredit, StringComparison.OrdinalIgnoreCase)
             || string.Equals(operation.RefundType, RefundWellKnown.TypeSyriatelCash, StringComparison.OrdinalIgnoreCase))
@@ -90,7 +111,8 @@ public sealed class RefundCompletionService : IRefundCompletionService
                         TelecomOperationKind.DepositRefundSettlement,
                         operation.CorrelationId,
                         amount,
-                        ProductServiceCode: TelecomBssOperations.CbsPostRefundCreditNote),
+                        ProductServiceCode: TelecomBssOperations.CbsPostRefundCreditNote,
+                BranchId: operation.BranchId),
                     cancellationToken);
                 operation.RefundSettlementStatus = RefundWellKnown.SettlementFailed;
                 throw new InvalidOperationException(walletResult.Message ?? "فشل إيداع المحفظة.");
@@ -134,7 +156,8 @@ public sealed class RefundCompletionService : IRefundCompletionService
                 TelecomOperationKind.DepositRefundSettlement,
                 operation.CorrelationId,
                 operation.RefundAmount,
-                ProductServiceCode: TelecomBssOperations.CbsPostRefundCreditNote),
+                ProductServiceCode: TelecomBssOperations.CbsPostRefundCreditNote,
+                BranchId: operation.BranchId),
             cancellationToken);
 
         operation.RefundSettlementStatus = RefundWellKnown.SettlementFailed;

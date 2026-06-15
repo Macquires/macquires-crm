@@ -17,42 +17,36 @@ public class GetOfferSubscriptionKpisHandlerTests
         await using var ctx = CreateContext();
         var now = DateTime.UtcNow;
         ctx.TelecomOperationRequest.AddRange(
-            new TelecomOperationRequest
+            TelecomTestEntityFactory.Operation(op =>
             {
-                Id = Guid.NewGuid().ToString(),
-                Number = "MGR-1",
-                Kind = TelecomOperationKind.Migration,
-                Status = TelecomOperationStatus.Completed,
-                TargetOfferName = "ميكس 500",
-                CreatedAtUtc = now,
-                ConfirmedAtUtc = now.AddMinutes(2),
-                SubscriberProfileId = "p1",
-                IsDeleted = false,
-            },
-            new TelecomOperationRequest
+                op.Number = "MGR-1";
+                op.Kind = TelecomOperationKind.Migration;
+                op.Status = TelecomOperationStatus.Completed;
+                op.TargetOfferName = "ميكس 500";
+                op.CreatedAtUtc = now;
+                op.ConfirmedAtUtc = now.AddMinutes(2);
+                op.SubscriberProfileId = "p1";
+            }),
+            TelecomTestEntityFactory.Operation(op =>
             {
-                Id = Guid.NewGuid().ToString(),
-                Number = "MGR-2",
-                Kind = TelecomOperationKind.Migration,
-                Status = TelecomOperationStatus.Failed,
-                CreatedAtUtc = now,
-                SubscriberProfileId = "p1",
-                IsDeleted = false,
-            },
-            new TelecomOperationRequest
+                op.Number = "MGR-2";
+                op.Kind = TelecomOperationKind.Migration;
+                op.Status = TelecomOperationStatus.Failed;
+                op.CreatedAtUtc = now;
+                op.SubscriberProfileId = "p1";
+            }),
+            TelecomTestEntityFactory.Operation(op =>
             {
-                Id = Guid.NewGuid().ToString(),
-                Number = "VAS-1",
-                Kind = TelecomOperationKind.ServiceModification,
-                Status = TelecomOperationStatus.Completed,
-                Notes = "Activate VAS VAS_ROAMING",
-                CreatedAtUtc = now,
-                SubscriberProfileId = "p1",
-                IsDeleted = false,
-            });
+                op.Number = "VAS-1";
+                op.Kind = TelecomOperationKind.ServiceModification;
+                op.Status = TelecomOperationStatus.Completed;
+                op.Notes = "Activate VAS VAS_ROAMING";
+                op.CreatedAtUtc = now;
+                op.SubscriberProfileId = "p1";
+            }));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetOfferSubscriptionKpisHandler(ctx);
+        var handler = new GetOfferSubscriptionKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetOfferSubscriptionKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -67,7 +61,7 @@ public class GetOfferSubscriptionKpisHandlerTests
 
     private static QueryContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);

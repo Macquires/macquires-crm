@@ -1,0 +1,127 @@
+@page "/Executive/CommandCenter"
+@{
+    ViewData["Title"] = "Executive Command Center";
+}
+
+<link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
+
+<div class="form-card strategic-analytics-page" id="formcard">
+    <div id="commandCenterGate" class="text-center py-5 d-none">
+        <p class="text-light opacity-75" data-telecom-i18n="executiveCommandCenter.noPermission">لا صلاحية لعرض مركز القيادة التنفيذية.</p>
+        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-light" data-telecom-i18n="executiveCommandCenter.backToDashboard">العودة للوحة</a>
+    </div>
+
+    <div id="commandCenterApp" v-cloak class="strategic-exec-root strategic-exec-dark">
+        <header class="strategic-exec-hero mb-3">
+            <p class="strategic-exec-kicker mb-1" data-telecom-i18n="executiveCommandCenter.kicker">EXECUTIVE</p>
+            <h1 class="h4 fw-bold text-syriatel-red mb-0" data-telecom-i18n="executiveCommandCenter.title">مركز قيادة الإدارة العليا</h1>
+        </header>
+
+        <div id="executiveScopeBarHost"></div>
+
+        <ul class="nav nav-pills executive-cc-tabs mb-4 flex-wrap gap-1" id="ccTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#cc-scorecard" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.scorecard">نظرة سريعة</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#cc-network" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.network">الشبكة والتكامل</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#cc-mis" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.mis">MIS المالي</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#cc-operations" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.operations">العمليات</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#cc-workforce" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.workforce">أداء الموظفين</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#cc-alerts" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.alerts">التنبيهات والتدقيق</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="ccTabContent">
+            <div class="tab-pane fade show active" id="cc-scorecard" role="tabpanel">
+                <div id="executiveScorecardHost"></div>
+            </div>
+            <div class="tab-pane fade" id="cc-network" role="tabpanel">
+                <div id="executiveNetworkHost"></div>
+            </div>
+            <div class="tab-pane fade" id="cc-mis" role="tabpanel">
+                <div id="executiveMisHost" class="strategic-exec-root">
+                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
+                </div>
+                <div id="executiveGeoHost" class="mt-4"></div>
+            </div>
+            <div class="tab-pane fade" id="cc-operations" role="tabpanel">
+                <div id="executiveOperationsHost"></div>
+            </div>
+            <div class="tab-pane fade" id="cc-workforce" role="tabpanel">
+                <div id="executiveWorkforceHost"></div>
+            </div>
+            <div class="tab-pane fade" id="cc-alerts" role="tabpanel">
+                <div id="executiveAlertsHost"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section styles {
+    <style>
+        .strategic-analytics-page {
+            min-height: 85vh;
+            background: linear-gradient(165deg, #0f1114 0%, #1a1d22 42%, #1a1d22 100%);
+            border-radius: var(--sys-radius, 12px);
+            overflow: hidden;
+        }
+        .strategic-exec-dark {
+            --sys-bg: #14171c;
+            --sys-card-bg: #1e232b;
+            --sys-border: rgba(255, 255, 255, 0.08);
+            --sys-text-main: #f1f5f9;
+            --sys-text-muted: #94a3b8;
+            --sys-brand-red: #c8102e;
+            max-width: 100%;
+            margin-inline: auto;
+            padding: 1.5rem 1.25rem 2.5rem;
+            color: var(--sys-text-main);
+            min-height: 80vh;
+        }
+        .strategic-exec-dark .strategic-exec-hero {
+            border-bottom: 1px solid var(--sys-border);
+            padding: 1rem 1.25rem 1.25rem;
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.12) 0%, transparent 55%);
+            border-radius: 12px 12px 0 0;
+        }
+        .executive-cc-tabs .nav-link {
+            color: var(--sys-text-muted);
+            border-radius: 999px;
+            padding: 0.45rem 1rem;
+            font-size: 0.85rem;
+        }
+        .executive-cc-tabs .nav-link.active {
+            background: var(--sys-brand-red);
+            color: #fff;
+        }
+        .strategic-exec-dark .strategic-bento-card,
+        .strategic-exec-dark .strategic-panel,
+        .strategic-exec-dark .strategic-filter-bar {
+            background: var(--sys-card-bg);
+            border: 1px solid var(--sys-border);
+        }
+    </style>
+}
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script src="~/lib/indotalent/executive/executive-scope-bar.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/executive/executive-scorecard-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/executive/executive-network-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/executive/executive-operations-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/executive/executive-workforce-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/executive/executive-alerts-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/strategic-analytics-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/branch-geo-heatmap-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/executive-exceptions-panel.js" asp-append-version="true"></script>
+    <script src="~/FrontEnd/Pages/Executive/CommandCenter.cshtml.js" asp-append-version="true"></script>
+}

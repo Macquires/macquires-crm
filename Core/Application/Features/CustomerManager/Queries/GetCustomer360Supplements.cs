@@ -1,6 +1,7 @@
 using Application.Common.Audit;
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Features.TelecomBackOfficeManager.Queries;
 using Application.Features.TelecomManager.Queries;
 using MediatR;
@@ -28,9 +29,10 @@ public class TelecomOperationListItemDto
     public DateTime CreatedAtUtc { get; init; }
 }
 
-public class GetCustomer360SupplementsRequest : IRequest<GetCustomer360SupplementsResult>
+public class GetCustomer360SupplementsRequest : IRequest<GetCustomer360SupplementsResult>, IRequirePermission
 {
     public string CustomerId { get; init; } = "";
+    public string PermissionKey => PermissionCatalog.CustomerView;
 }
 
 public class GetCustomer360SupplementsHandler : IRequestHandler<GetCustomer360SupplementsRequest, GetCustomer360SupplementsResult>

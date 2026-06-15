@@ -20,8 +20,9 @@ public class TelecomUnifiedSearchResult
     public List<TelecomUnifiedSearchHitDto> Hits { get; init; } = new();
 }
 
-public class TelecomUnifiedSearchRequest : IRequest<TelecomUnifiedSearchResult>
+public class TelecomUnifiedSearchRequest : IRequest<TelecomUnifiedSearchResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
     public string? NationalId { get; init; }
     public string? CommercialRegistrationId { get; init; }
     public string? Msisdn { get; init; }

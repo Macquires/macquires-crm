@@ -1,5 +1,6 @@
 using Application.Common.BulkImport;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -13,12 +14,13 @@ public class UploadInventoryBulkImportResult
     public int TotalRows { get; init; }
 }
 
-public class UploadInventoryBulkImportRequest : IRequest<UploadInventoryBulkImportResult>
+public class UploadInventoryBulkImportRequest : IRequest<UploadInventoryBulkImportResult>, IRequireAnyPermission
 {
     public Stream FileStream { get; init; } = Stream.Null;
     public string FileName { get; init; } = "";
     public BulkImportJobType JobType { get; init; }
-    public string? CreatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.InventoryManageAny;
 }
 
 public class UploadInventoryBulkImportValidator : AbstractValidator<UploadInventoryBulkImportRequest>
@@ -38,25 +40,29 @@ public class UploadInventoryBulkImportHandler : IRequestHandler<UploadInventoryB
     private readonly IBulkImportFileStore _fileStore;
     private readonly IBulkImportProcessorResolver _processorResolver;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UploadInventoryBulkImportHandler(
         ICommandRepository<InventoryBulkImportJob> jobRepository,
         ICommandRepository<InventoryBulkImportError> errorRepository,
         IBulkImportFileStore fileStore,
         IBulkImportProcessorResolver processorResolver,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _jobRepository = jobRepository;
         _errorRepository = errorRepository;
         _fileStore = fileStore;
         _processorResolver = processorResolver;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UploadInventoryBulkImportResult> Handle(
         UploadInventoryBulkImportRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         BulkImportLegacyMigrationGuard.EnsureLegacyMigrationJobType(request.JobType);
 
         var job = new InventoryBulkImportJob
@@ -64,7 +70,8 @@ public class UploadInventoryBulkImportHandler : IRequestHandler<UploadInventoryB
             JobStatus = InventoryBulkImportJobStatus.Pending,
             JobType = request.JobType,
             FileName = request.FileName,
-            CreatedById = request.CreatedById
+            CreatedById = actorUserId,
+            BranchId = _operator.BranchId,
         };
 
         await _jobRepository.CreateAsync(job, cancellationToken);
@@ -89,7 +96,7 @@ public class UploadInventoryBulkImportHandler : IRequestHandler<UploadInventoryB
                 Identifier = "HEADER",
                 ErrorMessageAr = headerCheck.ErrorMessageAr,
                 ErrorMessageEn = headerCheck.ErrorMessageEn,
-                CreatedById = request.CreatedById
+                CreatedById = actorUserId
             }, cancellationToken);
             await _unitOfWork.SaveAsync(cancellationToken);
             throw new InvalidOperationException(headerCheck.ErrorMessageAr);

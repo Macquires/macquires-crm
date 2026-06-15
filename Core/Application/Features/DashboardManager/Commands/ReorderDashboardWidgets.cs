@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Dashboard;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -20,10 +21,10 @@ public class ReorderDashboardWidgetsResult
     public int UpdatedCount { get; init; }
 }
 
-public class ReorderDashboardWidgetsRequest : IRequest<ReorderDashboardWidgetsResult>
+public class ReorderDashboardWidgetsRequest : IRequest<ReorderDashboardWidgetsResult>, IRequireAnyPermission
 {
     public IReadOnlyList<ReorderDashboardWidgetItem> Items { get; init; } = Array.Empty<ReorderDashboardWidgetItem>();
-    public string? UpdatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.AdminAny;
 }
 
 public class ReorderDashboardWidgetsValidator : AbstractValidator<ReorderDashboardWidgetsRequest>
@@ -43,15 +44,18 @@ public class ReorderDashboardWidgetsHandler : IRequestHandler<ReorderDashboardWi
     private readonly IQueryContext _query;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDashboardWidgetCatalogReader _catalog;
+    private readonly IOperatorContext _operator;
 
     public ReorderDashboardWidgetsHandler(
         IQueryContext query,
         IUnitOfWork unitOfWork,
-        IDashboardWidgetCatalogReader catalog)
+        IDashboardWidgetCatalogReader catalog,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _unitOfWork = unitOfWork;
         _catalog = catalog;
+        _operator = operatorContext;
     }
 
     public async Task<ReorderDashboardWidgetsResult> Handle(
@@ -69,11 +73,12 @@ public class ReorderDashboardWidgetsHandler : IRequestHandler<ReorderDashboardWi
             throw new InvalidOperationException("بعض عناصر اللوحة غير موجودة.");
         }
 
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         var orderMap = request.Items.ToDictionary(i => i.Id!, i => i.SortOrder, StringComparer.Ordinal);
         foreach (var entity in entities)
         {
             entity.SortOrder = orderMap[entity.Id];
-            entity.UpdatedById = request.UpdatedById;
+            entity.UpdatedById = actorUserId;
         }
 
         await _unitOfWork.SaveAsync(cancellationToken);

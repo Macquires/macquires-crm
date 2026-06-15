@@ -2,8 +2,8 @@ using Application.Features.ProductCatalogManager.Commands;
 using Application.Features.ProductCatalogManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -15,7 +15,7 @@ public class ProductOfferingController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireProductCatalogManage]
     [HttpPost("CreateProductOffering")]
     public async Task<ActionResult<ApiSuccessResult<CreateProductOfferingResult>>> CreateProductOfferingAsync(
         CreateProductOfferingRequest request,
@@ -31,7 +31,7 @@ public class ProductOfferingController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireProductCatalogManage]
     [HttpPost("UpdateProductOffering")]
     public async Task<ActionResult<ApiSuccessResult<UpdateProductOfferingResult>>> UpdateProductOfferingAsync(
         UpdateProductOfferingRequest request,
@@ -47,7 +47,7 @@ public class ProductOfferingController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireProductCatalogManage]
     [HttpPost("DeleteProductOffering")]
     public async Task<ActionResult<ApiSuccessResult<DeleteProductOfferingResult>>> DeleteProductOfferingAsync(
         DeleteProductOfferingRequest request,
@@ -63,7 +63,7 @@ public class ProductOfferingController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireProductCatalogRead]
     [HttpGet("GetProductOfferingList")]
     public async Task<ActionResult<ApiSuccessResult<GetProductOfferingListResult>>> GetProductOfferingListAsync(
         CancellationToken cancellationToken,
@@ -80,7 +80,7 @@ public class ProductOfferingController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireProductCatalogRead]
     [HttpGet("GetProductOfferingSingle")]
     public async Task<ActionResult<ApiSuccessResult<GetProductOfferingSingleResult>>> GetProductOfferingSingleAsync(
         CancellationToken cancellationToken,

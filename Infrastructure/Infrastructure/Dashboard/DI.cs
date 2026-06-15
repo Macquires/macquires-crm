@@ -17,6 +17,7 @@ public static class DI
         services.AddScoped<IDashboardWidgetDataProvider, OperationsTodayWidgetProvider>();
         services.AddScoped<IDashboardWidgetDataProvider, NetworkPulseWidgetProvider>();
         services.AddScoped<IDashboardWidgetDataProvider, IntegrationHealthWidgetProvider>();
+        services.AddScoped<IDashboardWidgetDataProvider, BranchHeatWidgetProvider>();
 
         services.AddScoped<IDashboardWidgetRegistry, DashboardWidgetRegistry>();
         services.AddScoped<IDashboardWidgetCatalogReader, DashboardWidgetCatalogReader>();

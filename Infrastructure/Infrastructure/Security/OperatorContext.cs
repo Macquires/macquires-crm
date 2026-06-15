@@ -33,8 +33,20 @@ public class OperatorContext : IOperatorContext
     public bool IsAuthenticated =>
         _http.HttpContext?.User?.Identity?.IsAuthenticated == true;
 
-    public string? BranchId =>
-        _http.HttpContext?.User?.FindFirstValue("BranchId");
+    public string? BranchId
+    {
+        get
+        {
+            var user = _http.HttpContext?.User;
+            if (user is null)
+            {
+                return null;
+            }
+
+            return user.FindFirstValue(TelecomAuthClaims.BranchId)
+                ?? user.FindFirstValue("BranchId");
+        }
+    }
 }
 
 public static class OperatorContextKeys

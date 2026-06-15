@@ -91,30 +91,30 @@
                     throw error;
                 }
             },
-            createMainData: async (name, jobTitle, phoneNumber, emailAddress, description, customerId, createdById) => {
+            createMainData: async (name, jobTitle, phoneNumber, emailAddress, description, customerId) => {
                 try {
                     const response = await AxiosManager.post('/CustomerContact/CreateCustomerContact', {
-                        name, jobTitle, phoneNumber, emailAddress, description, customerId, createdById
+                        name, jobTitle, phoneNumber, emailAddress, description, customerId
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            updateMainData: async (id, name, jobTitle, phoneNumber, emailAddress, description, customerId, updatedById) => {
+            updateMainData: async (id, name, jobTitle, phoneNumber, emailAddress, description, customerId) => {
                 try {
                     const response = await AxiosManager.post('/CustomerContact/UpdateCustomerContact', {
-                        id, name, jobTitle, phoneNumber, emailAddress, description, customerId, updatedById
+                        id, name, jobTitle, phoneNumber, emailAddress, description, customerId
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            deleteMainData: async (id, deletedById) => {
+            deleteMainData: async (id) => {
                 try {
                     const response = await AxiosManager.post('/CustomerContact/DeleteCustomerContact', {
-                        id, deletedById
+                        id
                     });
                     return response;
                 } catch (error) {
@@ -297,10 +297,10 @@
                     }
 
                     const response = state.id === ''
-                        ? await services.createMainData(state.name, state.jobTitle, state.phoneNumber, state.emailAddress, state.description, state.customerId, StorageManager.getUserId())
+                        ? await services.createMainData(state.name, state.jobTitle, state.phoneNumber, state.emailAddress, state.description, state.customerId)
                         : state.deleteMode
-                            ? await services.deleteMainData(state.id, StorageManager.getUserId())
-                            : await services.updateMainData(state.id, state.name, state.jobTitle, state.phoneNumber, state.emailAddress, state.description, state.customerId, StorageManager.getUserId());
+                            ? await services.deleteMainData(state.id)
+                            : await services.updateMainData(state.id, state.name, state.jobTitle, state.phoneNumber, state.emailAddress, state.description, state.customerId);
 
                     if (response.data.code === 200) {
                         await methods.populateMainData();

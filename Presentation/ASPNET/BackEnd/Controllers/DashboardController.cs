@@ -2,9 +2,8 @@ using Application.Features.DashboardManager.Commands;
 using Application.Features.DashboardManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
-using Infrastructure.SecurityManager.Roles;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -23,7 +22,7 @@ public class DashboardController : BaseApiController
             .Select(c => c.Value)
             .ToList();
 
-    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [RequireTelecomRead]
     [HttpGet("GetMyWidgets")]
     public async Task<ActionResult<ApiSuccessResult<GetMyDashboardWidgetsResult>>> GetMyWidgetsAsync(
         [FromQuery] string? previewPersona,
@@ -42,7 +41,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [RequireTelecomRead]
     [HttpGet("GetWidgetData")]
     public async Task<ActionResult<ApiSuccessResult<GetDashboardWidgetDataResult>>> GetWidgetDataAsync(
         [FromQuery] string providerKey,
@@ -66,7 +65,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesReadTelecom)]
+    [RequireTelecomRead]
     [HttpPost("GetWidgetDataBatch")]
     public async Task<ActionResult<ApiSuccessResult<GetDashboardWidgetDataBatchResult>>> GetWidgetDataBatchAsync(
         GetDashboardWidgetDataBatchRequest request,
@@ -89,7 +88,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireDashboardAdmin]
     [HttpGet("GetRegisteredProviders")]
     public async Task<ActionResult<ApiSuccessResult<GetRegisteredDashboardProvidersResult>>> GetRegisteredProvidersAsync(
         CancellationToken cancellationToken)
@@ -103,7 +102,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireDashboardAdmin]
     [HttpGet("GetDashboardWidgetList")]
     public async Task<ActionResult<ApiSuccessResult<GetDashboardWidgetListResult>>> GetDashboardWidgetListAsync(
         CancellationToken cancellationToken,
@@ -122,7 +121,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireDashboardAdmin]
     [HttpPost("CreateDashboardWidget")]
     public async Task<ActionResult<ApiSuccessResult<CreateDashboardWidgetResult>>> CreateDashboardWidgetAsync(
         CreateDashboardWidgetRequest request,
@@ -137,7 +136,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireDashboardAdmin]
     [HttpPost("UpdateDashboardWidget")]
     public async Task<ActionResult<ApiSuccessResult<UpdateDashboardWidgetResult>>> UpdateDashboardWidgetAsync(
         UpdateDashboardWidgetRequest request,
@@ -152,7 +151,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireDashboardAdmin]
     [HttpPost("DeleteDashboardWidget")]
     public async Task<ActionResult<ApiSuccessResult<DeleteDashboardWidgetResult>>> DeleteDashboardWidgetAsync(
         DeleteDashboardWidgetRequest request,
@@ -167,7 +166,7 @@ public class DashboardController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireDashboardAdmin]
     [HttpPost("ReorderDashboardWidgets")]
     public async Task<ActionResult<ApiSuccessResult<ReorderDashboardWidgetsResult>>> ReorderDashboardWidgetsAsync(
         ReorderDashboardWidgetsRequest request,

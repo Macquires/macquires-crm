@@ -128,6 +128,8 @@ public class GlobalSettingSeeder
 
             (GlobalSettingKeys.NotificationSmsWelcomeTemplateEn, "Welcome to Syriatel. Your line {Msisdn} is now active.", "Notification"),
 
+            (GlobalSettingKeys.ExecutiveDigestEmailEnabled, "false", "Notification"),
+
         };
 
 

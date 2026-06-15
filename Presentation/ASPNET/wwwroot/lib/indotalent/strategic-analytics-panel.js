@@ -43,7 +43,10 @@ const StrategicAnalyticsPanel = (function () {
         }
     }
 
-    function mount(rootEl) {
+    function mount(rootEl, options) {
+        options = options || {};
+        const hideFilters = options.hideFilters === true;
+        const externalScope = options.externalScope === true;
         if (!rootEl || typeof Vue === 'undefined') {
             return null;
         }
@@ -99,6 +102,13 @@ const StrategicAnalyticsPanel = (function () {
                     segment: pick(s, 'segment', 'Segment'),
                     count: pick(s, 'count', 'Count') ?? 0,
                     percent: pick(s, 'percent', 'Percent') ?? 0,
+                })),
+                churnPercent30: pick(c, 'churnPercent30', 'ChurnPercent30') ?? 0,
+                churnPercent60: pick(c, 'churnPercent60', 'ChurnPercent60') ?? 0,
+                revenueByCategory: (pick(c, 'revenueByCategory', 'RevenueByCategory') ?? []).map((x) => ({
+                    category: pick(x, 'category', 'Category'),
+                    amount: pick(x, 'amount', 'Amount') ?? 0,
+                    percent: pick(x, 'percent', 'Percent') ?? 0,
                 })),
                 branchLeaderboard: (pick(c, 'branchLeaderboard', 'BranchLeaderboard') ?? []).map((row) => ({
                     branchId: pick(row, 'branchId', 'BranchId'),
@@ -319,7 +329,9 @@ const StrategicAnalyticsPanel = (function () {
             state.loading = true;
             try {
                 const params = {};
-                if (state.metrics?.canUseFilters) {
+                if (externalScope && typeof ExecutiveScopeBar !== 'undefined') {
+                    Object.assign(params, ExecutiveScopeBar.getQueryParams());
+                } else if (state.metrics?.canUseFilters) {
                     if (state.filters.regionId) params.regionId = state.filters.regionId;
                     if (state.filters.branchId) params.branchId = state.filters.branchId;
                 }
@@ -347,6 +359,51 @@ const StrategicAnalyticsPanel = (function () {
             }
         };
 
+        const exportLeaderboardCsv = () => {
+            const rows = state.metrics?.branchLeaderboard ?? [];
+            if (!rows.length) return;
+            const headers = [t('colBranch'), t('colActiveSubs'), t('colRevenue'), t('colResolution'), t('colManagerRating')];
+            const lines = [headers.join(',')];
+            rows.forEach((r) => {
+                lines.push([
+                    `"${(r.branchName || '').replace(/"/g, '""')}"`,
+                    r.activeSubscriptions,
+                    r.revenueContribution,
+                    r.avgResolutionHours,
+                    r.managerRating,
+                ].join(','));
+            });
+            const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `branch-leaderboard-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+
+        const exportLeaderboardPdf = () => {
+            const section = rootEl.querySelector('.strategic-panel');
+            if (!section) return;
+            const w = window.open('', '_blank');
+            if (!w) return;
+            w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${t('branchMatrix')}</title>
+                <style>body{font-family:Segoe UI,Tahoma,sans-serif;padding:1rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:right}th{background:#fef2f2}</style></head><body>
+                <h2>${t('branchMatrix')}</h2><p>${state.metrics?.scopeLabelAr || ''}</p>`);
+            const rows = state.metrics?.branchLeaderboard ?? [];
+            w.document.write('<table><thead><tr>');
+            [t('colBranch'), t('colActiveSubs'), t('colRevenue'), t('colResolution'), t('colManagerRating')].forEach((h) => {
+                w.document.write(`<th>${h}</th>`);
+            });
+            w.document.write('</tr></thead><tbody>');
+            rows.forEach((r) => {
+                w.document.write(`<tr><td>${r.branchName}</td><td>${r.activeSubscriptions}</td><td>${r.revenueContribution}</td><td>${r.avgResolutionHours}</td><td>${r.managerRating}</td></tr>`);
+            });
+            w.document.write('</tbody></table></body></html>');
+            w.document.close();
+            w.focus();
+            w.print();
+        };
+
         const onRegionChange = () => {
             state.filters.branchId = null;
             loadExecutiveMetrics();
@@ -372,6 +429,12 @@ const StrategicAnalyticsPanel = (function () {
                 Vue.onMounted(() => {
                     loadExecutiveMetrics().then(scrollToPanel);
                     document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
+                    if (externalScope) {
+                        document.addEventListener(
+                            typeof ExecutiveScopeBar !== 'undefined' ? ExecutiveScopeBar.EVENT : 'executive-scope-changed',
+                            loadExecutiveMetrics
+                        );
+                    }
                 });
 
                 Vue.onUnmounted(() => {
@@ -389,6 +452,9 @@ const StrategicAnalyticsPanel = (function () {
                     deltaClass,
                     loadExecutiveMetrics,
                     onRegionChange,
+                    exportLeaderboardCsv,
+                    exportLeaderboardPdf,
+                    hideFilters,
                 };
             },
         });

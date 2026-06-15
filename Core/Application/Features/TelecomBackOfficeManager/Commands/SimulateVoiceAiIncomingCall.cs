@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
@@ -25,11 +26,12 @@ public class SimulateVoiceAiIncomingCallResult
     public string SummaryAr { get; init; } = null!;
 }
 
-public class SimulateVoiceAiIncomingCallRequest : IRequest<SimulateVoiceAiIncomingCallResult>
+public class SimulateVoiceAiIncomingCallRequest : IRequest<SimulateVoiceAiIncomingCallResult>, IRequireAnyPermission
 {
     public string Msisdn { get; init; } = "";
     public string RawVoiceTranscript { get; init; } = "";
-    public string? ActorUserId { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalViewAny;
 }
 
 public class SimulateVoiceAiIncomingCallValidator : AbstractValidator<SimulateVoiceAiIncomingCallRequest>
@@ -102,7 +104,7 @@ public class SimulateVoiceAiIncomingCallHandler
         var entity = new TelecomTechnicalTicket
         {
             CreatedById = TechnicalTicketCreatedByChannel.VoiceAiSystemUserId,
-            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            TicketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT", cancellationToken: cancellationToken),
             Msisdn = msisdn,
             CustomerId = subscription.CustomerId,
             SubscriberProfileId = subscription.SubscriberProfileId,

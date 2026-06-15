@@ -1,9 +1,9 @@
-using System.Text.Json;
-using Application.Common.Events;
+using Application.Common.Distributed;
 using Application.Common.Integrations;
+using Application.Common.Security;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,15 +12,22 @@ namespace Infrastructure.TelecomIntegrations.Outbox;
 
 public sealed class IntegrationOutboxDispatcherHostedService : BackgroundService
 {
+    private const string DispatchLockKey = "integration-outbox-dispatch";
+    private static readonly TimeSpan LockTtl = TimeSpan.FromMinutes(2);
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<IntegrationOutboxDispatcherHostedService> _logger;
+    private readonly TimeSpan _dispatchInterval;
 
     public IntegrationOutboxDispatcherHostedService(
         IServiceScopeFactory scopeFactory,
-        ILogger<IntegrationOutboxDispatcherHostedService> logger)
+        ILogger<IntegrationOutboxDispatcherHostedService> logger,
+        IConfiguration configuration)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        var seconds = configuration.GetValue("IntegrationOutbox:DispatchIntervalSeconds", 2);
+        _dispatchInterval = TimeSpan.FromSeconds(Math.Clamp(seconds, 1, 120));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -36,49 +43,63 @@ public sealed class IntegrationOutboxDispatcherHostedService : BackgroundService
                 _logger.LogError(ex, "Outbox dispatcher batch failed.");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+            await Task.Delay(_dispatchInterval, stoppingToken);
         }
     }
 
     private async Task DispatchBatchAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-        var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
-
-        var batch = await db.IntegrationOutboxMessage
-            .Where(x => !x.IsDeleted && x.ProcessedAtUtc == null)
-            .OrderBy(x => x.OccurredAtUtc)
-            .Take(25)
-            .ToListAsync(cancellationToken);
-
-        foreach (var message in batch)
+        using (scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>().Enter())
         {
-            try
+            var distributedLock = scope.ServiceProvider.GetRequiredService<IDistributedLock>();
+            await using var lockHandle = await distributedLock.TryAcquireAsync(DispatchLockKey, LockTtl, cancellationToken);
+            if (lockHandle is null)
             {
-                if (string.Equals(message.EventType, nameof(TelecomOperationProvisionedNotification), StringComparison.Ordinal))
+                return;
+            }
+
+            var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+            var publisher = scope.ServiceProvider.GetRequiredService<IIntegrationMessagePublisher>();
+
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            var batch = await db.IntegrationOutboxMessage
+                .FromSqlInterpolated($@"
+                    SELECT *
+                    FROM IntegrationOutboxMessage WITH (UPDLOCK, READPAST, ROWLOCK)
+                    WHERE ProcessedAtUtc IS NULL AND IsDeleted = 0
+                    ORDER BY OccurredAtUtc
+                    OFFSET 0 ROWS FETCH NEXT 25 ROWS ONLY")
+                .ToListAsync(cancellationToken);
+
+            foreach (var message in batch)
+            {
+                try
                 {
-                    var notification = JsonSerializer.Deserialize<TelecomOperationProvisionedNotification>(message.PayloadJson);
-                    if (notification != null)
-                    {
-                        await publisher.Publish(notification, cancellationToken);
-                    }
+                    await publisher.PublishAsync(
+                        message.EventType,
+                        message.PayloadJson,
+                        message.CorrelationId,
+                        cancellationToken);
+
+                    message.ProcessedAtUtc = DateTime.UtcNow;
+                    message.AttemptCount++;
                 }
-
-                message.ProcessedAtUtc = DateTime.UtcNow;
-                message.AttemptCount++;
+                catch (Exception ex)
+                {
+                    message.AttemptCount++;
+                    message.LastError = ex.Message;
+                    _logger.LogWarning(ex, "Failed to dispatch outbox message {Id}", message.Id);
+                }
             }
-            catch (Exception ex)
+
+            if (batch.Count > 0)
             {
-                message.AttemptCount++;
-                message.LastError = ex.Message;
-                _logger.LogWarning(ex, "Failed to dispatch outbox message {Id}", message.Id);
+                await db.SaveChangesAsync(cancellationToken);
             }
-        }
 
-        if (batch.Count > 0)
-        {
-            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
     }
 }

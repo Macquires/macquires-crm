@@ -38,6 +38,22 @@ public sealed class SimulatorHlrHttpClient
             return new NetworkProvisionResult(false, await response.Content.ReadAsStringAsync(cancellationToken));
         }
 
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (!doc.RootElement.TryGetProperty("success", out var successProp)
+                || !successProp.GetBoolean())
+            {
+                return new NetworkProvisionResult(false, $"Simulator HLR rejected provision for {msisdn}.");
+            }
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Simulator HLR malformed payload for {Msisdn}", msisdn);
+            return new NetworkProvisionResult(false, $"Malformed HLR response: {ex.Message}");
+        }
+
         return new NetworkProvisionResult(true, "Simulator HLR provision OK");
     }
 

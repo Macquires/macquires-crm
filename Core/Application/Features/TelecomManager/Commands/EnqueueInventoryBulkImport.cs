@@ -1,5 +1,6 @@
 using Application.Common.BulkImport;
 using Application.Common.Exceptions;
+using Application.Common.Security;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
@@ -14,10 +15,11 @@ public class EnqueueInventoryBulkImportResult
 
 public record BulkImportRowDto(string Msisdn, string? Iccid, string? Puk1, string? Puk2, SimType SimType = SimType.Physical, string? Eid = null);
 
-public class EnqueueInventoryBulkImportRequest : IRequest<EnqueueInventoryBulkImportResult>
+public class EnqueueInventoryBulkImportRequest : IRequest<EnqueueInventoryBulkImportResult>, IRequireAnyPermission
 {
     public List<BulkImportRowDto> Lines { get; init; } = new();
-    public string? CreatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.InventoryManageAny;
 }
 
 public class EnqueueInventoryBulkImportValidator : AbstractValidator<EnqueueInventoryBulkImportRequest>

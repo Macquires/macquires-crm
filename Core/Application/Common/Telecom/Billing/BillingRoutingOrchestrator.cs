@@ -494,7 +494,8 @@ public sealed class BillingRoutingOrchestrator : IBillingRoutingOrchestrator
                     request.PaymentNumber,
                     request.Msisdn,
                     request.Amount,
-                    request.CorrelationId),
+                    request.CorrelationId,
+                    request.BranchId),
                 cancellationToken);
             return inResult;
         }

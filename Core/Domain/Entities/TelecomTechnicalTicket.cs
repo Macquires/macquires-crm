@@ -4,12 +4,13 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>Telecom support ticket escalated from call center to back office (MSISDN / HLR / provisioning).</summary>
-public class TelecomTechnicalTicket : BaseEntity
+public class TelecomTechnicalTicket : BaseEntity, IHasBranchId
 {
     public string TicketNumber { get; set; } = null!;
     public string Msisdn { get; set; } = null!;
     public string? CustomerId { get; set; }
     public string? SubscriberProfileId { get; set; }
+    public string? BranchId { get; set; }
     public TechnicalTicketIssueType IssueType { get; set; }
     public TechnicalTicketCategory TicketCategory { get; set; } = TechnicalTicketCategory.Complaint;
     public TechnicalTicketPriority Priority { get; set; }

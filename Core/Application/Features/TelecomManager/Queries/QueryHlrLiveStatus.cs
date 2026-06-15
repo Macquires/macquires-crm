@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Enums;
 using MediatR;
@@ -8,8 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.TelecomManager.Queries;
 
-public class QueryHlrLiveStatusRequest : IRequest<HlrLiveStatusResult>
+public class QueryHlrLiveStatusRequest : IRequest<HlrLiveStatusResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
     public string SubscriberProfileId { get; init; } = "";
     public string? Msisdn { get; init; }
 }

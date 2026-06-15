@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Services.ProductCatalog;
 using Domain.Entities;
 using FluentValidation;
@@ -11,10 +12,10 @@ public class ToggleProductOfferingActiveResult
     public bool IsActive { get; init; }
 }
 
-public class ToggleProductOfferingActiveRequest : IRequest<ToggleProductOfferingActiveResult>
+public class ToggleProductOfferingActiveRequest : IRequest<ToggleProductOfferingActiveResult>, IRequireAnyPermission
 {
     public string Id { get; init; } = "";
-    public string? UpdatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ManageAny;
 }
 
 public class ToggleProductOfferingActiveValidator : AbstractValidator<ToggleProductOfferingActiveRequest>
@@ -27,15 +28,18 @@ public class ToggleProductOfferingActiveHandler : IRequestHandler<ToggleProductO
     private readonly ICommandRepository<ProductOffering> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IActiveProductCatalogCache _catalogCache;
+    private readonly IOperatorContext _operator;
 
     public ToggleProductOfferingActiveHandler(
         ICommandRepository<ProductOffering> repository,
         IUnitOfWork unitOfWork,
-        IActiveProductCatalogCache catalogCache)
+        IActiveProductCatalogCache catalogCache,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _catalogCache = catalogCache;
+        _operator = operatorContext;
     }
 
     public async Task<ToggleProductOfferingActiveResult> Handle(ToggleProductOfferingActiveRequest request, CancellationToken cancellationToken)
@@ -44,7 +48,7 @@ public class ToggleProductOfferingActiveHandler : IRequestHandler<ToggleProductO
             ?? throw new InvalidOperationException("Product offering not found.");
 
         offering.IsActive = !offering.IsActive;
-        offering.UpdatedById = request.UpdatedById;
+        offering.UpdatedById = OperatorActor.RequireUserId(_operator);
         offering.UpdatedAtUtc = DateTime.UtcNow;
 
         _repository.Update(offering);

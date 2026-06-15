@@ -13,6 +13,7 @@ public class TelecomPaymentTransactionConfiguration : BaseEntityConfiguration<Te
         base.Configure(builder);
 
         builder.Property(x => x.Number).HasMaxLength(CodeConsts.MaxLength).IsRequired();
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.CorrelationId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.Currency).HasMaxLength(8).IsRequired();
         builder.Property(x => x.CustomerId).HasMaxLength(IdConsts.MaxLength).IsRequired();
@@ -38,5 +39,6 @@ public class TelecomPaymentTransactionConfiguration : BaseEntityConfiguration<Te
         builder.HasIndex(x => x.CustomerId);
         builder.HasIndex(x => new { x.Msisdn, x.CreatedAtUtc });
         builder.HasIndex(x => x.CorrelationId).HasFilter("[CorrelationId] IS NOT NULL");
+        builder.HasIndex(x => x.BranchId).HasFilter("[BranchId] IS NOT NULL");
     }
 }

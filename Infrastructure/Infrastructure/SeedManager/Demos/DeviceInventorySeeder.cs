@@ -18,7 +18,10 @@ public sealed class DeviceInventorySeeder
 
     public async Task EnsureDemoInventoryAsync()
     {
-        if (await _context.DeviceInventory.AnyAsync(x => !x.IsDeleted && x.Sku != null && x.Sku.StartsWith(SeedSkuPrefix)))
+        // Seed runs without branch context — RLS hides branch-scoped inventory rows.
+        var seedInventory = _context.DeviceInventory.IgnoreQueryFilters();
+
+        if (await seedInventory.AnyAsync(x => !x.IsDeleted && x.Sku != null && x.Sku.StartsWith(SeedSkuPrefix)))
         {
             return;
         }
@@ -34,6 +37,11 @@ public sealed class DeviceInventorySeeder
             return;
         }
 
+        var existingImeis = await seedInventory
+            .Where(x => !x.IsDeleted)
+            .Select(x => x.Imei)
+            .ToHashSetAsync();
+
         var catalog = SyriatelShowroomCatalog.Devices;
         var serial = 1;
         var entities = new List<DeviceInventory>();
@@ -45,10 +53,16 @@ public sealed class DeviceInventorySeeder
                 var def = catalog[i];
                 var unitIndex = branchIndex * catalog.Length + i;
                 var status = ResolveStatus(unitIndex);
+                var imei = BuildImei(def.Tac8, serial++);
+
+                if (existingImeis.Contains(imei))
+                {
+                    continue;
+                }
 
                 var entity = new DeviceInventory
                 {
-                    Imei = BuildImei(def.Tac8, serial++),
+                    Imei = imei,
                     Model = def.ModelAr,
                     Sku = $"{SeedSkuPrefix}{def.SkuCode}",
                     ListPrice = def.ListPriceSyp,
@@ -67,6 +81,7 @@ public sealed class DeviceInventorySeeder
                 }
 
                 entities.Add(entity);
+                existingImeis.Add(imei);
             }
         }
 
@@ -76,9 +91,15 @@ public sealed class DeviceInventorySeeder
 
         foreach (var def in SyriatelShowroomCatalog.QuarantinedSamples)
         {
+            var imei = BuildImei(def.Tac8, serial++);
+            if (existingImeis.Contains(imei))
+            {
+                continue;
+            }
+
             entities.Add(new DeviceInventory
             {
-                Imei = BuildImei(def.Tac8, serial++),
+                Imei = imei,
                 Model = def.ModelAr,
                 Sku = $"{SeedSkuPrefix}{def.SkuCode}-Q",
                 ListPrice = def.ListPriceSyp,
@@ -86,6 +107,12 @@ public sealed class DeviceInventorySeeder
                 Status = DeviceInventoryStatus.Quarantined,
                 CreatedAtUtc = DateTime.UtcNow.AddDays(-12),
             });
+            existingImeis.Add(imei);
+        }
+
+        if (entities.Count == 0)
+        {
+            return;
         }
 
         await _context.DeviceInventory.AddRangeAsync(entities);

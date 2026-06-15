@@ -8,6 +8,7 @@ using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Infrastructure.DataAccessManager.EFCore.Repositories;
 using Infrastructure.DataAccessManager.EFCore.SchemaPatches;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,6 +25,10 @@ public static class DI
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         var databaseProvider = configuration["DatabaseProvider"];
+        var isDevelopment = string.Equals(
+            configuration["ASPNETCORE_ENVIRONMENT"],
+            "Development",
+            StringComparison.OrdinalIgnoreCase);
 
         // Register Context
         switch (databaseProvider)
@@ -48,30 +53,18 @@ public static class DI
 
             case "SqlServer":
             default:
-                services.AddDbContext<DataContext>(options =>
-                    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(2),
-                        errorNumbersToAdd: null))
-                    .LogTo(Log.Information, LogLevel.Information)
-                    .EnableSensitiveDataLogging()
-                );
-                services.AddDbContext<CommandContext>(options =>
-                    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(2),
-                        errorNumbersToAdd: null))
-                    .LogTo(Log.Information, LogLevel.Information)
-                    .EnableSensitiveDataLogging()
-                );
-                services.AddDbContext<QueryContext>(options =>
-                    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(2),
-                        errorNumbersToAdd: null))
-                    .LogTo(Log.Information, LogLevel.Information)
-                    .EnableSensitiveDataLogging()
-                );
+                services.AddDbContextPool<DataContext>(options =>
+                    ConfigureSqlServer(options, connectionString, isDevelopment));
+                services.AddDbContextPool<CommandContext>(options =>
+                    ConfigureSqlServer(options, connectionString, isDevelopment));
+                services.AddDbContextPool<QueryContext>(options =>
+                    ConfigureSqlServer(options, connectionString, isDevelopment));
+                services.AddPooledDbContextFactory<DataContext>(options =>
+                    ConfigureSqlServer(options, connectionString, isDevelopment));
+                services.AddPooledDbContextFactory<CommandContext>(options =>
+                    ConfigureSqlServer(options, connectionString, isDevelopment));
+                services.AddPooledDbContextFactory<QueryContext>(options =>
+                    ConfigureSqlServer(options, connectionString, isDevelopment));
                 break;
         }
 
@@ -85,75 +78,51 @@ public static class DI
         return services;
     }
 
+    private static void ConfigureSqlServer(
+        DbContextOptionsBuilder options,
+        string? connectionString,
+        bool isDevelopment)
+    {
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(2),
+            errorNumbersToAdd: null));
+
+        if (isDevelopment)
+        {
+            options.LogTo(Log.Information, LogLevel.Information)
+                .EnableSensitiveDataLogging();
+        }
+    }
+
     public static IHost CreateDatabase(this IHost host)
     {
         using var scope = host.Services.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
         var dataContext = serviceProvider.GetRequiredService<DataContext>();
-        var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DI));
 
-        if (configuration.GetValue("Database:UseEfMigrations", false))
+        if (!configuration.GetValue("Database:UseEfMigrations", true))
         {
-            logger.LogInformation("Applying EF Core migrations (Database:UseEfMigrations=true).");
-            dataContext.Database.Migrate();
-            return host;
+            throw new InvalidOperationException(
+                "Database:UseEfMigrations must be true. EnsureCreated bootstrap was removed — use EF Core migrations only.");
         }
 
-        dataContext.Database.EnsureCreated();
+        BaselineLegacyEfMigrationsIfNeeded(dataContext, logger);
+        logger.LogInformation("Applying EF Core migrations (Database:UseEfMigrations=true).");
+        dataContext.Database.Migrate();
 
-        if (!RelationalSchemaTableExists(dataContext, "SubscriberProfile"))
+        SchemaPatches.RlsBranchIdSchemaPatches.EnsureBranchIdColumns(dataContext, logger);
+
+        if (configuration.GetValue("Database:ApplyLegacyPatchesAfterMigrations", false))
         {
-            var allowRecreate = configuration.GetValue(
-                "Database:AllowDropAndRecreateWhenTelecomTablesMissing",
-                environment.IsDevelopment());
-
-            if (allowRecreate)
-            {
-                logger.LogWarning(
-                    "Database is missing telecom tables (SubscriberProfile). Dropping and recreating the database. " +
-                    "Set Database:AllowDropAndRecreateWhenTelecomTablesMissing to false to disable this (you must then migrate or restore backup).");
-                dataContext.Database.EnsureDeleted();
-                dataContext.Database.EnsureCreated();
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    "The database exists but is missing required tables (e.g. SubscriberProfile). " +
-                    "This happens when the schema was created before telecom features. " +
-                    "Fix: drop the database and restart, enable EF migrations, or set Database:AllowDropAndRecreateWhenTelecomTablesMissing=true in Development only.");
-            }
+            logger.LogWarning("Applying one-time legacy schema patches (upgrade path only).");
+            ApplyIntegrationInfrastructureSchemaPatch(dataContext, logger);
+            ApplyRowVersionColumnsSchemaPatch(dataContext, logger);
+            ApplyTelecomTechnicalTicketBranchIdPatch(dataContext, logger);
         }
-
-        ApplyTelecomOperationRequestSchemaPatches(dataContext, logger);
-        ApplyTelecomOperationIdentityDocumentSchemaPatch(dataContext, logger);
-        ApplyTelecomOperationKycDocumentReferenceSchemaPatch(dataContext, logger);
-        ApplyTelecomOperationComprehensivePatch(dataContext, logger);
-        ApplyTelecomBssPrimaryLineSchemaPatches(dataContext, logger);
-        ApplyTelecomSubscriptionTypeSchemaPatches(dataContext, logger);
-        ApplyProductCompatibleSubscriptionTypeSchemaPatches(dataContext, logger);
-        ApplyProductOfferingSmartFieldsPatch(dataContext, logger);
-        ApplyProductOfferingProductIdAndOperationOfferingPatch(dataContext, logger);
-        ApplySubscriberProfileCustomerIndexNonUniquePatch(dataContext, logger);
-        ApplyDomainGateSubscriberProfileLegacyCleanupPatch(dataContext, logger);
-        ApplyDashboardWidgetsSchemaPatch(dataContext, logger);
-        ApplyGeoCitySchemaPatch(dataContext, logger);
-        ApplyAdministrationFoundationSchemaPatches(dataContext, logger);
-        ApplyRolePermissionSchemaPatch(dataContext, logger);
-        ApplyTelecomTechnicalTicketSchemaPatch(dataContext, logger);
-        ApplyTelecomTechnicalTicketCreatedByChannelPatch(dataContext, logger);
-        ApplyTelecomTechnicalTicketCategoryPatch(dataContext, logger);
-        ApplyTelecomTechnicalTicketQueueManagementPatch(dataContext, logger);
-        ApplyMsisdnAssetPairedKitSchemaPatch(dataContext, logger);
-        MsisdnAssetSchemaPatches.EnsureIntendedSubscriptionTypeColumn(dataContext, logger);
-        ApplyTelecomIntegrationLogSchemaPatch(dataContext, logger);
-        ApplyBulkImportEnterpriseSchemaPatch(dataContext, logger);
-        ApplyVasCatalogSchemaPatch(dataContext, logger);
-        ApplyNullableBitColumnsDataPatch(dataContext, logger);
-        ApplyIntegrationInfrastructureSchemaPatch(dataContext, logger);
-        ApplyRowVersionColumnsSchemaPatch(dataContext, logger);
 
         return host;
     }
@@ -661,6 +630,9 @@ public static class DI
                 ("NumberChangeReason", "NVARCHAR(256) NULL"),
                 ("PremiumFeeAmount", "DECIMAL(18,2) NULL"),
                 ("NumberChangeMode", "NVARCHAR(32) NULL"),
+                ("NumberChangeEffectiveDateUtc", "DATETIME2 NULL"),
+                ("PortInMsisdn", "NVARCHAR(32) NULL"),
+                ("DonorOperatorCode", "NVARCHAR(32) NULL"),
 
                 // §6 Change GSM
                 ("SourceSubscriptionTypeId", "NVARCHAR(50) NULL"),
@@ -671,6 +643,7 @@ public static class DI
 
                 // §4 SIM Swap
                 ("ReplacementReason", "NVARCHAR(256) NULL"),
+                ("SimSwapEffectiveDateUtc", "DATETIME2 NULL"),
                 ("IsLostOrStolenReport", "BIT NOT NULL DEFAULT 0"),
                 ("PriorSimInventoryId", "NVARCHAR(50) NULL"),
 
@@ -1932,6 +1905,55 @@ public static class DI
         }
     }
 
+    private static void ApplyTelecomTechnicalTicketBranchIdPatch(
+        DataContext dataContext,
+        Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!RelationalSchemaTableExists(dataContext, "TelecomTechnicalTicket"))
+        {
+            return;
+        }
+
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                IF NOT EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'TelecomTechnicalTicket' AND COLUMN_NAME = 'BranchId')
+                BEGIN
+                    ALTER TABLE dbo.TelecomTechnicalTicket ADD BranchId NVARCHAR(50) NULL;
+                    CREATE INDEX IX_TelecomTechnicalTicket_BranchId ON dbo.TelecomTechnicalTicket(BranchId) WHERE [BranchId] IS NOT NULL;
+                END
+                """;
+            cmd.ExecuteNonQuery();
+            logger.LogInformation("Schema patch: TelecomTechnicalTicket.BranchId ensured.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Schema patch TelecomTechnicalTicket.BranchId failed.");
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+    }
+
     private static void ApplyMsisdnAssetPairedKitSchemaPatch(DataContext dataContext, Microsoft.Extensions.Logging.ILogger logger)
     {
         if (!string.Equals(dataContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.Ordinal))
@@ -2552,6 +2574,91 @@ public static class DI
                 connection.Close();
             }
         }
+    }
+
+    /// <summary>
+    /// Marks pending migrations as applied when the database was created earlier via
+    /// <see cref="RelationalDatabaseFacadeExtensions.EnsureCreated"/> (no __EFMigrationsHistory rows).
+    /// </summary>
+    private static void BaselineLegacyEfMigrationsIfNeeded(DataContext dataContext, Microsoft.Extensions.Logging.ILogger logger)
+    {
+        if (!dataContext.Database.CanConnect())
+        {
+            return;
+        }
+
+        var applied = dataContext.Database.GetAppliedMigrations().ToList();
+        if (applied.Count > 0)
+        {
+            return;
+        }
+
+        var pending = dataContext.Database.GetPendingMigrations().ToList();
+        if (pending.Count == 0 || !RelationalSchemaTableExists(dataContext, "AspNetRoles"))
+        {
+            return;
+        }
+
+        var productVersion = ProductInfo.GetVersion();
+        var connection = dataContext.Database.GetDbConnection();
+        var wasOpen = connection.State == ConnectionState.Open;
+        if (!wasOpen)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using (var ensureHistoryCmd = connection.CreateCommand())
+            {
+                ensureHistoryCmd.CommandText = """
+                    IF OBJECT_ID(N'[dbo].[__EFMigrationsHistory]', N'U') IS NULL
+                    BEGIN
+                        CREATE TABLE [dbo].[__EFMigrationsHistory] (
+                            [MigrationId] nvarchar(150) NOT NULL,
+                            [ProductVersion] nvarchar(32) NOT NULL,
+                            CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+                        );
+                    END
+                    """;
+                ensureHistoryCmd.ExecuteNonQuery();
+            }
+
+            foreach (var migrationId in pending)
+            {
+                using var insertCmd = connection.CreateCommand();
+                insertCmd.CommandText = """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM [dbo].[__EFMigrationsHistory]
+                        WHERE [MigrationId] = @migrationId)
+                    INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+                    VALUES (@migrationId, @productVersion)
+                    """;
+                var migrationParam = insertCmd.CreateParameter();
+                migrationParam.ParameterName = "@migrationId";
+                migrationParam.Value = migrationId;
+                insertCmd.Parameters.Add(migrationParam);
+
+                var versionParam = insertCmd.CreateParameter();
+                versionParam.ParameterName = "@productVersion";
+                versionParam.Value = productVersion;
+                insertCmd.Parameters.Add(versionParam);
+
+                insertCmd.ExecuteNonQuery();
+            }
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                connection.Close();
+            }
+        }
+
+        logger.LogWarning(
+            "Baselined {Count} EF migration(s) on an existing database (legacy EnsureCreated schema). " +
+            "Future incremental migrations will still apply normally.",
+            pending.Count);
     }
 
     /// <summary>SQL Server–compatible existence check (works after EnsureCreated no-op on stale DB).</summary>

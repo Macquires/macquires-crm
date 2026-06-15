@@ -16,7 +16,8 @@ public sealed record NetworkProvisionRequest(
     string? Imsi = null,
     string? ProductServiceCode = null,
     string? SubscriptionTypeCode = null,
-    string? PriorMsisdn = null);
+    string? PriorMsisdn = null,
+    string? BranchId = null);
 
 public sealed record NetworkProvisionResult(
     bool Success,

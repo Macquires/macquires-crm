@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,12 +11,12 @@ public class UpdateCustomerCategoryResult
     public CustomerCategory? Data { get; set; }
 }
 
-public class UpdateCustomerCategoryRequest : IRequest<UpdateCustomerCategoryResult>
+public class UpdateCustomerCategoryRequest : IRequest<UpdateCustomerCategoryResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
     public string? Name { get; init; }
     public string? Description { get; init; }
-    public string? UpdatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ManageAny;
 }
 
 public class UpdateCustomerCategoryValidator : AbstractValidator<UpdateCustomerCategoryRequest>
@@ -31,14 +32,16 @@ public class UpdateCustomerCategoryHandler : IRequestHandler<UpdateCustomerCateg
 {
     private readonly ICommandRepository<CustomerCategory> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UpdateCustomerCategoryHandler(
         ICommandRepository<CustomerCategory> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateCustomerCategoryResult> Handle(UpdateCustomerCategoryRequest request, CancellationToken cancellationToken)
@@ -51,7 +54,7 @@ public class UpdateCustomerCategoryHandler : IRequestHandler<UpdateCustomerCateg
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
 
         entity.Name = request.Name;
         entity.Description = request.Description;

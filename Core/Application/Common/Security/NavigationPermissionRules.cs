@@ -3,117 +3,53 @@ namespace Application.Common.Security;
 /// <summary>Maps portal nav URLs to permission keys (user needs any listed key).</summary>
 public static class NavigationPermissionRules
 {
-  private static readonly IReadOnlyDictionary<string, string[]> Rules =
-      new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-      {
-          ["/Dashboards/DefaultDashboard"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomReportsMis,
-              PermissionCatalog.AdminUsersManage,
-              PermissionCatalog.AdminSettingsManage,
-              PermissionCatalog.AdminRolesManage,
-          ],
-          ["/Dashboards/DashboardWidgetList"] = [PermissionCatalog.AdminSettingsManage],
-          ["/Telecom/BackOfficeDashboard"] =
-          [
-              PermissionCatalog.BulkImportUpload,
-              PermissionCatalog.BulkImportMonitor,
-              PermissionCatalog.TelecomAssetManage,
-          ],
-          ["/Telecom/TelecomHub"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomLineActivate,
-              PermissionCatalog.TelecomLineSimSwap,
-              PermissionCatalog.TelecomLineSimSwapRequest,
-              PermissionCatalog.TelecomLineMigrate,
-          ],
-          ["/Telecom/BillingIntegration"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomLineActivate,
-              PermissionCatalog.TelecomLineSimSwap,
-              PermissionCatalog.TelecomLineSimSwapRequest,
-              PermissionCatalog.TelecomLineMigrate,
-              PermissionCatalog.TelecomReportsMis,
-          ],
-          ["/Telecom/InIntegration"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomLineActivate,
-              PermissionCatalog.TelecomLineSimSwap,
-              PermissionCatalog.TelecomLineSimSwapRequest,
-              PermissionCatalog.TelecomLineMigrate,
-              PermissionCatalog.TelecomReportsMis,
-          ],
-          ["/Telecom/HlrProvisioning"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomLineActivate,
-              PermissionCatalog.TelecomLineSimSwap,
-              PermissionCatalog.TelecomLineSimSwapRequest,
-              PermissionCatalog.TelecomLineMigrate,
-              PermissionCatalog.TelecomReportsMis,
-          ],
-          ["/Telecom/IntegrationMonitor"] = [PermissionCatalog.AdminIntegrationMonitor],
-          ["/Telecom/BulkImportMonitor"] =
-          [
-              PermissionCatalog.BulkImportMonitor,
-              PermissionCatalog.BulkImportUpload,
-          ],
-          ["/Telecom/MsisdnInventory"] =
-          [
-              PermissionCatalog.TelecomAssetManage,
-              PermissionCatalog.TelecomLineActivate,
-          ],
-          ["/Telecom/DeviceInventory"] = [PermissionCatalog.TelecomDeviceInventoryManage],
-          ["/Telecom/TechnicalTicketList"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.BulkImportUpload,
-              PermissionCatalog.TelecomAssetManage,
-          ],
-          ["/Telecom/BackOfficeAuditList"] =
-          [
-              PermissionCatalog.BulkImportUpload,
-              PermissionCatalog.TelecomAssetManage,
-          ],
-          ["/Telecom/UnifiedSearch"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomLineActivate,
-              PermissionCatalog.TelecomLineSimSwap,
-              PermissionCatalog.TelecomLineSimSwapRequest,
-              PermissionCatalog.TelecomLineMigrate,
-          ],
-          ["/Telecom/Customer360Profile"] =
-          [
-              PermissionCatalog.CustomerView,
-              PermissionCatalog.TelecomLineActivate,
-              PermissionCatalog.TelecomLineSimSwap,
-              PermissionCatalog.TelecomLineSimSwapRequest,
-              PermissionCatalog.TelecomLineMigrate,
-          ],
-          ["/Customers/CustomerList"] = [PermissionCatalog.CustomerView],
-          ["/CustomerGroups/CustomerGroupList"] = [PermissionCatalog.TelecomAssetManage],
-          ["/CustomerCategories/CustomerCategoryList"] = [PermissionCatalog.TelecomAssetManage],
-          ["/CustomerContacts/CustomerContactList"] = [PermissionCatalog.CustomerView],
-          ["/Telecom/ProductCatalog"] = [PermissionCatalog.TelecomLineActivate],
-          ["/Products/ProductList"] = [PermissionCatalog.TelecomAssetManage],
-          ["/Telecom/VasCatalogList"] = [PermissionCatalog.TelecomVasManage],
-          ["/TelecomSubscriptionTypes/TelecomSubscriptionTypeList"] =
-              [PermissionCatalog.TelecomLineActivate],
-          ["/Telecom/StrategicAnalytics"] = [PermissionCatalog.TelecomReportsMis],
-          ["/Administration/UserList"] = [PermissionCatalog.AdminUsersManage],
-          ["/Administration/BranchList"] = [PermissionCatalog.AdminUsersManage],
-          ["/Administration/RoleList"] = [PermissionCatalog.AdminRolesManage],
-          ["/Administration/GlobalSettings"] = [PermissionCatalog.AdminSettingsManage],
-          ["/Administration/CityList"] = [PermissionCatalog.AdminSettingsManage],
-          ["/Administration/AuditLogList"] = [PermissionCatalog.AdminAuditView],
-          ["/Companies/MyCompany"] = [PermissionCatalog.AdminSettingsManage],
-          ["/NumberSequences/NumberSequenceList"] = [PermissionCatalog.AdminSettingsManage],
-      };
+    private static readonly IReadOnlyDictionary<string, string[]> Rules =
+        new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["/Dashboards/DefaultDashboard"] = Merge(
+                DashboardPermissionSets.ReadAny,
+                DashboardPermissionSets.AdminAny,
+                [PermissionCatalog.AdminRolesManage]),
+            ["/Dashboards/DashboardWidgetList"] = Keys(DashboardPermissionSets.AdminAny),
+            ["/Telecom/BackOfficeDashboard"] = Merge(
+                BulkImportPermissionSets.MonitorAny,
+                [PermissionCatalog.TelecomAssetManage]),
+            ["/Telecom/TelecomHub"] = Keys(TelecomOperationPermissionSets.CreateAny),
+            ["/Telecom/BillingIntegration"] = Merge(
+                DashboardPermissionSets.ReadAny,
+                [PermissionCatalog.TelecomLineSimSwap, PermissionCatalog.TelecomLineMigrate]),
+            ["/Telecom/InIntegration"] = Merge(
+                DashboardPermissionSets.ReadAny,
+                [PermissionCatalog.TelecomLineSimSwap, PermissionCatalog.TelecomLineMigrate]),
+            ["/Telecom/HlrProvisioning"] = Merge(
+                DashboardPermissionSets.ReadAny,
+                [PermissionCatalog.TelecomLineSimSwap, PermissionCatalog.TelecomLineMigrate]),
+            ["/Telecom/IntegrationMonitor"] = [PermissionCatalog.AdminIntegrationMonitor],
+            ["/Telecom/BulkImportMonitor"] = Keys(BulkImportPermissionSets.MonitorAny),
+            ["/Telecom/MsisdnInventory"] = Keys(TelecomOperationPermissionSets.ReserveMsisdnAny),
+            ["/Telecom/DeviceInventory"] = [PermissionCatalog.TelecomDeviceInventoryManage],
+            ["/Telecom/TechnicalTicketList"] = Keys(BackOfficePermissionSets.TechnicalTicketListAny),
+            ["/Telecom/BackOfficeAuditList"] = Keys(BackOfficePermissionSets.OperationsAny),
+            ["/Telecom/UnifiedSearch"] = [PermissionCatalog.TelecomReportsMis],
+            ["/Telecom/Customer360Profile"] = Keys(CustomerPermissionSets.ViewAny),
+            ["/Customers/CustomerList"] = Keys(CustomerPermissionSets.ViewAny),
+            ["/CustomerGroups/CustomerGroupList"] = Keys(ReferenceDataPermissionSets.ReadAny),
+            ["/CustomerCategories/CustomerCategoryList"] = Keys(ReferenceDataPermissionSets.ReadAny),
+            ["/CustomerContacts/CustomerContactList"] = Keys(CustomerPermissionSets.ViewAny),
+            ["/Telecom/ProductCatalog"] = Keys(ProductCatalogPermissionSets.ReadAny),
+            ["/Products/ProductList"] = Keys(ProductCatalogPermissionSets.ReadAny),
+            ["/Telecom/VasCatalogList"] = [PermissionCatalog.TelecomVasManage],
+            ["/TelecomSubscriptionTypes/TelecomSubscriptionTypeList"] = Keys(ReferenceDataPermissionSets.ReadAny),
+            ["/Telecom/StrategicAnalytics"] = [PermissionCatalog.TelecomReportsMis],
+            ["/Administration/UserList"] = Keys(AdminPermissionSets.UsersManageAny),
+            ["/Administration/BranchList"] = Keys(AdminPermissionSets.UsersManageAny),
+            ["/Administration/RoleList"] = Keys(AdminPermissionSets.RolesManageAny),
+            ["/Administration/GlobalSettings"] = Keys(AdminPermissionSets.SettingsManageAny),
+            ["/Administration/CityList"] = Keys(ReferenceDataPermissionSets.ManageAny),
+            ["/Administration/AuditLogList"] = Keys(AdminPermissionSets.AuditViewAny),
+            ["/Companies/MyCompany"] = Keys(DashboardPermissionSets.AdminAny),
+            ["/NumberSequences/NumberSequenceList"] = Keys(DashboardPermissionSets.AdminAny),
+        };
 
     public static bool IsNavUrlAllowed(string? navUrl, IReadOnlySet<string> userPermissions)
     {
@@ -141,4 +77,9 @@ public static class NavigationPermissionRules
 
         return required.Any(userPermissions.Contains);
     }
+
+    private static string[] Keys(IReadOnlyList<string> permissions) => permissions.ToArray();
+
+    private static string[] Merge(params IEnumerable<string>[] sources) =>
+        sources.SelectMany(s => s).Distinct(StringComparer.Ordinal).ToArray();
 }

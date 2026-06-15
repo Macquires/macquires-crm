@@ -20,6 +20,12 @@ public static class TelecomOperationLifecycle
         [TelecomOperationStatus.Confirmed] =
         [
             TelecomOperationStatus.Provisioning,
+            TelecomOperationStatus.Scheduled,
+            TelecomOperationStatus.Failed
+        ],
+        [TelecomOperationStatus.Scheduled] =
+        [
+            TelecomOperationStatus.Provisioning,
             TelecomOperationStatus.Failed
         ],
         [TelecomOperationStatus.Provisioning] =

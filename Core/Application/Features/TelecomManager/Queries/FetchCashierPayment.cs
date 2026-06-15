@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Integrations;
+using Application.Common.Security;
 using Application.Common.Telecom.SellingLine;
 using Domain.Enums;
 using FluentValidation;
@@ -14,11 +15,13 @@ public class FetchCashierPaymentResult
     public CashierPaymentResultDto? Data { get; init; }
 }
 
-public class FetchCashierPaymentRequest : IRequest<FetchCashierPaymentResult>
+public class FetchCashierPaymentRequest : IRequest<FetchCashierPaymentResult>, IRequireAnyPermission
 {
     public string PaymentReference { get; init; } = null!;
     public string? OperationId { get; init; }
     public decimal? ExpectedAmount { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.PaymentAny;
 }
 
 public class FetchCashierPaymentValidator : AbstractValidator<FetchCashierPaymentRequest>

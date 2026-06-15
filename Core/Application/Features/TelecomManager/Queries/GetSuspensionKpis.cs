@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +21,12 @@ public class GetSuspensionKpisResult
     public List<SuspensionReasonCountDto> TopReasons { get; init; } = new();
 }
 
-public class GetSuspensionKpisRequest : IRequest<GetSuspensionKpisResult>
+public class GetSuspensionKpisRequest : IRequest<GetSuspensionKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetSuspensionKpisHandler : IRequestHandler<GetSuspensionKpisRequest, GetSuspensionKpisResult>
@@ -31,17 +34,32 @@ public class GetSuspensionKpisHandler : IRequestHandler<GetSuspensionKpisRequest
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(30);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetSuspensionKpisHandler(IQueryContext context) => _context = context;
+    public GetSuspensionKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetSuspensionKpisResult> Handle(
         GetSuspensionKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetSuspensionKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.TemporarySuspension
                         && o.CreatedAtUtc >= from

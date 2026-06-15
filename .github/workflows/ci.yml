@@ -17,11 +17,55 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Restore local dotnet tools
+        run: dotnet tool restore
+
       - name: Restore
         run: dotnet restore Indotalent.sln
 
       - name: Build
         run: dotnet build Indotalent.sln --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test Indotalent.sln --configuration Release --no-build --verbosity normal
+      - name: Unit tests
+        run: dotnet test Indotalent.sln --configuration Release --no-build --verbosity normal --filter "Category!=Integration&Category!=Smoke"
+
+      - name: Architecture smoke tests
+        run: dotnet test Tests/Application.Tests/Application.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category=Smoke"
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore local dotnet tools
+        run: dotnet tool restore
+
+      - name: Restore
+        run: dotnet restore Indotalent.sln
+
+      - name: Build
+        run: dotnet build Indotalent.sln --configuration Release --no-restore
+
+      - name: Integration tests (Testcontainers)
+        run: dotnet test Tests/ASPNET.E2E.Tests/ASPNET.E2E.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category=Integration"
+
+      - name: UI smoke tests (Playwright + Testcontainers)
+        run: dotnet test Tests/ASPNET.E2E.Tests/ASPNET.E2E.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category=UI"
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, integration]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app image
+        run: docker build -f Presentation/ASPNET/Dockerfile -t nsuite-app:ci .
+
+      - name: Build simulator image
+        run: docker build -f tools/NetworkSimulator/Dockerfile -t nsuite-simulator:ci .

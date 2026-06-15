@@ -179,7 +179,7 @@ public class ReconnectEligibilityIntegrationTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -228,20 +228,19 @@ public class ReconnectEligibilityIntegrationTests
         }
 
         var susOpId = Guid.NewGuid().ToString();
-        var susOp = new TelecomOperationRequest
+        var susOp = TelecomTestEntityFactory.Operation(o =>
         {
-            Id = susOpId,
-            Kind = TelecomOperationKind.TemporarySuspension,
-            Number = "SUS-TEST-1",
-            Status = TelecomOperationStatus.Completed,
-            DocumentStatus = TelecomDocumentStatus.Verified,
-            SubscriberProfileId = profileId,
-            MsisdnAssetId = assetId,
-            SuspensionType = suspensionType,
-            SuspensionReason = "Test",
-            IsDeleted = false,
-            ConfirmedAtUtc = DateTime.UtcNow.AddDays(-1),
-        };
+            o.Id = susOpId;
+            o.Kind = TelecomOperationKind.TemporarySuspension;
+            o.Number = "SUS-TEST-1";
+            o.Status = TelecomOperationStatus.Completed;
+            o.DocumentStatus = TelecomDocumentStatus.Verified;
+            o.SubscriberProfileId = profileId;
+            o.MsisdnAssetId = assetId;
+            o.SuspensionType = suspensionType;
+            o.SuspensionReason = "Test";
+            o.ConfirmedAtUtc = DateTime.UtcNow.AddDays(-1);
+        });
 
         ctx.Customer.Add(customer);
         ctx.SubscriberProfile.Add(profile);

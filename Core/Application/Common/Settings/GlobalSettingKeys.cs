@@ -45,6 +45,10 @@ public static class GlobalSettingKeys
 
     public const string NotificationSmsWelcomeTemplateEn = "Notification.Sms.WelcomeTemplateEn";
 
+    public const string ExecutiveDigestEmailEnabled = "Notification.ExecutiveDigest.Email.Enabled";
+
+    public const string ExecutiveDigestTeamsWebhookUrl = "Notification.ExecutiveDigest.Teams.WebhookUrl";
+
 
 
     // Telecom — Inventory
@@ -162,6 +166,9 @@ public static class GlobalSettingKeys
     public const string TelecomDeviceSalesDownPaymentPercentLow = "Telecom.DeviceSales.DownPaymentPercent.Low";
 
     public const string TelecomDeviceSalesDownPaymentPercentGood = "Telecom.DeviceSales.DownPaymentPercent.Good";
+
+    // Telecom — VAS billing
+    public const string VasBillingEnabled = "Telecom.Vas.BillingEnabled";
 
     // Telecom — Bad Debt Recovery (BDR)
     public const string TelecomBdrTicketSlaMinutes = "Telecom.Bdr.TicketSlaMinutes";

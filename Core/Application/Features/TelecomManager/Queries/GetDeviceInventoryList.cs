@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -21,11 +22,11 @@ public class GetDeviceInventoryListResult
     public List<GetDeviceInventoryListDto>? Data { get; init; }
 }
 
-public class GetDeviceInventoryListRequest : IRequest<GetDeviceInventoryListResult>
+public class GetDeviceInventoryListRequest : IRequest<GetDeviceInventoryListResult>, IRequireAnyPermission
 {
     public string? Status { get; init; }
-    public string? BranchId { get; init; }
     public string? ImeiContains { get; init; }
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.InventoryManageAny;
 }
 
 public class GetDeviceInventoryListHandler : IRequestHandler<GetDeviceInventoryListRequest, GetDeviceInventoryListResult>
@@ -44,11 +45,6 @@ public class GetDeviceInventoryListHandler : IRequestHandler<GetDeviceInventoryL
             && Enum.TryParse<DeviceInventoryStatus>(request.Status, true, out var st))
         {
             q = q.Where(d => d.Status == st);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.BranchId))
-        {
-            q = q.Where(d => d.BranchId == request.BranchId.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(request.ImeiContains))

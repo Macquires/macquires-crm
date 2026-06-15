@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using MediatR;
@@ -37,11 +38,13 @@ public class GetEligibleVasOfferingsResult
     public string? CurrentProductOfferingName { get; init; }
 }
 
-public class GetEligibleVasOfferingsRequest : IRequest<GetEligibleVasOfferingsResult>
+public class GetEligibleVasOfferingsRequest : IRequest<GetEligibleVasOfferingsResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = "";
 
     public string? MsisdnAssetId { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 public class GetEligibleVasOfferingsHandler

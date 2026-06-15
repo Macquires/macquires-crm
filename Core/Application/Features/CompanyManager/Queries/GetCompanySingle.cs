@@ -1,4 +1,5 @@
 ﻿using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using FluentValidation;
@@ -37,9 +38,10 @@ public class GetCompanySingleResult
     public GetCompanySingleDto? Data { get; init; }
 }
 
-public class GetCompanySingleRequest : IRequest<GetCompanySingleResult>
+public class GetCompanySingleRequest : IRequest<GetCompanySingleResult>, IRequirePermission
 {
     public string? Id { get; init; }
+    public string PermissionKey => PermissionCatalog.AdminSettingsManage;
 }
 
 public class GetCompanySingleValidator : AbstractValidator<GetCompanySingleRequest>

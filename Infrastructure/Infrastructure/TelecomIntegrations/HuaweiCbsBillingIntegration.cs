@@ -4,10 +4,12 @@ using Application.Common.Repositories;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Settings;
+using Infrastructure.TelecomIntegrations.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
+using Polly.Timeout;
 
 namespace Infrastructure.TelecomIntegrations;
 
@@ -21,6 +23,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
     private readonly ILogger<HuaweiCbsBillingIntegration> _logger;
     private readonly IntegrationEnablement _integrations;
     private readonly IIdempotencyStore _idempotency;
+    private readonly IOptions<TelecomHttpIntegrationOptions> _httpOptions;
+    private readonly SimulatorCbsHttpClient _cbsHttp;
 
     public HuaweiCbsBillingIntegration(
         ICommandRepository<BillingIntegrationLog> logRepository,
@@ -29,7 +33,9 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         IOptions<TelecomBillingOptions> options,
         ILogger<HuaweiCbsBillingIntegration> logger,
         IntegrationEnablement integrations,
-        IIdempotencyStore idempotency)
+        IIdempotencyStore idempotency,
+        IOptions<TelecomHttpIntegrationOptions> httpOptions,
+        SimulatorCbsHttpClient cbsHttp)
     {
         _logRepository = logRepository;
         _integrationLog = integrationLog;
@@ -38,6 +44,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         _logger = logger;
         _integrations = integrations;
         _idempotency = idempotency;
+        _httpOptions = httpOptions;
+        _cbsHttp = cbsHttp;
     }
 
     public async Task<BillingProvisionResult> ProvisionAsync(BillingProvisionRequest request, CancellationToken cancellationToken = default)
@@ -70,6 +78,11 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
                 sw.ElapsedMilliseconds,
                 cancellationToken);
             return new BillingProvisionResult(true, IntegrationCircuitBreaker.FallbackMessageAr, QueuedForSync: true);
+        }
+
+        if (TelecomIntegrationMode.IsHttp(_httpOptions.Value))
+        {
+            return await ProvisionViaHttpAsync(request, cancellationToken);
         }
 
         var opt = _options.Value;
@@ -153,6 +166,20 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             return new BillingProvisionResult(true, "Huawei CBS reverse skipped (fallback mode).");
         }
 
+        if (TelecomIntegrationMode.IsHttp(_httpOptions.Value))
+        {
+            var httpResult = await _cbsHttp.ReverseAsync(request, cancellationToken);
+            var httpMessage = httpResult.Message ?? TelecomBssOperations.CbsReverseAccount;
+            await WriteLogAsync(
+                request with { Phase = TelecomBillingProvisionPhase.Reverse },
+                1,
+                httpResult.Success,
+                httpMessage,
+                "Simulator-CBS-HTTP",
+                cancellationToken);
+            return httpResult;
+        }
+
         var message =
             $"{TelecomBssOperations.CbsReverseAccount}: reversed {request.Kind} for {request.OperationNumber} MSISDN={request.Msisdn}";
         await WriteLogAsync(
@@ -217,6 +244,11 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             return new BillingRechargeResult(true, IntegrationCircuitBreaker.FallbackMessageAr, fallbackBalance);
         }
 
+        if (TelecomIntegrationMode.IsHttp(_httpOptions.Value))
+        {
+            return await RechargeViaHttpAsync(request, cancellationToken);
+        }
+
         var opt = _options.Value;
         var attempt = 0;
         var policy = Policy
@@ -279,7 +311,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
                     request.PaymentNumber,
                     request.Msisdn,
                     -request.Amount,
-                    request.CorrelationId),
+                    request.CorrelationId,
+                    request.BranchId),
                 1,
                 true,
                 message + " (fallback)",
@@ -293,7 +326,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
                 request.PaymentNumber,
                 request.Msisdn,
                 -request.Amount,
-                request.CorrelationId),
+                request.CorrelationId,
+                request.BranchId),
             1,
             true,
             message,
@@ -302,28 +336,44 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         return new BillingRechargeResult(true, message, null);
     }
 
-    private decimal _saadoonBalance = -15_000m;
-
     public async Task<decimal> GetOutstandingBalanceAsync(string msisdn, CancellationToken cancellationToken = default)
     {
+        if (TelecomIntegrationMode.IsHttp(_httpOptions.Value))
+        {
+            try
+            {
+                return await _cbsHttp.GetBalanceAsync(msisdn, cancellationToken);
+            }
+            catch (Exception ex) when (IsSimulatorUnreachable(ex))
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Network Simulator unreachable for CBS balance on {Msisdn}; using in-process demo fallback.",
+                    msisdn);
+                return CbsMockBalanceResolver.ResolveOutstandingBalance(msisdn);
+            }
+        }
+
         await Task.Delay(80, cancellationToken);
+        return CbsMockBalanceResolver.ResolveOutstandingBalance(msisdn);
+    }
 
-        if (msisdn == "0939000002")
+    private static bool IsSimulatorUnreachable(Exception ex)
+    {
+        if (ex is TimeoutRejectedException)
         {
-            return _saadoonBalance;
+            return true;
         }
 
-        if (msisdn == "0931112223")
+        for (var current = ex; current != null; current = current.InnerException)
         {
-            return -15_000m;
+            if (current is System.Net.Http.HttpRequestException or System.Net.Sockets.SocketException)
+            {
+                return true;
+            }
         }
 
-        if (msisdn?.EndsWith("9") == true)
-        {
-            return -5000m;
-        }
-
-        return 1000m;
+        return false;
     }
 
     public async Task AdjustBalanceAsync(string msisdn, decimal newBalance, string? reason = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
@@ -349,20 +399,35 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             }
         }
 
-        // GLOBAL HARDENING: Mock CBS Balance Adjustment
-        await Task.Delay(150, cancellationToken);
-        _logger.LogInformation("Huawei CBS Balance Adjusted for {Msisdn} to {NewBalance} SYP. Reason: {Reason}", msisdn, newBalance, reason ?? "Manual adjustment");
-        
-        if (msisdn == "0939000002")
+        if (TelecomIntegrationMode.IsHttp(_httpOptions.Value))
         {
-            _saadoonBalance = newBalance;
+            await _cbsHttp.AdjustBalanceAsync(msisdn, newBalance, reason, idempotencyKey, cancellationToken);
+            var swHttp = Stopwatch.StartNew();
+            await _integrationLog.WriteAsync(
+                TelecomIntegrationSystem.Huawei_CBS,
+                "CbsAdjustBalance",
+                msisdn,
+                $"newBalance={newBalance}|reason={reason}|idempotencyKey={idempotencyKey}",
+                "Balance adjustment successful (HTTP)",
+                true,
+                "200",
+                swHttp.ElapsedMilliseconds,
+                cancellationToken);
+
+            if (!string.IsNullOrEmpty(idempotencyKey))
+            {
+                await _idempotency.CompleteAsync("CbsAdjustBalance", idempotencyKey, "OK", cancellationToken);
+            }
+
+            return;
         }
 
-        // Demo specific: if it's Saadoon and it's a rejection, we force the mock to return the deficit
-        if (msisdn == "0939000002" && reason?.Contains("BDR Rejected") == true)
-        {
-            _logger.LogWarning("Saadoon BDR Rejected: Deficit balance of {NewBalance} SYP applied.", newBalance);
-        }
+        await Task.Delay(150, cancellationToken);
+        _logger.LogInformation(
+            "Huawei CBS Balance Adjusted for {Msisdn} to {NewBalance} SYP. Reason: {Reason}",
+            msisdn,
+            newBalance,
+            reason ?? "Manual adjustment");
 
         var sw = Stopwatch.StartNew();
         await _integrationLog.WriteAsync(
@@ -494,6 +559,36 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             $"MSISDN={request.Msisdn} service={request.ProductServiceCode ?? "—"} (attempt {attempt})";
     }
 
+    private async Task<BillingProvisionResult> ProvisionViaHttpAsync(
+        BillingProvisionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var sw = Stopwatch.StartNew();
+        var result = await _cbsHttp.ProvisionAsync(request, cancellationToken);
+        await WriteLogAsync(request, 1, result.Success, result.Message ?? "", "Simulator-CBS-HTTP", cancellationToken);
+        await _integrationLog.WriteAsync(
+            TelecomIntegrationSystem.Huawei_CBS,
+            CbsOperationName(request),
+            request.Msisdn,
+            request.ToString(),
+            result.Message,
+            result.Success,
+            result.Success ? "200" : "500",
+            sw.ElapsedMilliseconds,
+            cancellationToken);
+        return result;
+    }
+
+    private async Task<BillingRechargeResult> RechargeViaHttpAsync(
+        BillingRechargeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var sw = Stopwatch.StartNew();
+        var result = await _cbsHttp.RechargeAsync(request.Msisdn, request.Amount, cancellationToken);
+        await WritePaymentRechargeLogAsync(request, 1, result.Success, result.Message ?? "", cancellationToken);
+        return result;
+    }
+
     private async Task WritePaymentRechargeLogAsync(
         BillingRechargeRequest request,
         int attemptNumber,
@@ -510,7 +605,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             IntegrationTarget = _options.Value.IntegrationTarget,
             CorrelationId = request.CorrelationId,
             RequestPayload = request.ToString(),
-            ResponsePayload = success ? "OK" : message
+            ResponsePayload = success ? "OK" : message,
+            BranchId = request.BranchId
         };
 
         await _logRepository.CreateAsync(row, cancellationToken);
@@ -546,7 +642,8 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             IntegrationTarget = integrationTarget,
             CorrelationId = request.CorrelationId,
             RequestPayload = request.ToString(),
-            ResponsePayload = success ? "OK" : message
+            ResponsePayload = success ? "OK" : message,
+            BranchId = request.BranchId
         };
 
         await _logRepository.CreateAsync(row, cancellationToken);

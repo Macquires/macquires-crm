@@ -21,11 +21,10 @@ public sealed class PendingExternalSyncSummaryDto
     public int Failed { get; init; }
 }
 
-public class UpdateGlobalSettingsRequest : IRequest<UpdateGlobalSettingsResult>, IRequirePermission
+public class UpdateGlobalSettingsRequest : IRequest<UpdateGlobalSettingsResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminSettingsManage;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.SettingsManageAny;
     public GlobalSettingsSnapshotDto? Settings { get; init; }
-    public string? UpdatedById { get; init; }
 }
 
 public class UpdateGlobalSettingsValidator : AbstractValidator<UpdateGlobalSettingsRequest>
@@ -38,31 +37,35 @@ public class UpdateGlobalSettingsHandler : IRequestHandler<UpdateGlobalSettingsR
     private readonly IGlobalSettingsAdminService _admin;
     private readonly IUserAuditService _audit;
     private readonly IPendingExternalSyncService _pendingSync;
+    private readonly IOperatorContext _operator;
 
     public UpdateGlobalSettingsHandler(
         IGlobalSettingsAdminService admin,
         IUserAuditService audit,
-        IPendingExternalSyncService pendingSync)
+        IPendingExternalSyncService pendingSync,
+        IOperatorContext operatorContext)
     {
         _admin = admin;
         _audit = audit;
         _pendingSync = pendingSync;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateGlobalSettingsResult> Handle(UpdateGlobalSettingsRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         var before = await _admin.GetSnapshotAsync(cancellationToken);
         var incoming = request.Settings!;
 
-        await _admin.SaveSnapshotAsync(incoming, request.UpdatedById, cancellationToken);
+        await _admin.SaveSnapshotAsync(incoming, actorUserId, cancellationToken);
         var data = await _admin.GetSnapshotAsync(cancellationToken);
 
-        await LogIntegrationToggleChangesAsync(before, data, request.UpdatedById, cancellationToken);
+        await LogIntegrationToggleChangesAsync(before, data, actorUserId, cancellationToken);
 
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.UpdatedById ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.GlobalSettingsUpdated,
                 EntityType = "GlobalSetting",
                 SummaryAr = "تحديث الإعدادات العامة",
@@ -76,7 +79,7 @@ public class UpdateGlobalSettingsHandler : IRequestHandler<UpdateGlobalSettingsR
             || IntegrationTurnedOn(before.IntegrationSmsEnabled, data.IntegrationSmsEnabled)
             || IntegrationTurnedOn(before.IntegrationInEnabled, data.IntegrationInEnabled))
         {
-            var flush = await _pendingSync.FlushAsync(request.UpdatedById, cancellationToken);
+            var flush = await _pendingSync.FlushAsync(actorUserId, cancellationToken);
             syncSummary = new PendingExternalSyncSummaryDto
             {
                 Processed = flush.Processed,

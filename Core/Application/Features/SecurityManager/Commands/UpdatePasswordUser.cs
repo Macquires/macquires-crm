@@ -1,4 +1,5 @@
 ﻿using Application.Common.Services.SecurityManager;
+using Application.Common.Security;
 using FluentValidation;
 using MediatR;
 
@@ -10,8 +11,9 @@ public class UpdatePasswordUserResult
     public string? Data { get; init; }
 }
 
-public class UpdatePasswordUserRequest : IRequest<UpdatePasswordUserResult>
+public class UpdatePasswordUserRequest : IRequest<UpdatePasswordUserResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? UserId { get; init; }
     public string? NewPassword { get; init; }
 }

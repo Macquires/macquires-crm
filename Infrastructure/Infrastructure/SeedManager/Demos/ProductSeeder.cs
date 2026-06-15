@@ -69,7 +69,7 @@ public class ProductSeeder
                 Physical = def.ServiceCode.StartsWith("HW_", StringComparison.Ordinal),
                 CompatibleSubscriptionTypeId = TypeId(def.SubscriptionTypeCode),
             };
-            product.Number = _numberSequenceService.GenerateNumber(nameof(Product), "", "SVC");
+            product.Number = await _numberSequenceService.GenerateNumberAsync(nameof(Product), "", "SVC");
             await _productRepository.CreateAsync(product);
             existingSet.Add(def.ServiceCode);
             added = true;

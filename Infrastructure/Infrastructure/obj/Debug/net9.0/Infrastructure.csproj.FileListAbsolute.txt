@@ -119,3 +119,5 @@ C:\Users\HP\Source\Repos\macquires-crm\Infrastructure\Infrastructure\obj\Debug\n
 C:\Users\HP\Source\Repos\macquires-crm\Infrastructure\Infrastructure\obj\Debug\net9.0\refint\Infrastructure.dll
 C:\Users\HP\Source\Repos\macquires-crm\Infrastructure\Infrastructure\obj\Debug\net9.0\Infrastructure.pdb
 C:\Users\HP\Source\Repos\macquires-crm\Infrastructure\Infrastructure\obj\Debug\net9.0\ref\Infrastructure.dll
+C:\Users\HP\source\repos\macquires-crm\Infrastructure\Infrastructure\bin\Debug\net9.0\Infrastructure.runtimeconfig.json
+C:\Users\HP\source\repos\macquires-crm\Infrastructure\Infrastructure\obj\Debug\net9.0\Infrastructure.genruntimeconfig.cache

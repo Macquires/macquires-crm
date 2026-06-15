@@ -19,7 +19,8 @@ public sealed record BillingProvisionRequest(
     string? Iccid = null,
     TelecomBillingProvisionPhase Phase = TelecomBillingProvisionPhase.Provision,
     string? PriorIccid = null,
-    string? PriorMsisdn = null);
+    string? PriorMsisdn = null,
+    string? BranchId = null);
 
 public sealed record BillingProvisionResult(
     bool Success,
@@ -33,7 +34,8 @@ public sealed record BillingRechargeRequest(
     string PaymentNumber,
     string Msisdn,
     decimal Amount,
-    string? CorrelationId);
+    string? CorrelationId,
+    string? BranchId = null);
 
 public sealed record BillingRechargeResult(
     bool Success,
@@ -45,7 +47,8 @@ public sealed record BillingReverseRechargeRequest(
     string PaymentNumber,
     string Msisdn,
     decimal Amount,
-    string? CorrelationId);
+    string? CorrelationId,
+    string? BranchId = null);
 
 public interface IBillingSystemIntegration
 {

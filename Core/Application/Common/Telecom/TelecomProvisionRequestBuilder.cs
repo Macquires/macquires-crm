@@ -200,7 +200,8 @@ public static class TelecomProvisionRequestBuilder
             line.Iccid,
             phase,
             line.PriorIccid,
-            line.PriorMsisdn);
+            line.PriorMsisdn,
+            operation.BranchId);
 
     public static NetworkProvisionRequest ToNetworkRequest(
         TelecomOperationRequest operation,
@@ -215,7 +216,8 @@ public static class TelecomProvisionRequestBuilder
             line.Imsi,
             line.ProductServiceCode,
             line.SubscriptionTypeCode,
-            line.PriorMsisdn);
+            line.PriorMsisdn,
+            operation.BranchId);
 
     private static async Task<string?> ResolveSubscriptionTypeCodeAsync(
         IQueryContext query,

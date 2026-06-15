@@ -11,15 +11,18 @@ public sealed class TelecomIntegrationLogWriter : ITelecomIntegrationLogWriter
     private readonly ICommandRepository<TelecomIntegrationLog> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<TelecomIntegrationLogWriter> _logger;
+    private readonly IIntegrationLiveBroadcaster? _liveBroadcaster;
 
     public TelecomIntegrationLogWriter(
         ICommandRepository<TelecomIntegrationLog> repository,
         IUnitOfWork unitOfWork,
-        ILogger<TelecomIntegrationLogWriter> logger)
+        ILogger<TelecomIntegrationLogWriter> logger,
+        IIntegrationLiveBroadcaster? liveBroadcaster = null)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _liveBroadcaster = liveBroadcaster;
     }
 
     public async Task WriteAsync(
@@ -48,6 +51,18 @@ public sealed class TelecomIntegrationLogWriter : ITelecomIntegrationLogWriter
                 OccurredAtUtc = DateTime.UtcNow,
             }, cancellationToken);
             await _unitOfWork.SaveAsync(cancellationToken);
+
+            if (_liveBroadcaster != null)
+            {
+                var liveMessage = $"{operationName}: {Truncate(responsePayload, 500)}";
+                await _liveBroadcaster.BroadcastAsync(
+                    system,
+                    operationName,
+                    msisdn,
+                    liveMessage,
+                    isSuccess,
+                    cancellationToken);
+            }
         }
         catch (Exception ex)
         {

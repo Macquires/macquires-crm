@@ -1,5 +1,6 @@
 using Application.Common.Dashboard;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -11,10 +12,10 @@ public class DeleteDashboardWidgetResult
     public DashboardWidget? Data { get; set; }
 }
 
-public class DeleteDashboardWidgetRequest : IRequest<DeleteDashboardWidgetResult>
+public class DeleteDashboardWidgetRequest : IRequest<DeleteDashboardWidgetResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
-    public string? DeletedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.AdminAny;
 }
 
 public class DeleteDashboardWidgetValidator : AbstractValidator<DeleteDashboardWidgetRequest>
@@ -27,15 +28,18 @@ public class DeleteDashboardWidgetHandler : IRequestHandler<DeleteDashboardWidge
     private readonly ICommandRepository<DashboardWidget> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDashboardWidgetCatalogReader _catalog;
+    private readonly IOperatorContext _operator;
 
     public DeleteDashboardWidgetHandler(
         ICommandRepository<DashboardWidget> repository,
         IUnitOfWork unitOfWork,
-        IDashboardWidgetCatalogReader catalog)
+        IDashboardWidgetCatalogReader catalog,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _catalog = catalog;
+        _operator = operatorContext;
     }
 
     public async Task<DeleteDashboardWidgetResult> Handle(
@@ -45,7 +49,7 @@ public class DeleteDashboardWidgetHandler : IRequestHandler<DeleteDashboardWidge
         var entity = await _repository.GetAsync(request.Id!, cancellationToken)
             ?? throw new InvalidOperationException("عنصر اللوحة غير موجود.");
 
-        entity.UpdatedById = request.DeletedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         _repository.Delete(entity);
         await _unitOfWork.SaveAsync(cancellationToken);
         _catalog.InvalidateCache();

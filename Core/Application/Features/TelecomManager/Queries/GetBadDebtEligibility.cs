@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom.BadDebt;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,7 @@ public class GetBadDebtEligibilityResult
     public GetBadDebtEligibilityDto? Data { get; init; }
 }
 
-public class GetBadDebtEligibilityRequest : IRequest<GetBadDebtEligibilityResult>
+public class GetBadDebtEligibilityRequest : IRequest<GetBadDebtEligibilityResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = null!;
     public string MsisdnAssetId { get; init; } = null!;
@@ -31,6 +32,7 @@ public class GetBadDebtEligibilityRequest : IRequest<GetBadDebtEligibilityResult
     public decimal? CollectedAmount { get; init; }
     public decimal? WriteOffAmount { get; init; }
     public bool CollectionApprovalConfirmed { get; init; }
+    public IReadOnlyList<string> PermissionKeys => TelecomEligibilityPermissionSets.BadDebtAny;
 }
 
 public class GetBadDebtEligibilityHandler : IRequestHandler<GetBadDebtEligibilityRequest, GetBadDebtEligibilityResult>

@@ -2,9 +2,9 @@
 using Application.Features.FileDocumentManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using Infrastructure.FileDocumentManager;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -16,7 +16,7 @@ public class FileDocumentController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireFileDocumentUpload]
     [HttpPost("UploadDocument")]
     public async Task<ActionResult<CreateDocumentResult>> UploadDocumentAsync(IFormFile file, CancellationToken cancellationToken)
     {
@@ -55,8 +55,7 @@ public class FileDocumentController : BaseApiController
         }
     }
 
-
-    [Authorize]
+    [RequireFileDocumentRead]
     [HttpGet("GetDocument")]
     public async Task<IActionResult> GetDocumentAsync(
         [FromQuery] string documentName,
@@ -84,8 +83,4 @@ public class FileDocumentController : BaseApiController
 
         return File(result.Data, mimeType);
     }
-
-
 }
-
-

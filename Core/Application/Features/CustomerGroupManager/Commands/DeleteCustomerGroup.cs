@@ -1,4 +1,5 @@
-﻿using Application.Common.Repositories;
+using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,10 +11,10 @@ public class DeleteCustomerGroupResult
     public CustomerGroup? Data { get; set; }
 }
 
-public class DeleteCustomerGroupRequest : IRequest<DeleteCustomerGroupResult>
+public class DeleteCustomerGroupRequest : IRequest<DeleteCustomerGroupResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
-    public string? DeletedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ManageAny;
 }
 
 public class DeleteCustomerGroupValidator : AbstractValidator<DeleteCustomerGroupRequest>
@@ -28,14 +29,16 @@ public class DeleteCustomerGroupHandler : IRequestHandler<DeleteCustomerGroupReq
 {
     private readonly ICommandRepository<CustomerGroup> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public DeleteCustomerGroupHandler(
         ICommandRepository<CustomerGroup> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<DeleteCustomerGroupResult> Handle(DeleteCustomerGroupRequest request, CancellationToken cancellationToken)
@@ -48,7 +51,7 @@ public class DeleteCustomerGroupHandler : IRequestHandler<DeleteCustomerGroupReq
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.DeletedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
 
         _repository.Delete(entity);
         await _unitOfWork.SaveAsync(cancellationToken);

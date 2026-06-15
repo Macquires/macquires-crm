@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,26 +17,43 @@ public class GetChangeGsmTypeKpisResult
     public List<ChangeGsmReasonCountDto> TopReasons { get; init; } = new();
 }
 
-public class GetChangeGsmTypeKpisRequest : IRequest<GetChangeGsmTypeKpisResult>
+public class GetChangeGsmTypeKpisRequest : IRequest<GetChangeGsmTypeKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetChangeGsmTypeKpisHandler : IRequestHandler<GetChangeGsmTypeKpisRequest, GetChangeGsmTypeKpisResult>
 {
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetChangeGsmTypeKpisHandler(IQueryContext context) => _context = context;
+    public GetChangeGsmTypeKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetChangeGsmTypeKpisResult> Handle(
         GetChangeGsmTypeKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetChangeGsmTypeKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.ChangeGsmType
                         && o.CreatedAtUtc >= from

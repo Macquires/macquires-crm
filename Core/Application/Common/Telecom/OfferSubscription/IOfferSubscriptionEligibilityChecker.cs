@@ -27,6 +27,7 @@ public interface IOfferSubscriptionEligibilityChecker
         string msisdn,
         string serviceCode,
         bool activate,
+        string? excludeOperationId = null,
         CancellationToken cancellationToken = default);
 }
 

@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -26,9 +27,10 @@ public class GetPaymentTransactionDetailResult
     public DateTime? ConfirmedAtUtc { get; init; }
 }
 
-public class GetPaymentTransactionDetailRequest : IRequest<GetPaymentTransactionDetailResult?>
+public class GetPaymentTransactionDetailRequest : IRequest<GetPaymentTransactionDetailResult?>, IRequireAnyPermission
 {
     public string Id { get; init; } = "";
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.PaymentAny;
 }
 
 public class GetPaymentTransactionDetailValidator : AbstractValidator<GetPaymentTransactionDetailRequest>

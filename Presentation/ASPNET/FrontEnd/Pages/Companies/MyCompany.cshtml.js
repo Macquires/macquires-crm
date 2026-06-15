@@ -62,7 +62,6 @@
                         faxNumber: state.faxNumber,
                         emailAddress: state.emailAddress,
                         website: state.website,
-                        updatedById: StorageManager.getUserId(),
                     });
                     if (res?.data?.code === 200) {
                         const cached = StorageManager.getCompany() || {};

@@ -44,7 +44,7 @@ public class GetDashboardWidgetDataHandlerTests
 
     private static QueryContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);

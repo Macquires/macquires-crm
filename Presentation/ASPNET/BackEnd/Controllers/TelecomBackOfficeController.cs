@@ -1,14 +1,9 @@
-using System.Security.Claims;
-using Application.Common.Integrations;
-using Application.Common.Security;
 using Application.Features.TelecomBackOfficeManager.Commands;
 using Application.Features.TelecomBackOfficeManager.Queries;
 using ASPNET.BackEnd.Common.Attributes;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
-using Infrastructure.SecurityManager.Roles;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -20,10 +15,9 @@ public class TelecomBackOfficeController : BaseApiController
     {
     }
 
-    private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireTechnicalTicketList]
     [HttpGet("GetTechnicalTickets")]
     public async Task<ActionResult<ApiSuccessResult<GetTechnicalTicketsResult>>> GetTechnicalTicketsAsync(
         [FromQuery] GetTechnicalTicketsRequest request,
@@ -38,7 +32,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireTechnicalTicketList]
     [HttpGet("GetTechnicalTicketSingle")]
     public async Task<ActionResult<ApiSuccessResult<GetTechnicalTicketSingleResult>>> GetTechnicalTicketSingleAsync(
         [FromQuery] string id,
@@ -53,19 +47,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireNetworkTechnicalView]
     [HttpPost("SimulateVoiceAiIncomingCall")]
     public async Task<ActionResult<ApiSuccessResult<SimulateVoiceAiIncomingCallResult>>> SimulateVoiceAiIncomingCallAsync(
         [FromBody] SimulateVoiceAiIncomingCallRequest request,
         CancellationToken cancellationToken)
     {
-        var cmd = new SimulateVoiceAiIncomingCallRequest
-        {
-            Msisdn = request.Msisdn,
-            RawVoiceTranscript = request.RawVoiceTranscript,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
-        };
-        var response = await _sender.Send(cmd, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<SimulateVoiceAiIncomingCallResult>
         {
             Code = StatusCodes.Status200OK,
@@ -74,28 +62,12 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireTechnicalTicketCreate]
     [HttpPost("CreateTechnicalTicket")]
     public async Task<ActionResult<ApiSuccessResult<CreateTechnicalTicketResult>>> CreateTechnicalTicketAsync(
         [FromBody] CreateTechnicalTicketRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(request.OpenedByUserId))
-        {
-            request = new CreateTechnicalTicketRequest
-            {
-                Msisdn = request.Msisdn,
-                IssueType = request.IssueType,
-                TicketCategory = request.TicketCategory,
-                Priority = request.Priority,
-                Notes = request.Notes,
-                PayloadJson = request.PayloadJson,
-                CustomerId = request.CustomerId,
-                SubscriberProfileId = request.SubscriberProfileId,
-                OpenedByUserId = CurrentUserId,
-                CreatedByChannel = request.CreatedByChannel,
-            };
-        }
         var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<CreateTechnicalTicketResult>
         {
@@ -105,7 +77,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireTechnicalTicketManage]
     [HttpPost("UpdateTechnicalTicketStatus")]
     public async Task<ActionResult<ApiSuccessResult<UpdateTechnicalTicketStatusResult>>> UpdateTechnicalTicketStatusAsync(
         [FromBody] UpdateTechnicalTicketStatusRequest request,
@@ -117,7 +89,6 @@ public class TelecomBackOfficeController : BaseApiController
             NewStatus = request.NewStatus,
             NewPriority = request.NewPriority,
             OperatorNotesAr = request.OperatorNotesAr,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
             IpAddress = request.IpAddress ?? ClientIp,
         };
         var response = await _sender.Send(cmd, cancellationToken);
@@ -129,7 +100,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireTechnicalTicketManage]
     [HttpPost("ResolveTechnicalTicket")]
     public async Task<ActionResult<ApiSuccessResult<ResolveTechnicalTicketResult>>> ResolveTechnicalTicketAsync(
         [FromBody] ResolveTechnicalTicketRequest request,
@@ -139,7 +110,6 @@ public class TelecomBackOfficeController : BaseApiController
         {
             Id = request.Id,
             ResolutionNotes = request.ResolutionNotes,
-            ResolvedByUserId = request.ResolvedByUserId ?? CurrentUserId,
             IpAddress = request.IpAddress ?? ClientIp,
         };
         var response = await _sender.Send(cmd, cancellationToken);
@@ -151,7 +121,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalSync)]
+    [RequireNetworkTechnicalSync]
     [HttpPost("ForceCbsSync")]
     public async Task<ActionResult<ApiSuccessResult<ForceCbsSyncResult>>> ForceCbsSyncAsync(
         [FromBody] ForceCbsSyncByTicketRequest request,
@@ -160,7 +130,6 @@ public class TelecomBackOfficeController : BaseApiController
         var cmd = new ForceCbsSyncByTicketRequest
         {
             TicketId = request.TicketId,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
             IpAddress = request.IpAddress ?? ClientIp,
         };
         var response = await _sender.Send(cmd, cancellationToken);
@@ -172,7 +141,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalSync)]
+    [RequireNetworkTechnicalSync]
     [HttpPost("ForceHlrSync")]
     public async Task<ActionResult<ApiSuccessResult<ForceHlrSyncResult>>> ForceHlrSyncAsync(
         [FromBody] ForceHlrSyncByTicketRequest request,
@@ -181,7 +150,6 @@ public class TelecomBackOfficeController : BaseApiController
         var cmd = new ForceHlrSyncByTicketRequest
         {
             TicketId = request.TicketId,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
             IpAddress = request.IpAddress ?? ClientIp,
         };
         var response = await _sender.Send(cmd, cancellationToken);
@@ -193,7 +161,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireNetworkTechnicalView]
     [HttpGet("QueryLiveNetworkStatus")]
     public async Task<ActionResult<ApiSuccessResult<QueryLiveNetworkStatusByTicketResult>>> QueryLiveNetworkStatusAsync(
         [FromQuery] string ticketId,
@@ -210,7 +178,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalView)]
+    [RequireTechnicalTicketEscalate]
     [HttpPost("EscalateToTier3")]
     public async Task<ActionResult<ApiSuccessResult<EscalateTechnicalTicketToTier3Result>>> EscalateToTier3Async(
         [FromBody] EscalateTechnicalTicketToTier3Request request,
@@ -220,7 +188,6 @@ public class TelecomBackOfficeController : BaseApiController
         {
             TicketId = request.TicketId,
             EscalationNotes = request.EscalationNotes,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
             IpAddress = request.IpAddress ?? ClientIp,
         };
         var response = await _sender.Send(cmd, cancellationToken);
@@ -232,25 +199,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireTelecomProvisioning]
     [HttpPost("ExecuteTechnicalAction")]
     public async Task<ActionResult<ApiSuccessResult<ExecuteCustomer360TechnicalActionResult>>> ExecuteTechnicalActionAsync(
         [FromBody] ExecuteCustomer360TechnicalActionRequest request,
         CancellationToken cancellationToken)
     {
-        var cmd = new ExecuteCustomer360TechnicalActionRequest
-        {
-            CustomerId = request.CustomerId,
-            ActionType = request.ActionType,
-            SubscriberProfileId = request.SubscriberProfileId,
-            Msisdn = request.Msisdn,
-            TargetProductCode = request.TargetProductCode,
-            ProductOfferingId = request.ProductOfferingId,
-            SimIccid = request.SimIccid,
-            Notes = request.Notes,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
-        };
-        var response = await _sender.Send(cmd, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<ExecuteCustomer360TechnicalActionResult>
         {
             Code = StatusCodes.Status200OK,
@@ -259,7 +214,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.NetworkTechnicalSync)]
+    [RequireNetworkTechnicalSync]
     [HttpPost("HlrResyncByMsisdn")]
     public async Task<ActionResult<ApiSuccessResult<HlrResyncByMsisdnResult>>> HlrResyncByMsisdnAsync(
         [FromBody] HlrResyncByMsisdnRequest request,
@@ -269,7 +224,6 @@ public class TelecomBackOfficeController : BaseApiController
         {
             Msisdn = request.Msisdn,
             TechnicalTicketId = request.TechnicalTicketId,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
             IpAddress = request.IpAddress ?? ClientIp,
         };
         var response = await _sender.Send(cmd, cancellationToken);
@@ -281,18 +235,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireProductCatalogManage]
     [HttpPost("ToggleProductOfferingActive")]
     public async Task<ActionResult<ApiSuccessResult<ToggleProductOfferingActiveResult>>> ToggleProductOfferingActiveAsync(
         [FromBody] ToggleProductOfferingActiveRequest request,
         CancellationToken cancellationToken)
     {
-        var cmd = new ToggleProductOfferingActiveRequest
-        {
-            Id = request.Id,
-            UpdatedById = request.UpdatedById ?? CurrentUserId,
-        };
-        var response = await _sender.Send(cmd, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<ToggleProductOfferingActiveResult>
         {
             Code = StatusCodes.Status200OK,
@@ -301,7 +250,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireBackOfficeOperations]
     [HttpGet("ResolveAuditDisplayNames")]
     public async Task<ActionResult<ApiSuccessResult<ResolveAuditDisplayNamesResult>>> ResolveAuditDisplayNamesAsync(
         [FromQuery] string? profileId,
@@ -325,7 +274,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireFinanceBdrView]
     [HttpGet("GetPendingRequests")]
     public async Task<ActionResult<ApiSuccessResult<GetPendingBackOfficeOperationsResult>>> GetPendingRequestsAsync(
         [FromQuery] GetPendingBackOfficeOperationsRequest request,
@@ -340,19 +289,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.FinanceBdrExecute)]
+    [RequireFinanceBdrExecute]
     [HttpPost("ApproveRequest")]
     public async Task<ActionResult<ApiSuccessResult<ApproveBackOfficeTelecomOperationResult>>> ApproveRequestAsync(
         [FromBody] ApproveBackOfficeTelecomOperationRequest request,
         CancellationToken cancellationToken)
     {
-        var cmd = new ApproveBackOfficeTelecomOperationRequest
-        {
-            OperationId = request.OperationId,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
-            Comments = request.Comments,
-        };
-        var response = await _sender.Send(cmd, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<ApproveBackOfficeTelecomOperationResult>
         {
             Code = StatusCodes.Status200OK,
@@ -361,19 +304,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [HasPermission(PermissionCatalog.FinanceBdrExecute)]
+    [RequireFinanceBdrExecute]
     [HttpPost("RejectRequest")]
     public async Task<ActionResult<ApiSuccessResult<RejectBackOfficeTelecomOperationResult>>> RejectRequestAsync(
         [FromBody] RejectBackOfficeTelecomOperationRequest request,
         CancellationToken cancellationToken)
     {
-        var cmd = new RejectBackOfficeTelecomOperationRequest
-        {
-            OperationId = request.OperationId,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
-            RejectionReason = request.RejectionReason,
-        };
-        var response = await _sender.Send(cmd, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<RejectBackOfficeTelecomOperationResult>
         {
             Code = StatusCodes.Status200OK,
@@ -382,19 +319,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireTechnicalTicketManage]
     [HttpPost("ClaimTicket")]
     public async Task<ActionResult<ApiSuccessResult<ClaimTicketResult>>> ClaimTicketAsync(
         [FromBody] ClaimTicketRequest request,
         CancellationToken cancellationToken)
     {
-        var cmd = new ClaimTicketRequest
-        {
-            TicketId = request.TicketId,
-            AgentEmail = request.AgentEmail,
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
-        };
-        var response = await _sender.Send(cmd, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<ClaimTicketResult>
         {
             Code = StatusCodes.Status200OK,
@@ -403,23 +334,13 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAdminAuditView]
     [HttpGet("GetBackOfficeAuditLogList")]
     public async Task<ActionResult<ApiSuccessResult<GetBackOfficeAuditLogListResult>>> GetBackOfficeAuditLogListAsync(
         [FromQuery] GetBackOfficeAuditLogListRequest request,
         CancellationToken cancellationToken)
     {
-        var auditReq = new GetBackOfficeAuditLogListRequest
-        {
-            ActorUserId = request.ActorUserId ?? CurrentUserId,
-            SearchTerm = request.SearchTerm,
-            ActionType = request.ActionType,
-            FromUtc = request.FromUtc,
-            ToUtc = request.ToUtc,
-            Skip = request.Skip,
-            Take = request.Take,
-        };
-        var response = await _sender.Send(auditReq, cancellationToken);
+        var response = await _sender.Send(request, cancellationToken);
         return Ok(new ApiSuccessResult<GetBackOfficeAuditLogListResult>
         {
             Code = StatusCodes.Status200OK,

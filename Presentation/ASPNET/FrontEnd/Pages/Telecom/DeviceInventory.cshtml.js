@@ -246,7 +246,6 @@ const DeviceInventoryApp = {
                         model,
                         listPrice: state.form.listPrice,
                         branchId: state.form.branchId?.trim() || null,
-                        createdById: StorageManager.getUserId(),
                     });
                     state.form.imei = '';
                     state.form.model = '';

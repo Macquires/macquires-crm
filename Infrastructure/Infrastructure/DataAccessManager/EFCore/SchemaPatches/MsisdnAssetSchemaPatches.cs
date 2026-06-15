@@ -81,7 +81,7 @@ public static class MsisdnAssetSchemaPatches
             {
                 throw new InvalidOperationException(
                     $"Database schema is missing required column [{schemaName}].[{tableName}].[{IntendedColumn}]. " +
-                    "Run Infrastructure/DataAccessManager/EFCore/Migrations/MsisdnAsset_IntendedLineType_Manual.sql " +
+                    "Run Infrastructure/DataAccessManager/EFCore/Migrations/Legacy/MsisdnAsset_IntendedLineType_Manual.sql " +
                     "or restart after deploying the latest application build.");
             }
 

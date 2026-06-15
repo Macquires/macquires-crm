@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using Application.Common.Extensions;
 using AutoMapper;
 using Domain.Entities;
@@ -30,10 +31,11 @@ public class GetGeoCityListResult
     public List<GetGeoCityListDto>? Data { get; init; }
 }
 
-public class GetGeoCityListRequest : IRequest<GetGeoCityListResult>
+public class GetGeoCityListRequest : IRequest<GetGeoCityListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; }
     public bool ActiveOnly { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ReadAny;
 }
 
 public class GetGeoCityListHandler : IRequestHandler<GetGeoCityListRequest, GetGeoCityListResult>

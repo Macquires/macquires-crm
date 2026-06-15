@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -13,9 +14,10 @@ public class RevealCustomerNationalIdResult
     public bool Allowed { get; init; }
 }
 
-public class RevealCustomerNationalIdRequest : IRequest<RevealCustomerNationalIdResult>
+public class RevealCustomerNationalIdRequest : IRequest<RevealCustomerNationalIdResult>, IRequirePermission
 {
     public string CustomerId { get; init; } = "";
+    public string PermissionKey => PermissionCatalog.CustomerViewPii;
 }
 
 public class RevealCustomerNationalIdValidator : AbstractValidator<RevealCustomerNationalIdRequest>

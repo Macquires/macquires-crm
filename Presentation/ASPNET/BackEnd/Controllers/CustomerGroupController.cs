@@ -2,8 +2,8 @@
 using Application.Features.CustomerGroupManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -15,7 +15,7 @@ public class CustomerGroupController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("CreateCustomerGroup")]
     public async Task<ActionResult<ApiSuccessResult<CreateCustomerGroupResult>>> CreateCustomerGroupAsync(CreateCustomerGroupRequest request, CancellationToken cancellationToken)
     {
@@ -29,7 +29,7 @@ public class CustomerGroupController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("UpdateCustomerGroup")]
     public async Task<ActionResult<ApiSuccessResult<UpdateCustomerGroupResult>>> UpdateCustomerGroupAsync(UpdateCustomerGroupRequest request, CancellationToken cancellationToken)
     {
@@ -43,7 +43,7 @@ public class CustomerGroupController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("DeleteCustomerGroup")]
     public async Task<ActionResult<ApiSuccessResult<DeleteCustomerGroupResult>>> DeleteCustomerGroupAsync(DeleteCustomerGroupRequest request, CancellationToken cancellationToken)
     {
@@ -57,7 +57,7 @@ public class CustomerGroupController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataRead]
     [HttpGet("GetCustomerGroupList")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomerGroupListResult>>> GetCustomerGroupListAsync(
         CancellationToken cancellationToken,
@@ -74,8 +74,4 @@ public class CustomerGroupController : BaseApiController
             Content = response
         });
     }
-
-
 }
-
-

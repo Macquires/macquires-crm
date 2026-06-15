@@ -2,9 +2,8 @@ using Application.Features.CustomerManager.Commands;
 using Application.Features.CustomerManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
-using Infrastructure.SecurityManager.Roles;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -16,7 +15,7 @@ public class CustomerController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireCustomerManage]
     [HttpPost("CreateCustomer")]
     public async Task<ActionResult<ApiSuccessResult<CreateCustomerResult>>> CreateCustomerAsync(CreateCustomerRequest request, CancellationToken cancellationToken)
     {
@@ -30,7 +29,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerManage]
     [HttpPost("UpdateCustomer")]
     public async Task<ActionResult<ApiSuccessResult<UpdateCustomerResult>>> UpdateCustomerAsync(UpdateCustomerRequest request, CancellationToken cancellationToken)
     {
@@ -44,7 +43,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerManage]
     [HttpPost("DeleteCustomer")]
     public async Task<ActionResult<ApiSuccessResult<DeleteCustomerResult>>> DeleteCustomerAsync(DeleteCustomerRequest request, CancellationToken cancellationToken)
     {
@@ -58,7 +57,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("GetCustomerList")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomerListResult>>> GetCustomerListAsync(
         CancellationToken cancellationToken,
@@ -80,7 +79,7 @@ public class CustomerController : BaseApiController
     }
 
     /// <summary>Pre-check before creating a subscriber: find existing CRM parties by national ID or phone.</summary>
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("FindCustomerCandidates")]
     public async Task<ActionResult<ApiSuccessResult<FindCustomerCandidatesResult>>> FindCustomerCandidatesAsync(
         CancellationToken cancellationToken,
@@ -98,7 +97,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("GetCustomer360")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomer360Result>>> GetCustomer360Async(
         CancellationToken cancellationToken,
@@ -113,7 +112,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("GetCustomer360Profile")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomer360ProfileResult>>> GetCustomer360ProfileAsync(
         CancellationToken cancellationToken,
@@ -128,7 +127,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
     [HttpGet("GetCustomer360Supplements")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomer360SupplementsResult>>> GetCustomer360SupplementsAsync(
         CancellationToken cancellationToken,
@@ -143,7 +142,33 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireCustomerView]
+    [HttpGet("GetCustomer360Timeline")]
+    public async Task<ActionResult<ApiSuccessResult<GetCustomer360TimelineResult>>> GetCustomer360TimelineAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string customerId,
+        [FromQuery] int take = 50,
+        [FromQuery] int skip = 0,
+        [FromQuery] string? kinds = null)
+    {
+        var response = await _sender.Send(
+            new GetCustomer360TimelineRequest
+            {
+                CustomerId = customerId ?? "",
+                Take = take,
+                Skip = skip,
+                Kinds = kinds,
+            },
+            cancellationToken);
+        return Ok(new ApiSuccessResult<GetCustomer360TimelineResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetCustomer360TimelineAsync),
+            Content = response,
+        });
+    }
+
+    [RequireCustomerView]
     [HttpGet("GetCustomer360LineWallets")]
     public async Task<ActionResult<ApiSuccessResult<GetCustomer360LineWalletsResult>>> GetCustomer360LineWalletsAsync(
         CancellationToken cancellationToken,
@@ -158,7 +183,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesCreateOperation)]
+    [RequireTelecomPayment]
     [HttpPost("RechargeCustomer360Line")]
     public async Task<ActionResult<ApiSuccessResult<RechargeCustomer360LineResult>>> RechargeCustomer360LineAsync(
         RechargeCustomer360LineRequest request,
@@ -173,7 +198,7 @@ public class CustomerController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesViewDecryptedPII)]
+    [RequireCustomerViewPii]
     [HttpGet("RevealNationalId")]
     public async Task<ActionResult<ApiSuccessResult<RevealCustomerNationalIdResult>>> RevealNationalIdAsync(
         [FromQuery] string customerId,
@@ -188,5 +213,3 @@ public class CustomerController : BaseApiController
         });
     }
 }
-
-

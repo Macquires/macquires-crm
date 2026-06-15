@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using AutoMapper;
 using Domain.Entities;
@@ -36,7 +37,7 @@ public class GetBillingIntegrationLogListResult
     public int TotalCount { get; init; }
 }
 
-public class GetBillingIntegrationLogListRequest : IRequest<GetBillingIntegrationLogListResult>
+public class GetBillingIntegrationLogListRequest : IRequest<GetBillingIntegrationLogListResult>, IRequireAnyPermission
 {
     public string? TelecomOperationRequestId { get; init; }
     public string? OperationNumber { get; init; }
@@ -44,6 +45,7 @@ public class GetBillingIntegrationLogListRequest : IRequest<GetBillingIntegratio
     public bool IsDeleted { get; init; }
     public int Skip { get; init; }
     public int Take { get; init; } = 25;
+    public IReadOnlyList<string> PermissionKeys => IntegrationMonitorPermissionSets.MonitorAny;
 }
 
 public class GetBillingIntegrationLogListValidator : AbstractValidator<GetBillingIntegrationLogListRequest>

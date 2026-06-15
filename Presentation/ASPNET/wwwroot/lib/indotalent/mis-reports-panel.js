@@ -1,13 +1,12 @@
 /**
- * MIS KPI strip — ARPU, churn, branch workload from GET /Telecom/GetTelecomDashboardKpis.
- * Merged from legacy TelecomMisReports page into DefaultDashboard (#mis-reports).
+ * MIS KPI strip — live CBS payment ledger via GET /Telecom/GetTelecomDashboardKpis.
  */
 const MisReportsPanel = (function () {
     const MIS_PERMISSION = 'telecom.reports.mis';
 
     function t(key) {
         const hit = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t('defaultDashboard.mis.' + key) : null;
-        return hit || key;
+        return hit || (typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t('defaultDashboard.strategic.' + key) : null) || key;
     }
 
     function numberLocale() {
@@ -40,29 +39,51 @@ const MisReportsPanel = (function () {
         }
     }
 
+    function pick(o, ...keys) {
+        if (!o) return undefined;
+        for (const k of keys) {
+            if (o[k] !== undefined && o[k] !== null) return o[k];
+        }
+        return undefined;
+    }
+
     function mount(rootEl) {
         if (!rootEl || typeof Vue === 'undefined') {
             return null;
         }
 
         const state = Vue.reactive({
-            kpis: { arpuDemo: 0, churnPercentDemo: 0, branchHeat: [] },
+            filters: { regionId: null, branchId: null },
+            kpis: {
+                arpu: 0,
+                churnPercent30: 0,
+                totalRevenue: 0,
+                revenueChangePercent: 0,
+                branchHeat: [],
+                scopeLabelAr: '',
+                canUseFilters: false,
+                regions: [],
+                branches: [],
+            },
             loading: false,
         });
         const localeVersion = Vue.ref(0);
+
+        const branchOptions = Vue.computed(() => {
+            if (!state.kpis.branches?.length) return [];
+            if (!state.filters.regionId) return state.kpis.branches;
+            return state.kpis.branches.filter((b) => b.regionId === state.filters.regionId);
+        });
 
         const formatMoney = (n) => {
             if (n == null || isNaN(n)) return '—';
             return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 0 }).format(n);
         };
 
-        const formatWorkload = (n) => {
-            void localeVersion.value;
+        const formatPercent = (n) => {
             if (n == null || isNaN(n)) return '—';
-            const v = Math.round(Number(n));
-            if (v >= 80) return t('workloadHigh');
-            if (v >= 40) return t('workloadMedium');
-            return t('workloadLow');
+            const v = Number(n);
+            return `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
         };
 
         const tBound = (key) => {
@@ -70,15 +91,48 @@ const MisReportsPanel = (function () {
             return t(key);
         };
 
+        const normalize = (c) => {
+            if (!c) return null;
+            return {
+                arpu: pick(c, 'arpu', 'Arpu', 'arpuDemo', 'ArpuDemo') ?? 0,
+                churnPercent30: pick(c, 'churnPercent30', 'ChurnPercent30', 'churnPercentDemo', 'ChurnPercentDemo') ?? 0,
+                totalRevenue: pick(c, 'totalRevenue', 'TotalRevenue') ?? 0,
+                revenueChangePercent: pick(c, 'revenueChangePercent', 'RevenueChangePercent') ?? 0,
+                scopeLabelAr: pick(c, 'scopeLabelAr', 'ScopeLabelAr') ?? '',
+                canUseFilters: pick(c, 'canUseFilters', 'CanUseFilters') === true,
+                regions: (pick(c, 'regions', 'Regions') ?? []).map((r) => ({
+                    id: pick(r, 'id', 'Id'),
+                    nameAr: pick(r, 'nameAr', 'NameAr'),
+                })),
+                branches: (pick(c, 'branches', 'Branches') ?? []).map((b) => ({
+                    id: pick(b, 'id', 'Id'),
+                    nameAr: pick(b, 'nameAr', 'NameAr'),
+                    regionId: pick(b, 'regionId', 'RegionId'),
+                })),
+                branchHeat: (pick(c, 'branchHeat', 'BranchHeat') ?? []).map((b) => ({
+                    branchId: pick(b, 'branchId', 'BranchId'),
+                    branchName: pick(b, 'branchName', 'BranchName'),
+                    revenue: pick(b, 'revenue', 'Revenue', 'revenueDemo', 'RevenueDemo') ?? 0,
+                })),
+            };
+        };
+
         const loadKpis = async () => {
             state.loading = true;
             try {
-                const res = await AxiosManager.get('/Telecom/GetTelecomDashboardKpis', {});
-                const c = res?.data?.content;
-                if (c) {
-                    state.kpis.arpuDemo = c.arpuDemo ?? c.ArpuDemo ?? 0;
-                    state.kpis.churnPercentDemo = c.churnPercentDemo ?? c.ChurnPercentDemo ?? 0;
-                    state.kpis.branchHeat = c.branchHeat ?? c.BranchHeat ?? [];
+                const params = {};
+                if (state.kpis.canUseFilters) {
+                    if (state.filters.regionId) params.regionId = state.filters.regionId;
+                    if (state.filters.branchId) params.branchId = state.filters.branchId;
+                }
+                const res = await AxiosManager.get('/Telecom/GetTelecomDashboardKpis', { params });
+                const m = normalize(res?.data?.content);
+                if (m) {
+                    state.kpis = m;
+                    if (m.canUseFilters) {
+                        state.filters.regionId = pick(res?.data?.content, 'effectiveRegionId', 'EffectiveRegionId') ?? state.filters.regionId;
+                        state.filters.branchId = pick(res?.data?.content, 'effectiveBranchId', 'EffectiveBranchId') ?? state.filters.branchId;
+                    }
                 }
             } catch (err) {
                 console.error('GetTelecomDashboardKpis failed', err);
@@ -86,6 +140,11 @@ const MisReportsPanel = (function () {
             } finally {
                 state.loading = false;
             }
+        };
+
+        const onRegionChange = () => {
+            state.filters.branchId = null;
+            loadKpis();
         };
 
         const app = Vue.createApp({
@@ -99,9 +158,12 @@ const MisReportsPanel = (function () {
 
                 return {
                     ...Vue.toRefs(state),
+                    branchOptions,
                     t: tBound,
                     formatMoney,
-                    formatWorkload,
+                    formatPercent,
+                    loadKpis,
+                    onRegionChange,
                 };
             },
         });

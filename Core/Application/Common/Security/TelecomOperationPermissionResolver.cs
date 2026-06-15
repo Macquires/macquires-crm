@@ -17,6 +17,8 @@ public static class TelecomOperationPermissionResolver
         TelecomOperationKind.Reconnect => PermissionCatalog.TelecomLineReconnect,
         TelecomOperationKind.DeviceSale => PermissionCatalog.TelecomDeviceSell,
         TelecomOperationKind.DepositRefundSettlement => PermissionCatalog.TelecomLineRefund,
+        TelecomOperationKind.BadDebtRecovery => PermissionCatalog.TelecomLineCollection,
+        TelecomOperationKind.ServiceModification => PermissionCatalog.TelecomVasToggle,
         _ => PermissionCatalog.TelecomLineActivate,
     };
 }

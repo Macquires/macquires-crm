@@ -21,11 +21,11 @@ public sealed class ClaimTicketResult
     public string? PipelineState { get; init; }
 }
 
-public sealed class ClaimTicketRequest : IRequest<ClaimTicketResult>
+public sealed class ClaimTicketRequest : IRequest<ClaimTicketResult>, IRequireAnyPermission
 {
     public string TicketId { get; init; } = null!;
     public string AgentEmail { get; init; } = null!;
-    public string? ActorUserId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalTicketManageAny;
 }
 
 public sealed class ClaimTicketValidator : AbstractValidator<ClaimTicketRequest>
@@ -43,23 +43,28 @@ public sealed class ClaimTicketHandler : IRequestHandler<ClaimTicketRequest, Cla
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserAuditService _audit;
     private readonly IPublisher _publisher;
+    private readonly IOperatorContext _operator;
 
     public ClaimTicketHandler(
         IQueryContext query,
         IUnitOfWork unitOfWork,
         IUserAuditService audit,
-        IPublisher publisher)
+        IPublisher publisher,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _unitOfWork = unitOfWork;
         _audit = audit;
         _publisher = publisher;
+        _operator = operatorContext;
     }
 
     public async Task<ClaimTicketResult> Handle(ClaimTicketRequest request, CancellationToken cancellationToken)
     {
         try
         {
+            var actorUserId = OperatorActor.RequireUserId(_operator);
+
             // Fetch with tracking to allow updates
             var ticket = await _query.TelecomOperationRequest
                 .FirstOrDefaultAsync(o => o.Id == request.TicketId && !o.IsDeleted, cancellationToken)
@@ -75,15 +80,15 @@ public sealed class ClaimTicketHandler : IRequestHandler<ClaimTicketRequest, Cla
 
             // Update state
             ticket.AssignedAgentEmail = request.AgentEmail;
-            ticket.ClaimedByUserId = request.ActorUserId;
+            ticket.ClaimedByUserId = actorUserId;
             ticket.Status = TelecomOperationStatus.In_Progress;
             ticket.ClaimedAt = DateTime.UtcNow;
-            ticket.UpdatedById = request.ActorUserId;
+            ticket.UpdatedById = actorUserId;
 
             // Audit Log
             await _audit.LogAsync(new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.BackOfficeTicketClaimed,
                 EntityType = nameof(TelecomOperationRequest),
                 EntityId = ticket.Id,

@@ -3,8 +3,9 @@ using Domain.Enums;
 
 namespace Domain.Entities;
 
-public class TelecomPaymentAuditLog : BaseEntity
+public class TelecomPaymentAuditLog : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public string TelecomPaymentTransactionId { get; set; } = null!;
     public TelecomPaymentTransaction? TelecomPaymentTransaction { get; set; }
 

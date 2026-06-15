@@ -1,79 +1,92 @@
 ﻿using Application.Common.Repositories;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.NumberSequenceManager;
 
 public class NumberSequenceService
 {
-
-    private readonly object lockObject = new object();
+    private static readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly ICommandRepository<NumberSequence> _repository;
     private readonly IUnitOfWork _unitOfWork;
 
     public NumberSequenceService(
         ICommandRepository<NumberSequence> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
 
-    private NumberSequence? GetNumberSequence(string entityName, string prefix, string suffix)
+    [Obsolete("Use GenerateNumberAsync to avoid sync-over-async.")]
+    public string GenerateNumber(string entityName, string prefix, string suffix, bool useDate = true, int padding = 4)
+        => GenerateNumberAsync(entityName, prefix, suffix, useDate, padding).GetAwaiter().GetResult();
+
+    public async Task<string> GenerateNumberAsync(
+        string entityName,
+        string prefix,
+        string suffix,
+        bool useDate = true,
+        int padding = 4,
+        CancellationToken cancellationToken = default)
     {
-        return _repository.GetQuery()
-            .FirstOrDefault(ns => ns.EntityName == entityName && ns.Prefix == prefix && ns.Suffix == suffix);
+        if (string.IsNullOrEmpty(entityName))
+        {
+            throw new ArgumentException("Parameter entityName must not be null", nameof(entityName));
+        }
+
+        await _semaphore.WaitAsync(cancellationToken);
+        try
+        {
+            var sequence = await GetNumberSequenceAsync(entityName, prefix, suffix, cancellationToken);
+            if (sequence != null)
+            {
+                sequence.LastUsedCount++;
+                await _unitOfWork.SaveAsync(cancellationToken);
+            }
+            else
+            {
+                sequence = await InsertNumberSequenceAsync(entityName, prefix, suffix, cancellationToken);
+            }
+
+            var count = sequence.LastUsedCount?.ToString().PadLeft(padding, '0') ?? "1".PadLeft(padding, '0');
+            var datePart = useDate ? DateTime.Now.ToString("yyyyMMdd") : "";
+            return $"{prefix}{count}{datePart}{suffix}";
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
-    private void UpdateNumberSequence(NumberSequence sequence)
+    private async Task<NumberSequence?> GetNumberSequenceAsync(
+        string entityName,
+        string prefix,
+        string suffix,
+        CancellationToken cancellationToken)
     {
-        sequence.LastUsedCount++;
-        _unitOfWork.Save();
+        return await _repository.GetQuery()
+            .FirstOrDefaultAsync(
+                ns => ns.EntityName == entityName && ns.Prefix == prefix && ns.Suffix == suffix,
+                cancellationToken);
     }
 
-    private NumberSequence InsertNumberSequence(string entityName, string prefix, string suffix)
+    private async Task<NumberSequence> InsertNumberSequenceAsync(
+        string entityName,
+        string prefix,
+        string suffix,
+        CancellationToken cancellationToken)
     {
-        NumberSequence newSequence = new NumberSequence
+        var newSequence = new NumberSequence
         {
             EntityName = entityName,
             Prefix = prefix,
             Suffix = suffix,
-            LastUsedCount = 1
+            LastUsedCount = 1,
         };
 
         _repository.Create(newSequence);
-        _unitOfWork.Save();
-
+        await _unitOfWork.SaveAsync(cancellationToken);
         return newSequence;
     }
-
-    public string GenerateNumber(string entityName, string prefix, string suffix, bool useDate = true, int padding = 4)
-    {
-        var result = string.Empty;
-
-        if (string.IsNullOrEmpty(entityName))
-        {
-            throw new Exception("Parameter entityName must not be null");
-        }
-
-        lock (lockObject)
-        {
-            NumberSequence? sequence = GetNumberSequence(entityName, prefix, suffix);
-
-            if (sequence != null)
-            {
-                UpdateNumberSequence(sequence);
-            }
-            else
-            {
-                sequence = InsertNumberSequence(entityName, prefix, suffix);
-            }
-
-            string formattedNumber = $"{prefix}{sequence?.LastUsedCount?.ToString().PadLeft(padding, '0')}{(useDate ? DateTime.Now.ToString("yyyyMMdd") : "")}{suffix}";
-            result = formattedNumber;
-        }
-
-        return result;
-    }
-
 }

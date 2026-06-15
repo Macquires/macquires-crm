@@ -1,4 +1,5 @@
 using Application.Common.Services.SecurityManager;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using FluentValidation;
 using MediatR;
@@ -11,7 +12,7 @@ public class GetPersonaMenuNavigationResult
     public string? PrimaryMenuPersona { get; init; }
 }
 
-public class GetPersonaMenuNavigationRequest : IRequest<GetPersonaMenuNavigationResult>
+public class GetPersonaMenuNavigationRequest : IRequest<GetPersonaMenuNavigationResult>, IRequireAuthenticatedOperator
 {
     public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
     public string? PreviewPersona { get; init; }

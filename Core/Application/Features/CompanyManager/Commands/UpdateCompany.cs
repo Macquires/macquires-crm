@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,7 +11,7 @@ public class UpdateCompanyResult
     public Company? Data { get; set; }
 }
 
-public class UpdateCompanyRequest : IRequest<UpdateCompanyResult>
+public class UpdateCompanyRequest : IRequest<UpdateCompanyResult>, IRequirePermission
 {
     public string? Id { get; init; }
     public string? Name { get; init; }
@@ -25,7 +26,7 @@ public class UpdateCompanyRequest : IRequest<UpdateCompanyResult>
     public string? FaxNumber { get; init; }
     public string? EmailAddress { get; init; }
     public string? Website { get; init; }
-    public string? UpdatedById { get; init; }
+    public string PermissionKey => PermissionCatalog.AdminSettingsManage;
 }
 
 public class UpdateCompanyValidator : AbstractValidator<UpdateCompanyRequest>
@@ -48,14 +49,16 @@ public class UpdateCompanyHandler : IRequestHandler<UpdateCompanyRequest, Update
 {
     private readonly ICommandRepository<Company> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UpdateCompanyHandler(
         ICommandRepository<Company> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateCompanyResult> Handle(UpdateCompanyRequest request, CancellationToken cancellationToken)
@@ -68,7 +71,7 @@ public class UpdateCompanyHandler : IRequestHandler<UpdateCompanyRequest, Update
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
 
         entity.Name = request.Name;
         entity.Description = request.Description;

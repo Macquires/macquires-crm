@@ -14,16 +14,15 @@ public class UpdateOrgUnitResult
     public OrgUnit? Data { get; init; }
 }
 
-public class UpdateOrgUnitRequest : IRequest<UpdateOrgUnitResult>, IRequirePermission
+public class UpdateOrgUnitRequest : IRequest<UpdateOrgUnitResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminUsersManage;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? Id { get; init; }
     public string? NameAr { get; init; }
     public string? NameEn { get; init; }
     public string? ParentId { get; init; }
     public string? ManagerUserId { get; init; }
     public bool? IsActive { get; init; }
-    public string? UpdatedById { get; init; }
 }
 
 public class UpdateOrgUnitValidator : AbstractValidator<UpdateOrgUnitRequest>
@@ -41,17 +40,20 @@ public class UpdateOrgUnitHandler : IRequestHandler<UpdateOrgUnitRequest, Update
     private readonly IUnitOfWork _unitOfWork;
     private readonly IQueryContext _query;
     private readonly ISecurityService _securityService;
+    private readonly IOperatorContext _operator;
 
     public UpdateOrgUnitHandler(
         ICommandRepository<OrgUnit> repository,
         IUnitOfWork unitOfWork,
         IQueryContext query,
-        ISecurityService securityService)
+        ISecurityService securityService,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _query = query;
         _securityService = securityService;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateOrgUnitResult> Handle(UpdateOrgUnitRequest request, CancellationToken cancellationToken)
@@ -84,7 +86,7 @@ public class UpdateOrgUnitHandler : IRequestHandler<UpdateOrgUnitRequest, Update
         entity.ParentId = parentId;
         entity.ManagerUserId = string.IsNullOrWhiteSpace(request.ManagerUserId) ? null : request.ManagerUserId.Trim();
         entity.IsActive = request.IsActive ?? entity.IsActive;
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.UpdatedAtUtc = DateTime.UtcNow;
 
         _repository.Update(entity);

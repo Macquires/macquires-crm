@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
@@ -16,7 +17,7 @@ public class CreateTechnicalTicketResult
     public TelecomTechnicalTicket? Data { get; init; }
 }
 
-public class CreateTechnicalTicketRequest : IRequest<CreateTechnicalTicketResult>
+public class CreateTechnicalTicketRequest : IRequest<CreateTechnicalTicketResult>, IRequireAnyPermission
 {
     public string Msisdn { get; init; } = "";
     public TechnicalTicketIssueType IssueType { get; init; }
@@ -26,8 +27,9 @@ public class CreateTechnicalTicketRequest : IRequest<CreateTechnicalTicketResult
     public string? PayloadJson { get; init; }
     public string? CustomerId { get; init; }
     public string? SubscriberProfileId { get; init; }
-    public string? OpenedByUserId { get; init; }
     public string? CreatedByChannel { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalTicketCreateAny;
 }
 
 public class CreateTechnicalTicketValidator : AbstractValidator<CreateTechnicalTicketRequest>
@@ -35,7 +37,6 @@ public class CreateTechnicalTicketValidator : AbstractValidator<CreateTechnicalT
     public CreateTechnicalTicketValidator()
     {
         RuleFor(x => x.Msisdn).NotEmpty();
-        RuleFor(x => x.OpenedByUserId).NotEmpty();
     }
 }
 
@@ -45,21 +46,26 @@ public class CreateTechnicalTicketHandler : IRequestHandler<CreateTechnicalTicke
     private readonly IUnitOfWork _unitOfWork;
     private readonly NumberSequenceService _numberSequence;
     private readonly IQueryContext _query;
+    private readonly IOperatorContext _operator;
 
     public CreateTechnicalTicketHandler(
         ICommandRepository<TelecomTechnicalTicket> repository,
         IUnitOfWork unitOfWork,
         NumberSequenceService numberSequence,
-        IQueryContext query)
+        IQueryContext query,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _numberSequence = numberSequence;
         _query = query;
+        _operator = operatorContext;
     }
 
     public async Task<CreateTechnicalTicketResult> Handle(CreateTechnicalTicketRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var msisdn = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(request.Msisdn)
             ?? throw new InvalidOperationException("Invalid MSISDN.");
 
@@ -84,8 +90,8 @@ public class CreateTechnicalTicketHandler : IRequestHandler<CreateTechnicalTicke
 
         var entity = new TelecomTechnicalTicket
         {
-            CreatedById = request.OpenedByUserId,
-            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            CreatedById = actorUserId,
+            TicketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT", cancellationToken: cancellationToken),
             Msisdn = msisdn,
             CustomerId = customerId,
             SubscriberProfileId = profileId,
@@ -95,7 +101,7 @@ public class CreateTechnicalTicketHandler : IRequestHandler<CreateTechnicalTicke
             Status = TechnicalTicketStatus.Open,
             Notes = request.Notes,
             PayloadJson = request.PayloadJson,
-            OpenedByUserId = request.OpenedByUserId!,
+            OpenedByUserId = actorUserId,
             CreatedByChannel = string.IsNullOrWhiteSpace(request.CreatedByChannel)
                 ? TechnicalTicketCreatedByChannel.CallCenterAgent
                 : request.CreatedByChannel.Trim(),

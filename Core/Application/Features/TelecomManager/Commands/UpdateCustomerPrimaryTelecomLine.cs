@@ -3,6 +3,7 @@ using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
 using FluentValidation;
@@ -19,7 +20,7 @@ public class UpdateCustomerPrimaryTelecomLineResult
     public string? NewSubscriptionTypeCode { get; init; }
 }
 
-public class UpdateCustomerPrimaryTelecomLineRequest : IRequest<UpdateCustomerPrimaryTelecomLineResult>
+public class UpdateCustomerPrimaryTelecomLineRequest : IRequest<UpdateCustomerPrimaryTelecomLineResult>, IRequireAnyPermission
 {
     public string CustomerId { get; init; } = "";
     /// <summary>When null, MSISDN is not changed.</summary>
@@ -28,7 +29,8 @@ public class UpdateCustomerPrimaryTelecomLineRequest : IRequest<UpdateCustomerPr
     public string? PrimarySubscriptionTypeId { get; init; }
     /// <summary>When provided, updates this specific subscription instead of resolving the default primary one.</summary>
     public string? SubscriptionId { get; init; }
-    public string? UpdatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CustomerProvisioningAny;
 }
 
 public class UpdateCustomerPrimaryTelecomLineValidator : AbstractValidator<UpdateCustomerPrimaryTelecomLineRequest>
@@ -71,6 +73,7 @@ public class UpdateCustomerPrimaryTelecomLineHandler
     private readonly ICommandRepository<TelecomMsisdnChangeLog> _auditRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITelecomDirectorySync _directorySync;
+    private readonly IOperatorContext _operator;
 
     public UpdateCustomerPrimaryTelecomLineHandler(
         IQueryContext query,
@@ -78,7 +81,8 @@ public class UpdateCustomerPrimaryTelecomLineHandler
         ICommandRepository<TelecomSubscription> subscriptionRepository,
         ICommandRepository<TelecomMsisdnChangeLog> auditRepository,
         IUnitOfWork unitOfWork,
-        ITelecomDirectorySync directorySync)
+        ITelecomDirectorySync directorySync,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _msisdnRepository = msisdnRepository;
@@ -86,12 +90,14 @@ public class UpdateCustomerPrimaryTelecomLineHandler
         _auditRepository = auditRepository;
         _unitOfWork = unitOfWork;
         _directorySync = directorySync;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateCustomerPrimaryTelecomLineResult> Handle(
         UpdateCustomerPrimaryTelecomLineRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         var customerId = (request.CustomerId ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(customerId))
         {
@@ -226,7 +232,7 @@ public class UpdateCustomerPrimaryTelecomLineHandler
             }
 
             asset.Msisdn = newMsisdnCanonical;
-            asset.UpdatedById = request.UpdatedById;
+            asset.UpdatedById = actorUserId;
             _msisdnRepository.Update(asset);
         }
 
@@ -247,13 +253,13 @@ public class UpdateCustomerPrimaryTelecomLineHandler
                 if (other.IsPrimaryLine)
                 {
                     other.IsPrimaryLine = false;
-                    other.UpdatedById = request.UpdatedById;
+                    other.UpdatedById = actorUserId;
                     _subscriptionRepository.Update(other);
                 }
             }
 
             subscription.IsPrimaryLine = true;
-            subscription.UpdatedById = request.UpdatedById;
+            subscription.UpdatedById = actorUserId;
             _subscriptionRepository.Update(subscription);
         }
 
@@ -280,7 +286,7 @@ public class UpdateCustomerPrimaryTelecomLineHandler
                 NewSubscriptionType = typeChanging && newLookup != null ? newLookup.Code : null,
                 ExternalSyncSuccess = syncResult.Success,
                 ExternalSyncMessage = syncResult.Message,
-                CreatedById = request.UpdatedById,
+                CreatedById = actorUserId,
             };
 
             await _auditRepository.CreateAsync(log, cancellationToken);
@@ -299,7 +305,7 @@ public class UpdateCustomerPrimaryTelecomLineHandler
                 NewSubscriptionType = newLookup.Code,
                 ExternalSyncSuccess = true,
                 ExternalSyncMessage = "نوع خط فقط (بدون تغيير MSISDN).",
-                CreatedById = request.UpdatedById,
+                CreatedById = actorUserId,
             };
 
             await _auditRepository.CreateAsync(log, cancellationToken);
@@ -318,7 +324,7 @@ public class UpdateCustomerPrimaryTelecomLineHandler
                 NewSubscriptionType = oldTypeCode,
                 ExternalSyncSuccess = true,
                 ExternalSyncMessage = "تعديل الخط الأساسي للمشترك.",
-                CreatedById = request.UpdatedById,
+                CreatedById = actorUserId,
             };
 
             await _auditRepository.CreateAsync(log, cancellationToken);

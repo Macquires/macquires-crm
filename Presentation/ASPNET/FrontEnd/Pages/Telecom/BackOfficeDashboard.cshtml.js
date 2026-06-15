@@ -102,11 +102,75 @@
     let liveStatusCollapse = null;
     let tier3Collapse = null;
     let currentView = 'active'; // 'active', 'tech', 'historical'
+    const scopeState = { regionId: null, branchId: null, regions: [], branches: [], canFilter: false };
+
+    function scopeParams() {
+        const p = {};
+        if (scopeState.regionId) p.regionId = scopeState.regionId;
+        if (scopeState.branchId) p.branchId = scopeState.branchId;
+        return p;
+    }
+
+    async function initScopeFilters() {
+        const wrap = document.getElementById('boScopeFilters');
+        const regionSel = document.getElementById('boScopeRegion');
+        const branchSel = document.getElementById('boScopeBranch');
+        const applyBtn = document.getElementById('boScopeApply');
+        if (!wrap || !regionSel || !branchSel) return;
+
+        try {
+            const res = await AxiosManager.get('/Telecom/GetStrategicMetrics', {});
+            const m = res?.data?.content ?? res?.data?.Content ?? {};
+            scopeState.canFilter = m.canUseFilters ?? m.CanUseFilters ?? false;
+            scopeState.regions = m.regions ?? m.Regions ?? [];
+            scopeState.branches = m.branches ?? m.Branches ?? [];
+            if (!scopeState.canFilter) return;
+
+            wrap.classList.remove('d-none');
+            regionSel.innerHTML =
+                '<option value="">كل المناطق</option>' +
+                scopeState.regions
+                    .map((r) => {
+                        const id = r.id ?? r.Id;
+                        const name = r.nameAr ?? r.NameAr ?? id;
+                        return `<option value="${id}">${escapeHtml(name)}</option>`;
+                    })
+                    .join('');
+
+            const fillBranches = () => {
+                const rid = regionSel.value || null;
+                const list = rid
+                    ? scopeState.branches.filter((b) => (b.regionId ?? b.RegionId) === rid)
+                    : scopeState.branches;
+                branchSel.innerHTML =
+                    '<option value="">كل الفروع</option>' +
+                    list
+                        .map((b) => {
+                            const id = b.id ?? b.Id;
+                            const name = b.nameAr ?? b.NameAr ?? id;
+                            return `<option value="${id}">${escapeHtml(name)}</option>`;
+                        })
+                        .join('');
+            };
+            fillBranches();
+            regionSel.addEventListener('change', () => {
+                branchSel.value = '';
+                fillBranches();
+            });
+            applyBtn?.addEventListener('click', async () => {
+                scopeState.regionId = regionSel.value || null;
+                scopeState.branchId = branchSel.value || null;
+                await loadDashboardData(true);
+            });
+        } catch (e) {
+            console.warn('BO scope filters unavailable', e);
+        }
+    }
 
     const pickHttpErrorMessage = (e) => {
         const data = e?.response?.data;
         if (e?.response?.status === 403) {
-            return "Security Violation: You do not possess the required compliance permissions to execute this action.";
+            return t('backOffice.dashboard.messages.forbidden', data?.messageAr || data?.MessageAr || data?.message || data?.Message);
         }
         if (typeof data === 'string') return data;
         if (data?.message) return data.message;
@@ -143,6 +207,50 @@
         } catch {
             return fallback;
         }
+    };
+
+    const isEnUi = () => document.documentElement.lang?.toLowerCase().startsWith('en');
+
+    const pipelineLabel = (state) => {
+        if (!state) return '—';
+        return t(`backOffice.dashboard.pipeline.${state}`, state);
+    };
+
+    const kindLabel = (row) =>
+        isEnUi()
+            ? pick(row, 'kindNameEn', 'KindNameEn') || pick(row, 'kindNameAr', 'KindNameAr') || '—'
+            : pick(row, 'kindNameAr', 'KindNameAr') || pick(row, 'kindNameEn', 'KindNameEn') || '—';
+
+    const clearanceLabel = (value) => {
+        if (!value || value === '—') return '—';
+        return t(`backOffice.dashboard.clearance.${value}`, value);
+    };
+
+    const accountTypeLabel = (value) => {
+        const map = {
+            'Postpaid Individual Account': 'backOffice.dashboard.accountTypes.postpaidIndividual',
+            'Postpaid Corporate Account': 'backOffice.dashboard.accountTypes.postpaidCorporate',
+        };
+        return t(map[value] || '', value || t('backOffice.dashboard.accountTypes.postpaidIndividual', 'Postpaid Account'));
+    };
+
+    const blockReasonLabel = (row) => {
+        const code = pick(row, 'blockReasonCode', 'BlockReasonCode');
+        if (code) {
+            const hit = t(`backOffice.dashboard.validation.${code}`);
+            if (hit) return hit;
+        }
+        return isEnUi()
+            ? pick(row, 'blockReasonEn', 'BlockReasonEn') || pick(row, 'blockReasonAr', 'BlockReasonAr') || ''
+            : pick(row, 'blockReasonAr', 'BlockReasonAr') || pick(row, 'blockReasonEn', 'BlockReasonEn') || '';
+    };
+
+    const formatTpl = (tpl, vars) => {
+        let out = tpl || '';
+        Object.entries(vars).forEach(([k, v]) => {
+            out = out.replaceAll(`{${k}}`, String(v ?? ''));
+        });
+        return out;
     };
 
     const enumLabel = (group, n) =>
@@ -1025,7 +1133,7 @@
     async function loadPaymentServicesPanel() {
         const tbody = document.getElementById('boPaymentTxBody');
         try {
-            const kpiRes = await AxiosManager.get('/Telecom/GetPaymentServicesKpis', {});
+            const kpiRes = await AxiosManager.get('/Telecom/GetPaymentServicesKpis', { params: scopeParams() });
             const k = kpiRes?.data?.content ?? kpiRes?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1103,7 +1211,6 @@
             const res = await AxiosManager.post('/Telecom/ReversePaymentTransaction', {
                 paymentId,
                 reasonCode: String(reason).trim(),
-                reversedById: StorageManager.getUserId(),
             });
             const body = res?.data?.content ?? res?.data?.Content;
             await loadPaymentServicesPanel();
@@ -1127,7 +1234,7 @@
 
     async function loadDeviceSaleKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetDeviceSaleKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetDeviceSaleKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1155,7 +1262,7 @@
 
     async function loadBadDebtKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetBadDebtKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetBadDebtKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1178,7 +1285,7 @@
 
     async function loadRefundKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetRefundKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetRefundKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1216,14 +1323,18 @@
             const row = el.closest('tr');
             
             if (diff <= 0) {
-                el.textContent = '🚨 SLA BREACHED';
+                el.textContent = t('backOffice.dashboard.telecomQueue.slaBreached', 'SLA breached');
                 el.className = 'sla-timer badge bo-sla-breached';
                 if (row) row.classList.add('table-danger');
             } else {
                 const totalSeconds = Math.floor(diff / 1000);
                 const mins = Math.floor(totalSeconds / 60);
                 const secs = totalSeconds % 60;
-                el.textContent = `⏱️ ${mins}:${secs.toString().padStart(2, '0')} Left`;
+                const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+                el.textContent = formatTpl(
+                    t('backOffice.dashboard.telecomQueue.slaLeft', '{time} left'),
+                    { time: timeStr }
+                );
                 
                 if (totalSeconds < 60) {
                     el.className = 'sla-timer badge bo-sla-breached';
@@ -1256,14 +1367,16 @@
             .map((row) => {
                 const id = pick(row, 'id', 'Id');
                 const number = pick(row, 'number', 'Number') || id;
-                const kindName = pick(row, 'kindNameAr', 'KindNameAr') || '—';
+                const kindName = kindLabel(row);
                 const msisdn = pick(row, 'msisdn', 'Msisdn') || '—';
-                const clearance = pick(row, 'clearanceType', 'ClearanceType') || pick(row, 'suspensionType', 'SuspensionType') || '—';
+                const clearanceRaw = pick(row, 'clearanceType', 'ClearanceType') || pick(row, 'suspensionType', 'SuspensionType') || '—';
+                const clearance = clearanceLabel(clearanceRaw);
                 const paymentRef = pick(row, 'paymentReference', 'PaymentReference') || '—';
                 const paymentOk = !!(pick(row, 'paymentReferenceValidated', 'PaymentReferenceValidated'));
-                const pipeline = pick(row, 'pipelineState', 'PipelineState') || 'Pending_BackOffice_Approval';
+                const pipelineRaw = pick(row, 'pipelineState', 'PipelineState') || 'Pending_BackOffice_Approval';
+                const pipeline = pipelineLabel(pipelineRaw);
                 const canApprove = !!(pick(row, 'canApprove', 'CanApprove'));
-                const blockReason = pick(row, 'blockReasonAr', 'BlockReasonAr') || '';
+                const blockReason = blockReasonLabel(row);
                 const slaExpiry = pick(row, 'slaExpirationTimeUtc', 'SlaExpirationTimeUtc');
                 const isBdr = row.kind === 12 || row.Kind === 12;
                 const isPaidBypass = row.status === 9 || row.Status === 9;
@@ -1273,15 +1386,15 @@
                 if (slaExpiry && !isFinalState) {
                     slaHtml = `<span class="sla-timer font-monospace" data-expiry="${slaExpiry}">...</span>`;
                 } else if (isFinalState) {
-                    slaHtml = `<span class="badge bg-light text-muted border">ARCHIVED</span>`;
+                    slaHtml = `<span class="badge bg-light text-muted border">${escapeHtml(t('backOffice.dashboard.telecomQueue.archived', 'Archived'))}</span>`;
                 }
 
                 const pipelineBadge = isPaidBypass 
-                    ? `<span class="badge bg-warning-subtle text-danger border border-danger-subtle"><i class="bi bi-cash-stack me-1"></i>PAID: PENDING AUDIT</span>`
+                    ? `<span class="badge bg-warning-subtle text-danger border border-danger-subtle"><i class="bi bi-cash-stack me-1"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.paidPendingAudit', 'Paid: pending audit'))}</span>`
                     : isFinalState 
                         ? (row.status === 3 || row.status === 8 
-                            ? `<span class="badge bg-success text-white"><i class="bi bi-check-circle me-1"></i>APPROVED</span>`
-                            : `<span class="badge bg-danger text-white"><i class="bi bi-x-circle me-1"></i>REJECTED</span>`)
+                            ? `<span class="badge bg-success text-white"><i class="bi bi-check-circle me-1"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.approvedBadge', 'Approved'))}</span>`
+                            : `<span class="badge bg-danger text-white"><i class="bi bi-x-circle me-1"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.rejectedBadge', 'Rejected'))}</span>`)
                         : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${escapeHtml(pipeline)}</span>`;
 
                 const paymentBadge = paymentOk
@@ -1293,37 +1406,37 @@
                     const balance = pick(row, 'outstandingBalanceSnapshot', 'OutstandingBalanceSnapshot') || 0;
                     const writeOff = pick(row, 'writeOffAmount', 'WriteOffAmount') || 0;
                     const cashTarget = pick(row, 'collectedAmount', 'CollectedAmount') || 0;
-                    const accountType = pick(row, 'accountType', 'AccountType') || 'Postpaid Account';
+                    const accountType = accountTypeLabel(pick(row, 'accountType', 'AccountType'));
                     
                     bdrLedgerHtml = `
                         <div class="p-3 bg-white rounded border bo-bdr-ledger-card mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-bank me-2"></i>Financial Ledger (BDR Audit)</h6>
-                                <span class="badge bg-primary-subtle text-primary">Verified & Audited</span>
+                                <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-bank me-2"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.bdrLedgerTitle', 'Financial ledger (BDR audit)'))}</h6>
+                                <span class="badge bg-primary-subtle text-primary">${escapeHtml(t('backOffice.dashboard.telecomQueue.bdrVerified', 'Verified & audited'))}</span>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <div class="bo-finance-block">
-                                        <label class="small text-muted d-block mb-1">Account Type</label>
-                                        <span class="fw-semibold text-dark">${accountType}</span>
+                                        <label class="small text-muted d-block mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.accountType', 'Account type'))}</label>
+                                        <span class="fw-semibold text-dark">${escapeHtml(accountType)}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="bo-debt-highlight">
-                                        <label class="small d-block mb-1 opacity-75">Outstanding Debt</label>
-                                        <span class="fw-bold fs-5">-${balance.toLocaleString()} SYP</span>
+                                        <label class="small d-block mb-1 opacity-75">${escapeHtml(t('backOffice.dashboard.telecomQueue.outstandingDebt', 'Outstanding debt'))}</label>
+                                        <span class="fw-bold fs-5">-${balance.toLocaleString(getUiLocale())} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="bo-finance-block" style="background: #f0fdf4; border-color: #dcfce7;">
-                                        <label class="small text-success d-block mb-1">Write-Off Waiver</label>
-                                        <span class="fw-bold text-success fs-5">${writeOff.toLocaleString()} SYP</span>
+                                        <label class="small text-success d-block mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.writeOffWaiver', 'Write-off waiver'))}</label>
+                                        <span class="fw-bold text-success fs-5">${writeOff.toLocaleString(getUiLocale())} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="bo-finance-block">
-                                        <label class="small text-muted d-block mb-1">Cash Collection</label>
-                                        <span class="fw-bold text-dark fs-5">${cashTarget.toLocaleString()} SYP</span>
+                                        <label class="small text-muted d-block mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.cashCollection', 'Cash collection'))}</label>
+                                        <span class="fw-bold text-dark fs-5">${cashTarget.toLocaleString(getUiLocale())} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1367,14 +1480,22 @@
                                 ${bdrLedgerHtml}
                                 <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                                     <div class="small text-muted font-monospace">
-                                        <div class="mb-1">ID: ${id}</div>
-                                        <div>Created: ${formatDateTime(pick(row, 'createdAtUtc', 'CreatedAtUtc'))}</div>
+                                        <div class="mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.recordId', 'ID'))}: ${id}</div>
+                                        <div>${escapeHtml(t('backOffice.dashboard.telecomQueue.recordCreated', 'Created'))}: ${formatDateTime(pick(row, 'createdAtUtc', 'CreatedAtUtc'))}</div>
                                     </div>
                                     <div class="btn-group shadow-sm">
                                         ${isFinalState ? 
                                             `<div class="alert alert-light border small mb-0 py-1 px-3">
                                                 <i class="bi bi-info-circle me-2"></i>
-                                                ${row.status === 3 || row.status === 8 ? 'Approved' : 'Rejected'} by ${escapeHtml(row.updatedById || 'Auditor')} at ${formatDateTime(row.updatedAtUtc || new Date())}
+                                                ${escapeHtml(formatTpl(
+                                                    row.status === 3 || row.status === 8
+                                                        ? t('backOffice.dashboard.telecomQueue.approvedBy', 'Approved by {user} at {time}')
+                                                        : t('backOffice.dashboard.telecomQueue.rejectedBy', 'Rejected by {user} at {time}'),
+                                                    {
+                                                        user: row.updatedById || t('backOffice.dashboard.telecomQueue.auditor', 'Auditor'),
+                                                        time: formatDateTime(row.updatedAtUtc || new Date()),
+                                                    }
+                                                ))}
                                             </div>` : 
                                             (canExecuteFin ? 
                                                 `<button type="button" class="btn btn-success px-4 bo-approve-op" 
@@ -1386,7 +1507,7 @@
                                                         onclick="event.stopPropagation(); rejectTelecomOperation('${escapeHtml(id)}')">
                                                     <i class="bi bi-x-lg me-2"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.reject'))}
                                                 </button>` : 
-                                                `<div class="badge bg-light text-muted border p-2"><i class="bi bi-shield-lock me-1"></i>Financial Audit Required</div>`)
+                                                `<div class="badge bg-light text-muted border p-2"><i class="bi bi-shield-lock me-1"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.financialAuditRequired', 'Financial audit permission required'))}</div>`)
                                         }
                                     </div>
                                 </div>
@@ -1453,7 +1574,6 @@
         try {
             const res = await AxiosManager.post('/TelecomBackOffice/ApproveRequest', {
                 operationId,
-                actorUserId: StorageManager.getUserId?.(),
             });
             const body = StorageManager.apiContent(res);
             const defaultOk = t('backOffice.dashboard.telecomQueue.approved');
@@ -1515,7 +1635,6 @@
             const res = await AxiosManager.post('/TelecomBackOffice/RejectRequest', {
                 operationId,
                 rejectionReason: result.value,
-                actorUserId: StorageManager.getUserId?.(),
             });
             const body = StorageManager.apiContent(res);
             const defaultOk = t('backOffice.dashboard.telecomQueue.rejected');
@@ -1573,7 +1692,7 @@
 
     async function loadSuspensionKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetSuspensionKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetSuspensionKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1601,7 +1720,7 @@
 
     async function loadReconnectKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetReconnectKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetReconnectKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1629,7 +1748,7 @@
 
     async function loadTerminationKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetTerminationKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetTerminationKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1662,7 +1781,7 @@
 
     async function loadOfferSubscriptionKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetOfferSubscriptionKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetOfferSubscriptionKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1687,7 +1806,7 @@
 
     async function loadChangeNumberKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetChangeNumberKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetChangeNumberKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1723,7 +1842,7 @@
 
     async function loadSimSwapKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetSimSwapKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetSimSwapKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1757,7 +1876,7 @@
 
     async function loadTakeOverKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetTakeOverOwnershipKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetTakeOverOwnershipKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1781,7 +1900,7 @@
 
     async function loadChangeGsmKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetChangeGsmTypeKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetChangeGsmTypeKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1803,7 +1922,7 @@
 
     async function loadSellingLineKpis() {
         try {
-            const res = await AxiosManager.get('/Telecom/GetSellingLineActivationKpis', {});
+            const res = await AxiosManager.get('/Telecom/GetSellingLineActivationKpis', { params: scopeParams() });
             const c = res?.data?.content ?? res?.data?.Content ?? {};
             const set = (id, v) => {
                 const el = document.getElementById(id);
@@ -1953,6 +2072,8 @@
                     fillDrawer(row, selectedTicket);
                 }
                 await loadPaymentServicesPanel();
+                renderTelecomQueue();
+                updateSlaTimers();
                 setLastRefresh();
             } catch (e) {
                 console.warn('BackOffice locale refresh failed', e);
@@ -1975,6 +2096,7 @@
             return;
         }
 
+        await initScopeFilters();
         await loadDashboardData(true);
         applySecurityUIGovernance();
 

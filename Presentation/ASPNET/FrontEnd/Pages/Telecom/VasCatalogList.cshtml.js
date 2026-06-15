@@ -71,7 +71,6 @@ const App = {
 
                 try {
                     state.isSubmitting = true;
-                    const uid = StorageManager.getUserId();
                     const body =
                         state.id === ''
                             ? {
@@ -83,7 +82,6 @@ const App = {
                                   isActive: state.isActive,
                                   hlrCommandTemplate: state.hlrCommandTemplate.trim(),
                                   sortOrder: Number(state.sortOrder) || 0,
-                                  createdById: uid,
                               }
                             : {
                                   id: state.id,
@@ -94,7 +92,6 @@ const App = {
                                   isActive: state.isActive,
                                   hlrCommandTemplate: state.hlrCommandTemplate.trim(),
                                   sortOrder: Number(state.sortOrder) || 0,
-                                  updatedById: uid,
                               };
 
                     const response = state.id === '' ? await services.create(body) : await services.update(body);
@@ -129,7 +126,7 @@ const App = {
                 });
                 if (!confirm.isConfirmed) return;
                 try {
-                    await services.remove({ id: r.id, updatedById: StorageManager.getUserId() });
+                    await services.remove({ id: r.id });
                     await methods.populateMainData();
                     mainGrid.refresh();
                     Swal.fire({ icon: 'success', title: 'Deleted', timer: 1200, showConfirmButton: false });

@@ -4,7 +4,7 @@
             <p class="strategic-exec-kicker mb-1">{{ t('kicker') }}</p>
             <h2 class="h5 mb-1 fw-bold text-syriatel-red">{{ t('title') }}</h2>
             <p class="strategic-exec-sub mb-0">
-                {{ t('subtitle') }}
+                {{ t('scopePrefix') }} <strong>{{ kpis.scopeLabelAr || '—' }}</strong>
                 <span v-if="loading" class="ms-2 spinner-border spinner-border-sm text-danger" role="status"></span>
             </p>
         </div>
@@ -14,20 +14,49 @@
     </div>
 </header>
 
+<section v-if="kpis.canUseFilters" class="strategic-filter-bar mb-4 p-3 rounded-3">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label strategic-label">{{ t('region') }}</label>
+            <select class="form-select strategic-select" v-model="filters.regionId" @@change="onRegionChange">
+                <option :value="null">{{ t('allSyria') }}</option>
+                <option v-for="r in kpis.regions" :key="r.id" :value="r.id">{{ r.nameAr }}</option>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label strategic-label">{{ t('branch') }}</label>
+            <select class="form-select strategic-select" v-model="filters.branchId" @@change="loadKpis">
+                <option :value="null">{{ t('allBranchesInScope') }}</option>
+                <option v-for="b in branchOptions" :key="b.id" :value="b.id">{{ b.nameAr }}</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-strategic-gold w-100" @@click="loadKpis" :disabled="loading">{{ t('refresh') }}</button>
+        </div>
+    </div>
+</section>
+
 <section class="row g-3 mb-4">
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
         <div class="strategic-bento-card h-100">
             <h3 class="strategic-card-title">{{ t('arpuTitle') }} <span class="fw-normal text-lowercase">{{ t('arpuHint') }}</span></h3>
-            <p class="strategic-metric-xl text-syriatel-red mb-0">{{ formatMoney(kpis.arpuDemo) }}</p>
+            <p class="strategic-metric-xl text-syriatel-red mb-0">{{ formatMoney(kpis.arpu) }}</p>
         </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
         <div class="strategic-bento-card h-100">
             <h3 class="strategic-card-title">{{ t('churnTitle') }} <span class="fw-normal text-lowercase">{{ t('churnHint') }}</span></h3>
-            <p class="strategic-metric-xl mb-0">{{ kpis.churnPercentDemo }}%</p>
+            <p class="strategic-metric-xl mb-0">{{ kpis.churnPercent30 }}%</p>
         </div>
     </div>
-    <div class="col-lg-4 d-none d-lg-block">
+    <div class="col-md-6 col-lg-3">
+        <div class="strategic-bento-card h-100">
+            <h3 class="strategic-card-title">{{ t('revenueTitle') }}</h3>
+            <p class="strategic-metric-xl text-syriatel-red mb-0">{{ formatMoney(kpis.totalRevenue) }}</p>
+            <p class="strategic-metric-sub mb-0">{{ formatPercent(kpis.revenueChangePercent) }}</p>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
         <div class="strategic-bento-card h-100 d-flex flex-column justify-content-center">
             <p class="strategic-metric-sub mb-2">{{ t('opsHint') }}</p>
             <a class="btn btn-outline-secondary btn-sm align-self-start" href="/Telecom/TelecomHub">{{ t('hubDetails') }}</a>
@@ -38,10 +67,10 @@
 <section class="strategic-panel p-0 overflow-hidden">
     <div class="px-3 py-3 border-bottom fw-semibold strategic-panel-title">{{ t('branchWorkload') }}</div>
     <ul v-if="kpis.branchHeat && kpis.branchHeat.length" class="list-group list-group-flush mb-0">
-        <li v-for="b in kpis.branchHeat" :key="b.branchName"
+        <li v-for="b in kpis.branchHeat" :key="b.branchId || b.branchName"
             class="list-group-item d-flex justify-content-between align-items-center py-3 bg-transparent">
             <span>{{ b.branchName }}</span>
-            <span class="badge mis-workload-badge">{{ formatWorkload(b.revenueDemo) }}</span>
+            <span class="badge mis-workload-badge">{{ formatMoney(b.revenue ?? b.revenueDemo) }}</span>
         </li>
     </ul>
     <p v-else class="text-muted small mb-0 p-4 text-center">{{ t('noBranchData') }}</p>

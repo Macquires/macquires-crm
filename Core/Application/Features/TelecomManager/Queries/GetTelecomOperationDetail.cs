@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Common.Telecom.SellingLine;
 using Application.Common.Telecom.Reconnect;
@@ -58,6 +59,11 @@ public record GetTelecomOperationDetailDto
     public string? PriorMsisdn { get; init; }
     public string? TargetMsisdn { get; init; }
     public decimal? PremiumFeeAmount { get; init; }
+    public string? NumberChangeMode { get; init; }
+    public string? PortInMsisdn { get; init; }
+    public string? DonorOperatorCode { get; init; }
+    public DateTime? NumberChangeEffectiveDateUtc { get; init; }
+    public DateTime? SimSwapEffectiveDateUtc { get; init; }
     public string? TerminationType { get; init; }
     public string? TerminationReason { get; init; }
     public DateTime? TerminationEffectiveDateUtc { get; init; }
@@ -85,6 +91,11 @@ public record GetTelecomOperationDetailDto
     public string? CollectionNote { get; init; }
     public string? TechnicalTicketId { get; init; }
     public string? TechnicalTicketNumber { get; init; }
+    /// <summary>Unified effective date for schedulable BSS operations (MGR/CGT/TKO/TRM/SUS).</summary>
+    public DateTime? ScheduledEffectiveDateUtc { get; init; }
+    public DateTime? MigrationEffectiveDateUtc { get; init; }
+    public DateTime? GsmEffectiveDateUtc { get; init; }
+    public DateTime? SuspensionStartDateUtc { get; init; }
 }
 
 public record TelecomOperationAuditTrailItemDto(
@@ -99,9 +110,10 @@ public class GetTelecomOperationDetailResult
     public GetTelecomOperationDetailDto? Data { get; init; }
 }
 
-public class GetTelecomOperationDetailRequest : IRequest<GetTelecomOperationDetailResult>
+public class GetTelecomOperationDetailRequest : IRequest<GetTelecomOperationDetailResult>, IRequireAnyPermission
 {
     public string Id { get; init; } = null!;
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.OperationsViewAny;
 }
 
 public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperationDetailRequest, GetTelecomOperationDetailResult>
@@ -210,6 +222,11 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 PriorMsisdn = priorMsisdn,
                 TargetMsisdn = targetMsisdn,
                 PremiumFeeAmount = op.PremiumFeeAmount,
+                NumberChangeMode = op.NumberChangeMode,
+                PortInMsisdn = op.PortInMsisdn,
+                DonorOperatorCode = op.DonorOperatorCode,
+                NumberChangeEffectiveDateUtc = op.NumberChangeEffectiveDateUtc,
+                SimSwapEffectiveDateUtc = op.SimSwapEffectiveDateUtc,
                 TerminationType = op.TerminationType,
                 TerminationReason = op.TerminationReason,
                 TerminationEffectiveDateUtc = op.TerminationEffectiveDateUtc,
@@ -237,6 +254,10 @@ public class GetTelecomOperationDetailHandler : IRequestHandler<GetTelecomOperat
                 CollectionNote = op.CollectionNote,
                 TechnicalTicketId = falloutTicket?.Id,
                 TechnicalTicketNumber = falloutTicket?.TicketNumber,
+                ScheduledEffectiveDateUtc = TelecomOperationSchedulePolicy.ResolveEffectiveDateUtc(op),
+                MigrationEffectiveDateUtc = op.MigrationEffectiveDateUtc,
+                GsmEffectiveDateUtc = op.GsmEffectiveDateUtc,
+                SuspensionStartDateUtc = op.SuspensionStartDateUtc,
                 AuditTrail = op.AuditLogs
                     .OrderBy(a => a.OccurredAtUtc)
                     .Select(a => new TelecomOperationAuditTrailItemDto(

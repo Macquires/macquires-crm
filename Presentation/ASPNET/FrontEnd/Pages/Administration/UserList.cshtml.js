@@ -120,7 +120,6 @@ const App = {
                         userId: state.userId,
                         roleName,
                         accessGranted: granted,
-                        updatedById: StorageManager.getUserId(),
                     });
                     state.selectedRoles = res?.data?.content?.data || [];
                 } catch (e) {
@@ -142,7 +141,6 @@ const App = {
                 }
 
                 state.isSubmitting = true;
-                const uid = StorageManager.getUserId();
                 try {
                     const body = state.userId
                         ? {
@@ -152,7 +150,6 @@ const App = {
                               emailConfirmed: state.emailConfirmed,
                               isBlocked: state.isBlocked,
                               isDeleted: false,
-                              updatedById: uid,
                               primaryMenuPersona: state.primaryMenuPersona,
                               managerUserId: state.managerUserId || null,
                               orgUnitId: state.orgUnitId || null,
@@ -167,7 +164,6 @@ const App = {
                               emailConfirmed: state.emailConfirmed,
                               isBlocked: state.isBlocked,
                               isDeleted: false,
-                              createdById: uid,
                               primaryMenuPersona: state.primaryMenuPersona,
                               managerUserId: state.managerUserId || null,
                               orgUnitId: state.orgUnitId || null,

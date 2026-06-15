@@ -1,4 +1,5 @@
-﻿using Application.Common.Services.FileImageManager;
+﻿using Application.Common.Security;
+using Application.Common.Services.FileImageManager;
 using FluentValidation;
 using MediatR;
 
@@ -10,7 +11,7 @@ public class GetImageResult
     public byte[]? Data { get; init; }
 }
 
-public class GetImageRequest : IRequest<GetImageResult>
+public class GetImageRequest : IRequest<GetImageResult>, IRequireAuthenticatedOperator
 {
     public string? ImageName { get; init; }
 }

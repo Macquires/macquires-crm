@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +21,12 @@ public class GetChangeNumberKpisResult
     public List<ChangeNumberReasonCountDto> TopReasons { get; init; } = new();
 }
 
-public class GetChangeNumberKpisRequest : IRequest<GetChangeNumberKpisResult>
+public class GetChangeNumberKpisRequest : IRequest<GetChangeNumberKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetChangeNumberKpisHandler : IRequestHandler<GetChangeNumberKpisRequest, GetChangeNumberKpisResult>
@@ -31,17 +34,32 @@ public class GetChangeNumberKpisHandler : IRequestHandler<GetChangeNumberKpisReq
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(20);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetChangeNumberKpisHandler(IQueryContext context) => _context = context;
+    public GetChangeNumberKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetChangeNumberKpisResult> Handle(
         GetChangeNumberKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetChangeNumberKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.NumberPortability
                         && o.CreatedAtUtc >= from

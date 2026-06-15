@@ -1,6 +1,7 @@
 using Application.Common.Audit;
 using Application.Common.CQS.Queries;
 using Application.Common.Security;
+using Application.Common.Telecom.Analytics;
 using Domain.Entities;
 using Domain.Enums;
 using MediatR;
@@ -31,11 +32,20 @@ public sealed class StrategicBranchLeaderboardRowDto
     public decimal ManagerRating { get; init; }
 }
 
+public sealed class StrategicRevenueCategoryDto
+{
+    public string Category { get; init; } = null!;
+    public decimal Amount { get; init; }
+    public decimal Percent { get; init; }
+}
+
 public class GetStrategicMetricsResult
 {
     public decimal RevenueIndex { get; init; }
     public decimal Arpu { get; init; }
     public decimal RevenueChangePercent { get; init; }
+    public decimal ChurnPercent30 { get; init; }
+    public decimal ChurnPercent60 { get; init; }
     public int TicketsHandled { get; init; }
     public decimal SlaCompliancePercent { get; init; }
     public string? TopBranchName { get; init; }
@@ -52,34 +62,34 @@ public class GetStrategicMetricsResult
     public IReadOnlyList<StrategicMetricsTrendPointDto> RevenueTrend { get; init; } = [];
     public IReadOnlyList<StrategicMetricsSegmentDto> SubscriberSegments { get; init; } = [];
     public IReadOnlyList<StrategicBranchLeaderboardRowDto> BranchLeaderboard { get; init; } = [];
+    public IReadOnlyList<StrategicRevenueCategoryDto> RevenueByCategory { get; init; } = [];
 }
 
 public record GetStrategicMetricsRequest(string? RegionId, string? BranchId)
-    : IRequest<GetStrategicMetricsResult>, IRequirePermission
-{
-    public string PermissionKey => PermissionCatalog.TelecomReportsMis;
-}
+    : IRequest<GetStrategicMetricsResult>, IOperationalKpiRequest;
 
 public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsRequest, GetStrategicMetricsResult>
 {
-    private const decimal RevenueProxyPerLine = 85m;
     private static readonly TimeSpan SlaCritical = TimeSpan.FromHours(4);
     private static readonly TimeSpan SlaHigh = TimeSpan.FromHours(8);
     private static readonly TimeSpan SlaNormal = TimeSpan.FromHours(24);
 
     private readonly IQueryContext _context;
-    private readonly IStrategicDataScopeService _scopeService;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
+    private readonly IExecutiveFinancialMetricsService _financialMetrics;
     private readonly IOperatorContext _operator;
     private readonly IUserAuditService _audit;
 
     public GetStrategicMetricsHandler(
         IQueryContext context,
-        IStrategicDataScopeService scopeService,
+        IOperationalAnalyticsScopeService scopeService,
+        IExecutiveFinancialMetricsService financialMetrics,
         IOperatorContext operatorContext,
         IUserAuditService audit)
     {
         _context = context;
         _scopeService = scopeService;
+        _financialMetrics = financialMetrics;
         _operator = operatorContext;
         _audit = audit;
     }
@@ -91,57 +101,40 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
         var userId = _operator.UserId
             ?? throw new UnauthorizedAccessException("يجب تسجيل الدخول لعرض التحليلات الاستراتيجية.");
 
-        // Scope is always derived from user role/org; filter params apply only for general managers.
         var scope = await _scopeService.ResolveScopeAsync(
-            userId,
             request.RegionId,
             request.BranchId,
             cancellationToken);
 
-        if (!scope.CanUseFilters && (request.RegionId != null || request.BranchId != null))
-        {
-            scope = await _scopeService.ResolveScopeAsync(userId, null, null, cancellationToken);
-        }
-
-        var branchIds = scope.EffectiveBranchIds;
-        if (branchIds.Count == 0)
+        if (scope.EffectiveBranchIds.Count == 0)
         {
             return EmptyResult(scope);
         }
 
-        var branches = await _context.OrgUnit.AsNoTracking()
-            .Where(x => branchIds.Contains(x.Id) && !x.IsDeleted)
-            .ToListAsync(cancellationToken);
+        var branchIds = scope.EffectiveBranchIds;
+        var metrics = await _financialMetrics.ComputeAsync(
+            branchIds,
+            DateTime.UtcNow,
+            billingCycleDays: 30,
+            cancellationToken);
 
         var customerIdsInScope = await _context.Customer.AsNoTracking()
             .Where(c => !c.IsDeleted && c.OrgUnitId != null && branchIds.Contains(c.OrgUnitId))
             .Select(c => c.Id)
             .ToListAsync(cancellationToken);
 
-        var activeSubscriptions = await (
-            from s in _context.TelecomSubscription.AsNoTracking()
-            join p in _context.SubscriberProfile.AsNoTracking() on s.SubscriberProfileId equals p.Id
-            where !s.IsDeleted && !p.IsDeleted && customerIdsInScope.Contains(p.CustomerId)
-            select s).CountAsync(cancellationToken);
-
-        var customerCount = customerIdsInScope.Count;
-        var arpu = customerCount > 0
-            ? decimal.Round(activeSubscriptions * RevenueProxyPerLine / customerCount, 2)
-            : 0m;
-
-        var revenueIndex = decimal.Round(activeSubscriptions * RevenueProxyPerLine, 0);
-        var revenueChangePercent = customerCount > 0
-            ? decimal.Round(Math.Min(18m, 4m + customerCount * 0.6m), 1)
-            : 0m;
+        var branches = await _context.OrgUnit.AsNoTracking()
+            .Where(x => branchIds.Contains(x.Id) && !x.IsDeleted)
+            .ToListAsync(cancellationToken);
 
         var tickets = await LoadScopedTicketsAsync(customerIdsInScope, cancellationToken);
         var slaPercent = ComputeSlaCompliance(tickets);
 
-        var leaderboard = await BuildLeaderboardAsync(branches, cancellationToken);
+        var leaderboard = await BuildLeaderboardAsync(
+            branches, metrics.BranchHeat, customerIdsInScope, cancellationToken);
         var top = leaderboard.OrderByDescending(x => x.RevenueContribution).FirstOrDefault();
 
         var segments = await BuildSubscriberSegmentsAsync(customerIdsInScope, cancellationToken);
-        var trend = BuildRevenueTrend(revenueIndex);
 
         await _audit.LogAsync(new UserAuditLogRequest
         {
@@ -160,9 +153,11 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
 
         return new GetStrategicMetricsResult
         {
-            RevenueIndex = revenueIndex,
-            Arpu = arpu,
-            RevenueChangePercent = revenueChangePercent,
+            RevenueIndex = metrics.TotalRevenue,
+            Arpu = metrics.Arpu,
+            RevenueChangePercent = metrics.RevenueChangePercent,
+            ChurnPercent30 = metrics.ChurnPercent30,
+            ChurnPercent60 = metrics.ChurnPercent60,
             TicketsHandled = tickets.Count,
             SlaCompliancePercent = slaPercent,
             TopBranchName = top?.BranchName,
@@ -174,9 +169,19 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
             EffectiveBranchId = scope.EffectiveBranchId,
             Regions = scope.Regions,
             Branches = scope.Branches,
-            RevenueTrend = trend,
+            RevenueTrend = metrics.RevenueTrend
+                .Select(t => new StrategicMetricsTrendPointDto { Label = t.Label, Value = t.Value })
+                .ToList(),
             SubscriberSegments = segments,
             BranchLeaderboard = leaderboard,
+            RevenueByCategory = metrics.RevenueByCategory
+                .Select(c => new StrategicRevenueCategoryDto
+                {
+                    Category = c.Category,
+                    Amount = c.Amount,
+                    Percent = c.Percent,
+                })
+                .ToList(),
         };
     }
 
@@ -237,8 +242,12 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
 
     private async Task<List<StrategicBranchLeaderboardRowDto>> BuildLeaderboardAsync(
         List<OrgUnit> branches,
+        IReadOnlyList<ExecutiveBranchHeatDto> branchHeat,
+        List<string> customerIdsInScope,
         CancellationToken cancellationToken)
     {
+        var heatByBranch = branchHeat.ToDictionary(h => h.BranchId, StringComparer.Ordinal);
+        var maxRevenue = branchHeat.Count > 0 ? branchHeat.Max(h => h.Revenue) : 0m;
         var rows = new List<StrategicBranchLeaderboardRowDto>();
 
         foreach (var branch in branches)
@@ -247,12 +256,6 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
                 .Where(c => !c.IsDeleted && c.OrgUnitId == branch.Id)
                 .Select(c => c.Id)
                 .ToListAsync(cancellationToken);
-
-            var subs = await (
-                from s in _context.TelecomSubscription.AsNoTracking()
-                join p in _context.SubscriberProfile.AsNoTracking() on s.SubscriberProfileId equals p.Id
-                where !s.IsDeleted && !p.IsDeleted && customerIds.Contains(p.CustomerId)
-                select s).CountAsync(cancellationToken);
 
             var branchTickets = await _context.TelecomTechnicalTicket
                 .AsNoTracking()
@@ -269,8 +272,13 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
                 : decimal.Round((decimal)branchTickets.Average(t =>
                     (t.ResolvedAtUtc!.Value - t.CreatedAtUtc!.Value).TotalHours), 1);
 
-            var revenue = subs * RevenueProxyPerLine;
-            var rating = decimal.Round(Math.Min(5m, 3.5m + subs * 0.05m + (avgHours > 0 ? Math.Max(0, 24 - avgHours) / 24 : 0.5m)), 1);
+            var heat = heatByBranch.GetValueOrDefault(branch.Id);
+            var revenue = heat?.Revenue ?? 0m;
+            var subs = heat?.ActiveSubscriptions ?? 0;
+
+            var revenueScore = maxRevenue > 0 ? revenue / maxRevenue * 2.5m : 0m;
+            var slaScore = avgHours > 0 ? Math.Min(2.5m, Math.Max(0, 24 - avgHours) / 24 * 2.5m) : 1.5m;
+            var rating = decimal.Round(Math.Min(5m, revenueScore + slaScore), 1);
 
             rows.Add(new StrategicBranchLeaderboardRowDto
             {
@@ -328,16 +336,5 @@ public class GetStrategicMetricsHandler : IRequestHandler<GetStrategicMetricsReq
             new() { Segment = "Gold", Count = gold, Percent = decimal.Round((decimal)gold / total * 100m, 1) },
             new() { Segment = "Silver", Count = silver, Percent = decimal.Round((decimal)silver / total * 100m, 1) },
         ];
-    }
-
-    private static List<StrategicMetricsTrendPointDto> BuildRevenueTrend(decimal currentRevenue)
-    {
-        var labels = new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو" };
-        var factors = new[] { 0.72m, 0.78m, 0.85m, 0.91m, 0.96m, 1.0m };
-        return labels.Zip(factors, (label, f) => new StrategicMetricsTrendPointDto
-        {
-            Label = label,
-            Value = decimal.Round(currentRevenue * f, 0),
-        }).ToList();
     }
 }

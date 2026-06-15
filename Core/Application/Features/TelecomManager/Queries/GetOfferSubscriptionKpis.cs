@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,10 +20,12 @@ public class GetOfferSubscriptionKpisResult
     public List<TopOfferingCountDto> TopMigratedOffers { get; init; } = new();
 }
 
-public class GetOfferSubscriptionKpisRequest : IRequest<GetOfferSubscriptionKpisResult>
+public class GetOfferSubscriptionKpisRequest : IRequest<GetOfferSubscriptionKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetOfferSubscriptionKpisHandler : IRequestHandler<GetOfferSubscriptionKpisRequest, GetOfferSubscriptionKpisResult>
@@ -30,17 +33,32 @@ public class GetOfferSubscriptionKpisHandler : IRequestHandler<GetOfferSubscript
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(30);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetOfferSubscriptionKpisHandler(IQueryContext context) => _context = context;
+    public GetOfferSubscriptionKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetOfferSubscriptionKpisResult> Handle(
         GetOfferSubscriptionKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetOfferSubscriptionKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var mgr = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.Migration
                         && o.CreatedAtUtc >= from
@@ -56,6 +74,7 @@ public class GetOfferSubscriptionKpisHandler : IRequestHandler<GetOfferSubscript
             .ToListAsync(cancellationToken);
 
         var vas = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.ServiceModification
                         && o.CreatedAtUtc >= from

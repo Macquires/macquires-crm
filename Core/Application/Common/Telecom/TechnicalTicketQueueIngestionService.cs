@@ -83,7 +83,7 @@ public sealed class TechnicalTicketQueueIngestionService : ITechnicalTicketQueue
         var entity = new TelecomTechnicalTicket
         {
             CreatedById = actor,
-            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            TicketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT", cancellationToken: cancellationToken),
             Msisdn = msisdn,
             CustomerId = customerId,
             SubscriberProfileId = operation.SubscriberProfileId,
@@ -174,7 +174,7 @@ public sealed class TechnicalTicketQueueIngestionService : ITechnicalTicketQueue
         var entity = new TelecomTechnicalTicket
         {
             CreatedById = actor,
-            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            TicketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT", cancellationToken: cancellationToken),
             Msisdn = msisdn,
             CustomerId = customerId,
             SubscriberProfileId = operation.SubscriberProfileId,
@@ -234,7 +234,7 @@ public sealed class TechnicalTicketQueueIngestionService : ITechnicalTicketQueue
         var entity = new TelecomTechnicalTicket
         {
             CreatedById = "system-collections",
-            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            TicketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT", cancellationToken: cancellationToken),
             Msisdn = msisdn,
             CustomerId = customerId,
             SubscriberProfileId = operation.SubscriberProfileId,

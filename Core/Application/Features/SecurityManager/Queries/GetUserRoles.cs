@@ -1,4 +1,5 @@
 ﻿using Application.Common.Services.SecurityManager;
+using Application.Common.Security;
 using FluentValidation;
 using MediatR;
 
@@ -12,8 +13,9 @@ public class GetUserRolesResult
     public List<string>? Data { get; init; }
 }
 
-public class GetUserRolesRequest : IRequest<GetUserRolesResult>
+public class GetUserRolesRequest : IRequest<GetUserRolesResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? UserId { get; init; }
 }
 

@@ -77,4 +77,26 @@ public sealed class SimulatorCbsHttpClient
         using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
         return doc.RootElement.GetProperty("balance").GetDecimal();
     }
+
+    public async Task<BillingRechargeResult> RechargeAsync(
+        string msisdn,
+        decimal amount,
+        CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsJsonAsync(
+            $"cbs/subscribers/{Uri.EscapeDataString(msisdn)}/recharge",
+            new { amount },
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning("Simulator CBS recharge failed {Status}: {Body}", response.StatusCode, body);
+            return new BillingRechargeResult(false, body);
+        }
+
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        var balance = doc.RootElement.GetProperty("balance").GetDecimal();
+        return new BillingRechargeResult(true, $"Simulator CBS recharge OK for {msisdn}", balance);
+    }
 }

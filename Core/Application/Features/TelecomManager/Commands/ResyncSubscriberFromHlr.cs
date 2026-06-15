@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Enums;
 using FluentValidation;
@@ -10,12 +11,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.TelecomManager.Commands;
 
-public class ResyncSubscriberFromHlrRequest : IRequest<HlrResyncResult>
+public class ResyncSubscriberFromHlrRequest : IRequest<HlrResyncResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = "";
     public string? MsisdnAssetId { get; init; }
     public string? Msisdn { get; init; }
-    public string? ActorUserId { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.NetworkHlrAny;
 }
 
 public class ResyncSubscriberFromHlrValidator : AbstractValidator<ResyncSubscriberFromHlrRequest>
@@ -29,21 +31,26 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
     private readonly ICommandRepository<Domain.Entities.SubscriberProfile> _profileRepository;
     private readonly IHLRLiveStatusService _hlr;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public ResyncSubscriberFromHlrHandler(
         IQueryContext query,
         ICommandRepository<Domain.Entities.SubscriberProfile> profileRepository,
         IHLRLiveStatusService hlr,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _profileRepository = profileRepository;
         _hlr = hlr;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<HlrResyncResult> Handle(ResyncSubscriberFromHlrRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var profile = await _profileRepository.GetAsync(request.SubscriberProfileId, cancellationToken)
             ?? throw new InvalidOperationException("Subscriber profile not found.");
 
@@ -70,7 +77,7 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
         await _unitOfWork.SaveAsync(cancellationToken);
 
         return await _hlr.ResyncFromHlrAsync(
-            new HlrResyncRequest(profile.Id, msisdn, null, request.ActorUserId),
+            new HlrResyncRequest(profile.Id, msisdn, null, actorUserId),
             cancellationToken);
     }
 }

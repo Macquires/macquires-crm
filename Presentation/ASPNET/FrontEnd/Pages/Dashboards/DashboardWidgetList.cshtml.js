@@ -120,7 +120,6 @@ const App = {
                     return;
                 }
 
-                const uid = StorageManager.getUserId();
                 const personasAllowed = personasCsv();
                 const refresh =
                     state.refreshIntervalSeconds === '' ||
@@ -148,7 +147,6 @@ const App = {
                                   ctaLabelAr: state.ctaLabelAr?.trim() || null,
                                   ctaLabelEn: state.ctaLabelEn?.trim() || null,
                                   isActive: state.isActive,
-                                  createdById: uid,
                               }
                             : {
                                   id: state.id,
@@ -165,7 +163,6 @@ const App = {
                                   ctaLabelAr: state.ctaLabelAr?.trim() || null,
                                   ctaLabelEn: state.ctaLabelEn?.trim() || null,
                                   isActive: state.isActive,
-                                  updatedById: uid,
                               };
 
                     const response = state.id === '' ? await services.create(body) : await services.update(body);
@@ -204,7 +201,7 @@ const App = {
                 if (!confirm.isConfirmed) return;
 
                 try {
-                    const res = await services.delete({ id: r.id, deletedById: StorageManager.getUserId() });
+                    const res = await services.delete({ id: r.id });
                     if (res.data.code === 200) {
                         await methods.populateMainData();
                         mainGrid.refresh();
@@ -233,7 +230,6 @@ const App = {
                             { id: a.id, sortOrder: bOrder },
                             { id: b.id, sortOrder: aOrder },
                         ],
-                        updatedById: StorageManager.getUserId(),
                     });
                     await methods.populateMainData();
                     mainGrid.refresh();

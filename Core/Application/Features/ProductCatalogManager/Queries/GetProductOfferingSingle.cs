@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using MediatR;
@@ -64,9 +65,10 @@ public class GetProductOfferingSingleResult
 }
 
 // ─── Request ───
-public class GetProductOfferingSingleRequest : IRequest<GetProductOfferingSingleResult?>
+public class GetProductOfferingSingleRequest : IRequest<GetProductOfferingSingleResult?>, IRequireAnyPermission
 {
     public string Id { get; init; } = null!;
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 // ─── Handler ───

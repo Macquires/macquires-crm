@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom.DeviceSales;
 using Domain.Entities;
 using Domain.Enums;
@@ -16,13 +17,14 @@ public class RecordDeviceDownPaymentResult
     public PaymentCaptureResult? GatewayResult { get; init; }
 }
 
-public class RecordDeviceDownPaymentRequest : IRequest<RecordDeviceDownPaymentResult>
+public class RecordDeviceDownPaymentRequest : IRequest<RecordDeviceDownPaymentResult>, IRequirePermission
 {
     public string OperationId { get; init; } = null!;
     public string PaymentReference { get; init; } = null!;
     public decimal AmountPaid { get; init; }
     public PaymentChannel PaymentChannel { get; init; }
-    public string? UpdatedById { get; init; }
+
+    public string PermissionKey => PermissionCatalog.TelecomDeviceSell;
 }
 
 public class RecordDeviceDownPaymentValidator : AbstractValidator<RecordDeviceDownPaymentRequest>
@@ -40,15 +42,18 @@ public class RecordDeviceDownPaymentHandler : IRequestHandler<RecordDeviceDownPa
     private readonly ICommandRepository<TelecomOperationRequest> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPaymentGatewayIntegration _paymentGateway;
+    private readonly IOperatorContext _operator;
 
     public RecordDeviceDownPaymentHandler(
         ICommandRepository<TelecomOperationRequest> repository,
         IUnitOfWork unitOfWork,
-        IPaymentGatewayIntegration paymentGateway)
+        IPaymentGatewayIntegration paymentGateway,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _paymentGateway = paymentGateway;
+        _operator = operatorContext;
     }
 
     public async Task<RecordDeviceDownPaymentResult> Handle(
@@ -82,7 +87,7 @@ public class RecordDeviceDownPaymentHandler : IRequestHandler<RecordDeviceDownPa
 
         entity.PaymentReference = request.PaymentReference.Trim();
         entity.DeviceDownPaymentAmount = request.AmountPaid;
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);
 

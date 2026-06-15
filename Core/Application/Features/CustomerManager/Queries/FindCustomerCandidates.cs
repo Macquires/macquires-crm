@@ -25,10 +25,11 @@ public class FindCustomerCandidatesResult
     public List<FindCustomerCandidateDto> Data { get; init; } = new();
 }
 
-public class FindCustomerCandidatesRequest : IRequest<FindCustomerCandidatesResult>
+public class FindCustomerCandidatesRequest : IRequest<FindCustomerCandidatesResult>, IRequirePermission
 {
     public string? NationalId { get; init; }
     public string? Phone { get; init; }
+    public string PermissionKey => PermissionCatalog.CustomerView;
 }
 
 public class FindCustomerCandidatesValidator : AbstractValidator<FindCustomerCandidatesRequest>

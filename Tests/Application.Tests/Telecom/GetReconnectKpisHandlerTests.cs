@@ -24,7 +24,7 @@ public class GetReconnectKpisHandlerTests
             Op("RCN-3", TelecomOperationStatus.PendingDocuments, "Fraud", ReconnectWellKnown.Fraud, now, false, "BackOffice"));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetReconnectKpisHandler(ctx);
+        var handler = new GetReconnectKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetReconnectKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -40,7 +40,7 @@ public class GetReconnectKpisHandlerTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -54,19 +54,17 @@ public class GetReconnectKpisHandlerTests
         DateTime created,
         bool fraudClearance,
         string? approval = null) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.Reconnect,
-            Status = status,
-            ReconnectReason = reason,
-            ClearanceType = clearance,
-            FraudClearanceConfirmed = fraudClearance,
-            CreatedAtUtc = created,
-            ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(5) : null,
-            ApprovalLevelRequired = approval,
-            SubscriberProfileId = "prof-rcn",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.Reconnect;
+            op.Status = status;
+            op.ReconnectReason = reason;
+            op.ClearanceType = clearance;
+            op.FraudClearanceConfirmed = fraudClearance;
+            op.CreatedAtUtc = created;
+            op.ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(5) : null;
+            op.ApprovalLevelRequired = approval;
+            op.SubscriberProfileId = "prof-rcn";
+        });
 }

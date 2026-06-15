@@ -1,3 +1,4 @@
+using Application.Common.Security;
 using Application.Common.Settings;
 using MediatR;
 
@@ -16,7 +17,10 @@ public class GetIntegrationHealthStatusResult
     public IReadOnlyList<IntegrationHealthItemDto> Items { get; init; } = Array.Empty<IntegrationHealthItemDto>();
 }
 
-public class GetIntegrationHealthStatusRequest : IRequest<GetIntegrationHealthStatusResult>;
+public class GetIntegrationHealthStatusRequest : IRequest<GetIntegrationHealthStatusResult>, IRequireAnyPermission
+{
+    public IReadOnlyList<string> PermissionKeys => IntegrationMonitorPermissionSets.MonitorAny;
+}
 
 public class GetIntegrationHealthStatusHandler : IRequestHandler<GetIntegrationHealthStatusRequest, GetIntegrationHealthStatusResult>
 {

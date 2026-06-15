@@ -98,16 +98,15 @@ public class TechnicalTicketCollectionsQueueTests
         asset.TransitionTo(MsisdnPoolStatus.Active);
 
         var opId = Guid.NewGuid().ToString();
-        var op = new TelecomOperationRequest
+        var op = TelecomTestEntityFactory.Operation(o =>
         {
-            Id = opId,
-            Number = "DEV-TKT-1",
-            Kind = TelecomOperationKind.DeviceSale,
-            Status = TelecomOperationStatus.Completed,
-            SubscriberProfileId = profileId,
-            MsisdnAssetId = assetId,
-            IsDeleted = false,
-        };
+            o.Id = opId;
+            o.Number = "DEV-TKT-1";
+            o.Kind = TelecomOperationKind.DeviceSale;
+            o.Status = TelecomOperationStatus.Completed;
+            o.SubscriberProfileId = profileId;
+            o.MsisdnAssetId = assetId;
+        });
 
         ctx.Customer.Add(customer);
         ctx.SubscriberProfile.Add(profile);
@@ -121,7 +120,7 @@ public class TechnicalTicketCollectionsQueueTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);

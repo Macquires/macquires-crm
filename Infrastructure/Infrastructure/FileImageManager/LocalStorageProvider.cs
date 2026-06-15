@@ -5,6 +5,7 @@ namespace Infrastructure.FileImageManager;
 
 public class LocalStorageProvider : IStorageProvider
 {
+    private const string PlaceholderFileName = "noimage.png";
     private readonly string _folderPath;
 
     public LocalStorageProvider(IOptions<FileImageSettings> settings)
@@ -14,6 +15,29 @@ public class LocalStorageProvider : IStorageProvider
         {
             Directory.CreateDirectory(_folderPath);
         }
+
+        EnsurePlaceholderImage();
+    }
+
+    private void EnsurePlaceholderImage()
+    {
+        var placeholderPath = Path.Combine(_folderPath, PlaceholderFileName);
+        if (File.Exists(placeholderPath))
+        {
+            return;
+        }
+
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "brand", "logo.png");
+        if (File.Exists(logoPath))
+        {
+            File.Copy(logoPath, placeholderPath);
+            return;
+        }
+
+        // 1x1 transparent PNG
+        File.WriteAllBytes(
+            placeholderPath,
+            Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ZkAAAAASUVORK5CYII="));
     }
 
     public async Task SaveAsync(string path, Stream stream, CancellationToken cancellationToken = default)

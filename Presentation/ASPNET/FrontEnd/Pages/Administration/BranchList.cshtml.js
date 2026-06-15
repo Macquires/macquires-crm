@@ -86,7 +86,6 @@ const App = {
                 }
 
                 state.isSubmitting = true;
-                const uid = StorageManager.getUserId();
                 try {
                     const body = state.id
                         ? {
@@ -96,7 +95,6 @@ const App = {
                               parentId: state.parentId || null,
                               managerUserId: state.managerUserId || null,
                               isActive: state.isActive,
-                              updatedById: uid,
                           }
                         : {
                               nameAr: state.nameAr.trim(),
@@ -104,7 +102,6 @@ const App = {
                               parentId: state.parentId || null,
                               managerUserId: state.managerUserId || null,
                               isActive: state.isActive,
-                              createdById: uid,
                           };
 
                     const res = state.id ? await services.updateBranch(body) : await services.createBranch(body);

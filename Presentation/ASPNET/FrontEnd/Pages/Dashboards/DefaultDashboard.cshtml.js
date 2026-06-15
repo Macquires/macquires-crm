@@ -576,6 +576,9 @@ function initTelecomOperatorSlimDashboard() {
             if (typeof SyrBentoCockpit !== 'undefined' && host) {
                 await SyrBentoCockpit.mount(host);
             }
+            if (typeof ExecutiveExceptionsPanel !== 'undefined') {
+                await ExecutiveExceptionsPanel.initFromDashboard();
+            }
             if (typeof MisReportsPanel !== 'undefined') {
                 await MisReportsPanel.initFromDashboard();
             }
@@ -587,6 +590,12 @@ function initTelecomOperatorSlimDashboard() {
                         card.style.display = 'none';
                     }
                 });
+            }
+            if (typeof SupervisorInterventionPanel !== 'undefined') {
+                await SupervisorInterventionPanel.initFromDashboard();
+            }
+            if (typeof BranchGeoHeatmapPanel !== 'undefined') {
+                await BranchGeoHeatmapPanel.initFromDashboard();
             }
         } catch (e) {
             console.error('slim dash', e);

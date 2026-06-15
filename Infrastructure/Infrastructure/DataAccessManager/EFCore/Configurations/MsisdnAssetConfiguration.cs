@@ -13,6 +13,7 @@ public class MsisdnAssetConfiguration : BaseEntityConfiguration<MsisdnAsset>
         base.Configure(builder);
 
         builder.Property(x => x.Msisdn).HasMaxLength(32).IsRequired();
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.PairedIccid).HasMaxLength(32);
         builder.Property(x => x.PairedImsi).HasMaxLength(32);
         builder.Property(x => x.CountryCode).HasMaxLength(8);
@@ -30,6 +31,8 @@ public class MsisdnAssetConfiguration : BaseEntityConfiguration<MsisdnAsset>
         builder.HasIndex(x => x.Msisdn)
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
+
+        builder.HasIndex(x => x.BranchId).HasFilter("[BranchId] IS NOT NULL");
 
         builder.HasIndex(x => new { x.PoolStatus, x.CreatedAtUtc });
         builder.HasIndex(x => new { x.PoolStatus, x.Msisdn })

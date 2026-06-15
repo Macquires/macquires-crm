@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
@@ -19,10 +20,11 @@ public class ImportSimInventoryBatchResult
 
 public record SimInventoryImportLine(string Msisdn, string? Iccid, string? Puk1, string? Puk2);
 
-public class ImportSimInventoryBatchRequest : IRequest<ImportSimInventoryBatchResult>
+public class ImportSimInventoryBatchRequest : IRequest<ImportSimInventoryBatchResult>, IRequireAnyPermission
 {
     public List<SimInventoryImportLine> Lines { get; init; } = new();
-    public string? CreatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.InventoryManageAny;
 }
 
 public class ImportSimInventoryBatchValidator : AbstractValidator<ImportSimInventoryBatchRequest>
@@ -52,28 +54,33 @@ public class ImportSimInventoryBatchHandler : IRequestHandler<ImportSimInventory
     private readonly IQueryContext _query;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMediator _mediator;
+    private readonly IOperatorContext _operator;
 
     public ImportSimInventoryBatchHandler(
         ICommandRepository<MsisdnAsset> msisdnRepository,
         ICommandRepository<SimInventory> simRepository,
         IQueryContext query,
         IUnitOfWork unitOfWork,
-        IMediator mediator)
+        IMediator mediator,
+        IOperatorContext operatorContext)
     {
         _msisdnRepository = msisdnRepository;
         _simRepository = simRepository;
         _query = query;
         _unitOfWork = unitOfWork;
         _mediator = mediator;
+        _operator = operatorContext;
     }
 
     public async Task<ImportSimInventoryBatchResult> Handle(ImportSimInventoryBatchRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        var branchId = OperatorActor.ResolveBranchId(_operator);
+
         if (request.Lines.Count > SyncRowLimit)
         {
             var enqueued = await _mediator.Send(new EnqueueInventoryBulkImportRequest
             {
-                CreatedById = request.CreatedById,
                 Lines = request.Lines.Select(l => new BulkImportRowDto(l.Msisdn, l.Iccid, l.Puk1, l.Puk2)).ToList()
             }, cancellationToken);
 
@@ -108,7 +115,8 @@ public class ImportSimInventoryBatchHandler : IRequestHandler<ImportSimInventory
             {
                 Msisdn = cleanMsisdn,
                 PoolStatus = MsisdnPoolStatus.Available,
-                CreatedById = request.CreatedById
+                CreatedById = actorUserId,
+                BranchId = branchId,
             };
             await _msisdnRepository.CreateAsync(msisdnEntity, cancellationToken);
 
@@ -121,7 +129,7 @@ public class ImportSimInventoryBatchHandler : IRequestHandler<ImportSimInventory
                 if (!iccidExists)
                 {
                     var sim = SimInventory.Create(iccid, pin1: null, puk1: line.Puk1, pin2: null, puk2: line.Puk2);
-                    sim.CreatedById = request.CreatedById;
+                    sim.CreatedById = actorUserId;
                     await _simRepository.CreateAsync(sim, cancellationToken);
                 }
             }

@@ -100,6 +100,7 @@ const ticketEnumLabel = (group, code) =>
 const TAB_DEFS = [
     { id: 'profile', key: 'tabs.profile', icon: 'bi bi-person-vcard' },
     { id: 'services', key: 'tabs.services', icon: 'bi bi-reception-4' },
+    { id: 'timeline', key: 'tabs.timeline', icon: 'bi bi-clock-history' },
     { id: 'tickets', key: 'tabs.tickets', icon: 'bi bi-ticket-detailed' },
 ];
 
@@ -334,6 +335,7 @@ const Customer360ProfileApp = {
                     confirmCbs: telecomT('wizardUi.confirmCbs', 'CBS'),
                     awaitBo: telecomT('wizardUi.awaitBo', 'BO'),
                     confirmed: telecomT('wizardUi.confirmed', 'OK'),
+                    scheduledConfirmed: telecomT('wizardUi.scheduledConfirmed', 'Scheduled'),
                     doneTitle: telecomT('wizardUi.doneTitle', 'Done'),
                     doneHint: telecomT('wizardUi.doneHint', ''),
                     prev: telecomT('wizardUi.prev', 'Back'),
@@ -424,10 +426,16 @@ const Customer360ProfileApp = {
             loading: true,
             loadError: null,
             activeTab: 'profile',
+            timelineKindFilter: '',
+            timelineSkip: 0,
+            timelineHasMore: false,
+            timelineLoading: false,
             cbsBusy: false,
             cbsData: null,
             lineWallets: {},
             lineWalletsBusy: {},
+            telecomLineTypes: [],
+            telecomLineTypesBusy: false,
             rechargeBusy: '',
             hlrBusy: '',
             hlrBySub: {},
@@ -448,6 +456,17 @@ const Customer360ProfileApp = {
                 susSuspensionType: 'CustomerRequest',
                 susSuspensionReason: '',
                 susBarringLevel: 'Full',
+                bssPaymentReference: '',
+                bssSecurityTicketId: '',
+                bssDocumentNumber: '',
+                bssRegulatoryFile: null,
+                bssIdentityFile: null,
+                bssKycDocumentReferenceId: '',
+                bssOriginalTransactionRef: '',
+                bssPayoutDestination: '',
+                cgtMigrationPath: 'Standard',
+                cgtSourceTypeCode: '',
+                cgtSourceTypeId: '',
                 susAutoReconnectEnabled: false,
                 susEndDateLocal: '',
                 susEndDateValidationError: '',
@@ -455,6 +474,10 @@ const Customer360ProfileApp = {
                 rcnReconnectReason: '',
                 rcnClearanceType: 'Customer',
                 rcnPaymentReference: '',
+                rcnSecurityTicketId: '',
+                rcnDocumentNumber: '',
+                rcnRegulatoryFile: null,
+                rcnKycDocumentReferenceId: '',
                 rcnFraudClearanceConfirmed: false,
                 rcnRequiresBackOffice: false,
                 rcnEligibility: null,
@@ -473,6 +496,7 @@ const Customer360ProfileApp = {
                 bdrPaymentReference: '',
                 bdrAgencyReference: '',
                 bdrPaymentPlanMonths: '',
+                bdrSupervisorConfirmed: false,
                 bdrRequiresBackOffice: false,
                 bdrEligibility: null,
                 bdrEligibilityBusy: false,
@@ -511,6 +535,7 @@ const Customer360ProfileApp = {
                 vasCatalog: [],
                 catalogBusy: false,
                 selectedVasCode: '',
+                vasAction: 'Activate',
                 vasActivated: false,
                 simIccid: '',
                 simReplacementReason: '',
@@ -518,6 +543,10 @@ const Customer360ProfileApp = {
                 cnTargetMsisdnAssetId: '',
                 cnNumberChangeReason: '',
                 cnPremiumFeeAmount: '',
+                cnChangeMode: 'Internal',
+                cnPortInMsisdn: '',
+                cnDonorOperatorCode: '',
+                cnPortInReference: '',
                 cnPoolNumbers: [],
                 cnPoolBusy: false,
                 cnRequiresBackOffice: false,
@@ -533,6 +562,7 @@ const Customer360ProfileApp = {
                 selectedPoolImsi: '',
                 selectedPoolMsisdn: '',
                 confirmStatusHint: '',
+                confirmScheduled: false,
                 notes: '',
                 createdOperationId: '',
                 createdOperationNumber: '',
@@ -541,6 +571,10 @@ const Customer360ProfileApp = {
                 submitBusy: false,
                 uploadBusy: false,
                 confirmBusy: false,
+                kycDocumentReferenceId: '',
+                activateIdentityFile: null,
+                kycUploadBusy: false,
+                kycUploadError: '',
             },
         });
 
@@ -585,6 +619,9 @@ const Customer360ProfileApp = {
                 'telecom.device.sell',
                 'telecom.device.sell_request',
             ]),
+            supportTicket: (StorageManager.getUserRoles?.() || []).some((r) =>
+                ['TelecomAdmin', 'TelecomCallCenter'].includes(r)
+            ),
         }));
 
         const canRecharge = Vue.computed(() => {
@@ -734,6 +771,25 @@ const Customer360ProfileApp = {
 
         const selectedLineBdrAwaitingAudit = Vue.computed(() => {
             return selectedLineBdrPaidPending.value;
+        });
+
+        const rcnShowsPaymentRef = Vue.computed(() => {
+            const rcn = typeof TelecomReconnectClearance !== 'undefined' ? TelecomReconnectClearance : null;
+            return rcn
+                ? rcn.showsPaymentReference(state.wizard.rcnClearanceType, { bdrApproved: selectedLineBdrApproved.value })
+                : state.wizard.rcnClearanceType === 'Payment' || selectedLineBdrApproved.value;
+        });
+        const rcnShowsFraudFields = Vue.computed(() => {
+            const rcn = typeof TelecomReconnectClearance !== 'undefined' ? TelecomReconnectClearance : null;
+            return rcn ? rcn.showsFraudFields(state.wizard.rcnClearanceType) : state.wizard.rcnClearanceType === 'Fraud';
+        });
+        const rcnShowsRegulatoryFields = Vue.computed(() => {
+            const rcn = typeof TelecomReconnectClearance !== 'undefined' ? TelecomReconnectClearance : null;
+            return rcn ? rcn.showsRegulatoryFields(state.wizard.rcnClearanceType) : state.wizard.rcnClearanceType === 'Regulatory';
+        });
+        const rcnShowsSimplePath = Vue.computed(() => {
+            const rcn = typeof TelecomReconnectClearance !== 'undefined' ? TelecomReconnectClearance : null;
+            return rcn ? rcn.showsSimplePath(state.wizard.rcnClearanceType) : ['Customer', 'Operational'].includes(state.wizard.rcnClearanceType);
         });
 
         const lineKey = (sub) =>
@@ -1095,6 +1151,67 @@ const Customer360ProfileApp = {
             return t360(`enums.operational.${key}`, s);
         };
 
+        const mappedTimeline = Vue.computed(() =>
+            (state.profile?.timeline || []).map((r) => ({
+                occurredAtUtc: r.occurredAtUtc ?? r.OccurredAtUtc,
+                kind: r.kind ?? r.Kind,
+                titleAr: r.titleAr ?? r.TitleAr ?? '—',
+                subtitle: r.subtitle ?? r.Subtitle,
+                status: r.status ?? r.Status,
+                referenceId: r.referenceId ?? r.ReferenceId,
+                actionUrl: r.actionUrl ?? r.ActionUrl,
+                display: formatDt(r.occurredAtUtc ?? r.OccurredAtUtc),
+            }))
+        );
+
+        const timelineFilters = Vue.computed(() => [
+            { id: '', label: telecomT('timeline.filters.all', 'الكل') },
+            { id: '0', label: telecomT('timeline.filters.operations', 'عمليات') },
+            { id: '1', label: telecomT('timeline.filters.payments', 'مدفوعات') },
+            { id: '2', label: telecomT('timeline.filters.tickets', 'تذاكر') },
+            { id: '3', label: telecomT('timeline.filters.billing', 'فوترة') },
+            { id: '4', label: telecomT('timeline.filters.audit', 'تدقيق') },
+        ]);
+
+        const fetchTimeline = async (reset = false) => {
+            if (!state.customerId) return;
+            if (reset) {
+                state.timelineSkip = 0;
+                if (state.profile) state.profile.timeline = [];
+            }
+            state.timelineLoading = true;
+            try {
+                let url =
+                    '/Customer/GetCustomer360Timeline?customerId=' +
+                    encodeURIComponent(state.customerId) +
+                    '&take=25&skip=' +
+                    state.timelineSkip;
+                if (state.timelineKindFilter) {
+                    url += '&kinds=' + encodeURIComponent(state.timelineKindFilter);
+                }
+                const tlRes = await AxiosManager.get(url, {});
+                const tl = tlRes?.data?.content ?? tlRes?.data?.Content ?? {};
+                const items = tl?.items ?? tl?.Items ?? [];
+                state.timelineHasMore = tl?.hasMore ?? tl?.HasMore ?? false;
+                if (!state.profile) return;
+                state.profile.timeline = reset
+                    ? items
+                    : [...(state.profile.timeline || []), ...items];
+                state.timelineSkip += items.length;
+            } catch {
+                if (reset && state.profile) state.profile.timeline = [];
+            } finally {
+                state.timelineLoading = false;
+            }
+        };
+
+        const setTimelineFilter = async (id) => {
+            state.timelineKindFilter = id;
+            await fetchTimeline(true);
+        };
+
+        const loadMoreTimeline = () => fetchTimeline(false);
+
         const mappedTickets = Vue.computed(() =>
             (state.profile?.supportTickets || []).map((r) => {
                 const status = Number(r.status ?? r.Status ?? 0);
@@ -1243,6 +1360,9 @@ const Customer360ProfileApp = {
         };
 
         const pollPaymentDetail = async (paymentId, maxAttempts = 12) => {
+            if (typeof TelecomRechargeFlow !== 'undefined') {
+                return TelecomRechargeFlow.pollPaymentDetail(AxiosManager, paymentId, maxAttempts);
+            }
             for (let i = 0; i < maxAttempts; i++) {
                 const res = await AxiosManager.get(
                     '/Telecom/GetPaymentTransactionDetail?id=' + encodeURIComponent(paymentId),
@@ -1262,120 +1382,44 @@ const Customer360ProfileApp = {
             return null;
         };
 
+        const rechargeFlowLabels = () => ({
+            methodTitle: telecomT('swal.rechargeMethod', 'Recharge method'),
+            wallet: telecomT('swal.walletCash', 'Wallet / cash'),
+            voucher: telecomT('swal.voucher', 'Voucher'),
+            continueBtn: telecomT('swal.continue', 'Continue'),
+            cancelBtn: telecomT('swal.cancel', 'Cancel'),
+            amountTitle: telecomT('swal.rechargeAmount', 'Amount'),
+            amountPlaceholder: '15000',
+            invalidAmount: telecomT('swal.amountInvalid', 'Invalid amount'),
+            paymentRefTitle: telecomT('swal.paymentRef', 'Payment reference'),
+            paymentRefPlaceholder: 'WAL-2026-001234',
+            confirmBtn: telecomT('swal.confirmRecharge', 'Confirm'),
+            refRequired: telecomT('swal.paymentRefRequired', 'Required'),
+            voucherCodeTitle: telecomT('swal.voucherCode', 'Voucher code'),
+            voucherPlaceholder: telecomT('swal.voucherPh', ''),
+            validateBtn: telecomT('swal.validate', 'Validate'),
+            voucherRequired: telecomT('swal.voucherRequired', 'Required'),
+            voucherInvalid: telecomT('swal.voucherInvalid', 'Invalid'),
+            voucherConfirmTitle: telecomT('swal.voucherOk', 'Valid'),
+            voucherConfirmBtn: telecomT('swal.rechargeWithVoucher', 'Recharge'),
+            draftMissing: telecomT('swal.paymentDraftMissing', 'No draft'),
+            confirmFailed: telecomT('swal.paymentConfirmFailed', 'Failed'),
+            missingContext: telecomT('swal.noMsisdnRecharge', 'No MSISDN'),
+        });
+
         const executePaymentFlow = async (customerId, subscriptionId, busyKey, onSuccess) => {
-            const { value: method } = await Swal.fire({
-                title: telecomT('swal.rechargeMethod', 'Recharge method'),
-                input: 'radio',
-                inputOptions: {
-                    wallet: telecomT('swal.walletCash', 'Wallet / cash'),
-                    voucher: telecomT('swal.voucher', 'Voucher'),
-                },
-                inputValue: 'wallet',
-                showCancelButton: true,
-                confirmButtonText: telecomT('swal.continue', 'Continue'),
-                cancelButtonText: telecomT('swal.cancel', 'Cancel'),
-            });
-            if (!method) return;
-
-            let createBody;
-            let gatewayRef;
-
-            if (method === 'voucher') {
-                const { value: voucherCode } = await Swal.fire({
-                    title: telecomT('swal.voucherCode', 'Voucher code'),
-                    input: 'text',
-                    inputPlaceholder: telecomT('swal.voucherPh', ''),
-                    showCancelButton: true,
-                    confirmButtonText: telecomT('swal.validate', 'Validate'),
-                    inputValidator: (v) =>
-                        !v || !String(v).trim() ? telecomT('swal.voucherRequired', 'Required') : undefined,
-                });
-                if (!voucherCode) return;
-                const valRes = await AxiosManager.post('/Telecom/ValidateVoucher', {
-                    voucherCode: String(voucherCode).trim(),
-                });
-                const val = valRes?.data?.content ?? valRes?.data?.Content;
-                if (!(val?.valid ?? val?.Valid)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: val?.messageAr || val?.MessageAr || telecomT('swal.voucherInvalid', 'Invalid'),
-                    });
-                    return;
-                }
-                const ok = await Swal.fire({
-                    icon: 'info',
-                    title: telecomT('swal.voucherOk', 'Valid'),
-                    text: val?.messageAr || val?.MessageAr,
-                    showCancelButton: true,
-                    confirmButtonText: telecomT('swal.rechargeWithVoucher', 'Recharge'),
-                });
-                if (!ok.isConfirmed) return;
-                createBody = {
-                    type: 1,
-                    customerId,
-                    subscriptionId,
-                    amount: val?.faceValue ?? val?.FaceValue ?? 0,
-                    paymentChannel: 2,
-                    serviceChannel: 0,
-                    voucherCode: String(voucherCode).trim(),
-                    createdById: StorageManager.getUserId(),
-                };
-                gatewayRef = `VCHR-${String(voucherCode).trim()}`;
-            } else {
-                const { value: amountStr } = await Swal.fire({
-                    title: telecomT('swal.rechargeAmount', 'Amount'),
-                    input: 'number',
-                    inputPlaceholder: '15000',
-                    showCancelButton: true,
-                    confirmButtonText: telecomT('swal.continue', 'Continue'),
-                    inputValidator: (v) => {
-                        const n = parseFloat(v);
-                        if (!v || Number.isNaN(n) || n <= 0)
-                            return telecomT('swal.amountInvalid', 'Invalid amount');
-                    },
-                });
-                if (!amountStr) return;
-                const { value: gw } = await Swal.fire({
-                    title: telecomT('swal.paymentRef', 'Payment reference'),
-                    input: 'text',
-                    inputPlaceholder: 'WAL-2026-001234',
-                    showCancelButton: true,
-                    confirmButtonText: telecomT('swal.confirmRecharge', 'Confirm'),
-                    inputValidator: (v) =>
-                        !v || !String(v).trim() ? telecomT('swal.paymentRefRequired', 'Required') : undefined,
-                });
-                if (!gw) return;
-                createBody = {
-                    type: 0,
-                    customerId,
-                    subscriptionId,
-                    amount: parseFloat(amountStr),
-                    paymentChannel: 1,
-                    serviceChannel: 0,
-                    createdById: StorageManager.getUserId(),
-                };
-                gatewayRef = String(gw).trim();
+            if (typeof TelecomRechargeFlow === 'undefined') {
+                Swal.fire({ icon: 'error', title: telecomT('swal.rechargeFailed', 'Recharge failed') });
+                return;
             }
-
             state.rechargeBusy = busyKey;
             try {
-                const createRes = await AxiosManager.post('/Telecom/CreatePaymentTransaction', createBody);
-                const draft = createRes?.data?.content ?? createRes?.data?.Content;
-                const paymentId = draft?.paymentId ?? draft?.PaymentId;
-                if (!paymentId) throw new Error(telecomT('swal.paymentDraftMissing', 'No draft'));
-
-                const confirmRes = await AxiosManager.post('/Telecom/ConfirmPaymentTransaction', {
-                    paymentId,
-                    gatewayReference: gatewayRef,
-                    confirmedById: StorageManager.getUserId(),
+                const confirm = await TelecomRechargeFlow.runFlow(AxiosManager, Swal, {
+                    customerId,
+                    subscriptionId,
+                    labels: rechargeFlowLabels(),
                 });
-                const confirm = confirmRes?.data?.content ?? confirmRes?.data?.Content;
-                if (!(confirm?.success ?? confirm?.Success)) {
-                    throw new Error(
-                        confirm?.messageAr || confirm?.MessageAr || telecomT('swal.paymentConfirmFailed', 'Failed')
-                    );
-                }
-                await pollPaymentDetail(paymentId);
+                if (!confirm) return;
                 await onSuccess();
                 const currency = telecomT('common.currencySuffix', 'SYP');
                 Swal.fire({
@@ -1422,6 +1466,7 @@ const Customer360ProfileApp = {
                     activityLogs: sup.activityLogs ?? sup.ActivityLogs ?? [],
                     telecomOperations: sup.telecomOperations ?? sup.TelecomOperations ?? [],
                 };
+                await fetchTimeline(true);
             } catch {
                 /* supplements are non-blocking */
             }
@@ -1527,7 +1572,6 @@ const Customer360ProfileApp = {
                     subscriberProfileId: profileId,
                     msisdnAssetId: (sub?.msisdnAssetId || sub?.MsisdnAssetId || '').trim() || null,
                     msisdn: (sub?.msisdn || '').trim() || null,
-                    actorUserId: StorageManager.getUserId(),
                 });
                 const body = res?.data?.content ?? res?.data?.Content ?? {};
                 if (body?.logEntry || body?.LogEntry) {
@@ -1578,7 +1622,6 @@ const Customer360ProfileApp = {
                     msisdn: sub.msisdn,
                     simIccid: String(iccid).trim(),
                     notes: 'Customer360 HLR remediation — SIM swap',
-                    actorUserId: StorageManager.getUserId(),
                 });
                 const body = res?.data?.content ?? res?.data?.Content ?? {};
                 state.lastHlrLog =
@@ -1609,6 +1652,64 @@ const Customer360ProfileApp = {
                 aiModal = new bootstrap.Modal(document.getElementById('c360AiWizardModal'));
             }
             aiModal.show();
+        };
+
+        const openSupportTicketC360 = () => openProvisioningWizard('support');
+
+        const submitSupportFromC360 = async () => {
+            const line = parseSelectedLine();
+            const msisdn = (line?.msisdn || state.wizard.primaryLabel || primaryMsisdn() || '').trim();
+            if (!msisdn) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: telecomT('customerList.supportTicket.noMsisdn', 'No MSISDN'),
+                });
+                return;
+            }
+            state.wizard.submitBusy = true;
+            try {
+                const res = await AxiosManager.post('/TelecomBackOffice/CreateTechnicalTicket', {
+                    msisdn,
+                    issueType: Number(state.wizard.supportIssueType) || 0,
+                    priority: 1,
+                    notes: (state.wizard.supportNotes || '').trim(),
+                    customerId: state.customerId || null,
+                    subscriberProfileId:
+                        (state.wizard.primarySubscriberProfileId || line?.subscriberProfileId || '').trim() || null,
+                });
+                if (res?.data?.code !== 200) {
+                    throw Object.assign(
+                        new Error(
+                            res?.data?.message || telecomT('customerList.supportTicket.createFail', 'Create failed')
+                        ),
+                        { response: res }
+                    );
+                }
+                const ticket = res?.data?.content?.data ?? res?.data?.content?.Data;
+                state.wizard.supportTicketCreated = true;
+                state.wizard.supportTicketId = ticket?.id ?? ticket?.Id ?? '';
+                state.wizard.supportTicketNumber = ticket?.ticketNumber ?? ticket?.TicketNumber ?? '';
+                state.wizard.createdOperationNumber = state.wizard.supportTicketNumber;
+                Swal.fire({
+                    icon: 'success',
+                    title: telecomT('customerList.supportTicket.createdOk', 'Ticket created'),
+                    html: state.wizard.supportTicketNumber
+                        ? `<p dir="ltr">${state.wizard.supportTicketNumber}</p>`
+                        : undefined,
+                    timer: 2200,
+                    showConfirmButton: false,
+                });
+                state.wizard.step = 3;
+            } catch (e) {
+                Swal.fire({
+                    icon: 'error',
+                    title:
+                        e?.response?.data?.message ||
+                        telecomT('customerList.supportTicket.createFail', 'Create failed'),
+                });
+            } finally {
+                state.wizard.submitBusy = false;
+            }
         };
 
         const simulateAiCall = async () => {
@@ -1836,11 +1937,208 @@ const Customer360ProfileApp = {
 
         const onWizardOfferingChanged = async () => {
             await loadWizardOfferingDetail(state.wizard.selectedOfferingId);
+            if (state.wizard.kind === 'migrate') {
+                await loadMigrationProrationPreview();
+            }
         };
+
+        const lineTypeRowId = (row) => String(row?.id ?? row?.Id ?? '').trim();
+
+        const lineTypeDisplayName = (row) => {
+            if (!row) return '—';
+            const ar = row.nameAr || row.NameAr || '';
+            const en = row.nameEn || row.NameEn || '';
+            if (localeTick.value && ar) return ar;
+            if (en) return en;
+            return ar || en || row.code || row.Code || '—';
+        };
+
+        const activationLineTypeOptions = Vue.computed(() =>
+            (state.telecomLineTypes || [])
+                .filter((x) => x.isActive !== false && x.IsActive !== false)
+                .map((x) => ({
+                    ...x,
+                    id: lineTypeRowId(x),
+                    sortOrder: x.sortOrder ?? x.SortOrder ?? 0,
+                }))
+                .filter((x) => x.id)
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+        );
+
+        const filteredActivatePoolNumbers = Vue.computed(() => {
+            const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
+            let rows = state.wizard.poolNumbers || [];
+            if (!lineTypeId) return [];
+            return rows.filter((row) => {
+                const compat = row?.compatibleSubscriptionTypeId ?? row?.CompatibleSubscriptionTypeId ?? '';
+                return !compat || compat === lineTypeId;
+            });
+        });
+
+        const loadTelecomLineTypes = async () => {
+            if (state.telecomLineTypesBusy) return;
+            state.telecomLineTypesBusy = true;
+            try {
+                const res = await AxiosManager.get(
+                    '/TelecomSubscriptionType/GetTelecomSubscriptionTypeList?isDeleted=false&activeOnly=true',
+                    {}
+                );
+                const content = res?.data?.content ?? res?.data?.Content;
+                state.telecomLineTypes = content?.data ?? content?.Data ?? [];
+            } catch {
+                state.telecomLineTypes = [];
+            } finally {
+                state.telecomLineTypesBusy = false;
+            }
+        };
+
+        const loadActivateOfferings = async () => {
+            const sid = (state.wizard.primarySubscriberProfileId || '').trim();
+            const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
+            if (!sid || !lineTypeId) {
+                state.wizard.offerings = [];
+                return;
+            }
+            try {
+                const url =
+                    '/Product/GetMigrationEligibleProducts?subscriberProfileId=' +
+                    encodeURIComponent(sid) +
+                    '&targetSubscriptionTypeId=' +
+                    encodeURIComponent(lineTypeId);
+                const res = await AxiosManager.get(url, {});
+                const content = res?.data?.content ?? res?.data?.Content ?? {};
+                state.wizard.offerings = (content.data || content.Data || []).map((o) => ({
+                    id: o.id,
+                    name: o.name,
+                    nameEn: o.name,
+                    serviceCode: o.serviceCode,
+                }));
+            } catch {
+                state.wizard.offerings = [];
+            }
+        };
+
+        const onActivationLineTypeChange = async () => {
+            state.wizard.msisdnAssetId = '';
+            state.wizard.simIccid = '';
+            state.wizard.selectedOfferingId = '';
+            state.wizard.offerDetail = null;
+            await loadActivateOfferings();
+        };
+
+        const searchActivateSecondary = async () => {
+            const nat = (state.wizard.activateSecondarySearchNationalId || '').trim();
+            const ph = (state.wizard.activateSecondarySearchPhone || '').trim();
+            if (nat.length < 2 && ph.length < 2) {
+                Swal.fire({ icon: 'info', title: telecomT('swal.searchMinChars', 'Search hint') });
+                return;
+            }
+            state.wizard.activateSecondaryBusy = true;
+            try {
+                const qs = new URLSearchParams();
+                if (nat) qs.set('nationalId', nat);
+                if (ph) qs.set('phone', ph);
+                const res = await AxiosManager.get('/Customer/FindCustomerCandidates?' + qs.toString(), {});
+                state.wizard.activateSecondaryResults = res?.data?.content?.data ?? [];
+                state.wizard.activateSecondaryProfileId = '';
+                state.wizard.activateSecondaryLabel = '';
+            } catch (e) {
+                state.wizard.activateSecondaryResults = [];
+                toastError(e, telecomT('customerList.swal.searchFailed', 'Search failed'));
+            } finally {
+                state.wizard.activateSecondaryBusy = false;
+            }
+        };
+
+        const selectActivateSecondary = async (c) => {
+            if (!c?.id) return;
+            state.wizard.activateSecondaryBusy = true;
+            try {
+                const res = await AxiosManager.get(
+                    '/Customer/GetCustomer360?customerId=' + encodeURIComponent(c.id),
+                    {}
+                );
+                const subs = res?.data?.content?.activeSubscriptions || [];
+                const pick = subs.find((s) => s.isPrimaryLine) || subs[0];
+                const pid = (pick?.subscriberProfileId || '').trim();
+                state.wizard.activateSecondaryProfileId = pid;
+                state.wizard.activateSecondaryLabel = pid ? `${c.name || '—'}` : '';
+                if (!pid) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: telecomT('customerList.swal.noSubscriberProfile', 'No profile'),
+                    });
+                }
+            } catch (e) {
+                toastError(e, telecomT('swal.loadFailed', 'Load failed'));
+            } finally {
+                state.wizard.activateSecondaryBusy = false;
+            }
+        };
+
+        const loadMigrationProrationPreview = async () => {
+            const offeringId = (state.wizard.selectedOfferingId || '').trim();
+            const sid = (state.wizard.primarySubscriberProfileId || '').trim();
+            const assetId = (state.wizard.primaryMsisdnAssetId || '').trim();
+            if (!offeringId || !sid || !assetId || typeof TelecomBssWizardClearance === 'undefined') {
+                state.wizard.mgrProrationPreview = null;
+                return;
+            }
+            state.wizard.mgrProrationBusy = true;
+            try {
+                state.wizard.mgrProrationPreview = await TelecomBssWizardClearance.migration.loadPreview(
+                    sid,
+                    assetId,
+                    offeringId
+                );
+            } catch {
+                state.wizard.mgrProrationPreview = null;
+            } finally {
+                state.wizard.mgrProrationBusy = false;
+            }
+        };
+
+        const mgrProrationPriceDifferenceLabel = Vue.computed(() => {
+            const p = state.wizard.mgrProrationPreview;
+            if (!p || typeof TelecomBssWizardClearance === 'undefined') return '—';
+            return TelecomBssWizardClearance.migration.formatAmount(
+                p.priceDifference ?? p.PriceDifference,
+                p.currencyCode ?? p.CurrencyCode
+            );
+        });
+        const mgrProrationAmountLabel = Vue.computed(() => {
+            const p = state.wizard.mgrProrationPreview;
+            if (!p || typeof TelecomBssWizardClearance === 'undefined') return '—';
+            return TelecomBssWizardClearance.migration.formatAmount(
+                p.proratedAmount ?? p.ProratedAmount,
+                p.currencyCode ?? p.CurrencyCode
+            );
+        });
+        const mgrProrationWalletLabel = Vue.computed(() => {
+            const p = state.wizard.mgrProrationPreview;
+            if (!p || typeof TelecomBssWizardClearance === 'undefined') return '—';
+            return TelecomBssWizardClearance.migration.formatAmount(
+                p.walletBalance ?? p.WalletBalance,
+                p.currencyCode ?? p.CurrencyCode
+            );
+        });
+        const mgrProrationDaysLabel = Vue.computed(() => {
+            const p = state.wizard.mgrProrationPreview;
+            if (!p) return '';
+            const days = p.daysRemainingInCycle ?? p.DaysRemainingInCycle ?? 0;
+            const total = p.daysInBillingCycle ?? p.DaysInBillingCycle ?? 0;
+            return t360('wizard.migrationOffers.daysRemaining', 'Days').replace('{days}', days).replace('{total}', total);
+        });
+        const mgrProrationSufficient = Vue.computed(
+            () => state.wizard.mgrProrationPreview?.sufficientBalance ?? state.wizard.mgrProrationPreview?.SufficientBalance !== false
+        );
 
         const canWizardFinishStep2 = Vue.computed(() => {
             if (state.wizard.kind === 'addpackage') {
                 return !!state.wizard.vasActivated;
+            }
+            if (state.wizard.kind === 'support') {
+                return !!state.wizard.supportTicketCreated;
             }
             if (!state.wizard.createdOperationId || !state.wizard.documentMarkedUploaded) return false;
             if (state.wizard.kind === 'changeGsm') {
@@ -1865,6 +2163,142 @@ const Customer360ProfileApp = {
             const ty = (state.wizard.trmTerminationType || '').trim();
             state.wizard.trmRequiresBackOffice =
                 ty === 'Fraud' || ty === 'Regulatory' || ty === 'Collections';
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.termination.reset(state.wizard, ty);
+            }
+        };
+
+        const bssCgtOptions = () => ({
+            outstandingBalance: selectedLineOutstandingBalance.value,
+        });
+
+        const bssTkoOptions = () => ({
+            outstandingBalance: selectedLineOutstandingBalance.value,
+        });
+
+        const susShowsPayment = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.suspension.showsPayment(state.wizard.susSuspensionType)
+                : state.wizard.susSuspensionType === 'Billing');
+        const susShowsFraud = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.suspension.showsFraud(state.wizard.susSuspensionType)
+                : state.wizard.susSuspensionType === 'Fraud');
+        const susShowsRegulatory = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.suspension.showsRegulatory(state.wizard.susSuspensionType)
+                : state.wizard.susSuspensionType === 'Regulatory');
+        const susShowsSimple = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.suspension.showsSimple(state.wizard.susSuspensionType)
+                : ['CustomerRequest', 'Operational'].includes(state.wizard.susSuspensionType));
+        const susRequiresStep2Identity = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.suspension.requiresIdentityUpload(state.wizard.susSuspensionType)
+                : false);
+
+        const barringLevelOptions = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.BARRING_LEVELS
+                : [
+                    { value: 'Full', key: 'suspension.barringFull' },
+                    { value: 'InboundOnly', key: 'suspension.barringInbound' },
+                    { value: 'OutboundOnly', key: 'suspension.barringOutbound' },
+                    { value: 'DataOnly', key: 'suspension.barringDataOnly' },
+                ]);
+
+        const trmShowsPayment = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.termination.showsPayment(state.wizard.trmTerminationType)
+                : state.wizard.trmTerminationType === 'Collections');
+        const trmShowsFraud = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.termination.showsFraud(state.wizard.trmTerminationType)
+                : state.wizard.trmTerminationType === 'Fraud');
+        const trmShowsRegulatory = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.termination.showsRegulatory(state.wizard.trmTerminationType)
+                : state.wizard.trmTerminationType === 'Regulatory');
+        const trmShowsVoluntary = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.termination.showsVoluntary(state.wizard.trmTerminationType)
+                : state.wizard.trmTerminationType === 'Voluntary');
+        const trmRequiresLegacyIdentity = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.termination.requiresLegacyIdentity(state.wizard.trmTerminationType)
+                && !trmShowsRegulatory.value
+                : state.wizard.trmRequiresBackOffice && state.wizard.trmTerminationType !== 'Regulatory');
+
+        const cgtShowsFinancial = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.changeGsm.showsFinancial(state.wizard, bssCgtOptions())
+                : false);
+        const cgtShowsRegulatory = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.changeGsm.showsRegulatory(state.wizard)
+                : state.wizard.cgtMigrationPath === 'Regulatory');
+
+        const rfdShowsOriginalTxRef = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.refund.showsOriginalTxRef(state.wizard.rfdRefundType)
+                : ['Deposit', 'Overpayment'].includes(state.wizard.rfdRefundType));
+        const rfdShowsPayoutDestination = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.refund.showsPayoutDestination(
+                    state.wizard.rfdRefundType,
+                    state.wizard.rfdRefundMethod
+                )
+                : state.wizard.rfdRefundMethod === 'BankTransfer'
+                    || state.wizard.rfdRefundType === 'SyriatelCash');
+        const rfdPayoutLabelKey = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.refund.payoutLabel(
+                    state.wizard.rfdRefundType,
+                    state.wizard.rfdRefundMethod
+                )
+                : 'bss.payoutDestination');
+
+        const simShowsLostStolenFields = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.simSwap.showsLostStolenFields(state.wizard.simLostOrStolen)
+                : !!state.wizard.simLostOrStolen);
+        const cnShowsPremiumPayment = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.changeNumber.showsPremiumPayment(state.wizard)
+                : !!state.wizard.cnRequiresBackOffice);
+        const cnShowsInternalPool = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.changeNumber.showsInternalPool(state.wizard)
+                : (state.wizard.cnChangeMode || 'Internal') !== 'PortIn');
+        const cnDonorOperators = Vue.computed(() =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.changeNumber.donorOperators
+                : ['MTN', 'AFRICELL', 'OTHER']);
+        const tkoShowsObligationSettlement = Vue.computed(() => {
+            const bal = selectedLineOutstandingBalance.value;
+            return bal != null && bal < 0;
+        });
+
+        const onSimLostOrStolenChange = () => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.simSwap.reset(state.wizard, state.wizard.simLostOrStolen);
+            }
+        };
+
+        const onBssRegulatoryFileChange = (ev) => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.onRegulatoryFileChange(state.wizard, ev);
+            }
+        };
+        const onBssIdentityFileChange = (ev) => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.onIdentityFileChange(state.wizard, ev);
+            }
+        };
+        const onCgtPathChange = () => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.changeGsm.reset(state.wizard, state.wizard.cgtMigrationPath);
+            }
         };
 
         const resetWizardState = () => {
@@ -1900,6 +2334,7 @@ const Customer360ProfileApp = {
                 vasCatalog: [],
                 catalogBusy: false,
                 selectedVasCode: '',
+                vasAction: 'Activate',
                 vasActivated: false,
                 simIccid: '',
                 simReplacementReason: '',
@@ -1907,6 +2342,10 @@ const Customer360ProfileApp = {
                 cnTargetMsisdnAssetId: '',
                 cnNumberChangeReason: '',
                 cnPremiumFeeAmount: '',
+                cnChangeMode: 'Internal',
+                cnPortInMsisdn: '',
+                cnDonorOperatorCode: '',
+                cnPortInReference: '',
                 cnPoolNumbers: [],
                 cnPoolBusy: false,
                 cnRequiresBackOffice: false,
@@ -1918,6 +2357,17 @@ const Customer360ProfileApp = {
                 susSuspensionType: 'CustomerRequest',
                 susSuspensionReason: '',
                 susBarringLevel: 'Full',
+                bssPaymentReference: '',
+                bssSecurityTicketId: '',
+                bssDocumentNumber: '',
+                bssRegulatoryFile: null,
+                bssIdentityFile: null,
+                bssKycDocumentReferenceId: '',
+                bssOriginalTransactionRef: '',
+                bssPayoutDestination: '',
+                cgtMigrationPath: 'Standard',
+                cgtSourceTypeCode: '',
+                cgtSourceTypeId: '',
                 susAutoReconnectEnabled: false,
                 susEndDateLocal: '',
                 susEndDateValidationError: '',
@@ -1925,6 +2375,10 @@ const Customer360ProfileApp = {
                 rcnReconnectReason: '',
                 rcnClearanceType: 'Customer',
                 rcnPaymentReference: '',
+                rcnSecurityTicketId: '',
+                rcnDocumentNumber: '',
+                rcnRegulatoryFile: null,
+                rcnKycDocumentReferenceId: '',
                 rcnFraudClearanceConfirmed: false,
                 rcnRequiresBackOffice: false,
                 rcnEligibility: null,
@@ -1943,6 +2397,7 @@ const Customer360ProfileApp = {
                 bdrPaymentReference: '',
                 bdrAgencyReference: '',
                 bdrPaymentPlanMonths: '',
+                bdrSupervisorConfirmed: false,
                 bdrRequiresBackOffice: false,
                 bdrEligibility: null,
                 bdrEligibilityBusy: false,
@@ -1963,6 +2418,7 @@ const Customer360ProfileApp = {
                 selectedPoolImsi: '',
                 selectedPoolMsisdn: '',
                 confirmStatusHint: '',
+                confirmScheduled: false,
                 notes: '',
                 createdOperationId: '',
                 createdOperationNumber: '',
@@ -1984,7 +2440,31 @@ const Customer360ProfileApp = {
                 operationCorrelationId: '',
                 falloutTicketId: '',
                 falloutTicketNumber: '',
+                kycDocumentReferenceId: '',
+                activateIdentityFile: null,
+                kycUploadBusy: false,
+                kycUploadError: '',
+                activationLineTypeId: '',
+                activateSecondarySearchNationalId: '',
+                activateSecondarySearchPhone: '',
+                activateSecondaryResults: [],
+                activateSecondaryProfileId: '',
+                activateSecondaryLabel: '',
+                activateSecondaryBusy: false,
+                bssSupervisorConfirmed: false,
+                bssEffectiveMode: 'immediate',
+                bssEffectiveDateLocal: '',
+                mgrProrationPreview: null,
+                mgrProrationBusy: false,
+                supportIssueType: 0,
+                supportNotes: '',
+                supportTicketCreated: false,
+                supportTicketId: '',
+                supportTicketNumber: '',
             };
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.effectiveDate.reset(state.wizard);
+            }
             if (kind === 'activate' && typeof ActivationChannelUi !== 'undefined') {
                 ActivationChannelUi.applyDefaults(state.wizard);
             }
@@ -1993,6 +2473,10 @@ const Customer360ProfileApp = {
         const SUSPENSION_MAX_DAYS = 90;
 
         const suspensionStartDateLocal = () => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                const iso = TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard);
+                return iso.slice(0, 10);
+            }
             const d = new Date();
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -2000,14 +2484,26 @@ const Customer360ProfileApp = {
             return `${y}-${m}-${day}`;
         };
 
-        const suspensionMaxEndDateLocal = () => {
-            const d = new Date();
-            d.setDate(d.getDate() + SUSPENSION_MAX_DAYS);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
-        };
+        const bssEffectiveTodayLocal = () =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.effectiveDate.todayLocal()
+                : suspensionStartDateLocal();
+
+        const wizardSupportsEffectiveDate = (kind) =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+            && TelecomBssWizardClearance.effectiveDate.supportsWizardKind(kind);
+
+        const suspensionMaxEndDateLocal = () =>
+            typeof TelecomBssWizardClearance !== 'undefined'
+                ? TelecomBssWizardClearance.suspensionEndDate.maxEndDateLocal(suspensionStartDateLocal())
+                : (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + SUSPENSION_MAX_DAYS);
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                })();
 
         const validateSuspensionEndDate = () => {
             state.wizard.susEndDateValidationError = '';
@@ -2030,6 +2526,13 @@ const Customer360ProfileApp = {
         };
 
         const onSusAutoReconnectChange = () => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.suspensionEndDate.onAutoReconnectToggled(
+                    state.wizard,
+                    suspensionStartDateLocal
+                );
+                return;
+            }
             if (state.wizard.susAutoReconnectEnabled && !(state.wizard.susEndDateLocal || '').trim()) {
                 const d = new Date();
                 d.setDate(d.getDate() + 30);
@@ -2044,6 +2547,9 @@ const Customer360ProfileApp = {
         const onSusTypeChange = () => {
             const ty = (state.wizard.susSuspensionType || '').trim();
             state.wizard.susRequiresBackOffice = ty === 'Fraud' || ty === 'Regulatory';
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.suspension.reset(state.wizard, ty);
+            }
         };
 
         const loadReconnectEligibility = async () => {
@@ -2079,7 +2585,16 @@ const Customer360ProfileApp = {
         };
 
         const onRcnClearanceChange = () => {
+            if (typeof TelecomReconnectClearance !== 'undefined') {
+                TelecomReconnectClearance.resetConditionalFields(state.wizard, state.wizard.rcnClearanceType);
+            }
             loadReconnectEligibility();
+        };
+
+        const onRcnRegulatoryFileChange = (ev) => {
+            const file = ev?.target?.files?.[0] || null;
+            state.wizard.rcnRegulatoryFile = file;
+            state.wizard.rcnKycDocumentReferenceId = '';
         };
 
         const loadBadDebtEligibility = async () => {
@@ -2096,6 +2611,7 @@ const Customer360ProfileApp = {
                     msisdnAssetId: assetId,
                     collectionAction: (state.wizard.bdrCollectionAction || 'PaymentRecorded').trim(),
                     dunningStage: (state.wizard.bdrDunningStage || 'Reminder1').trim(),
+                    collectionApprovalConfirmed: state.wizard.bdrSupervisorConfirmed ? 'true' : 'false',
                 });
                 const pay = (state.wizard.bdrPaymentReference || '').trim();
                 if (pay) qs.set('paymentReference', pay);
@@ -2123,6 +2639,23 @@ const Customer360ProfileApp = {
 
         const onRefundTypeChange = async () => {
             state.wizard.rfdRequiresBackOffice = state.wizard.rfdRefundType === 'SyriatelCash';
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.refund.reset(
+                    state.wizard,
+                    state.wizard.rfdRefundType,
+                    state.wizard.rfdRefundMethod
+                );
+            }
+        };
+
+        const onRefundMethodChange = () => {
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.refund.reset(
+                    state.wizard,
+                    state.wizard.rfdRefundType,
+                    state.wizard.rfdRefundMethod
+                );
+            }
         };
 
         const loadDeviceWizardCatalog = async () => {
@@ -2163,7 +2696,6 @@ const Customer360ProfileApp = {
                     amountPaid: amount,
                     paymentChannel: Number(state.wizard.devPaymentChannel) || 0,
                     paymentReference: ref,
-                    updatedById: StorageManager.getUserId(),
                 });
                 if (res?.data?.code === 200) {
                     state.wizard.documentMarkedUploaded = true;
@@ -2288,9 +2820,31 @@ const Customer360ProfileApp = {
             const id = (state.wizard.cnTargetMsisdnAssetId || '').trim();
             const row = (state.wizard.cnPoolNumbers || []).find((r) => String(r.id ?? r.Id) === id);
             const cat = row?.category ?? row?.Category;
-            state.wizard.cnRequiresBackOffice = isPremiumMsisdnCategory(cat);
-            if (!state.wizard.cnRequiresBackOffice) {
+            state.wizard.cnRequiresBackOffice =
+                (state.wizard.cnChangeMode || 'Internal') === 'PortIn' || isPremiumMsisdnCategory(cat);
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.changeNumber.reset(
+                    state.wizard,
+                    state.wizard.cnRequiresBackOffice
+                );
+            } else if (!state.wizard.cnRequiresBackOffice) {
                 state.wizard.cnPremiumFeeAmount = '';
+            }
+        };
+
+        const onCnChangeModeChange = () => {
+            const portIn = (state.wizard.cnChangeMode || 'Internal') === 'PortIn';
+            state.wizard.cnRequiresBackOffice = portIn;
+            state.wizard.cnTargetMsisdnAssetId = '';
+            state.wizard.cnPremiumFeeAmount = '';
+            if (portIn) {
+                state.wizard.cnNumberChangeReason = state.wizard.cnNumberChangeReason || 'PortIn';
+            }
+            if (typeof TelecomBssWizardClearance !== 'undefined') {
+                TelecomBssWizardClearance.changeNumber.reset(state.wizard, state.wizard.cnRequiresBackOffice);
+            }
+            if (!portIn) {
+                loadChangeNumberPoolForWizard();
             }
         };
 
@@ -2315,6 +2869,10 @@ const Customer360ProfileApp = {
                 }));
                 state.wizard.cgtCurrentTypeLabel =
                     content.currentSubscriptionTypeLabel || content.CurrentSubscriptionTypeLabel || '';
+                state.wizard.cgtSourceTypeId =
+                    content.currentSubscriptionTypeId || content.CurrentSubscriptionTypeId || '';
+                state.wizard.cgtSourceTypeCode =
+                    content.currentSubscriptionTypeCode || content.CurrentSubscriptionTypeCode || '';
             } catch {
                 state.wizard.cgtTargets = [];
             } finally {
@@ -2381,6 +2939,76 @@ const Customer360ProfileApp = {
             state.wizard.simIccid = String(
                 row?.iccid ?? row?.Iccid ?? row?.pairedIccid ?? row?.PairedIccid ?? ''
             ).trim();
+            state.wizard.kycDocumentReferenceId = '';
+            state.wizard.kycUploadError = '';
+        };
+
+        const getActivatePoolMsisdn = () => {
+            const msisdn = (state.wizard.selectedPoolMsisdn || '').trim();
+            if (msisdn) return msisdn;
+            const id = (state.wizard.msisdnAssetId || '').trim();
+            const row = (state.wizard.poolNumbers || []).find((a) => a.id === id);
+            return (row?.msisdn ?? row?.Msisdn ?? '').trim();
+        };
+
+        const uploadC360ActivateKyc = async (file, msisdn) => {
+            if (typeof TelecomBssWizardClearance !== 'undefined' && TelecomBssWizardClearance.uploadKyc) {
+                return TelecomBssWizardClearance.uploadKyc(msisdn, file);
+            }
+            if (typeof TelecomReconnectClearance !== 'undefined' && TelecomReconnectClearance.uploadRegulatoryAttachment) {
+                return TelecomReconnectClearance.uploadRegulatoryAttachment(msisdn, file);
+            }
+            throw new Error('wizard.kycUpload.failed');
+        };
+
+        const onActivateKycFileChange = async (ev) => {
+            const file = ev?.target?.files?.[0] || null;
+            state.wizard.activateIdentityFile = file;
+            state.wizard.kycDocumentReferenceId = '';
+            state.wizard.kycUploadError = '';
+            if (!file) return;
+            const msisdn = getActivatePoolMsisdn();
+            if (!msisdn) {
+                state.wizard.kycUploadError = t360('wizard.kycUpload.msisdnRequired', 'Select MSISDN first');
+                return;
+            }
+            state.wizard.kycUploadBusy = true;
+            try {
+                state.wizard.kycDocumentReferenceId = await uploadC360ActivateKyc(file, msisdn);
+            } catch (e) {
+                state.wizard.kycUploadError = t360(e?.message || 'wizard.kycUpload.failed', 'Upload failed');
+            } finally {
+                state.wizard.kycUploadBusy = false;
+            }
+        };
+
+        const ensureC360ActivateKyc = async () => {
+            if ((state.wizard.kycDocumentReferenceId || '').trim()) return true;
+            const file = state.wizard.activateIdentityFile;
+            if (!file) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: t360('wizard.kycUpload.title', 'KYC required'),
+                    text: t360('wizard.kycUpload.required', 'Upload document'),
+                });
+                return false;
+            }
+            const msisdn = getActivatePoolMsisdn();
+            if (!msisdn) {
+                Swal.fire({ icon: 'warning', title: telecomT('customerList.swal.newLineIncomplete', 'Incomplete') });
+                return false;
+            }
+            state.wizard.kycUploadBusy = true;
+            try {
+                state.wizard.kycDocumentReferenceId = await uploadC360ActivateKyc(file, msisdn);
+                return true;
+            } catch (e) {
+                state.wizard.kycUploadError = t360(e?.message || 'wizard.kycUpload.failed', 'Upload failed');
+                Swal.fire({ icon: 'warning', text: state.wizard.kycUploadError });
+                return false;
+            } finally {
+                state.wizard.kycUploadBusy = false;
+            }
         };
 
         const pollOperationAfterConfirm = async (operationId) => {
@@ -2425,16 +3053,9 @@ const Customer360ProfileApp = {
         const loadActivatePoolData = async () => {
             state.wizard.poolBusy = true;
             try {
-                const [poolRes, offRes] = await Promise.all([
-                    AxiosManager.get('/Telecom/GetMsisdnAssetPoolList?status=Available', {}),
-                    AxiosManager.get('/ProductOffering/GetProductOfferingList', {}),
-                ]);
+                const poolRes = await AxiosManager.get('/Telecom/GetMsisdnAssetPoolList?status=Available', {});
                 state.wizard.poolNumbers = parseMsisdnPoolRows(poolRes).filter(isAvailableMsisdnPoolRow);
-                const offContent = offRes?.data?.content ?? offRes?.data?.Content;
-                const allOfferings = offContent?.data ?? offContent?.Data ?? [];
-                state.wizard.offerings = (Array.isArray(allOfferings) ? allOfferings : []).filter(
-                    (o) => o.isActive !== false
-                );
+                state.wizard.offerings = [];
             } catch {
                 state.wizard.poolNumbers = [];
                 state.wizard.offerings = [];
@@ -2493,17 +3114,33 @@ const Customer360ProfileApp = {
                 addpackage: () => can.value.provisioning,
                 simswap: () => can.value.network,
                 activate: () => can.value.network,
+                support: () => can.value.supportTicket,
             };
             if (!permMap[kind]?.()) {
                 Swal.fire({ icon: 'info', title: telecomT('swal.noPermission', 'No permission') });
                 return;
             }
-            if (kind !== 'activate' && !requireLine()) return;
+            if (kind !== 'activate' && kind !== 'support' && !requireLine()) return;
             ensureLineSelected();
             state.wizard.kind = kind;
             resetWizardState();
             state.wizard.bypassToAdvance = !!options.bypassToAdvance;
-            if (kind !== 'activate' && !bindPrimaryFromLine()) {
+            if (kind === 'support') {
+                if (!bindPrimaryFromLine()) {
+                    const subs = allSubscriptions.value;
+                    const p = subs.find((s) => s.isPrimaryLine) || subs[0];
+                    if (!(p?.msisdn || '').trim()) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: telecomT('customerList.supportTicket.noMsisdn', 'No MSISDN'),
+                        });
+                        return;
+                    }
+                    state.wizard.primarySubscriberProfileId = p.subscriberProfileId || '';
+                    state.wizard.primaryMsisdnAssetId = p.msisdnAssetId || '';
+                    state.wizard.primaryLabel = p.msisdn || '—';
+                }
+            } else if (kind !== 'activate' && !bindPrimaryFromLine()) {
                 Swal.fire({ icon: 'warning', title: telecomT('swal.subscriptionLinkFailed', 'Link failed') });
                 return;
             }
@@ -2521,7 +3158,14 @@ const Customer360ProfileApp = {
                 state.wizard.primarySubscriberProfileId = p.subscriberProfileId;
                 state.wizard.primaryLabel =
                     state.profile?.core?.displayName || telecomT('swal.currentSubscriber', 'Subscriber');
+                await loadTelecomLineTypes();
                 await loadActivatePoolData();
+                const def = activationLineTypeOptions.value.find((x) => x.isDefault || x.IsDefault)
+                    || activationLineTypeOptions.value[0];
+                if (def?.id) {
+                    state.wizard.activationLineTypeId = def.id;
+                    await loadActivateOfferings();
+                }
             } else if (kind === 'migrate') {
                 await loadWizardMigrationOffers();
             } else if (kind === 'changeGsm') {
@@ -2553,7 +3197,6 @@ const Customer360ProfileApp = {
                 await AxiosManager.post('/Telecom/ReleaseMsisdnReservation', {
                     msisdnAssetId: aid,
                     customerId: cid,
-                    releasedByUserId: StorageManager.getUserId(),
                 });
             } catch {
                 /* best-effort */
@@ -2580,9 +3223,14 @@ const Customer360ProfileApp = {
 
         const finishProvisioningWizard = async () => {
             const wasReconnect = state.wizard.kind === 'reconnect' && state.wizard.confirmed;
+            const wasSupport = state.wizard.kind === 'support' && state.wizard.supportTicketCreated;
             const reconnectSub = wasReconnect ? selectedSubscription.value : null;
             closeProvisioningWizard();
-            state.activeTab = 'services';
+            if (wasSupport) {
+                state.activeTab = 'tickets';
+            } else {
+                state.activeTab = 'services';
+            }
             await loadProfile(true);
             await loadCbs();
             if (reconnectSub) {
@@ -2648,7 +3296,11 @@ const Customer360ProfileApp = {
         const validateWizardStep1 = async () => {
             const k = state.wizard.kind;
             const warn = (key, fb) => {
-                Swal.fire({ icon: 'warning', title: telecomT(key, fb) });
+                Swal.fire({
+                    icon: 'warning',
+                    title: telecomT('swal.incompleteTitle', 'Incomplete'),
+                    text: telecomT(key, fb),
+                });
                 return false;
             };
             const deny = (msg) => {
@@ -2665,45 +3317,71 @@ const Customer360ProfileApp = {
             if (k === 'takeover' && !(state.wizard.takeoverTargetProfileId || '').trim()) {
                 return warn('wizard.secondaryRequiredHint', 'Select new owner');
             }
-            if (k === 'takeover' && !(state.wizard.takeoverTransferReason || '').trim()) {
-                return warn('takeOver.transferReason', 'Transfer reason required');
+            if (k === 'takeover') {
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const tkoErr = TelecomBssWizardClearance.takeOver.validate(state.wizard, bssTkoOptions());
+                    if (tkoErr) return warn(tkoErr.key, telecomT(tkoErr.key, tkoErr.key));
+                } else if (!(state.wizard.takeoverTransferReason || '').trim()) {
+                    return warn('takeOver.transferReason', 'Transfer reason required');
+                }
             }
             if (k === 'migrate' && !(state.wizard.selectedOfferingId || '').trim()) {
-                return warn('customerList.swal.pickPackage', 'Pick package');
+                return warn('wizard.targetOffer', 'Pick package');
+            }
+            if (k === 'migrate' && typeof TelecomBssWizardClearance !== 'undefined') {
+                const prErr = TelecomBssWizardClearance.migration.validatePreview(
+                    state.wizard.mgrProrationPreview
+                );
+                if (prErr) return warn(prErr.key, telecomT(prErr.key, telecomT('wizard.migrationOffers.prorationInsufficient', 'Insufficient balance')));
             }
             if (k === 'changeGsm') {
-                if (!(state.wizard.cgtTargetTypeId || '').trim()) {
-                    return warn('changeGsm.targetType', 'Pick line type');
-                }
-                if (!(state.wizard.cgtMigrationReason || '').trim()) {
-                    return warn('changeGsm.migrationReason', 'Reason required');
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const cgtErr = TelecomBssWizardClearance.changeGsm.validate(
+                        state.wizard,
+                        bssCgtOptions()
+                    );
+                    if (cgtErr) return warn(cgtErr.key, telecomT(cgtErr.key, cgtErr.key));
+                } else {
+                    if (!(state.wizard.cgtTargetTypeId || '').trim()) {
+                        return warn('changeGsm.targetType', 'Pick line type');
+                    }
+                    if (!(state.wizard.cgtMigrationReason || '').trim()) {
+                        return warn('changeGsm.migrationReason', 'Reason required');
+                    }
                 }
             }
             if (k === 'addpackage' && !(state.wizard.selectedVasCode || '').trim()) {
                 return warn('wizard.vasPlaceholder', 'Pick VAS');
             }
             if (k === 'changeNumber') {
-                if (!(state.wizard.cnTargetMsisdnAssetId || '').trim()) {
+                if (cnShowsInternalPool.value && !(state.wizard.cnTargetMsisdnAssetId || '').trim()) {
                     return warn('changeNumber.targetMsisdn', 'Pick number');
                 }
                 if (!(state.wizard.cnNumberChangeReason || '').trim()) {
                     return warn('changeNumber.changeReason', 'Pick reason');
+                }
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const cnErr = TelecomBssWizardClearance.changeNumber.validate(state.wizard);
+                    if (cnErr) return warn(cnErr.key, telecomT(cnErr.key, cnErr.key));
                 }
                 if (state.wizard.cnRequiresBackOffice && !state.wizard.identityFile) {
                     return warn('changeNumber.paymentDocHint', 'Upload receipt');
                 }
             }
             if (k === 'termination') {
-                if (!(state.wizard.trmTerminationReason || '').trim()) {
-                    return warn('customerList.swal.terminationIncomplete', 'Termination incomplete');
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const trmErr = TelecomBssWizardClearance.termination.validate(state.wizard);
+                    if (trmErr) return warn(trmErr.key, telecomT(trmErr.key, trmErr.key));
+                } else {
+                    if (!(state.wizard.trmTerminationReason || '').trim()) {
+                        return warn('customerList.swal.terminationIncomplete', 'Termination incomplete');
+                    }
                 }
                 if (
-                    state.wizard.trmTerminationType === 'Voluntary'
-                    && !(state.wizard.trmRetentionOfferOutcome || '').trim()
+                    trmRequiresLegacyIdentity.value
+                    && state.wizard.trmRequiresBackOffice
+                    && !state.wizard.identityFile
                 ) {
-                    return warn('customerList.swal.retentionRequired', 'Retention required');
-                }
-                if (state.wizard.trmRequiresBackOffice && !state.wizard.identityFile) {
                     return warn('termination.identityRequired', 'Document required');
                 }
             }
@@ -2714,20 +3392,42 @@ const Customer360ProfileApp = {
                 if ((state.wizard.simIccid || '').trim().length < 19) {
                     return warn('customerList.swal.enterNewIccid', 'ICCID required');
                 }
-                if (state.wizard.simLostOrStolen && !state.wizard.identityFile) {
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const simErr = TelecomBssWizardClearance.simSwap.validate(state.wizard);
+                    if (simErr) return warn(simErr.key, telecomT(simErr.key, simErr.key));
+                } else if (state.wizard.simLostOrStolen && !state.wizard.identityFile) {
                     return warn('customerList.swal.uploadIdentity', 'Upload ID');
                 }
             }
             if (k === 'activate') {
+                const lineTypeId = (state.wizard.activationLineTypeId || '').trim();
                 const assetId = (state.wizard.msisdnAssetId || '').trim();
                 const offeringId = (state.wizard.selectedOfferingId || '').trim();
                 const iccid = (state.wizard.simIccid || '').trim();
+                if (!lineTypeId) {
+                    return warn('wizard.lineType.required', 'Select line type');
+                }
                 if (!assetId || !offeringId || iccid.length < 19) {
                     return warn('customerList.swal.newLineIncomplete', 'Incomplete activation');
                 }
+                if (isCorporate.value && !(state.wizard.activateSecondaryProfileId || '').trim()) {
+                    return warn('wizard.corporateSecondPartyRequired', 'Select second party');
+                }
+                if (!(state.wizard.kycDocumentReferenceId || '').trim() && !state.wizard.activateIdentityFile) {
+                    return warn('wizard.kycUpload.required', 'KYC document required');
+                }
+            }
+            if (wizardSupportsEffectiveDate(k)) {
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const effErr = TelecomBssWizardClearance.effectiveDate.validate(state.wizard);
+                    if (effErr) return warn(effErr.key, telecomT(effErr.key, effErr.key));
+                }
             }
             if (k === 'suspension') {
-                if (!(state.wizard.susSuspensionReason || '').trim()) {
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const susErr = TelecomBssWizardClearance.suspension.validate(state.wizard);
+                    if (susErr) return warn(susErr.key, telecomT(susErr.key, susErr.key));
+                } else if (!(state.wizard.susSuspensionReason || '').trim()) {
                     return warn('suspension.suspensionReason', 'Reason required');
                 }
                 if (!validateSuspensionEndDate()) {
@@ -2739,14 +3439,21 @@ const Customer360ProfileApp = {
                 onSusTypeChange();
             }
             if (k === 'reconnect') {
-                if (selectedLineBdrApproved.value && !(state.wizard.rcnPaymentReference || '').trim()) {
-                    return warn('reconnect.paymentReference', 'Receipt reference is mandatory for BDR clearance');
-                }
-                if (!(state.wizard.rcnReconnectReason || '').trim()) {
-                    return warn('reconnect.reconnectReason', 'Reason required');
-                }
-                if (state.wizard.rcnClearanceType === 'Payment' && !(state.wizard.rcnPaymentReference || '').trim()) {
-                    return warn('reconnect.paymentReference', 'Payment ref required');
+                if (typeof TelecomReconnectClearance !== 'undefined') {
+                    const rcnErr = TelecomReconnectClearance.validate(state.wizard, {
+                        bdrApproved: selectedLineBdrApproved.value,
+                    });
+                    if (rcnErr) return warn(rcnErr.key, telecomT(rcnErr.key, rcnErr.key));
+                } else {
+                    if (selectedLineBdrApproved.value && !(state.wizard.rcnPaymentReference || '').trim()) {
+                        return warn('reconnect.paymentReference', 'Receipt reference is mandatory for BDR clearance');
+                    }
+                    if (!(state.wizard.rcnReconnectReason || '').trim()) {
+                        return warn('reconnect.reconnectReason', 'Reason required');
+                    }
+                    if (state.wizard.rcnClearanceType === 'Payment' && !(state.wizard.rcnPaymentReference || '').trim()) {
+                        return warn('reconnect.paymentReference', 'Payment ref required');
+                    }
                 }
                 await loadReconnectEligibility();
                 if (
@@ -2760,12 +3467,17 @@ const Customer360ProfileApp = {
                 }
             }
             if (k === 'refund') {
-                if (!(state.wizard.rfdRefundReason || '').trim()) {
-                    return warn('refund.refundReason', 'Reason required');
-                }
-                const amt = Number(state.wizard.rfdRefundAmount);
-                if (!amt || amt <= 0) {
-                    return warn('refund.refundAmount', 'Amount required');
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const rfdErr = TelecomBssWizardClearance.refund.validate(state.wizard);
+                    if (rfdErr) return warn(rfdErr.key, telecomT(rfdErr.key, rfdErr.key));
+                } else {
+                    if (!(state.wizard.rfdRefundReason || '').trim()) {
+                        return warn('refund.refundReason', 'Reason required');
+                    }
+                    const amt = Number(state.wizard.rfdRefundAmount);
+                    if (!amt || amt <= 0) {
+                        return warn('refund.refundAmount', 'Amount required');
+                    }
                 }
             }
             if (k === 'badDebt') {
@@ -2819,7 +3531,6 @@ const Customer360ProfileApp = {
                 kind: wizardKindToApi(k),
                 subscriberProfileId: state.wizard.primarySubscriberProfileId,
                 notes,
-                createdById: StorageManager.getUserId(),
             };
 
             if (k === 'takeover') {
@@ -2827,27 +3538,73 @@ const Customer360ProfileApp = {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.transferReason = (state.wizard.takeoverTransferReason || '').trim();
                 body.depositTransferPolicy = Number(state.wizard.takeoverDepositPolicy) || 1;
+                const tkoApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.takeOver.buildApi(state.wizard, bssTkoOptions())
+                    : {};
+                body.paymentReference = tkoApi.paymentReference ?? null;
+                body.takeOverObligationStatus = tkoApi.takeOverObligationStatus ?? null;
+                body.takeOverEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'migrate') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.productOfferingId = state.wizard.selectedOfferingId;
+                body.migrationEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'changeGsm') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.targetSubscriptionTypeId = state.wizard.cgtTargetTypeId;
                 body.gsmMigrationReason = (state.wizard.cgtMigrationReason || '').trim();
                 const off = (state.wizard.selectedOfferingId || '').trim();
                 if (off) body.changeGsmProductOfferingId = off;
+                const cgtApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.changeGsm.buildApi(state.wizard, bssCgtOptions())
+                    : {};
+                body.paymentReference = cgtApi.paymentReference ?? null;
+                body.collectionNote = cgtApi.collectionNote ?? null;
+                body.kycDocumentReferenceId = cgtApi.kycDocumentReferenceId ?? null;
+                body.gsmEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'simswap') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.simIccid = (state.wizard.simIccid || '').trim();
                 body.replacementReason = (state.wizard.simReplacementReason || '').trim();
                 body.isLostOrStolenReport = !!state.wizard.simLostOrStolen;
+                const simApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.simSwap.buildApi(state.wizard)
+                    : {};
+                body.agencyReference = simApi.agencyReference ?? null;
+                body.simSwapEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'changeNumber') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
-                body.targetMsisdnAssetId = state.wizard.cnTargetMsisdnAssetId || null;
+                body.numberChangeMode = state.wizard.cnChangeMode || 'Internal';
+                if (cnShowsInternalPool.value) {
+                    body.targetMsisdnAssetId = state.wizard.cnTargetMsisdnAssetId || null;
+                } else {
+                    body.portInMsisdn = (state.wizard.cnPortInMsisdn || '').trim() || null;
+                    body.donorOperatorCode = (state.wizard.cnDonorOperatorCode || '').trim() || null;
+                }
                 body.numberChangeReason = (state.wizard.cnNumberChangeReason || '').trim();
                 if (state.wizard.cnPremiumFeeAmount) {
                     body.premiumFeeAmount = Number(state.wizard.cnPremiumFeeAmount);
                 }
+                const cnApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.changeNumber.buildApi(state.wizard)
+                    : {};
+                body.paymentReference = cnApi.paymentReference ?? null;
+                body.agencyReference = cnApi.agencyReference ?? null;
+                body.numberChangeEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'termination') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.terminationType = (state.wizard.trmTerminationType || '').trim();
@@ -2855,6 +3612,17 @@ const Customer360ProfileApp = {
                 if (state.wizard.trmTerminationType === 'Voluntary') {
                     body.retentionOfferOutcome = (state.wizard.trmRetentionOfferOutcome || '').trim();
                 }
+                const trmApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.termination.buildApi(state.wizard)
+                    : {};
+                body.paymentReference = trmApi.paymentReference ?? null;
+                body.agencyReference = trmApi.agencyReference ?? null;
+                body.collectionNote = trmApi.collectionNote ?? null;
+                body.kycDocumentReferenceId = trmApi.kycDocumentReferenceId ?? null;
+                body.terminationEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'addpackage') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 const vas = state.wizard.vasCatalog.find((v) => v.serviceCode === state.wizard.selectedVasCode);
@@ -2863,39 +3631,83 @@ const Customer360ProfileApp = {
             } else if (k === 'activate') {
                 body.msisdnAssetId = state.wizard.msisdnAssetId;
                 body.productOfferingId = state.wizard.selectedOfferingId;
+                body.targetSubscriptionTypeId = (state.wizard.activationLineTypeId || '').trim() || null;
+                body.secondarySubscriberProfileId =
+                    (state.wizard.activateSecondaryProfileId || '').trim() || null;
                 body.simIccid = (state.wizard.simIccid || '').trim();
+                body.kycDocumentReferenceId = (state.wizard.kycDocumentReferenceId || '').trim() || null;
                 body.activationChannel = Number(state.wizard.activationChannel) || 0;
                 const dc = (state.wizard.dealerCode || '').trim();
                 if (dc) body.dealerCode = dc;
+                body.activationEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'suspension') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.suspensionType = (state.wizard.susSuspensionType || '').trim() || null;
                 body.suspensionReason = (state.wizard.susSuspensionReason || '').trim() || null;
                 body.barringLevel = (state.wizard.susBarringLevel || 'Full').trim();
                 body.autoReconnectEnabled = !!state.wizard.susAutoReconnectEnabled;
-                body.suspensionStartDateUtc = new Date(suspensionStartDateLocal()).toISOString();
+                body.suspensionStartDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date(suspensionStartDateLocal()).toISOString();
                 body.suspensionEndDateUtc =
                     state.wizard.susAutoReconnectEnabled && state.wizard.susEndDateLocal
                         ? new Date(state.wizard.susEndDateLocal + 'T23:59:59').toISOString()
                         : null;
+                const susApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.suspension.buildApi(state.wizard)
+                    : {};
+                body.paymentReference = susApi.paymentReference ?? null;
+                body.agencyReference = susApi.agencyReference ?? null;
+                body.collectionNote = susApi.collectionNote ?? null;
+                body.kycDocumentReferenceId = susApi.kycDocumentReferenceId ?? null;
+                body.fraudClearanceConfirmed = susApi.fraudClearanceConfirmed ?? false;
             } else if (k === 'reconnect') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.reconnectReason = (state.wizard.rcnReconnectReason || '').trim() || null;
                 body.clearanceType = (state.wizard.rcnClearanceType || '').trim() || null;
-                body.fraudClearanceConfirmed = !!state.wizard.rcnFraudClearanceConfirmed;
-                body.paymentReference = (state.wizard.rcnPaymentReference || '').trim() || null;
+                const rcnFields = typeof TelecomReconnectClearance !== 'undefined'
+                    ? TelecomReconnectClearance.buildApiFields(state.wizard, { bdrApproved: selectedLineBdrApproved.value })
+                    : {
+                        paymentReference: (state.wizard.rcnPaymentReference || '').trim() || null,
+                        agencyReference: null,
+                        collectionNote: null,
+                        kycDocumentReferenceId: null,
+                        fraudClearanceConfirmed: !!state.wizard.rcnFraudClearanceConfirmed,
+                    };
+                body.fraudClearanceConfirmed = rcnFields.fraudClearanceConfirmed;
+                body.paymentReference = rcnFields.paymentReference;
+                body.agencyReference = rcnFields.agencyReference;
+                body.collectionNote = rcnFields.collectionNote;
+                body.kycDocumentReferenceId = rcnFields.kycDocumentReferenceId;
                 
                 // GLOBAL HARDENING: Route B Bypass to Advance
                 if (state.wizard.bypassToAdvance) {
                     body.notes = `${notes}|BypassToAdvance:true`;
                     body.status = 9; // Paid_Pending_BackOffice_Clearance
                 }
+                body.reconnectEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'refund') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.refundType = (state.wizard.rfdRefundType || '').trim() || null;
                 body.refundMethod = (state.wizard.rfdRefundMethod || '').trim() || null;
                 body.refundReason = (state.wizard.rfdRefundReason || '').trim() || null;
                 body.refundAmount = state.wizard.rfdRefundAmount ? Number(state.wizard.rfdRefundAmount) : null;
+                const rfdApi = typeof TelecomBssWizardClearance !== 'undefined'
+                    ? TelecomBssWizardClearance.refund.buildApi(state.wizard)
+                    : {};
+                body.refundCbsReference = rfdApi.refundCbsReference ?? null;
+                body.refundGatewayReference = rfdApi.refundGatewayReference ?? null;
+                body.refundEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'badDebt') {
                 body.msisdnAssetId = state.wizard.primaryMsisdnAssetId || null;
                 body.collectionAction = (state.wizard.bdrCollectionAction || '').trim() || null;
@@ -2911,12 +3723,21 @@ const Customer360ProfileApp = {
                 body.paymentPlanMonths = state.wizard.bdrPaymentPlanMonths
                     ? Number(state.wizard.bdrPaymentPlanMonths)
                     : null;
+                body.collectionApprovalConfirmed = !!state.wizard.bdrSupervisorConfirmed;
+                body.badDebtEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             } else if (k === 'deviceSale') {
                 body.deviceInventoryId = state.wizard.devInventoryId || null;
                 body.deviceSaleType = state.wizard.devSaleType === 'Installment' ? 1 : 0;
                 if (state.wizard.devSaleType === 'Installment') {
                     body.deviceInstallmentPlanId = state.wizard.devInstallmentPlanId || null;
                 }
+                body.deviceSaleEffectiveDateUtc =
+                    typeof TelecomBssWizardClearance !== 'undefined'
+                        ? TelecomBssWizardClearance.effectiveDate.resolveUtcIso(state.wizard)
+                        : new Date().toISOString();
             }
             return body;
         };
@@ -2979,7 +3800,6 @@ const Customer360ProfileApp = {
                     paymentReference: ref,
                     amountPaid: amt,
                     paymentChannel: Number(state.wizard.paymentChannel) || 0,
-                    updatedById: StorageManager.getUserId(),
                 });
                 if (res?.data?.code === 200) {
                     state.wizard.paymentRecorded = true;
@@ -3011,45 +3831,48 @@ const Customer360ProfileApp = {
             state.wizard.submitBusy = true;
             state.isProvisioningInFlight = true;
             try {
-                const res = await AxiosManager.post('/Vas/ToggleSubscriberVasService', {
-                    msisdn,
-                    serviceCode: code,
-                    action: 0,
-                    actorUserId: StorageManager.getUserId(),
-                });
-                if (res?.data?.code === 200) {
-                    state.wizard.vasActivated = true;
-                    state.wizard.createdOperationNumber = res?.data?.content?.operationNumber ?? '';
-                    const vasOk = telecomT('swal.vasActivated', 'VAS activated');
-                    state.wizard.confirmStatusHint =
-                        vasOk +
-                        (state.wizard.createdOperationNumber
-                            ? ` (${state.wizard.createdOperationNumber})`
-                            : '');
-                    Swal.fire({
-                        icon: 'success',
-                        title: telecomT('swal.vasActivateTitle', 'Activated'),
-                        text: state.wizard.confirmStatusHint,
-                        timer: 2500,
-                        showConfirmButton: false,
-                    });
-                    state.wizard.step = 3;
-                } else {
-                    throw Object.assign(
-                        new Error(res?.data?.message || telecomT('swal.genericFailed', 'Failed')),
-                        { response: res }
-                    );
+                const result =
+                    typeof TelecomVasToggle !== 'undefined'
+                        ? await TelecomVasToggle.toggle(AxiosManager, {
+                              msisdn,
+                              serviceCode: code,
+                              activate: (state.wizard.vasAction || 'Activate') !== 'Deactivate',
+                          })
+                        : null;
+                if (!result?.ok) {
+                    throw new Error(telecomT('swal.genericFailed', 'Failed'));
                 }
-            } catch (e) {
-                const errName = e?.response?.data?.error?.name;
-                const msg =
-                    e?.response?.data?.error?.message ??
-                    e?.response?.data?.message ??
-                    e?.message ??
-                    '';
+                state.wizard.vasActivated = true;
+                state.wizard.createdOperationNumber = result.operationNumber || '';
+                const vasOk = telecomT('swal.vasActivated', 'VAS activated');
+                state.wizard.confirmStatusHint =
+                    vasOk +
+                    (state.wizard.createdOperationNumber
+                        ? ` (${state.wizard.createdOperationNumber})`
+                        : '');
                 Swal.fire({
-                    icon: errName === 'BusinessRuleViolationException' ? 'warning' : 'error',
-                    title: errName === 'BusinessRuleViolationException' ? 'VAL-11' : telecomT('swal.vasActivateFailed', 'Failed'),
+                    icon: 'success',
+                    title: telecomT('swal.vasActivateTitle', 'Activated'),
+                    text: state.wizard.confirmStatusHint,
+                    timer: 2500,
+                    showConfirmButton: false,
+                });
+                state.wizard.step = 3;
+            } catch (e) {
+                const isBrv =
+                    typeof TelecomVasToggle !== 'undefined'
+                        ? TelecomVasToggle.isBusinessRuleViolation(e)
+                        : e?.response?.data?.error?.name === 'BusinessRuleViolationException';
+                const msg =
+                    typeof TelecomVasToggle !== 'undefined'
+                        ? TelecomVasToggle.pickError(e)
+                        : e?.response?.data?.error?.message ??
+                          e?.response?.data?.message ??
+                          e?.message ??
+                          '';
+                Swal.fire({
+                    icon: isBrv ? 'warning' : 'error',
+                    title: isBrv ? 'VAL-11' : telecomT('swal.vasActivateFailed', 'Failed'),
                     text: msg || telecomT('swal.vasActivateFailedHint', 'VAL-11'),
                 });
             } finally {
@@ -3063,6 +3886,10 @@ const Customer360ProfileApp = {
                 if (!(await validateWizardStep1())) return;
                 if (state.wizard.kind === 'addpackage') {
                     submitWizardVasActivate();
+                    return;
+                }
+                if (state.wizard.kind === 'support') {
+                    await submitSupportFromC360();
                     return;
                 }
                 state.wizard.step = 2;
@@ -3091,7 +3918,6 @@ const Customer360ProfileApp = {
                     await AxiosManager.post('/Telecom/ReserveMsisdnForCustomer', {
                         msisdnAssetId: state.wizard.cnTargetMsisdnAssetId,
                         customerId: state.customerId,
-                        reservedByUserId: StorageManager.getUserId(),
                     });
                 } catch (e) {
                     toastError(e, telecomT('swal.reserveNewNumberFailed', 'Reserve failed'));
@@ -3099,11 +3925,11 @@ const Customer360ProfileApp = {
                 }
             }
             if (state.wizard.kind === 'activate') {
+                if (!(await ensureC360ActivateKyc())) return;
                 try {
                     await AxiosManager.post('/Telecom/ReserveMsisdnForCustomer', {
                         msisdnAssetId: state.wizard.msisdnAssetId,
                         customerId: state.customerId,
-                        reservedByUserId: StorageManager.getUserId(),
                     });
                 } catch (e) {
                     toastError(e, telecomT('swal.reserveMsisdnFailed', 'Reserve failed'));
@@ -3113,6 +3939,31 @@ const Customer360ProfileApp = {
             state.wizard.submitBusy = true;
             state.isProvisioningInFlight = true;
             try {
+                if (
+                    state.wizard.kind === 'reconnect'
+                    && typeof TelecomReconnectClearance !== 'undefined'
+                ) {
+                    const line = parseSelectedLine();
+                    const msisdn = line?.msisdn || state.wizard.primaryLabel || '';
+                    await TelecomReconnectClearance.ensureRegulatoryAttachmentUploaded(state.wizard, msisdn);
+                }
+                if (typeof TelecomBssWizardClearance !== 'undefined') {
+                    const line = parseSelectedLine();
+                    const msisdn = line?.msisdn || state.wizard.primaryLabel || '';
+                    if (state.wizard.kind === 'suspension') {
+                        await TelecomBssWizardClearance.suspension.ensureUploads(state.wizard, msisdn);
+                    }
+                    if (state.wizard.kind === 'termination') {
+                        await TelecomBssWizardClearance.termination.ensureUploads(state.wizard, msisdn);
+                    }
+                    if (state.wizard.kind === 'changeGsm') {
+                        await TelecomBssWizardClearance.changeGsm.ensureUploads(
+                            state.wizard,
+                            msisdn,
+                            bssCgtOptions()
+                        );
+                    }
+                }
                 const res = await AxiosManager.post('/Telecom/CreateTelecomOperation', buildWizardCreateBody());
                 const ok = res?.data?.code === 200;
                 const entity = res?.data?.content?.data;
@@ -3211,13 +4062,12 @@ const Customer360ProfileApp = {
                 Swal.fire({ icon: 'warning', title: telecomT('refund.boHint', 'Upload document') });
                 return;
             }
-            if (state.wizard.kind === 'suspension' && !state.wizard.identityFile) {
+            if (state.wizard.kind === 'suspension' && susRequiresStep2Identity.value && !state.wizard.identityFile) {
                 Swal.fire({ icon: 'warning', title: t360('suspension.kycRequired', 'Upload document') });
                 return;
             }
             state.wizard.uploadBusy = true;
             try {
-                const uid = StorageManager.getUserId();
                 let res;
                 if (
                     (state.wizard.kind === 'takeover'
@@ -3230,7 +4080,6 @@ const Customer360ProfileApp = {
                 ) {
                     const form = new FormData();
                     form.append('id', state.wizard.createdOperationId);
-                    form.append('updatedById', uid || '');
                     form.append('file', state.wizard.identityFile);
                     res = await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
                         headers: { 'Content-Type': 'multipart/form-data' },
@@ -3238,7 +4087,6 @@ const Customer360ProfileApp = {
                 } else {
                     res = await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', {
                         id: state.wizard.createdOperationId,
-                        updatedById: uid,
                     });
                 }
                 if (res?.data?.code === 200) {
@@ -3273,7 +4121,6 @@ const Customer360ProfileApp = {
             try {
                 const res = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
                     id: state.wizard.createdOperationId,
-                    updatedById: StorageManager.getUserId(),
                 });
                 if (res?.data?.code === 200) {
                     state.wizard.confirmed = true;
@@ -3283,8 +4130,28 @@ const Customer360ProfileApp = {
                         content.StatusHintAr ??
                         telecomT('provSuccess', 'Operation recorded');
                     state.wizard.confirmStatusHint = hint;
-                    toastSuccess(hint);
-                    if (content.hlrCompletesAsynchronously ?? content.HlrCompletesAsynchronously) {
+                    const scheduled =
+                        window.TelecomUiBadges?.isScheduledOperationStatus?.(
+                            window.TelecomUiBadges?.operationStatusFromConfirm?.(content)
+                        ) ?? false;
+                    state.wizard.confirmScheduled = scheduled;
+                    if (scheduled) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'info',
+                                title: telecomT('wizardUi.scheduledConfirmed', 'Scheduled'),
+                                text: hint,
+                                timer: 4200,
+                                showConfirmButton: true,
+                            });
+                        }
+                    } else {
+                        toastSuccess(hint);
+                    }
+                    if (
+                        !scheduled
+                        && (content.hlrCompletesAsynchronously ?? content.HlrCompletesAsynchronously)
+                    ) {
                         const polled = await pollOperationAfterConfirm(state.wizard.createdOperationId);
                         if (polled) {
                             state.wizard.confirmStatusHint = polled;
@@ -3429,13 +4296,55 @@ const Customer360ProfileApp = {
             selectedLineBdrApproved,
             selectedLineBdrAwaitingAudit,
             selectedLineOutstandingBalance,
+            rcnShowsPaymentRef,
+            rcnShowsFraudFields,
+            rcnShowsRegulatoryFields,
+            rcnShowsSimplePath,
             onTerminationTypeChange,
             onSusTypeChange,
             onSusAutoReconnectChange,
+            onRefundMethodChange,
+            onBssRegulatoryFileChange,
+            onBssIdentityFileChange,
+            onCgtPathChange,
+            susShowsPayment,
+            susShowsFraud,
+            susShowsRegulatory,
+            susShowsSimple,
+            susRequiresStep2Identity,
+            barringLevelOptions,
+            trmShowsPayment,
+            trmShowsFraud,
+            trmShowsRegulatory,
+            trmShowsVoluntary,
+            trmRequiresLegacyIdentity,
+            cgtShowsFinancial,
+            cgtShowsRegulatory,
+            rfdShowsOriginalTxRef,
+            rfdShowsPayoutDestination,
+            rfdPayoutLabelKey,
+            simShowsLostStolenFields,
+            cnShowsPremiumPayment,
+            tkoShowsObligationSettlement,
+            onSimLostOrStolenChange,
             suspensionStartDateLocal,
             suspensionMaxEndDateLocal,
+            bssEffectiveTodayLocal,
+            wizardSupportsEffectiveDate,
+            activationLineTypeOptions,
+            filteredActivatePoolNumbers,
+            lineTypeDisplayName,
+            onActivationLineTypeChange,
+            searchActivateSecondary,
+            selectActivateSecondary,
+            mgrProrationPriceDifferenceLabel,
+            mgrProrationAmountLabel,
+            mgrProrationWalletLabel,
+            mgrProrationDaysLabel,
+            mgrProrationSufficient,
             validateSuspensionEndDate,
             onRcnClearanceChange,
+            onRcnRegulatoryFileChange,
             onBdrActionChange,
             onRefundTypeChange,
             loadReconnectEligibility,
@@ -3473,11 +4382,16 @@ const Customer360ProfileApp = {
             openRemediationReconnect,
             loadProfile,
             openAiWizard,
+            openSupportTicketC360,
             simulateAiCall,
             forceCbs,
             hlrResync,
             escalateTicket,
             isTicketBusy,
+            mappedTimeline,
+            timelineFilters,
+            setTimelineFilter,
+            loadMoreTimeline,
             mappedTickets,
             activeVasCount,
             vasSummary,
@@ -3499,6 +4413,9 @@ const Customer360ProfileApp = {
             onWizardLineChanged,
             onCgtTargetTypeChanged,
             onChangeNumberTargetPicked,
+            onCnChangeModeChange,
+            cnShowsInternalPool,
+            cnDonorOperators,
             searchTakeoverTarget,
             selectTakeoverTarget,
             wizardStepNext,
@@ -3510,6 +4427,7 @@ const Customer360ProfileApp = {
             submitWizardConfirmCbs,
             onWizardIdentityFileChange,
             onActivateMsisdnChanged,
+            onActivateKycFileChange,
             onWizardOfferingChanged,
             wizardOfferDisplayName,
             wizardOfferMonthlyPrice,

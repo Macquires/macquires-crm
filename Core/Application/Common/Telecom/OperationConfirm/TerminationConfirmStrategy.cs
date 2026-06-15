@@ -1,3 +1,4 @@
+using Application.Common.Exceptions;
 using Application.Common.Repositories;
 using Application.Common.Telecom.Termination;
 using Domain.Entities;
@@ -30,6 +31,8 @@ public sealed class TerminationConfirmStrategy : IOperationConfirmStrategy
 
     public TelecomOperationKind Kind => TelecomOperationKind.Termination;
 
+    public bool RequiresNetworkProvision => true;
+
     public async Task<OperationConfirmValidationResult> ValidateForConfirmAsync(
         TelecomOperationRequest entity,
         string? actorUserId,
@@ -42,7 +45,17 @@ public sealed class TerminationConfirmStrategy : IOperationConfirmStrategy
 
         entity.PriorMsisdnAssetId ??= entity.MsisdnAssetId;
         var check = await _eligibility.ValidateForConfirmAsync(entity, cancellationToken);
-        return new(check.Allowed, check.MessageAr);
+        if (!check.Allowed)
+        {
+            return new(false, check.MessageAr);
+        }
+
+        if (!string.IsNullOrEmpty(check.PriorSimInventoryId))
+        {
+            entity.PriorSimInventoryId ??= check.PriorSimInventoryId;
+        }
+
+        return new(true, check.MessageAr);
     }
 
     public async Task<OperationApplyResult?> ApplyLocalChangesAsync(
@@ -50,16 +63,23 @@ public sealed class TerminationConfirmStrategy : IOperationConfirmStrategy
         string? actorUserId,
         CancellationToken cancellationToken)
     {
-        var msisdnAssetId = entity.MsisdnAssetId!;
+        var msisdnAssetId = entity.MsisdnAssetId
+            ?? throw new BusinessRuleViolationException("رقم الخط غير محدد.");
+
         var profile = await _profileRepository.GetAsync(entity.SubscriberProfileId, cancellationToken)
-            ?? throw new InvalidOperationException("ملف المشترك غير موجود.");
+            ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
+
+        if (profile.OperationalStatus == SubscriberOperationalStatus.Terminated)
+        {
+            throw new BusinessRuleViolationException("VAL-10-04: الخط منتهٍ مسبقاً.");
+        }
 
         profile.Terminate();
         profile.UpdatedById = actorUserId;
         _profileRepository.Update(profile);
 
         var msisdnAsset = await _msisdnRepository.GetAsync(msisdnAssetId, cancellationToken)
-            ?? throw new InvalidOperationException("أصل الرقم غير موجود.");
+            ?? throw new BusinessRuleViolationException("أصل الرقم غير موجود.");
 
         if (msisdnAsset.PoolStatus == MsisdnPoolStatus.Active)
         {
@@ -67,8 +87,42 @@ public sealed class TerminationConfirmStrategy : IOperationConfirmStrategy
         }
 
         msisdnAsset.SubscriberProfileId = null;
+        msisdnAsset.ReservedForCustomerId = null;
+        msisdnAsset.ReservedUntilUtc = null;
         msisdnAsset.UpdatedById = actorUserId;
         _msisdnRepository.Update(msisdnAsset);
+
+        var activeSims = await _simRepository.GetQuery()
+            .Where(s => !s.IsDeleted
+                        && s.SubscriberProfileId == entity.SubscriberProfileId
+                        && s.Status == SimStatus.Active)
+            .ToListAsync(cancellationToken);
+
+        foreach (var sim in activeSims)
+        {
+            sim.TransitionTo(SimStatus.Quarantined);
+            sim.AssignToProfile(null);
+            sim.UpdatedById = actorUserId;
+            _simRepository.Update(sim);
+        }
+
+        entity.PriorSimInventoryId ??= activeSims
+            .OrderByDescending(s => s.UpdatedAtUtc ?? s.CreatedAtUtc)
+            .Select(s => s.Id)
+            .FirstOrDefault();
+
+        var subs = await _subscriptionRepository.GetQuery()
+            .Where(s => !s.IsDeleted
+                        && s.SubscriberProfileId == entity.SubscriberProfileId
+                        && s.MsisdnAssetId == msisdnAssetId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var sub in subs)
+        {
+            sub.IsDeleted = true;
+            sub.UpdatedById = actorUserId;
+            _subscriptionRepository.Update(sub);
+        }
 
         entity.DeprovisionStatus = "Pending";
         entity.PriorMsisdnAssetId ??= msisdnAssetId;

@@ -1,19 +1,18 @@
-﻿using Application.Common.Services.SecurityManager;
+﻿using Application.Common.Exceptions;
+using Application.Common.Security;
+using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
 
 namespace Application.Features.SecurityManager.Commands;
-
-
 
 public class UpdateMyProfileAvatarResult
 {
     public string? Data { get; init; }
 }
 
-public class UpdateMyProfileAvatarRequest : IRequest<UpdateMyProfileAvatarResult>
+public class UpdateMyProfileAvatarRequest : IRequest<UpdateMyProfileAvatarResult>, IRequireAuthenticatedOperator
 {
-    public string? UserId { get; init; }
     public string? Avatar { get; init; }
 }
 
@@ -21,7 +20,6 @@ public class UpdateMyProfileAvatarValidator : AbstractValidator<UpdateMyProfileA
 {
     public UpdateMyProfileAvatarValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Avatar).NotEmpty();
     }
 }
@@ -29,24 +27,26 @@ public class UpdateMyProfileAvatarValidator : AbstractValidator<UpdateMyProfileA
 public class UpdateMyProfileAvatarHandler : IRequestHandler<UpdateMyProfileAvatarRequest, UpdateMyProfileAvatarResult>
 {
     private readonly ISecurityService _securityService;
+    private readonly IOperatorContext _operatorContext;
 
-    public UpdateMyProfileAvatarHandler(ISecurityService securityService)
+    public UpdateMyProfileAvatarHandler(ISecurityService securityService, IOperatorContext operatorContext)
     {
         _securityService = securityService;
+        _operatorContext = operatorContext;
     }
 
     public async Task<UpdateMyProfileAvatarResult> Handle(UpdateMyProfileAvatarRequest request, CancellationToken cancellationToken)
     {
+        var userId = OperatorActor.RequireUserId(_operatorContext);
+
         await _securityService.ChangeAvatarAsync(
-            request.UserId ?? "",
+            userId,
             request.Avatar ?? "",
-            cancellationToken
-            );
+            cancellationToken);
 
         return new UpdateMyProfileAvatarResult
         {
-            Data = "Update Avatar Success"
+            Data = "Update Avatar Success",
         };
     }
 }
-

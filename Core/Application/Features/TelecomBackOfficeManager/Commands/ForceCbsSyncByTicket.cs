@@ -26,12 +26,11 @@ public sealed class ForceCbsSyncResult
     public bool TicketAutoResolved { get; init; }
 }
 
-public class ForceCbsSyncByTicketRequest : IRequest<ForceCbsSyncResult>, IRequirePermission
+public class ForceCbsSyncByTicketRequest : IRequest<ForceCbsSyncResult>, IRequireAnyPermission
 {
     public string TicketId { get; init; } = "";
-    public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
-    public string PermissionKey => PermissionCatalog.NetworkTechnicalSync;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalSyncAny;
 }
 
 public class ForceCbsSyncByTicketValidator : AbstractValidator<ForceCbsSyncByTicketRequest>
@@ -49,6 +48,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
     private readonly IUserAuditService _audit;
     private readonly ISmsGatewayIntegration _sms;
     private readonly NumberSequenceService _numberSequenceService;
+    private readonly IOperatorContext _operator;
 
     public ForceCbsSyncByTicketHandler(
         IQueryContext query,
@@ -58,7 +58,8 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
         IBillingSystemIntegration billing,
         IUserAuditService audit,
         ISmsGatewayIntegration sms,
-        NumberSequenceService numberSequenceService)
+        NumberSequenceService numberSequenceService,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _operationRepository = operationRepository;
@@ -68,13 +69,16 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
         _audit = audit;
         _sms = sms;
         _numberSequenceService = numberSequenceService;
+        _operator = operatorContext;
     }
 
     public async Task<ForceCbsSyncResult> Handle(ForceCbsSyncByTicketRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var ticket = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
             .Where(t => t.Id == request.TicketId)
-            .Select(t => new { t.Id, t.TicketNumber, t.Msisdn, t.IssueType, t.SubscriberProfileId, t.CustomerId })
+            .Select(t => new { t.Id, t.TicketNumber, t.Msisdn, t.IssueType, t.SubscriberProfileId, t.CustomerId, t.BranchId })
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException("التذكرة غير موجودة.");
 
@@ -84,10 +88,10 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
             ticket.Msisdn,
             cancellationToken);
 
-        await EnsureTicketLinkedAsync(ticket.Id, line, request.ActorUserId, cancellationToken);
+        await EnsureTicketLinkedAsync(ticket.Id, line, actorUserId, cancellationToken);
 
         var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.ServiceModification);
-        var operationNumber = _numberSequenceService.GenerateNumber(entityName, prefix, "", useDate: false);
+        var operationNumber = await _numberSequenceService.GenerateNumberAsync(entityName, prefix, "", useDate: false, cancellationToken: cancellationToken);
 
         var operation = new TelecomOperationRequest
         {
@@ -101,7 +105,8 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
             ProductId = line.ProductId,
             Notes = $"Force CBS sync from ticket {ticket.TicketNumber}",
             ConfirmedAtUtc = DateTime.UtcNow,
-            CreatedById = request.ActorUserId,
+            CreatedById = actorUserId,
+            BranchId = ticket.BranchId,
         };
 
         await _operationRepository.CreateAsync(operation, cancellationToken);
@@ -113,7 +118,8 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
                 operation.Number,
                 line.Msisdn,
                 TelecomOperationKind.ServiceModification,
-                CorrelationId: ticket.Id),
+                CorrelationId: ticket.Id,
+                BranchId: operation.BranchId),
             cancellationToken);
 
         if (!provision.Success)
@@ -126,7 +132,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
         }
 
         operation.Status = TelecomOperationStatus.Completed;
-        operation.UpdatedById = request.ActorUserId;
+        operation.UpdatedById = actorUserId;
         _operationRepository.Update(operation);
         await _unitOfWork.SaveAsync(cancellationToken);
 
@@ -135,7 +141,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.NetworkCommandExecuted,
                 EntityType = "Huawei_CBS",
                 EntityId = ticket.Id,
@@ -159,7 +165,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
             ticket.TicketNumber,
             line.Msisdn,
             provision.Message,
-            request.ActorUserId,
+            actorUserId,
             request.IpAddress,
             cancellationToken);
 
@@ -180,7 +186,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
         string ticketNumber,
         string msisdn,
         string provisionMessage,
-        string? actorUserId,
+        string actorUserId,
         string? ipAddress,
         CancellationToken cancellationToken)
     {
@@ -202,7 +208,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = actorUserId ?? "",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.TicketResolved,
                 EntityType = nameof(TelecomTechnicalTicket),
                 EntityId = ticketEntity.Id,
@@ -224,7 +230,7 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
     private async Task EnsureTicketLinkedAsync(
         string ticketId,
         TechnicalTicketLineContext line,
-        string? actorUserId,
+        string actorUserId,
         CancellationToken cancellationToken)
     {
         var entity = await _ticketRepository.GetAsync(ticketId, cancellationToken);

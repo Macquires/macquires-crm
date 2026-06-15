@@ -13,6 +13,7 @@ public class BillingIntegrationLogConfiguration : BaseEntityConfiguration<Billin
         base.Configure(builder);
 
         builder.Property(x => x.TelecomOperationRequestId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.BranchId).HasMaxLength(50);
         builder.Property(x => x.TelecomPaymentTransactionId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.Message).HasMaxLength(DescriptionConsts.MaxLength).IsRequired();
         builder.Property(x => x.IntegrationTarget).HasMaxLength(NameConsts.MaxLength).IsRequired(false);
@@ -39,5 +40,8 @@ public class BillingIntegrationLogConfiguration : BaseEntityConfiguration<Billin
 
         builder.HasIndex(x => new { x.TelecomOperationRequestId, x.AttemptNumber })
             .HasFilter("[TelecomOperationRequestId] IS NOT NULL");
+
+        builder.HasIndex(x => x.BranchId)
+            .HasFilter("[BranchId] IS NOT NULL");
     }
 }

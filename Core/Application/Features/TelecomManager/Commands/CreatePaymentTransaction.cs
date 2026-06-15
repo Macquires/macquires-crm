@@ -1,3 +1,4 @@
+using Application.Common.Security;
 using Application.Common.Telecom.PaymentServices;
 using Domain.Enums;
 using FluentValidation;
@@ -13,8 +14,9 @@ public class CreatePaymentTransactionResult
     public PaymentTransactionStatus Status { get; init; }
 }
 
-public class CreatePaymentTransactionRequest : IRequest<CreatePaymentTransactionResult>
+public class CreatePaymentTransactionRequest : IRequest<CreatePaymentTransactionResult>, IRequirePermission
 {
+    public string PermissionKey => PermissionCatalog.TelecomLineRecharge;
     public PaymentTransactionType Type { get; init; } = PaymentTransactionType.Recharge;
     public string CustomerId { get; init; } = "";
     public string SubscriptionId { get; init; } = "";
@@ -22,7 +24,6 @@ public class CreatePaymentTransactionRequest : IRequest<CreatePaymentTransaction
     public PaymentChannel PaymentChannel { get; init; } = PaymentChannel.Wallet;
     public PaymentServiceChannel ServiceChannel { get; init; } = PaymentServiceChannel.Showroom;
     public string? VoucherCode { get; init; }
-    public string? CreatedById { get; init; }
 }
 
 public class CreatePaymentTransactionValidator : AbstractValidator<CreatePaymentTransactionRequest>
@@ -39,13 +40,21 @@ public class CreatePaymentTransactionValidator : AbstractValidator<CreatePayment
 public class CreatePaymentTransactionHandler : IRequestHandler<CreatePaymentTransactionRequest, CreatePaymentTransactionResult>
 {
     private readonly IPaymentServicesOrchestrator _orchestrator;
+    private readonly IOperatorContext _operator;
 
-    public CreatePaymentTransactionHandler(IPaymentServicesOrchestrator orchestrator) => _orchestrator = orchestrator;
+    public CreatePaymentTransactionHandler(
+        IPaymentServicesOrchestrator orchestrator,
+        IOperatorContext operatorContext)
+    {
+        _orchestrator = orchestrator;
+        _operator = operatorContext;
+    }
 
     public async Task<CreatePaymentTransactionResult> Handle(
         CreatePaymentTransactionRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         PaymentDraftResult draft;
         if (request.Type == PaymentTransactionType.VoucherRedeem)
         {
@@ -59,7 +68,7 @@ public class CreatePaymentTransactionHandler : IRequestHandler<CreatePaymentTran
                 request.SubscriptionId,
                 request.VoucherCode,
                 request.ServiceChannel,
-                request.CreatedById,
+                actorUserId,
                 cancellationToken);
         }
         else if (request.Type == PaymentTransactionType.Recharge)
@@ -70,7 +79,7 @@ public class CreatePaymentTransactionHandler : IRequestHandler<CreatePaymentTran
                 request.Amount,
                 request.PaymentChannel,
                 request.ServiceChannel,
-                request.CreatedById,
+                actorUserId,
                 cancellationToken);
         }
         else

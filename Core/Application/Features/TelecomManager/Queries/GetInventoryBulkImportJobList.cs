@@ -28,13 +28,13 @@ public class GetInventoryBulkImportJobListResult
     public List<InventoryBulkImportJobListItemDto> Data { get; init; } = new();
 }
 
-public class GetInventoryBulkImportJobListRequest : IRequest<GetInventoryBulkImportJobListResult>
+public class GetInventoryBulkImportJobListRequest : IRequest<GetInventoryBulkImportJobListResult>, IRequireAnyPermission
 {
     public int Take { get; init; } = 25;
     public int Skip { get; init; }
     public InventoryBulkImportJobStatus? StatusFilter { get; init; }
     public BulkImportJobType? JobTypeFilter { get; init; }
-    public string? ActorUserId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => BulkImportPermissionSets.MonitorAny;
 }
 
 public class GetInventoryBulkImportJobListHandler
@@ -42,11 +42,16 @@ public class GetInventoryBulkImportJobListHandler
 {
     private readonly IQueryContext _query;
     private readonly IUserScopeService _userScope;
+    private readonly IOperatorContext _operator;
 
-    public GetInventoryBulkImportJobListHandler(IQueryContext query, IUserScopeService userScope)
+    public GetInventoryBulkImportJobListHandler(
+        IQueryContext query,
+        IUserScopeService userScope,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _userScope = userScope;
+        _operator = operatorContext;
     }
 
     public async Task<GetInventoryBulkImportJobListResult> Handle(
@@ -55,16 +60,14 @@ public class GetInventoryBulkImportJobListHandler
     {
         var take = Math.Clamp(request.Take, 1, 100);
         var skip = Math.Max(0, request.Skip);
+        var actorUserId = OperatorActor.RequireUserId(_operator);
 
         IQueryable<InventoryBulkImportJob> query = _query.InventoryBulkImportJob.AsNoTracking().IsDeletedEqualTo();
 
-        if (!string.IsNullOrEmpty(request.ActorUserId))
+        if (!await _userScope.IsUnrestrictedAdminAsync(actorUserId, cancellationToken))
         {
-            if (!await _userScope.IsUnrestrictedAdminAsync(request.ActorUserId, cancellationToken))
-            {
-                var visible = await _userScope.GetVisibleUserIdsAsync(request.ActorUserId, cancellationToken);
-                query = query.Where(j => j.CreatedById != null && visible.Contains(j.CreatedById));
-            }
+            var visible = await _userScope.GetVisibleUserIdsAsync(actorUserId, cancellationToken);
+            query = query.Where(j => j.CreatedById != null && visible.Contains(j.CreatedById));
         }
 
         if (request.StatusFilter.HasValue)

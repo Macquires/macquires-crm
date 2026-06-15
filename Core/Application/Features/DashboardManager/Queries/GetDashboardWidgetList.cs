@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
@@ -39,10 +40,11 @@ public class GetDashboardWidgetListResult
     public List<GetDashboardWidgetListDto>? Data { get; init; }
 }
 
-public class GetDashboardWidgetListRequest : IRequest<GetDashboardWidgetListResult>
+public class GetDashboardWidgetListRequest : IRequest<GetDashboardWidgetListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; }
     public bool ActiveOnly { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.AdminAny;
 }
 
 public class GetDashboardWidgetListHandler

@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,10 +11,10 @@ public class DeleteCustomerResult
     public Customer? Data { get; set; }
 }
 
-public class DeleteCustomerRequest : IRequest<DeleteCustomerResult>
+public class DeleteCustomerRequest : IRequest<DeleteCustomerResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
-    public string? DeletedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => CustomerPermissionSets.DeleteAny;
 }
 
 public class DeleteCustomerValidator : AbstractValidator<DeleteCustomerRequest>
@@ -28,14 +29,16 @@ public class DeleteCustomerHandler : IRequestHandler<DeleteCustomerRequest, Dele
 {
     private readonly ICommandRepository<Customer> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public DeleteCustomerHandler(
         ICommandRepository<Customer> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<DeleteCustomerResult> Handle(DeleteCustomerRequest request, CancellationToken cancellationToken)
@@ -48,7 +51,7 @@ public class DeleteCustomerHandler : IRequestHandler<DeleteCustomerRequest, Dele
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.DeletedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
 
         _repository.Delete(entity);
         await _unitOfWork.SaveAsync(cancellationToken);

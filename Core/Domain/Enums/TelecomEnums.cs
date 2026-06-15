@@ -57,7 +57,9 @@ public enum TelecomOperationStatus
   /// <summary>§16 BDR advance cash collected by FrontOffice; awaiting BackOffice audit.</summary>
     Paid_Pending_BackOffice_Clearance = 9,
     /// <summary>Claimed by agent and currently being processed.</summary>
-    In_Progress = 10
+    In_Progress = 10,
+    /// <summary>Confirmed locally; CBS/HLR deferred until effective date.</summary>
+    Scheduled = 11
 }
 
 public enum SubscriberType

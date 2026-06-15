@@ -9,11 +9,12 @@ public class GetDashboardWidgetDataResult
     public DashboardWidgetDataDto Data { get; init; } = null!;
 }
 
-public class GetDashboardWidgetDataRequest : IRequest<GetDashboardWidgetDataResult>
+public class GetDashboardWidgetDataRequest : IRequest<GetDashboardWidgetDataResult>, IRequireAnyPermission
 {
     public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
     public string ProviderKey { get; init; } = null!;
     public string? PreviewPersona { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
 }
 
 public class GetDashboardWidgetDataHandler : IRequestHandler<GetDashboardWidgetDataRequest, GetDashboardWidgetDataResult>

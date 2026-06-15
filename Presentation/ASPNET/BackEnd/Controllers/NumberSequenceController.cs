@@ -1,8 +1,8 @@
 ﻿using Application.Features.NumberSequenceManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -14,8 +14,7 @@ public class NumberSequenceController : BaseApiController
     {
     }
 
-
-    [Authorize]
+    [RequireAdminSettingsManage]
     [HttpGet("GetNumberSequenceList")]
     public async Task<ActionResult<ApiSuccessResult<GetNumberSequenceListResult>>> GetNumberSequenceListAsync(
         CancellationToken cancellationToken,
@@ -32,8 +31,4 @@ public class NumberSequenceController : BaseApiController
             Content = response
         });
     }
-
-
 }
-
-

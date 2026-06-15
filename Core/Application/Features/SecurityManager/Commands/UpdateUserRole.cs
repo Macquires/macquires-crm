@@ -1,4 +1,5 @@
 ﻿using Application.Common.Audit;
+using Application.Common.Security;
 using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
@@ -12,12 +13,12 @@ public class UpdateUserRoleResult
     public List<string>? Data { get; set; }
 }
 
-public class UpdateUserRoleRequest : IRequest<UpdateUserRoleResult>
+public class UpdateUserRoleRequest : IRequest<UpdateUserRoleResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? UserId { get; init; }
     public string? RoleName { get; init; }
     public bool? AccessGranted { get; init; }
-    public string? UpdatedById { get; init; }
 }
 
 public class UpdateUserRoleValidator : AbstractValidator<UpdateUserRoleRequest>
@@ -33,15 +34,22 @@ public class UpdateUserRoleHandler : IRequestHandler<UpdateUserRoleRequest, Upda
 {
     private readonly ISecurityService _securityService;
     private readonly IUserAuditService _audit;
+    private readonly IOperatorContext _operator;
 
-    public UpdateUserRoleHandler(ISecurityService securityService, IUserAuditService audit)
+    public UpdateUserRoleHandler(
+        ISecurityService securityService,
+        IUserAuditService audit,
+        IOperatorContext operatorContext)
     {
         _securityService = securityService;
         _audit = audit;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateUserRoleResult> Handle(UpdateUserRoleRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var result = await _securityService.UpdateUserRoleAsync(
             request.UserId ?? "",
             request.RoleName ?? "",
@@ -52,7 +60,7 @@ public class UpdateUserRoleHandler : IRequestHandler<UpdateUserRoleRequest, Upda
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.UpdatedById ?? request.UserId ?? "system",
+                ActorUserId = actorUserId,
                 UserId = request.UserId,
                 ActionType = UserAuditActionTypes.UserRolesUpdated,
                 EntityType = "ApplicationUser",

@@ -15,7 +15,6 @@ public class DeleteValueAddedServiceRequest : IRequest<DeleteValueAddedServiceRe
 {
     public string PermissionKey => PermissionCatalog.TelecomVasManage;
     public string Id { get; init; } = "";
-    public string? UpdatedById { get; init; }
 }
 
 public class DeleteValueAddedServiceValidator : AbstractValidator<DeleteValueAddedServiceRequest>
@@ -27,11 +26,16 @@ public class DeleteValueAddedServiceHandler : IRequestHandler<DeleteValueAddedSe
 {
     private readonly ICommandRepository<TelecomValueAddedService> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
-    public DeleteValueAddedServiceHandler(ICommandRepository<TelecomValueAddedService> repository, IUnitOfWork unitOfWork)
+    public DeleteValueAddedServiceHandler(
+        ICommandRepository<TelecomValueAddedService> repository,
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<DeleteValueAddedServiceResult> Handle(
@@ -42,7 +46,7 @@ public class DeleteValueAddedServiceHandler : IRequestHandler<DeleteValueAddedSe
             ?? throw new InvalidOperationException("VAS service not found.");
 
         entity.IsDeleted = true;
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.UpdatedAtUtc = DateTime.UtcNow;
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);

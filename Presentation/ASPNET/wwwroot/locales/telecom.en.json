@@ -51,8 +51,8 @@
       },
       "changeNumber": {
         "aria": "Open change number wizard",
-        "title": "Change number",
-        "sub": "CNR"
+        "title": "Change MSISDN",
+        "sub": "CNR / MNP"
       },
       "termination": {
         "aria": "Open line termination wizard",
@@ -93,6 +93,11 @@
         "aria": "Open trouble ticket wizard",
         "title": "Trouble ticket",
         "sub": "Ticket"
+      },
+      "recharge": {
+        "aria": "Open prepaid recharge flow",
+        "title": "Recharge",
+        "sub": "Top-up"
       }
     },
     "customerWizard": {
@@ -233,7 +238,13 @@
           "voice": "Voice",
           "data": "Data",
           "sms": "SMS"
-        }
+        },
+        "prorationPreview": "Financial preview",
+        "priceDifference": "Price difference",
+        "proratedAmount": "Prorated amount (this cycle)",
+        "walletBalance": "Wallet balance",
+        "prorationInsufficient": "Insufficient balance to cover the prorated migration fee.",
+        "daysRemaining": "Days remaining in cycle: {days}/{total}"
       },
       "activateIccid": "SIM ICCID (triple binding)",
       "lineType": {
@@ -383,6 +394,7 @@
       "thOffer": "Target offer",
       "loading": "Loading…",
       "empty": "No requests yet.",
+      "scheduledEffective": "Effective date",
       "dash": "—",
       "lostStolenBadge": "Lost/stolen",
       "kindLabels": {
@@ -409,11 +421,13 @@
         "3": "Completed",
         "4": "Failed",
         "5": "Legal review",
-        "6": "Provisioning"
+        "6": "Provisioning",
+        "11": "Scheduled"
       },
       "pipeline": {
         "draft": "Draft",
         "docs": "Documents",
+        "scheduled": "Scheduled",
         "provisioning": "Provisioning",
         "done": "Completed"
       }
@@ -700,6 +714,7 @@
         "simIccid": "SIM ICCID (19 digits)",
         "confirmActivate": "Confirm activation",
         "confirmMigrate": "Confirm migration",
+        "confirmChangeGsm": "Confirm line type change",
         "confirmTerminate": "Confirm termination",
         "confirmChangeNumber": "Confirm number change",
         "confirmSimSwap": "Confirm SIM swap",
@@ -745,6 +760,7 @@
         "noOpId": "Operation ID was not returned",
         "confirmFailed": "Confirmation failed",
         "executed": "Completed",
+        "scheduledOk": "Operation scheduled — will run on the effective date.",
         "searchOwnerHint": "Enter national ID or mobile (2+ chars)",
         "noSubscriberProfile": "Selected customer has no subscriber profile",
         "newLineIncomplete": "Complete MSISDN, package, and ICCID (19 digits)",
@@ -908,6 +924,12 @@
       "subtitle": "Tickets, catalog, and network",
       "bulkImport": "Bulk import",
       "audit": "My audit trail",
+      "historicalLedger": "Historical ledger",
+      "tabs": {
+        "active": "Active work queue",
+        "tech": "Technical & network operations",
+        "historical": "Historical archive (Ledger)"
+      },
       "bentoBulk": "Import monitor",
       "openTickets": "Active work queue",
       "catalogSection": "Product catalog",
@@ -938,6 +960,7 @@
         "inProgress": "In progress",
         "critical": "Critical priority",
         "allTicketsArchive": "Archive & history",
+        "historicalLedger": "Historical ledger",
         "treatTicket": "Work ticket",
         "saveStatus": "Save status",
         "quickResolve": "Quick close (resolved)",
@@ -965,7 +988,56 @@
           "approved": "Request approved — CBS/HLR execution started",
           "rejected": "Request rejected",
           "paymentOk": "Verified",
-          "paymentPending": "Not verified"
+          "paymentPending": "Not verified",
+          "slaStatus": "SLA status",
+          "paymentPrefix": "PAY-",
+          "slaBreached": "SLA breached",
+          "slaLeft": "{time} left",
+          "archived": "Archived",
+          "paidPendingAudit": "Paid: pending audit",
+          "approvedBadge": "Approved",
+          "rejectedBadge": "Rejected",
+          "financialAuditRequired": "Financial audit permission required",
+          "bdrLedgerTitle": "Financial ledger (BDR audit)",
+          "bdrVerified": "Verified & audited",
+          "accountType": "Account type",
+          "outstandingDebt": "Outstanding debt",
+          "writeOffWaiver": "Write-off waiver",
+          "cashCollection": "Cash collection",
+          "recordId": "ID",
+          "recordCreated": "Created",
+          "approvedBy": "Approved by {user} at {time}",
+          "rejectedBy": "Rejected by {user} at {time}",
+          "auditor": "Auditor"
+        },
+        "pipeline": {
+          "Pending_BackOffice_Approval": "Pending back-office approval",
+          "Approved_Pending_Cash": "Approved — pending cash collection",
+          "Completed": "Completed",
+          "Failed": "Failed",
+          "Paid_Pending_Audit": "Paid — pending audit",
+          "In_Progress": "In progress",
+          "Executing": "Executing",
+          "Draft": "Draft",
+          "Provisioning_Error": "Provisioning error"
+        },
+        "accountTypes": {
+          "postpaidIndividual": "Postpaid individual account",
+          "postpaidCorporate": "Postpaid corporate account"
+        },
+        "clearance": {
+          "Fraud": "Fraud",
+          "Payment": "Payment",
+          "Operational": "Operational",
+          "Regulatory": "Regulatory",
+          "Customer": "Customer",
+          "Billing": "Billing"
+        },
+        "validation": {
+          "IdentityDocumentRequired": "Identity document must be uploaded before approval.",
+          "PaymentReferenceRequired": "Payment reference is required before reconnect approval.",
+          "PaymentReferenceNotFound": "Payment reference was not found in the billing journal — check cashier or CBS.",
+          "OutstandingDebt": "Outstanding debt must be settled before approval."
         },
         "openCountHint": "Open + in progress",
         "techToolbar": "Technical actions toolbar",
@@ -1069,7 +1141,10 @@
           "simSwap": "SIM swap analytics",
           "takeOver": "Ownership transfer (TKO)",
           "sellingLine": "Line activation KPIs (Selling Line)",
-          "bulkImportHint": "Legacy migration · customers · packages"
+          "bulkImportHint": "Legacy migration · customers · packages",
+          "activeHint": "Branch-originated requests awaiting back-office review and decision (Pending_BackOffice_Approval).",
+          "techHint": "Technical support tickets, revenue leakage alerts, and HLR sync commands.",
+          "historicalHint": "Full record of decided requests (approved / rejected) for audit purposes."
         },
         "grid": {
           "ticketNumber": "Ticket #",
@@ -1121,6 +1196,7 @@
         "messages": {
           "loadError": "Load error",
           "accessDenied": "You do not have permission to open the back-office operations center. Sign out and sign in again to refresh permissions.",
+          "forbidden": "Security violation: you do not have the required permissions to execute this action.",
           "ticketsLoadFailed": "Could not load tickets",
           "syncfusionMissing": "Syncfusion grids are not loaded — reload the page",
           "gridInitFailed": "Could not render the ticket grid — try refreshing",
@@ -1202,6 +1278,7 @@
       "menu": "Line actions",
       "newLine": "Activate new line",
       "migrate": "Migrate package",
+      "changeGsm": "Change line type (CGT)",
       "simSwap": "SIM swap",
       "changeNumber": "Change MSISDN (CNR)",
       "suspension": "Temporary suspension (SUS)",
@@ -1417,6 +1494,15 @@
       "draftHint": "SIM- draft — upload documents then await Back Office approval."
     },
     "changeNumber": {
+      "modeLabel": "Operation type",
+      "modeInternal": "Internal change (CNR) — number from pool",
+      "modePortIn": "Port from another operator (MNP Port-In)",
+      "portInHint": "Requires donor MNP order reference and Back Office approval before activation.",
+      "portInMsisdn": "Number to port in",
+      "donorOperator": "Donor operator",
+      "portInReference": "MNP port order reference",
+      "portInReferencePh": "e.g. MNP-2026-00123",
+      "portInReferenceInvalid": "Invalid MNP reference format (MNP-…)",
       "currentMsisdn": "Current MSISDN",
       "targetMsisdn": "New number from pool",
       "changeReason": "Change reason",
@@ -1499,7 +1585,18 @@
       "clearanceOperational": "Operational",
       "reconnectReason": "Reconnect reason",
       "paymentReference": "Payment reference",
+      "paymentRefInvalid": "Payment reference must be 3–64 alphanumeric characters.",
+      "securityTicketId": "Security ticket ID",
+      "securityTicketInvalid": "Ticket ID must match format TT-XXXX, TKT-XXXX, RA-XXXX, or SEC-XXXX.",
+      "regulatoryDocumentNumber": "Official document number",
+      "regulatoryAttachment": "Regulatory decree attachment",
+      "regulatoryAttachmentInvalid": "Attachment must be PDF, PNG, or JPG.",
+      "regulatoryAttachmentTooLarge": "Attachment must be 5 MB or smaller.",
+      "regulatoryUploadFailed": "Could not upload regulatory attachment.",
+      "regulatoryMsisdnRequired": "Line MSISDN is required to upload the decree.",
+      "fraudSupervisorApproval": "Supervisor dual-approval (fraud clearance)",
       "fraudClearance": "Fraud clearance confirmed (supervisor)",
+      "notesOptional": "Notes (optional)",
       "boHint": "VAL-09-03: Back-office approval required.",
       "matrixTitle": "Eligibility matrix (§9)",
       "matrixLoading": "Checking eligibility…",
@@ -1515,6 +1612,43 @@
       "clearance": "Clearance type",
       "reason": "Reconnect reason",
       "sourceSuspension": "Prior suspension"
+    },
+    "bss": {
+      "paymentReference": "Payment reference",
+      "paymentRefInvalid": "Payment reference must be 3–64 alphanumeric characters.",
+      "securityTicketId": "Security ticket ID",
+      "securityTicketInvalid": "Invalid security ticket format (TT-/TKT-/RA-/SEC-).",
+      "regulatoryDocumentNumber": "Official document number",
+      "regulatoryAttachment": "Legal decree attachment",
+      "regulatoryAttachmentInvalid": "Attachment must be PDF, PNG, or JPG.",
+      "regulatoryAttachmentTooLarge": "Attachment must be 5 MB or smaller.",
+      "regulatoryUploadFailed": "Could not upload attachment.",
+      "identityReverifyRequired": "Identity re-verification document required.",
+      "identityReverifyUpload": "Upload identity document (KYC re-verification)",
+      "notesOptional": "Notes (optional)",
+      "originalTransactionRef": "Original transaction reference",
+      "originalTransactionRefInvalid": "Invalid original transaction reference.",
+      "iban": "IBAN (bank transfer)",
+      "ibanInvalid": "Invalid IBAN format.",
+      "walletMobile": "Syriatel Cash wallet number",
+      "walletMobileInvalid": "Invalid mobile format (09XXXXXXXX).",
+      "payoutDestination": "Payout destination",
+      "cgtMigrationPath": "Migration path",
+      "cgtPathStandard": "Standard",
+      "cgtPathRegulatory": "Regulatory / legal decree",
+      "cgtFinancialHint": "Prepaid→Postpaid or outstanding debt — payment reference and identity re-verification required.",
+      "policeReportNumber": "Police report / security ticket number",
+      "policeReportInvalid": "Invalid police report format (POL-/TT-/TKT-).",
+      "obligationSettlementRef": "Obligation settlement payment reference",
+      "obligationSettlementHint": "Outstanding device installments or contract balance — enter settlement reference before transfer.",
+      "supervisorConfirmation": "Supervisor confirmation (fraud barring)",
+      "supervisorConfirmationHint": "A supervisor must authorize fraud-based line barring before submission.",
+      "effectiveDateLabel": "Effective date",
+      "effectiveImmediate": "Immediate",
+      "effectiveScheduled": "Scheduled",
+      "effectiveDateRequired": "Pick a scheduled effective date.",
+      "effectiveDatePast": "Effective date cannot be in the past.",
+      "suspensionEndUsesEffectiveStart": "Reactivation end date. Suspension start follows the effective date below."
     },
     "suspensionModal": {
       "title": "Approve suspension (SUS)",
@@ -1545,6 +1679,7 @@
       "depositForfeit": "Forfeit",
       "depositRefund": "Refund previous owner",
       "identityRequired": "New owner ID document",
+      "newOwnerRequired": "Select the new owner subscriber profile",
       "pendingBackOffice": "Awaiting Back Office approval — POS cannot provision on network.",
       "val0702": "VAL-07-02: Outstanding debt blocks transfer.",
       "val0705": "VAL-07-05: Party is blacklisted.",
@@ -1586,7 +1721,8 @@
       "tabs": {
         "profile": "Profile & billing",
         "services": "Plans & services",
-        "tickets": "Complaints & support"
+        "tickets": "Complaints & support",
+        "timeline": "Unified timeline"
       },
       "sections": {
         "fullInfo": "Full subscriber information",
@@ -1857,6 +1993,7 @@
         "customer360OpenedWithoutId": "This page was opened without a target customer id.",
         "awaitBo": "Awaiting back-office approval from Telecom Hub.",
         "confirmed": "Confirmed and executed.",
+        "scheduledConfirmed": "Scheduled — will run automatically on the effective date.",
         "doneTitle": "Operation completed",
         "doneHint": "Review the Plans & services tab.",
         "prev": "Back",
@@ -2422,6 +2559,7 @@
       "kpisAria": "Operational KPIs",
       "misAria": "MIS reports",
       "strategicAria": "Strategic analytics",
+      "exceptionsAria": "Executive exception alerts",
       "noPermission": "You do not have permission to view this dashboard. Contact your administrator.",
       "loadFailed": "Could not load the dashboard. Reload the page or check your connection.",
       "cockpit": {
@@ -2457,6 +2595,42 @@
         "workloadMedium": "Medium",
         "workloadLow": "Low"
       },
+      "exceptions": {
+        "kicker": "Exception Management",
+        "title": "Alerts requiring action",
+        "scopePrefix": "Monitoring scope:",
+        "critical": "Critical",
+        "warning": "Warning",
+        "info": "Info",
+        "refresh": "Refresh",
+        "open": "Act",
+        "allClear": "No operational exceptions in the current scope — all stable.",
+        "weeklyDigest": "Weekly executive digest",
+        "exportCsv": "Export CSV",
+        "exportPdf": "Export PDF"
+      },
+      "supervisor": {
+        "kicker": "Supervisor governance",
+        "title": "Supervisor intervention audit",
+        "scopePrefix": "Scope:",
+        "total": "Total",
+        "bypass": "Bypass",
+        "approved": "Approved",
+        "refresh": "Refresh",
+        "loading": "Loading…",
+        "empty": "No interventions in current scope",
+        "colOp": "Operation",
+        "colBranch": "Branch",
+        "colType": "Type",
+        "colReason": "Reason",
+        "colStatus": "Status"
+      },
+      "geoHeatmap": {
+        "kicker": "Operational map",
+        "title": "Branch geo heatmap",
+        "scopePrefix": "Scope:",
+        "loading": "Loading…"
+      },
       "strategic": {
         "kicker": "Executive MIS",
         "title": "Strategic analytics",
@@ -2486,7 +2660,105 @@
         "loadFailedScope": "Load failed",
         "accessGeneralManager": "General manager",
         "accessRegionalDirector": "Regional director",
-        "accessBranchManager": "Branch manager"
+        "accessBranchManager": "Branch manager",
+        "churn30": "30-day churn",
+        "churn60": "60-day churn",
+        "revenueByCategory": "Revenue by category",
+        "exportExcel": "Export Excel",
+        "exportPdf": "Export PDF"
+      }
+    },
+    "executiveCommandCenter": {
+      "pageTitle": "Executive Command Center",
+      "noPermission": "You do not have permission to view the executive command center.",
+      "backToDashboard": "Back to dashboard",
+      "kicker": "Executive",
+      "title": "Executive Command Center",
+      "tabs": {
+        "scorecard": "Scorecard",
+        "network": "Network & integration",
+        "mis": "Financial MIS",
+        "operations": "Operations",
+        "workforce": "Workforce",
+        "alerts": "Alerts & audit"
+      },
+      "scope": {
+        "kicker": "Unified scope",
+        "scopePrefix": "Scope:",
+        "region": "Region",
+        "branch": "Branch",
+        "from": "From",
+        "to": "To",
+        "allSyria": "All Syria",
+        "allBranches": "All branches",
+        "apply": "Apply",
+        "lockedScope": "Locked scope"
+      },
+      "scorecard": {
+        "revenue": "Period revenue",
+        "arpu": "ARPU",
+        "churn30": "30-day churn",
+        "churn60": "60-day",
+        "operations": "Period operations",
+        "openTickets": "Open tickets",
+        "sla": "SLA",
+        "criticalAlerts": "Critical alerts",
+        "warnings": "Warnings",
+        "onlineNow": "Online now",
+        "bestBranch": "Top branch",
+        "weakestBranch": "Weakest branch"
+      },
+      "network": {
+        "demoBadge": "Demo",
+        "demoHint": "Simulated integration data — not a live external feed",
+        "successRate": "Integration success (sample)",
+        "trend7d": "Success trend (14 days)",
+        "recentLogs": "Recent integration logs",
+        "noData": "No data"
+      },
+      "operations": {
+        "readOnlyHint": "Read-only monitoring — no back-office execution rights",
+        "recharge": "Recharge today",
+        "payments": "Completed payments",
+        "activations": "Activations",
+        "pendingOps": "Pending operations",
+        "topPending": "Top pending operations",
+        "topOverdue": "SLA overdue tickets",
+        "open": "Open",
+        "none": "None"
+      },
+      "workforce": {
+        "allRoles": "All roles",
+        "showroom": "Showroom",
+        "backOffice": "Back office",
+        "callCenter": "Call center",
+        "refresh": "Refresh",
+        "exportCsv": "Export CSV",
+        "scopePrefix": "Scope:",
+        "employee": "Employee",
+        "branch": "Branch",
+        "score": "Score",
+        "ops": "Ops",
+        "tickets": "Tickets",
+        "detail": "Detail",
+        "noEmployees": "No employees in scope",
+        "ops7d": "Ops 7d",
+        "ops30d": "Ops 30d",
+        "score30d": "Score 30d"
+      },
+      "alerts": {
+        "exceptions": "Exceptions",
+        "supervisor": "Supervisor",
+        "open": "Open",
+        "allClear": "No critical exceptions in scope",
+        "supervisorHint": "Supervisor interventions in period",
+        "none": "No records"
+      },
+      "readingGuide": {
+        "title": "How to read this dashboard",
+        "step1": "Start with Scorecard — 8 KPI cards in 30 seconds.",
+        "step2": "Use the unified scope bar — same filters across all tabs.",
+        "step3": "Drill down: MIS, operations, workforce, alerts."
       }
     },
     "strategicAnalytics": {

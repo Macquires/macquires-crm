@@ -1,4 +1,5 @@
-﻿using Application;
+﻿using ASPNET.BackEnd.Health;
+using Application;
 using ASPNET.BackEnd.Common.Handlers;
 using Infrastructure;
 using Infrastructure.DataAccessManager.EFCore;
@@ -13,7 +14,7 @@ namespace ASPNET.BackEnd;
 
 public static class BackEndConfiguration
 {
-    public static IServiceCollection AddBackEndServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddBackEndServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         //>>> Application Layer
         services.AddApplicationServices();
@@ -24,6 +25,7 @@ public static class BackEndConfiguration
         services.AddExceptionHandler<CustomExceptionHandler>();
         services.AddSignalR();
         services.AddScoped<Application.Common.Integrations.IIntegrationLiveBroadcaster, ASPNET.BackEnd.Hubs.SignalRIntegrationLiveBroadcaster>();
+        services.AddScoped<Application.Common.Telecom.Analytics.IExecutiveAlertBroadcaster, ASPNET.BackEnd.Hubs.SignalRExecutiveAlertBroadcaster>();
 
         services.AddRateLimiter(options =>
         {
@@ -48,6 +50,18 @@ public static class BackEndConfiguration
             healthChecks.AddRedis(redis, name: "redis");
         }
 
+        var rabbitConnection = configuration["RabbitMq:ConnectionString"];
+        if (configuration.GetValue("RabbitMq:Enabled", false) && !string.IsNullOrWhiteSpace(rabbitConnection))
+        {
+            healthChecks.AddCheck("rabbitmq", new RabbitMqAsyncHealthCheck(rabbitConnection));
+        }
+
+        var simulatorUrl = configuration["TelecomIntegrations:SimulatorBaseUrl"];
+        if (!string.IsNullOrWhiteSpace(simulatorUrl))
+        {
+            healthChecks.AddUrlGroup(new Uri($"{simulatorUrl.TrimEnd('/')}/health"), name: "simulator");
+        }
+
         //>>> Common
 
         services.AddHttpContextAccessor();
@@ -64,7 +78,7 @@ public static class BackEndConfiguration
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
-                options.JsonSerializerOptions.WriteIndented = true;
+                options.JsonSerializerOptions.WriteIndented = environment.IsDevelopment();
             });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
@@ -110,6 +124,7 @@ public static class BackEndConfiguration
     {
         endpoints.MapControllers();
         endpoints.MapHub<ASPNET.BackEnd.Hubs.IntegrationLiveHub>("/hubs/integration-live");
+        endpoints.MapHub<ASPNET.BackEnd.Hubs.ExecutiveAlertsHub>("/hubs/executive-alerts");
         endpoints.MapHealthChecks("/health");
 
         return endpoints;

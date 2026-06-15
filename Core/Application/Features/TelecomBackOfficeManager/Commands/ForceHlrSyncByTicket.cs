@@ -22,12 +22,11 @@ public sealed class ForceHlrSyncResult
     public bool TicketAutoResolved { get; init; }
 }
 
-public class ForceHlrSyncByTicketRequest : IRequest<ForceHlrSyncResult>, IRequirePermission
+public class ForceHlrSyncByTicketRequest : IRequest<ForceHlrSyncResult>, IRequireAnyPermission
 {
     public string TicketId { get; init; } = "";
-    public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
-    public string PermissionKey => PermissionCatalog.NetworkTechnicalSync;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalSyncAny;
 }
 
 public class ForceHlrSyncByTicketValidator : AbstractValidator<ForceHlrSyncByTicketRequest>
@@ -43,6 +42,7 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
     private readonly IHLRLiveStatusService _hlr;
     private readonly IUserAuditService _audit;
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IOperatorContext _operator;
 
     public ForceHlrSyncByTicketHandler(
         IQueryContext query,
@@ -50,7 +50,8 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
         IUnitOfWork unitOfWork,
         IHLRLiveStatusService hlr,
         IUserAuditService audit,
-        ISmsGatewayIntegration sms)
+        ISmsGatewayIntegration sms,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _ticketRepository = ticketRepository;
@@ -58,10 +59,13 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
         _hlr = hlr;
         _audit = audit;
         _sms = sms;
+        _operator = operatorContext;
     }
 
     public async Task<ForceHlrSyncResult> Handle(ForceHlrSyncByTicketRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var ticket = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
             .Where(t => t.Id == request.TicketId)
             .Select(t => new { t.Id, t.TicketNumber, t.Msisdn, t.IssueType, t.SubscriberProfileId, t.CustomerId })
@@ -74,15 +78,13 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
             ticket.Msisdn,
             cancellationToken);
 
-        // HARD TECHNICAL PROVISIONING COMMAND: DELETE / Purge cache followed by a fresh Unbar
-        // We simulate this via ReprovisionSubscriberAsync which handles the "hard" logic in the integration layer
         var reprovision = await _hlr.ReprovisionSubscriberAsync(
             new HlrReprovisionRequest(
                 line.SubscriberProfileId,
                 line.Msisdn,
-                null, // IMSI handled by service
-                null, // ICCID handled by service
-                request.ActorUserId),
+                null,
+                null,
+                actorUserId),
             cancellationToken);
 
         if (!reprovision.Success)
@@ -93,7 +95,7 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.NetworkCommandExecuted,
                 EntityType = "Huawei_HLR",
                 EntityId = ticket.Id,
@@ -109,15 +111,14 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
             },
             cancellationToken);
 
-        // Auto-resolve ticket
         var ticketEntity = await _ticketRepository.GetAsync(ticket.Id, cancellationToken);
         if (ticketEntity != null && ticketEntity.Status != TechnicalTicketStatus.Resolved)
         {
             ticketEntity.Status = TechnicalTicketStatus.Resolved;
             ticketEntity.ResolutionNotes = $"تمت المزامنة الفنية الصلبة (HLR Reprovision) بنجاح — {reprovision.Message}";
-            ticketEntity.ResolvedByUserId = request.ActorUserId;
+            ticketEntity.ResolvedByUserId = actorUserId;
             ticketEntity.ResolvedAtUtc = DateTime.UtcNow;
-            ticketEntity.UpdatedById = request.ActorUserId;
+            ticketEntity.UpdatedById = actorUserId;
             _ticketRepository.Update(ticketEntity);
             await _unitOfWork.SaveAsync(cancellationToken);
 

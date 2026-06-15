@@ -20,13 +20,12 @@ public sealed class RejectBackOfficeTelecomOperationResult
     public string PipelineState { get; init; } = BackOfficeTelecomPipelineState.Failed;
 }
 
-public sealed class RejectBackOfficeTelecomOperationRequest : IRequest<RejectBackOfficeTelecomOperationResult>, IRequirePermission
+public sealed class RejectBackOfficeTelecomOperationRequest : IRequest<RejectBackOfficeTelecomOperationResult>, IRequireAnyPermission
 {
     public string OperationId { get; init; } = null!;
-    public string? ActorUserId { get; init; }
     public string RejectionReason { get; init; } = null!;
 
-    public string PermissionKey => PermissionCatalog.FinanceBdrExecute;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.BdrExecuteAny;
 }
 
 public sealed class RejectBackOfficeTelecomOperationValidator : AbstractValidator<RejectBackOfficeTelecomOperationRequest>
@@ -74,6 +73,8 @@ public sealed class RejectBackOfficeTelecomOperationHandler
         RejectBackOfficeTelecomOperationRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operatorContext);
+
         var operation = await _repository.GetAsync(request.OperationId, cancellationToken)
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
@@ -98,7 +99,7 @@ public sealed class RejectBackOfficeTelecomOperationHandler
 
         operation.DocumentStatus = TelecomDocumentStatus.Rejected;
         operation.Notes = AppendNote(operation.Notes, $"[BackOfficeRejected] {request.RejectionReason.Trim()}");
-        operation.UpdatedById = request.ActorUserId;
+        operation.UpdatedById = actorUserId;
 
         // GLOBAL HARDENING: Route B Bypass to Advance - Back-Office Reject (Critical Revenue Assurance)
         if (operation.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance)
@@ -122,7 +123,7 @@ public sealed class RejectBackOfficeTelecomOperationHandler
         await _orchestrator.TransitionAsync(
             operation,
             TelecomOperationStatus.Failed,
-            request.ActorUserId,
+            actorUserId,
             $"رفض باك أوفيس: {request.RejectionReason.Trim()}",
             cancellationToken);
 
@@ -132,7 +133,7 @@ public sealed class RejectBackOfficeTelecomOperationHandler
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.BackOfficeTelecomRejected,
                 EntityType = nameof(TelecomOperationRequest),
                 EntityId = request.OperationId,

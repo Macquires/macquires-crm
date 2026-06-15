@@ -164,6 +164,106 @@
         return `<span class="telecom-duotone-badge ${toneClass}">${pulse}${icon}<span class="telecom-duotone-badge__label">${escapeHtml(label)}</span></span>`;
     };
 
+    const TELECOM_OP_STATUS_SCHEDULED = 11;
+
+    const pickConfirmPayload = (res) => res?.data?.content ?? res?.data?.Content ?? {};
+
+    const operationStatusFromConfirm = (content) => {
+        const op = content?.data ?? content?.Data;
+        const raw = op?.status ?? op?.Status ?? content?.status ?? content?.Status;
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    const isScheduledOperationStatus = (status) => Number(status) === TELECOM_OP_STATUS_SCHEDULED;
+
+    const confirmStatusHints = (content, locale) => {
+        const ar = content?.statusHintAr ?? content?.StatusHintAr ?? '';
+        const en = content?.statusHintEn ?? content?.StatusHintEn ?? '';
+        const isEn = String(locale || global.TelecomI18n?.getLang?.() || 'ar').toLowerCase().startsWith('en');
+        return isEn ? en || ar : ar || en;
+    };
+
+    const operationStatusBootstrapClass = (status) => {
+        const s = Number(status);
+        if (s === 3) return 'bg-success';
+        if (s === 6) return 'bg-primary';
+        if (s === 5) return 'bg-info text-dark';
+        if (s === 2) return 'bg-warning text-dark';
+        if (s === 4) return 'bg-danger';
+        if (s === TELECOM_OP_STATUS_SCHEDULED) return 'bg-info text-dark telecom-op-status-scheduled';
+        if (s === 1) return 'bg-secondary';
+        return 'bg-secondary';
+    };
+
+    const pipelineStepsForOperationStatus = (status, labelFn) => {
+        const lbl = typeof labelFn === 'function' ? labelFn : (k, fb) => fb;
+        const s = Number(status);
+        const failed = s === 4;
+        const scheduledDone = s === 3 || s === 1 || s === 6;
+        return [
+            { label: lbl('ops.pipeline.draft', 'Draft'), done: s !== 4, active: s === 0, failed },
+            {
+                label: lbl('ops.pipeline.docs', 'Documents'),
+                done: s >= 5 || s === 6 || s === 3 || s === 1 || s === TELECOM_OP_STATUS_SCHEDULED,
+                active: s === 5,
+                failed,
+            },
+            {
+                label: lbl('ops.pipeline.scheduled', 'Scheduled'),
+                done: scheduledDone,
+                active: s === TELECOM_OP_STATUS_SCHEDULED,
+                failed,
+            },
+            {
+                label: lbl('ops.pipeline.provisioning', 'Provisioning'),
+                done: s === 3 || s === 1,
+                active: s === 6,
+                failed,
+            },
+            { label: lbl('ops.pipeline.done', 'Done'), done: s === 3, active: false, failed },
+        ];
+    };
+
+    const showConfirmToast = (confirmRes, options = {}) => {
+        const content = pickConfirmPayload(confirmRes);
+        const status = operationStatusFromConfirm(content);
+        const scheduled = isScheduledOperationStatus(status);
+        const hint = confirmStatusHints(content, options.locale);
+        const title = scheduled
+            ? badgeT('ops.statusLabels.11', options.scheduledTitle || 'مجدول')
+            : options.successTitle || badgeT('customerList.swal.executed', 'تم التنفيذ');
+        if (typeof global.Swal !== 'undefined') {
+            global.Swal.fire({
+                icon: scheduled ? 'info' : options.icon || 'success',
+                title,
+                text: hint || undefined,
+                timer: scheduled && hint ? 4200 : hint ? 2800 : options.timer || 1800,
+                showConfirmButton: !!(scheduled && hint),
+            });
+        }
+        return { scheduled, hint, status, content };
+    };
+
+    const pickScheduledEffectiveDate = (row) =>
+        row?.scheduledEffectiveDateUtc ?? row?.ScheduledEffectiveDateUtc ?? null;
+
+    const formatScheduledEffectiveDate = (utc, locale) => {
+        if (!utc) return '';
+        try {
+            const d = new Date(utc);
+            if (Number.isNaN(d.getTime())) return String(utc);
+            const loc = String(locale || global.TelecomI18n?.getLang?.() || 'ar')
+                .toLowerCase()
+                .startsWith('en')
+                ? 'en-GB'
+                : 'ar-SY';
+            return d.toLocaleString(loc, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+        } catch {
+            return String(utc);
+        }
+    };
+
     const isCorporateSubscriberKind = (kind) => {
         const raw = kind;
         const s = String(raw ?? '').trim().toLowerCase();
@@ -219,6 +319,13 @@
             const pulse = Number(status) === 0;
             return render(label, cls, pulse);
         },
+        operationStatusBootstrapClass,
+        operationStatusFromConfirm,
+        isScheduledOperationStatus,
+        pipelineStepsForOperationStatus,
+        showConfirmToast,
+        pickScheduledEffectiveDate,
+        formatScheduledEffectiveDate,
         /** B2C / B2B subscriber kind (Customer list Type column). */
         subscriberKind(kind, labelOverride) {
             const isCorporate = isCorporateSubscriberKind(kind);

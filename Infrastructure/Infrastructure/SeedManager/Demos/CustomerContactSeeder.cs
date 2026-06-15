@@ -59,10 +59,11 @@ public class CustomerContactSeeder
                 var lastName = GetRandomString(ArabicLastNames, random);
                 var prefix = random.Next(2) == 0 ? "093" : "099";
 
+                var contactNumber = await _numberSequenceService.GenerateNumberAsync(nameof(CustomerContact), "", "CC");
                 customerContacts.Add(new CustomerContact
                 {
                     Name = $"{firstName} {lastName}",
-                    Number = _numberSequenceService.GenerateNumber(nameof(CustomerContact), "", "CC"),
+                    Number = contactNumber,
                     CustomerId = customerId,
                     JobTitle = GetRandomString(JobTitles, random),
                     EmailAddress = $"contact{random.Next(1000, 9999)}@syriatel-demo.local",

@@ -1,3 +1,4 @@
+using Application.Common.Security;
 using Application.Common.Settings;
 using MediatR;
 
@@ -8,8 +9,9 @@ public class GetGlobalSettingsResult
     public GlobalSettingsSnapshotDto? Data { get; init; }
 }
 
-public class GetGlobalSettingsRequest : IRequest<GetGlobalSettingsResult>
+public class GetGlobalSettingsRequest : IRequest<GetGlobalSettingsResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.SettingsManageAny;
 }
 
 public class GetGlobalSettingsHandler : IRequestHandler<GetGlobalSettingsRequest, GetGlobalSettingsResult>

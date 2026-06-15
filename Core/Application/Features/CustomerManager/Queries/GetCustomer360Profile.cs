@@ -1,4 +1,5 @@
 using Application.Common.Audit;
+using Application.Common.Security;
 using Application.Features.TelecomBackOfficeManager.Queries;
 using Application.Features.TelecomManager.Queries;
 using MediatR;
@@ -14,9 +15,10 @@ public class GetCustomer360ProfileResult
     public List<UserAuditLogListItemDto> ActivityLogs { get; init; } = new();
 }
 
-public class GetCustomer360ProfileRequest : IRequest<GetCustomer360ProfileResult>
+public class GetCustomer360ProfileRequest : IRequest<GetCustomer360ProfileResult>, IRequirePermission
 {
     public string CustomerId { get; init; } = "";
+    public string PermissionKey => PermissionCatalog.CustomerView;
 }
 
 public class GetCustomer360ProfileHandler : IRequestHandler<GetCustomer360ProfileRequest, GetCustomer360ProfileResult>

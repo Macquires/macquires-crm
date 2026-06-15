@@ -4,8 +4,9 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>Unified payment ledger (PAY-) for recharge, vouchers, bill pay, and activation deposits.</summary>
-public class TelecomPaymentTransaction : BaseEntity
+public class TelecomPaymentTransaction : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public string Number { get; set; } = null!;
 
     public string? CorrelationId { get; set; }

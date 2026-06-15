@@ -47,7 +47,7 @@ public sealed class TelecomInHlrProvisioningLogSeeder
         var operations = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
             .OrderByDescending(x => x.CreatedAtUtc)
             .Take(30)
-            .Select(x => new { x.Id, x.Number })
+            .Select(x => new { x.Id, x.Number, x.BranchId })
             .ToListAsync();
 
         var now = DateTime.UtcNow;
@@ -70,6 +70,7 @@ public sealed class TelecomInHlrProvisioningLogSeeder
                 IntegrationTarget = ProvisioningIntegrationLogTargets.InMock,
                 CorrelationId = Guid.CreateVersion7().ToString(),
                 CreatedAtUtc = now.AddMinutes(-(i * 7 + 3)),
+                BranchId = op?.BranchId,
             });
         }
 
@@ -89,7 +90,7 @@ public sealed class TelecomInHlrProvisioningLogSeeder
         var operations = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
             .OrderByDescending(x => x.CreatedAtUtc)
             .Take(30)
-            .Select(x => new { x.Id, x.Number })
+            .Select(x => new { x.Id, x.Number, x.BranchId })
             .ToListAsync();
 
         var now = DateTime.UtcNow;
@@ -123,6 +124,7 @@ public sealed class TelecomInHlrProvisioningLogSeeder
                 IntegrationTarget = targets[i % targets.Length],
                 CorrelationId = Guid.CreateVersion7().ToString(),
                 CreatedAtUtc = now.AddMinutes(-(i * 5 + 1)),
+                BranchId = op?.BranchId,
             });
         }
 

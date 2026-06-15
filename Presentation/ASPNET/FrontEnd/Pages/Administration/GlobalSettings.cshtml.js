@@ -162,7 +162,6 @@ window.GeoCityAdmin = {
                     }
                     if (!isValid) return;
 
-                    const uid = StorageManager.getUserId();
                     let response;
                     if (state.id === '') {
                         response = await services.createMainData({
@@ -170,10 +169,9 @@ window.GeoCityAdmin = {
                             governorate: state.governorate.trim(),
                             isActive: state.isActive,
                             sortOrder: state.sortOrder || 0,
-                            createdById: uid,
                         });
                     } else if (state.deleteMode) {
-                        response = await services.deleteMainData({ id: state.id, deletedById: uid });
+                        response = await services.deleteMainData({ id: state.id });
                     } else {
                         response = await services.updateMainData({
                             id: state.id,
@@ -181,7 +179,6 @@ window.GeoCityAdmin = {
                             governorate: state.governorate.trim(),
                             isActive: state.isActive,
                             sortOrder: state.sortOrder || 0,
-                            updatedById: uid,
                         });
                     }
 
@@ -413,7 +410,6 @@ const App = {
                             ...state.settings,
                             telecom: state.settings.telecom,
                         },
-                        updatedById: StorageManager.getUserId(),
                     });
                     if (res?.data?.code === 200) {
                         const content = res?.data?.content;

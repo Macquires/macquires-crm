@@ -15,10 +15,12 @@ public class InventoryBulkImportJobConfiguration : BaseEntityConfiguration<Inven
         builder.Property(x => x.JobType).HasConversion<int>();
         builder.Property(x => x.FileName).HasMaxLength(512);
         builder.Property(x => x.StoredFilePath).HasMaxLength(1024);
+        builder.Property(x => x.BranchId).HasMaxLength(50);
         builder.Property(x => x.ErrorSummary).HasMaxLength(DescriptionConsts.MaxLength);
         builder.HasIndex(x => x.JobStatus);
         builder.HasIndex(x => x.JobType);
         builder.HasIndex(x => x.CreatedById);
         builder.HasIndex(x => x.CreatedAtUtc);
+        builder.HasIndex(x => x.BranchId);
     }
 }

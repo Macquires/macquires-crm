@@ -13,6 +13,7 @@ public class SubscriberProfileConfiguration : BaseEntityConfiguration<Subscriber
         base.Configure(builder);
 
         builder.Property(x => x.CustomerId).HasMaxLength(IdConsts.MaxLength).IsRequired();
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.ServiceLineType).HasConversion<int>();
         builder.Property(x => x.LanguagePreference).HasConversion<int>();
         builder.Property(x => x.OperationalStatus).HasConversion<int>();
@@ -22,6 +23,7 @@ public class SubscriberProfileConfiguration : BaseEntityConfiguration<Subscriber
         builder.Property(x => x.MasterSubscriberProfileId).HasMaxLength(IdConsts.MaxLength);
 
         builder.HasIndex(x => x.CustomerId);
+        builder.HasIndex(x => x.BranchId).HasFilter("[BranchId] IS NOT NULL");
         builder.HasIndex(x => new { x.CustomerId, x.OperationalStatus });
 
         builder.HasOne(x => x.Customer)

@@ -19,13 +19,12 @@ public sealed class ApproveBackOfficeTelecomOperationResult
     public string? PipelineState { get; init; }
 }
 
-public sealed class ApproveBackOfficeTelecomOperationRequest : IRequest<ApproveBackOfficeTelecomOperationResult>, IRequirePermission
+public sealed class ApproveBackOfficeTelecomOperationRequest : IRequest<ApproveBackOfficeTelecomOperationResult>, IRequireAnyPermission
 {
     public string OperationId { get; init; } = null!;
-    public string? ActorUserId { get; init; }
     public string? Comments { get; init; }
 
-    public string PermissionKey => PermissionCatalog.FinanceBdrExecute;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.BdrExecuteAny;
 }
 
 public sealed class ApproveBackOfficeTelecomOperationValidator : AbstractValidator<ApproveBackOfficeTelecomOperationRequest>
@@ -41,6 +40,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
 {
     private readonly IMediator _mediator;
     private readonly IQueryContext _query;
+    private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserAuditService _audit;
     private readonly IBackOfficePaymentReferenceValidator _paymentValidator;
@@ -49,6 +49,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
     public ApproveBackOfficeTelecomOperationHandler(
         IMediator mediator,
         IQueryContext query,
+        ICommandRepository<TelecomOperationRequest> operationRepository,
         IUnitOfWork unitOfWork,
         IUserAuditService audit,
         IBackOfficePaymentReferenceValidator paymentValidator,
@@ -56,6 +57,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
     {
         _mediator = mediator;
         _query = query;
+        _operationRepository = operationRepository;
         _unitOfWork = unitOfWork;
         _audit = audit;
         _paymentValidator = paymentValidator;
@@ -66,6 +68,8 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
         ApproveBackOfficeTelecomOperationRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operatorContext);
+
         var operation = await _query.TelecomOperationRequest.AsNoTracking()
             .Include(o => o.MsisdnAsset)
             .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == request.OperationId, cancellationToken)
@@ -105,15 +109,16 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
         if (operation.Kind == TelecomOperationKind.BadDebtRecovery)
         {
             // GLOBAL HARDENING: BDR transition to Approved_Pending_Cash
-            var tracked = await _query.TelecomOperationRequest.FirstOrDefaultAsync(o => o.Id == request.OperationId, cancellationToken)
+            var tracked = await _operationRepository.GetAsync(request.OperationId, cancellationToken)
                 ?? throw new InvalidOperationException("Telecom operation not found.");
-            
+
             tracked.Status = TelecomOperationStatus.Approved_Pending_Cash;
             tracked.FraudClearanceConfirmed = true;
-            tracked.FraudClearanceByUserId = request.ActorUserId;
+            tracked.FraudClearanceByUserId = actorUserId;
             tracked.ConfirmedAtUtc = DateTime.UtcNow;
-            tracked.UpdatedById = request.ActorUserId;
-            
+            tracked.UpdatedById = actorUserId;
+
+            _operationRepository.Update(tracked);
             // We don't call ConfirmTelecomOperationRequest for BDR yet, as it needs cash collection first
             await _unitOfWork.SaveAsync(cancellationToken);
 
@@ -121,7 +126,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
             await _audit.LogAsync(
                 new UserAuditLogRequest
                 {
-                    ActorUserId = request.ActorUserId ?? "system",
+                    ActorUserId = actorUserId,
                     ActionType = UserAuditActionTypes.BackOfficeTelecomApproved,
                     EntityType = nameof(TelecomOperationRequest),
                     EntityId = request.OperationId,
@@ -132,7 +137,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
             return new ApproveBackOfficeTelecomOperationResult
             {
                 ConfirmResult = new ConfirmTelecomOperationRequestResult { Data = tracked, UserMessageAr = "تم اعتماد طلب تسوية الديون. بانتظار التحصيل المالي في المعرض." },
-                PipelineState = "Approved_Pending_Cash"
+                PipelineState = BackOfficeTelecomPipelineState.ApprovedPendingCash,
             };
         }
 
@@ -143,7 +148,6 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
                 new ConfirmTelecomOperationRequest
                 {
                     Id = request.OperationId,
-                    UpdatedById = request.ActorUserId,
                 },
                 cancellationToken);
 
@@ -158,7 +162,6 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
             new ConfirmTelecomOperationRequest
             {
                 Id = request.OperationId,
-                UpdatedById = request.ActorUserId,
             },
             cancellationToken);
 
@@ -168,7 +171,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.BackOfficeTelecomApproved,
                 EntityType = nameof(TelecomOperationRequest),
                 EntityId = request.OperationId,

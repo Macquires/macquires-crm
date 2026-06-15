@@ -13,6 +13,7 @@ public static class BackOfficeTelecomPipelineState
     public const string Completed = "Completed";
     public const string Failed = "Failed";
     public const string ProvisioningError = "Provisioning_Error";
+    public const string ApprovedPendingCash = "Approved_Pending_Cash";
 
     public static string Resolve(TelecomOperationStatus status, string? approvalLevelRequired) =>
         status switch
@@ -24,6 +25,7 @@ public static class BackOfficeTelecomPipelineState
             TelecomOperationStatus.Paid_Pending_BackOffice_Clearance
                 when string.Equals(approvalLevelRequired, "BackOffice", StringComparison.OrdinalIgnoreCase)
                 => "Paid_Pending_Audit",
+            TelecomOperationStatus.Approved_Pending_Cash => ApprovedPendingCash,
             TelecomOperationStatus.In_Progress => InProgress,
             TelecomOperationStatus.Confirmed
                 or TelecomOperationStatus.Provisioning

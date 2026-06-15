@@ -79,6 +79,7 @@ public sealed class OfferSubscriptionEligibilityChecker : IOfferSubscriptionElig
         string msisdn,
         string serviceCode,
         bool activate,
+        string? excludeOperationId = null,
         CancellationToken cancellationToken = default)
     {
         var canonical = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(msisdn)
@@ -161,7 +162,7 @@ public sealed class OfferSubscriptionEligibilityChecker : IOfferSubscriptionElig
         var blocking = await HasBlockingOperationsAsync(
             subscription.SubscriberProfileId,
             subscription.MsisdnAssetId,
-            null,
+            excludeOperationId,
             cancellationToken);
         if (blocking)
         {

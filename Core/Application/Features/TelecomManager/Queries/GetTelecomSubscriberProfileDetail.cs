@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -47,9 +48,10 @@ public class GetTelecomSubscriberProfileDetailResult
     public List<TelecomSubscriptionLineDto> Subscriptions { get; init; } = new();
 }
 
-public class GetTelecomSubscriberProfileDetailRequest : IRequest<GetTelecomSubscriberProfileDetailResult?>
+public class GetTelecomSubscriberProfileDetailRequest : IRequest<GetTelecomSubscriberProfileDetailResult?>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = "";
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.OperationsViewAny;
 }
 
 public class GetTelecomSubscriberProfileDetailHandler : IRequestHandler<GetTelecomSubscriberProfileDetailRequest, GetTelecomSubscriberProfileDetailResult?>

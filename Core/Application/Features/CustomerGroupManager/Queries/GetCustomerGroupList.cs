@@ -1,4 +1,5 @@
-﻿using Application.Common.CQS.Queries;
+using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using Application.Common.Extensions;
 using AutoMapper;
 using Domain.Entities;
@@ -28,9 +29,10 @@ public class GetCustomerGroupListResult
     public List<GetCustomerGroupListDto>? Data { get; init; }
 }
 
-public class GetCustomerGroupListRequest : IRequest<GetCustomerGroupListResult>
+public class GetCustomerGroupListRequest : IRequest<GetCustomerGroupListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; } = false;
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ReadAny;
 }
 
 

@@ -92,30 +92,30 @@
                     throw error;
                 }
             },
-            createMainData: async (name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, createdById) => {
+            createMainData: async (name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId) => {
                 try {
                     const response = await AxiosManager.post('/Product/CreateProduct', {
-                        name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, createdById
+                        name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            updateMainData: async (id, name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, updatedById) => {
+            updateMainData: async (id, name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId) => {
                 try {
                     const response = await AxiosManager.post('/Product/UpdateProduct', {
-                        id, name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId, updatedById
+                        id, name, unitPrice, physical, description, productGroupId, unitMeasureId, compatibleSubscriptionTypeId
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            deleteMainData: async (id, deletedById) => {
+            deleteMainData: async (id) => {
                 try {
                     const response = await AxiosManager.post('/Product/DeleteProduct', {
-                        id, deletedById
+                        id
                     });
                     return response;
                 } catch (error) {
@@ -377,11 +377,10 @@
                               state.description,
                               state.productGroupId,
                               state.unitMeasureId,
-                              compat,
-                              StorageManager.getUserId()
+                              compat
                           )
                         : state.deleteMode
-                          ? await services.deleteMainData(state.id, StorageManager.getUserId())
+                          ? await services.deleteMainData(state.id)
                           : await services.updateMainData(
                                 state.id,
                                 state.name,
@@ -390,8 +389,7 @@
                                 state.description,
                                 state.productGroupId,
                                 state.unitMeasureId,
-                                compat,
-                                StorageManager.getUserId()
+                                compat
                             );
 
                     if (response.data.code === 200) {

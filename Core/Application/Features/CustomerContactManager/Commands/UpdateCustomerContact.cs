@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,7 +11,7 @@ public class UpdateCustomerContactResult
     public CustomerContact? Data { get; set; }
 }
 
-public class UpdateCustomerContactRequest : IRequest<UpdateCustomerContactResult>
+public class UpdateCustomerContactRequest : IRequest<UpdateCustomerContactResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
     public string? Name { get; init; }
@@ -19,7 +20,7 @@ public class UpdateCustomerContactRequest : IRequest<UpdateCustomerContactResult
     public string? EmailAddress { get; set; }
     public string? Description { get; set; }
     public string? CustomerId { get; set; }
-    public string? UpdatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => CustomerPermissionSets.ManageAny;
 }
 
 public class UpdateCustomerContactValidator : AbstractValidator<UpdateCustomerContactRequest>
@@ -38,14 +39,16 @@ public class UpdateCustomerContactHandler : IRequestHandler<UpdateCustomerContac
 {
     private readonly ICommandRepository<CustomerContact> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UpdateCustomerContactHandler(
         ICommandRepository<CustomerContact> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateCustomerContactResult> Handle(UpdateCustomerContactRequest request, CancellationToken cancellationToken)
@@ -58,7 +61,7 @@ public class UpdateCustomerContactHandler : IRequestHandler<UpdateCustomerContac
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
 
         entity.Name = request.Name;
         entity.JobTitle = request.JobTitle;

@@ -13,6 +13,7 @@ public class TelecomPaymentAuditLogConfiguration : BaseEntityConfiguration<Telec
         base.Configure(builder);
 
         builder.Property(x => x.TelecomPaymentTransactionId).HasMaxLength(IdConsts.MaxLength).IsRequired();
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.Action).HasMaxLength(64).IsRequired();
         builder.Property(x => x.GatewayReference).HasMaxLength(128);
         builder.Property(x => x.ActorUserId).HasMaxLength(IdConsts.MaxLength);

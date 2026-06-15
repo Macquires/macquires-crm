@@ -1,4 +1,5 @@
-﻿using Application.Common.Services.SecurityManager;
+﻿using Application.Common.Security;
+using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
 
@@ -11,36 +12,37 @@ public class LogoutResult
 
 public class LogoutRequest : IRequest<LogoutResult>
 {
-    public string? UserId { get; init; }
 }
 
 public class LogoutValidator : AbstractValidator<LogoutRequest>
 {
     public LogoutValidator()
     {
-        // UserId is optional: API may resolve it from JWT; handler no-ops when absent.
     }
 }
 
 public class LogoutHandler : IRequestHandler<LogoutRequest, LogoutResult>
 {
     private readonly ISecurityService _securityService;
+    private readonly IOperatorContext _operatorContext;
 
-    public LogoutHandler(ISecurityService securityService)
+    public LogoutHandler(ISecurityService securityService, IOperatorContext operatorContext)
     {
         _securityService = securityService;
+        _operatorContext = operatorContext;
     }
 
     public async Task<LogoutResult> Handle(LogoutRequest request, CancellationToken cancellationToken)
     {
-        var result = await _securityService.LogoutAsync(
-            request.UserId ?? "",
-            cancellationToken
-            );
-
-        return new LogoutResult
+        if (!_operatorContext.IsAuthenticated || string.IsNullOrWhiteSpace(_operatorContext.UserId))
         {
-            Data = result
-        };
+            return new LogoutResult();
+        }
+
+        var result = await _securityService.LogoutAsync(
+            _operatorContext.UserId,
+            cancellationToken);
+
+        return new LogoutResult { Data = result };
     }
 }

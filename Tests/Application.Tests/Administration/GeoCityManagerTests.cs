@@ -35,7 +35,7 @@ public class GeoCityManagerTests
     {
         await using var ctx = CreateContext();
         var repo = new EfCommandRepository<GeoCity>(ctx.GeoCity);
-        var handler = new CreateGeoCityHandler(repo, new CtxUnitOfWork(ctx));
+        var handler = new CreateGeoCityHandler(repo, new CtxUnitOfWork(ctx), TestOperatorContext.Instance);
 
         var result = await handler.Handle(
             new CreateGeoCityRequest
@@ -44,7 +44,6 @@ public class GeoCityManagerTests
                 Governorate = "حلب",
                 IsActive = true,
                 SortOrder = 2,
-                CreatedById = "admin",
             },
             CancellationToken.None);
 
@@ -96,7 +95,7 @@ public class GeoCityManagerTests
 
     private static QueryContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);

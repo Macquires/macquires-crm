@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom.SellingLine;
 using Domain.Entities;
 using Domain.Enums;
@@ -17,13 +18,14 @@ public class RecordSellingLinePaymentResult
     public PaymentCaptureResult? GatewayResult { get; init; }
 }
 
-public class RecordSellingLinePaymentRequest : IRequest<RecordSellingLinePaymentResult>
+public class RecordSellingLinePaymentRequest : IRequest<RecordSellingLinePaymentResult>, IRequireAnyPermission
 {
     public string OperationId { get; init; } = null!;
     public string PaymentReference { get; init; } = null!;
     public decimal AmountPaid { get; init; }
     public PaymentChannel PaymentChannel { get; init; }
-    public string? UpdatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.ConfirmAny;
 }
 
 public class RecordSellingLinePaymentValidator : AbstractValidator<RecordSellingLinePaymentRequest>
@@ -42,17 +44,20 @@ public class RecordSellingLinePaymentHandler : IRequestHandler<RecordSellingLine
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPaymentGatewayIntegration _paymentGateway;
     private readonly IQueryContext _query;
+    private readonly IOperatorContext _operator;
 
     public RecordSellingLinePaymentHandler(
         ICommandRepository<TelecomOperationRequest> repository,
         IUnitOfWork unitOfWork,
         IPaymentGatewayIntegration paymentGateway,
-        IQueryContext query)
+        IQueryContext query,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _paymentGateway = paymentGateway;
         _query = query;
+        _operator = operatorContext;
     }
 
     public async Task<RecordSellingLinePaymentResult> Handle(
@@ -100,7 +105,7 @@ public class RecordSellingLinePaymentHandler : IRequestHandler<RecordSellingLine
 
         entity.PaymentReference = request.PaymentReference.Trim();
         entity.InitialDepositAmount = request.AmountPaid;
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);
 

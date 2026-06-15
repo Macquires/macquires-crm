@@ -1,3 +1,4 @@
+using Application.Common.Security;
 using Application.Common.Telecom.PaymentServices;
 using Domain.Enums;
 using FluentValidation;
@@ -16,11 +17,11 @@ public class ConfirmPaymentTransactionResult
     public string? PaymentNumber { get; init; }
 }
 
-public class ConfirmPaymentTransactionRequest : IRequest<ConfirmPaymentTransactionResult>
+public class ConfirmPaymentTransactionRequest : IRequest<ConfirmPaymentTransactionResult>, IRequirePermission
 {
+    public string PermissionKey => PermissionCatalog.TelecomLineRecharge;
     public string PaymentId { get; init; } = "";
     public string GatewayReference { get; init; } = "";
-    public string? ConfirmedById { get; init; }
 }
 
 public class ConfirmPaymentTransactionValidator : AbstractValidator<ConfirmPaymentTransactionRequest>
@@ -35,8 +36,15 @@ public class ConfirmPaymentTransactionValidator : AbstractValidator<ConfirmPayme
 public class ConfirmPaymentTransactionHandler : IRequestHandler<ConfirmPaymentTransactionRequest, ConfirmPaymentTransactionResult>
 {
     private readonly IPaymentServicesOrchestrator _orchestrator;
+    private readonly IOperatorContext _operatorContext;
 
-    public ConfirmPaymentTransactionHandler(IPaymentServicesOrchestrator orchestrator) => _orchestrator = orchestrator;
+    public ConfirmPaymentTransactionHandler(
+        IPaymentServicesOrchestrator orchestrator,
+        IOperatorContext operatorContext)
+    {
+        _orchestrator = orchestrator;
+        _operatorContext = operatorContext;
+    }
 
     public async Task<ConfirmPaymentTransactionResult> Handle(
         ConfirmPaymentTransactionRequest request,
@@ -45,7 +53,7 @@ public class ConfirmPaymentTransactionHandler : IRequestHandler<ConfirmPaymentTr
         var result = await _orchestrator.ConfirmAsync(
             request.PaymentId,
             request.GatewayReference,
-            request.ConfirmedById,
+            OperatorActor.RequireUserId(_operatorContext),
             cancellationToken);
 
         return new ConfirmPaymentTransactionResult

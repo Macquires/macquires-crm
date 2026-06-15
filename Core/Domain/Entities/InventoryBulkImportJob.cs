@@ -13,8 +13,9 @@ public enum InventoryBulkImportJobStatus
 }
 
 /// <summary>Background bulk import job (up to 100k rows).</summary>
-public class InventoryBulkImportJob : BaseEntity
+public class InventoryBulkImportJob : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public InventoryBulkImportJobStatus JobStatus { get; set; } = InventoryBulkImportJobStatus.Pending;
     public BulkImportJobType JobType { get; set; } = BulkImportJobType.MsisdnAsset;
     public string? FileName { get; set; }

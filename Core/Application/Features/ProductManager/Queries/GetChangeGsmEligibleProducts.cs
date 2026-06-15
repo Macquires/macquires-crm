@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +14,12 @@ public class GetChangeGsmEligibleProductsResult
     public string? TargetSubscriptionTypeLabel { get; init; }
 }
 
-public class GetChangeGsmEligibleProductsRequest : IRequest<GetChangeGsmEligibleProductsResult>
+public class GetChangeGsmEligibleProductsRequest : IRequest<GetChangeGsmEligibleProductsResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = "";
     public string TargetSubscriptionTypeId { get; init; } = "";
     public string? MsisdnAssetId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 public class GetChangeGsmEligibleProductsHandler

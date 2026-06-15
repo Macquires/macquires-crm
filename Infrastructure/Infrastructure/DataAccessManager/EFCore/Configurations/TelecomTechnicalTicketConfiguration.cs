@@ -16,6 +16,7 @@ public class TelecomTechnicalTicketConfiguration : BaseEntityConfiguration<Telec
         builder.Property(x => x.Msisdn).HasMaxLength(LengthConsts.S).IsRequired();
         builder.Property(x => x.CustomerId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.SubscriberProfileId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength).IsRequired(false);
         builder.Property(x => x.AssignedToGroupId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.OpenedByUserId).HasMaxLength(IdConsts.MaxLength).IsRequired();
         builder.Property(x => x.ResolvedByUserId).HasMaxLength(IdConsts.MaxLength);
@@ -31,6 +32,7 @@ public class TelecomTechnicalTicketConfiguration : BaseEntityConfiguration<Telec
         builder.HasIndex(x => x.TicketCategory);
         builder.HasIndex(x => x.Msisdn);
         builder.HasIndex(x => x.Status);
+        builder.HasIndex(x => x.BranchId).HasFilter("[BranchId] IS NOT NULL");
 
         builder.Property(x => x.RowVersion).IsRowVersion();
     }

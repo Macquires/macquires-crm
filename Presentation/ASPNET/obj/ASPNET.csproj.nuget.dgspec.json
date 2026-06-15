@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj": {}
+    "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj": {}
   },
   "projects": {
-    "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj": {
+    "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj",
+        "projectUniqueName": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj",
         "projectName": "Application",
-        "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj",
+        "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj",
         "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\obj\\",
+        "outputPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\HP\\NuGet.Config",
+          "c:\\Users\\HP\\NuGet.Config",
           "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -32,11 +32,10 @@
         },
         "frameworks": {
           "net9.0": {
-            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj": {
-                "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj"
+              "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj": {
+                "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj"
               }
             }
           }
@@ -55,7 +54,6 @@
       },
       "frameworks": {
         "net9.0": {
-          "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
             "AutoMapper": {
@@ -117,20 +115,20 @@
         }
       }
     },
-    "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj": {
+    "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj",
+        "projectUniqueName": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj",
         "projectName": "Domain",
-        "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj",
+        "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj",
         "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\obj\\",
+        "outputPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\HP\\NuGet.Config",
+          "c:\\Users\\HP\\NuGet.Config",
           "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -145,7 +143,6 @@
         },
         "frameworks": {
           "net9.0": {
-            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {}
           }
@@ -164,7 +161,6 @@
       },
       "frameworks": {
         "net9.0": {
-          "framework": "net9.0",
           "targetAlias": "net9.0",
           "imports": [
             "net461",
@@ -200,20 +196,20 @@
         }
       }
     },
-    "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
+    "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj",
+        "projectUniqueName": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj",
         "projectName": "Infrastructure",
-        "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj",
+        "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj",
         "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\obj\\",
+        "outputPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\HP\\NuGet.Config",
+          "c:\\Users\\HP\\NuGet.Config",
           "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -228,14 +224,13 @@
         },
         "frameworks": {
           "net9.0": {
-            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj": {
-                "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj"
+              "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj": {
+                "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj"
               },
-              "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj": {
-                "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj"
+              "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj": {
+                "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj"
               }
             }
           }
@@ -254,7 +249,6 @@
       },
       "frameworks": {
         "net9.0": {
-          "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
             "AspNetCore.HealthChecks.Redis": {
@@ -289,6 +283,12 @@
               "target": "Package",
               "version": "[9.0.0, )"
             },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
               "version": "[9.0.0, )"
@@ -317,6 +317,14 @@
               "target": "Package",
               "version": "[7.2.4, )"
             },
+            "Polly.Extensions.Http": {
+              "target": "Package",
+              "version": "[3.0.0, )"
+            },
+            "RabbitMQ.Client": {
+              "target": "Package",
+              "version": "[7.1.2, )"
+            },
             "Serilog": {
               "target": "Package",
               "version": "[4.1.0, )"
@@ -332,6 +340,14 @@
             "Serilog.Sinks.File": {
               "target": "Package",
               "version": "[6.0.0, )"
+            },
+            "Serilog.Sinks.Seq": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "StackExchange.Redis": {
+              "target": "Package",
+              "version": "[2.8.31, )"
             }
           },
           "imports": [
@@ -368,20 +384,20 @@
         }
       }
     },
-    "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj": {
+    "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
+        "projectUniqueName": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
         "projectName": "ASPNET",
-        "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
+        "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\ASPNET.csproj",
         "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Presentation\\ASPNET\\obj\\",
+        "outputPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Presentation\\ASPNET\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\HP\\NuGet.Config",
+          "c:\\Users\\HP\\NuGet.Config",
           "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -396,14 +412,13 @@
         },
         "frameworks": {
           "net9.0": {
-            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj": {
-                "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Application\\Application.csproj"
+              "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj": {
+                "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Application\\Application.csproj"
               },
-              "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj"
+              "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj": {
+                "projectPath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Infrastructure\\Infrastructure\\Infrastructure.csproj"
               }
             }
           }
@@ -422,9 +437,12 @@
       },
       "frameworks": {
         "net9.0": {
-          "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
+            "AspNetCore.HealthChecks.Rabbitmq": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
             "AspNetCore.HealthChecks.Redis": {
               "target": "Package",
               "version": "[9.0.0, )"
@@ -433,9 +451,43 @@
               "target": "Package",
               "version": "[9.0.0, )"
             },
+            "AspNetCore.HealthChecks.Uris": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
             "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": {
               "target": "Package",
               "version": "[9.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "OpenTelemetry.Exporter.Console": {
+              "target": "Package",
+              "version": "[1.15.3, )"
+            },
+            "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
+              "target": "Package",
+              "version": "[1.15.3, )"
+            },
+            "OpenTelemetry.Extensions.Hosting": {
+              "target": "Package",
+              "version": "[1.15.3, )"
+            },
+            "OpenTelemetry.Instrumentation.AspNetCore": {
+              "target": "Package",
+              "version": "[1.15.2, )"
+            },
+            "OpenTelemetry.Instrumentation.Http": {
+              "target": "Package",
+              "version": "[1.15.1, )"
+            },
+            "Serilog.Sinks.Seq": {
+              "target": "Package",
+              "version": "[8.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",

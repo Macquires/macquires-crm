@@ -1,4 +1,5 @@
 using Application.Common.Integrations;
+using Application.Common.Security;
 using FluentValidation;
 using MediatR;
 
@@ -11,10 +12,12 @@ public class ValidateVoucherResult
     public decimal? FaceValue { get; init; }
 }
 
-public class ValidateVoucherRequest : IRequest<ValidateVoucherResult>
+public class ValidateVoucherRequest : IRequest<ValidateVoucherResult>, IRequireAnyPermission
 {
     public string VoucherCode { get; init; } = "";
     public decimal? Amount { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.PaymentAny;
 }
 
 public class ValidateVoucherValidator : AbstractValidator<ValidateVoucherRequest>

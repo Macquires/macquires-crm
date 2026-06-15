@@ -14,11 +14,11 @@ public class ReversePaymentTransactionResult
     public string? PaymentNumber { get; init; }
 }
 
-public class ReversePaymentTransactionRequest : IRequest<ReversePaymentTransactionResult>
+public class ReversePaymentTransactionRequest : IRequest<ReversePaymentTransactionResult>, IRequirePermission
 {
+    public string PermissionKey => PermissionCatalog.FinanceBdrExecute;
     public string PaymentId { get; init; } = "";
     public string ReasonCode { get; init; } = "";
-    public string? ReversedById { get; init; }
 }
 
 public class ReversePaymentTransactionValidator : AbstractValidator<ReversePaymentTransactionRequest>
@@ -56,7 +56,7 @@ public class ReversePaymentTransactionHandler : IRequestHandler<ReversePaymentTr
         var result = await _reversal.ReverseAsync(
             request.PaymentId,
             request.ReasonCode,
-            request.ReversedById,
+            OperatorActor.RequireUserId(_operatorContext),
             cancellationToken);
 
         return new ReversePaymentTransactionResult

@@ -22,6 +22,24 @@ public static class TelecomOperationLabels
         _ => kind.ToString()
     };
 
+    public static string KindLabelEn(TelecomOperationKind kind) => kind switch
+    {
+        TelecomOperationKind.NewActivation => "New activation",
+        TelecomOperationKind.Migration => "Package migration",
+        TelecomOperationKind.TakeOver => "Ownership transfer",
+        TelecomOperationKind.SimSwap => "SIM swap",
+        TelecomOperationKind.ServiceModification => "VAS service",
+        TelecomOperationKind.NumberPortability => "Change MSISDN (CNR)",
+        TelecomOperationKind.ChangeGsmType => "Line technology (CGT)",
+        TelecomOperationKind.Termination => "Line termination (TRM)",
+        TelecomOperationKind.TemporarySuspension => "Temporary suspension (SUS)",
+        TelecomOperationKind.Reconnect => "Reconnection (RCN)",
+        TelecomOperationKind.DeviceSale => "Device sale (DEV)",
+        TelecomOperationKind.DepositRefundSettlement => "Refund (RFD)",
+        TelecomOperationKind.BadDebtRecovery => "Bad debt recovery (BDR)",
+        _ => kind.ToString()
+    };
+
     public static string StatusLabelAr(TelecomOperationStatus status) => status switch
     {
         TelecomOperationStatus.Draft => "مسودة",
@@ -31,6 +49,11 @@ public static class TelecomOperationLabels
         TelecomOperationStatus.Completed => "منجز",
         TelecomOperationStatus.Failed => "فشل",
         TelecomOperationStatus.PendingExternal => "مزامنة خارجية",
+        TelecomOperationStatus.Scheduled => "مجدول",
+        TelecomOperationStatus.ProvisioningError => "خطأ تزويد",
+        TelecomOperationStatus.Approved_Pending_Cash => "معتمد — بانتظار التحصيل",
+        TelecomOperationStatus.Paid_Pending_BackOffice_Clearance => "مدفوع — بانتظار تدقيق الباك أوفيس",
+        TelecomOperationStatus.In_Progress => "قيد المعالجة",
         _ => status.ToString()
     };
 }

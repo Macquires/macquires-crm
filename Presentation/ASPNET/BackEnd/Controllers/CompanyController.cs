@@ -2,8 +2,8 @@
 using Application.Features.CompanyManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -15,7 +15,7 @@ public class CompanyController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireAdminSettingsManage]
     [HttpPost("UpdateCompany")]
     public async Task<ActionResult<ApiSuccessResult<UpdateCompanyResult>>> UpdateCompanyAsync(UpdateCompanyRequest request, CancellationToken cancellationToken)
     {
@@ -29,7 +29,7 @@ public class CompanyController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAdminSettingsManage]
     [HttpGet("GetCompanySingle")]
     public async Task<ActionResult<ApiSuccessResult<GetCompanySingleResult>>> GetCompanySingleAsync(
         CancellationToken cancellationToken,
@@ -47,7 +47,7 @@ public class CompanyController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAdminSettingsManage]
     [HttpGet("GetCompanyList")]
     public async Task<ActionResult<ApiSuccessResult<GetCompanyListResult>>> GetCompanyListAsync(
         CancellationToken cancellationToken,
@@ -64,8 +64,4 @@ public class CompanyController : BaseApiController
             Content = response
         });
     }
-
-
 }
-
-

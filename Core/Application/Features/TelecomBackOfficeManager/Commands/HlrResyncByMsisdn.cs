@@ -22,13 +22,12 @@ public sealed class HlrResyncByMsisdnResult
     public bool TicketMovedToInProgress { get; init; }
 }
 
-public class HlrResyncByMsisdnRequest : IRequest<HlrResyncByMsisdnResult>, IRequirePermission
+public class HlrResyncByMsisdnRequest : IRequest<HlrResyncByMsisdnResult>, IRequireAnyPermission
 {
     public string Msisdn { get; init; } = "";
     public string? TechnicalTicketId { get; init; }
-    public string? ActorUserId { get; init; }
     public string? IpAddress { get; init; }
-    public string PermissionKey => PermissionCatalog.NetworkTechnicalSync;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalSyncAny;
 }
 
 public class HlrResyncByMsisdnValidator : AbstractValidator<HlrResyncByMsisdnRequest>
@@ -44,6 +43,7 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
     private readonly ICommandRepository<TelecomTechnicalTicket> _ticketRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISmsGatewayIntegration _sms;
+    private readonly IOperatorContext _operator;
 
     public HlrResyncByMsisdnHandler(
         IQueryContext query,
@@ -51,7 +51,8 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
         IUserAuditService audit,
         ICommandRepository<TelecomTechnicalTicket> ticketRepository,
         IUnitOfWork unitOfWork,
-        ISmsGatewayIntegration sms)
+        ISmsGatewayIntegration sms,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _mediator = mediator;
@@ -59,10 +60,13 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
         _ticketRepository = ticketRepository;
         _unitOfWork = unitOfWork;
         _sms = sms;
+        _operator = operatorContext;
     }
 
     public async Task<HlrResyncByMsisdnResult> Handle(HlrResyncByMsisdnRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var msisdn = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(request.Msisdn)
             ?? throw new InvalidOperationException("Invalid MSISDN.");
 
@@ -102,14 +106,13 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
                 SubscriberProfileId = profileId,
                 MsisdnAssetId = msisdnAssetId,
                 Msisdn = msisdn,
-                ActorUserId = request.ActorUserId,
             },
             cancellationToken);
 
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.ActorUserId ?? "",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.NetworkCommandExecuted,
                 EntityType = "HLR",
                 EntityId = profileId,
@@ -130,7 +133,7 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
             ticketNumber,
             msisdn,
             result.Message,
-            request.ActorUserId,
+            actorUserId,
             request.IpAddress,
             cancellationToken);
 
@@ -148,7 +151,7 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
         string? ticketNumber,
         string msisdn,
         string hlrMessage,
-        string? actorUserId,
+        string actorUserId,
         string? ipAddress,
         CancellationToken cancellationToken)
     {
@@ -179,7 +182,7 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
             await _audit.LogAsync(
                 new UserAuditLogRequest
                 {
-                    ActorUserId = actorUserId ?? "",
+                    ActorUserId = actorUserId,
                     ActionType = UserAuditActionTypes.TicketResolved,
                     EntityType = nameof(TelecomTechnicalTicket),
                     EntityId = ticket.Id,

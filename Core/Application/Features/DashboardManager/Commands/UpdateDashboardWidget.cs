@@ -1,5 +1,6 @@
 using Application.Common.Dashboard;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -12,7 +13,7 @@ public class UpdateDashboardWidgetResult
     public DashboardWidget? Data { get; set; }
 }
 
-public class UpdateDashboardWidgetRequest : IRequest<UpdateDashboardWidgetResult>
+public class UpdateDashboardWidgetRequest : IRequest<UpdateDashboardWidgetResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
     public string? TitleAr { get; init; }
@@ -28,7 +29,7 @@ public class UpdateDashboardWidgetRequest : IRequest<UpdateDashboardWidgetResult
     public string? CtaLabelAr { get; init; }
     public string? CtaLabelEn { get; init; }
     public bool IsActive { get; init; } = true;
-    public string? UpdatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.AdminAny;
 }
 
 public class UpdateDashboardWidgetValidator : AbstractValidator<UpdateDashboardWidgetRequest>
@@ -47,17 +48,20 @@ public class UpdateDashboardWidgetHandler : IRequestHandler<UpdateDashboardWidge
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDashboardWidgetRegistry _registry;
     private readonly IDashboardWidgetCatalogReader _catalog;
+    private readonly IOperatorContext _operator;
 
     public UpdateDashboardWidgetHandler(
         ICommandRepository<DashboardWidget> repository,
         IUnitOfWork unitOfWork,
         IDashboardWidgetRegistry registry,
-        IDashboardWidgetCatalogReader catalog)
+        IDashboardWidgetCatalogReader catalog,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _registry = registry;
         _catalog = catalog;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateDashboardWidgetResult> Handle(
@@ -74,7 +78,7 @@ public class UpdateDashboardWidgetHandler : IRequestHandler<UpdateDashboardWidge
             request.ProviderKey,
             request.WidgetKind);
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.TitleAr = (request.TitleAr ?? string.Empty).Trim();
         entity.TitleEn = string.IsNullOrWhiteSpace(request.TitleEn) ? null : request.TitleEn.Trim();
         entity.Icon = string.IsNullOrWhiteSpace(request.Icon) ? null : request.Icon.Trim();

@@ -7,8 +7,9 @@ namespace Domain.Entities;
 /// <summary>
 /// الرابط التشغيلي بين العميل (TPH) والخدمة/الخط — ليس تخزين الهوية القانونية.
 /// </summary>
-public class SubscriberProfile : BaseEntity
+public class SubscriberProfile : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public string CustomerId { get; set; } = null!;
     public Customer? Customer { get; set; }
 

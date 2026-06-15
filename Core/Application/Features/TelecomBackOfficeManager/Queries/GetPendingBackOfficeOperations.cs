@@ -14,7 +14,9 @@ public sealed record PendingBackOfficeOperationDto
     public string? Id { get; init; }
     public string? Number { get; init; }
     public TelecomOperationKind Kind { get; init; }
+    public TelecomOperationStatus Status { get; init; }
     public string? KindNameAr { get; init; }
+    public string? KindNameEn { get; init; }
     public string PipelineState { get; init; } = BackOfficeTelecomPipelineState.PendingBackOfficeApproval;
     public string? Msisdn { get; init; }
     public string? SubscriberName { get; init; }
@@ -27,6 +29,8 @@ public sealed record PendingBackOfficeOperationDto
     public TelecomDocumentStatus DocumentStatus { get; init; }
     public bool CanApprove { get; init; }
     public string? BlockReasonAr { get; init; }
+    public string? BlockReasonEn { get; init; }
+    public string? BlockReasonCode { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
 
     // GLOBAL HARDENING: BDR Financial Ledger
@@ -52,7 +56,7 @@ public sealed class GetPendingBackOfficeOperationsResult
     public int Total { get; init; }
 }
 
-public sealed class GetPendingBackOfficeOperationsRequest : IRequest<GetPendingBackOfficeOperationsResult>, IRequirePermission
+public sealed class GetPendingBackOfficeOperationsRequest : IRequest<GetPendingBackOfficeOperationsResult>, IRequireAnyPermission
 {
     public TelecomOperationKind? Kind { get; init; }
     public BackOfficeDomain? Domain { get; init; }
@@ -64,7 +68,7 @@ public sealed class GetPendingBackOfficeOperationsRequest : IRequest<GetPendingB
     public int Skip { get; init; }
     public int Take { get; init; } = 50;
 
-    public string PermissionKey => PermissionCatalog.FinanceBdrView;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.BdrViewAny;
 }
 
 public sealed class GetPendingBackOfficeOperationsHandler
@@ -72,13 +76,16 @@ public sealed class GetPendingBackOfficeOperationsHandler
 {
     private readonly IQueryContext _query;
     private readonly IBackOfficePaymentReferenceValidator _paymentValidator;
+    private readonly IOperatorContext _operator;
 
     public GetPendingBackOfficeOperationsHandler(
         IQueryContext query,
-        IBackOfficePaymentReferenceValidator paymentValidator)
+        IBackOfficePaymentReferenceValidator paymentValidator,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _paymentValidator = paymentValidator;
+        _operator = operatorContext;
     }
 
     public async Task<GetPendingBackOfficeOperationsResult> Handle(
@@ -93,6 +100,11 @@ public sealed class GetPendingBackOfficeOperationsHandler
                 .ThenInclude(p => p!.Customer)
             .Include(o => o.MsisdnAsset)
             .Where(o => !o.IsDeleted && o.ApprovalLevelRequired == "BackOffice");
+
+        if (!string.IsNullOrEmpty(_operator.BranchId))
+        {
+            baseQuery = baseQuery.Where(o => o.BranchId == _operator.BranchId);
+        }
 
         if (!request.IncludeResolved)
         {
@@ -213,14 +225,20 @@ public sealed class GetPendingBackOfficeOperationsHandler
         var docsReady = op.DocumentStatus >= TelecomDocumentStatus.Uploaded
                         || !string.IsNullOrEmpty(op.IdentityDocumentStorageKey);
 
-        string? blockReason = null;
+        string? blockReasonAr = null;
+        string? blockReasonEn = null;
+        string? blockReasonCode = null;
         if (!docsReady)
         {
-            blockReason = "يجب رفع وثيقة الهوية قبل الاعتماد.";
+            blockReasonAr = "يجب رفع وثيقة الهوية قبل الاعتماد.";
+            blockReasonEn = "Identity document must be uploaded before approval.";
+            blockReasonCode = "IdentityDocumentRequired";
         }
         else if (!paymentValidation.IsValid)
         {
-            blockReason = paymentValidation.MessageAr;
+            blockReasonAr = paymentValidation.MessageAr;
+            blockReasonEn = paymentValidation.MessageAr;
+            blockReasonCode = paymentValidation.ValidationCode;
         }
 
         var canApprove = docsReady && paymentValidation.IsValid;
@@ -236,7 +254,9 @@ public sealed class GetPendingBackOfficeOperationsHandler
             Id = op.Id,
             Number = op.Number,
             Kind = op.Kind,
+            Status = op.Status,
             KindNameAr = TelecomOperationLabels.KindLabelAr(op.Kind),
+            KindNameEn = TelecomOperationLabels.KindLabelEn(op.Kind),
             PipelineState = BackOfficeTelecomPipelineState.Resolve(op.Status, op.ApprovalLevelRequired),
             Msisdn = op.MsisdnAsset?.Msisdn,
             SubscriberName = op.SubscriberProfile?.Customer?.DisplayName,
@@ -248,7 +268,9 @@ public sealed class GetPendingBackOfficeOperationsHandler
             HasIdentityDocument = !string.IsNullOrEmpty(op.IdentityDocumentStorageKey),
             DocumentStatus = op.DocumentStatus,
             CanApprove = canApprove,
-            BlockReasonAr = blockReason,
+            BlockReasonAr = blockReasonAr,
+            BlockReasonEn = blockReasonEn,
+            BlockReasonCode = blockReasonCode,
             CreatedAtUtc = op.CreatedAtUtc,
             OutstandingBalanceSnapshot = op.OutstandingBalanceSnapshot,
             WriteOffAmount = op.WriteOffAmount,

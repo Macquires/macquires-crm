@@ -1,56 +1,94 @@
-using Microsoft.Extensions.Caching.Distributed;
+using System.Collections.Concurrent;
+using Application.Common.Distributed;
+using Microsoft.Extensions.Configuration;
+using StackExchange.Redis;
 
 namespace Infrastructure.Security;
 
-public interface IDistributedLock
-{
-    Task<IAsyncDisposable?> TryAcquireAsync(string key, TimeSpan ttl, CancellationToken cancellationToken = default);
-}
-
 public sealed class RedisDistributedLock : IDistributedLock
 {
-    private readonly IDistributedCache _cache;
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> LocalLocks = new(StringComparer.Ordinal);
+    private readonly IConnectionMultiplexer? _redis;
 
-    public RedisDistributedLock(IDistributedCache cache) => _cache = cache;
-
-    public async Task<IAsyncDisposable?> TryAcquireAsync(string key, TimeSpan ttl, CancellationToken cancellationToken = default)
+    public RedisDistributedLock(IConfiguration configuration)
     {
-        var lockKey = $"lock:{key}";
-        var token = Guid.CreateVersion7().ToString();
-        await _cache.SetStringAsync(lockKey, token, new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = ttl
-        }, cancellationToken);
+        var connection = configuration.GetConnectionString("Redis")
+            ?? configuration["Redis:ConnectionString"];
 
-        var current = await _cache.GetStringAsync(lockKey, cancellationToken);
-        if (!string.Equals(current, token, StringComparison.Ordinal))
+        if (!string.IsNullOrWhiteSpace(connection))
+        {
+            try
+            {
+                _redis = ConnectionMultiplexer.Connect(connection);
+            }
+            catch
+            {
+                _redis = null;
+            }
+        }
+    }
+
+    public async Task<IAsyncDisposable?> TryAcquireAsync(
+        string key,
+        TimeSpan ttl,
+        CancellationToken cancellationToken = default)
+    {
+        if (_redis != null)
+        {
+            var db = _redis.GetDatabase();
+            var lockKey = $"lock:{key}";
+            var token = Guid.NewGuid().ToString("N");
+            var acquired = await db.StringSetAsync(lockKey, token, ttl, When.NotExists);
+            if (!acquired)
+            {
+                return null;
+            }
+
+            return new RedisLockHandle(db, lockKey, token);
+        }
+
+        var semaphore = LocalLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+        if (!await semaphore.WaitAsync(0, cancellationToken))
         {
             return null;
         }
 
-        return new LockHandle(_cache, lockKey, token);
+        return new SemaphoreLockHandle(semaphore);
     }
 
-    private sealed class LockHandle : IAsyncDisposable
+    private sealed class RedisLockHandle : IAsyncDisposable
     {
-        private readonly IDistributedCache _cache;
+        private readonly IDatabase _db;
         private readonly string _key;
         private readonly string _token;
 
-        public LockHandle(IDistributedCache cache, string key, string token)
+        public RedisLockHandle(IDatabase db, string key, string token)
         {
-            _cache = cache;
+            _db = db;
             _key = key;
             _token = token;
         }
 
         public async ValueTask DisposeAsync()
         {
-            var current = await _cache.GetStringAsync(_key);
-            if (string.Equals(current, _token, StringComparison.Ordinal))
+            var current = await _db.StringGetAsync(_key);
+            if (current == _token)
             {
-                await _cache.RemoveAsync(_key);
+                await _db.KeyDeleteAsync(_key);
             }
+        }
+    }
+
+    private sealed class SemaphoreLockHandle : IAsyncDisposable
+    {
+        private readonly SemaphoreSlim _semaphore;
+
+        public SemaphoreLockHandle(SemaphoreSlim semaphore) => _semaphore = semaphore;
+
+        public ValueTask DisposeAsync()
+        {
+            _semaphore.Release();
+            return ValueTask.CompletedTask;
         }
     }
 }

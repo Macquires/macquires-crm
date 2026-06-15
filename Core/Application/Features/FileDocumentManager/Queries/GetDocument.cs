@@ -1,4 +1,5 @@
-﻿using Application.Common.Services.FileDocumentManager;
+﻿using Application.Common.Security;
+using Application.Common.Services.FileDocumentManager;
 using FluentValidation;
 using MediatR;
 
@@ -10,9 +11,10 @@ public class GetDocumentResult
     public byte[]? Data { get; init; }
 }
 
-public class GetDocumentRequest : IRequest<GetDocumentResult>
+public class GetDocumentRequest : IRequest<GetDocumentResult>, IRequireAnyPermission
 {
     public string? DocumentName { get; init; }
+    public IReadOnlyList<string> PermissionKeys => FileAttachmentPermissionSets.ReadAny;
 }
 
 public class GetDocumentValidator : AbstractValidator<GetDocumentRequest>

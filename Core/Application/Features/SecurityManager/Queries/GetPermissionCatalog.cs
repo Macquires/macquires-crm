@@ -8,8 +8,9 @@ public class GetPermissionCatalogResult
     public IReadOnlyList<PermissionDefinitionDto>? Data { get; init; }
 }
 
-public class GetPermissionCatalogRequest : IRequest<GetPermissionCatalogResult>
+public class GetPermissionCatalogRequest : IRequest<GetPermissionCatalogResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.RolesManageAny;
 }
 
 public class GetPermissionCatalogHandler : IRequestHandler<GetPermissionCatalogRequest, GetPermissionCatalogResult>

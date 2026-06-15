@@ -116,6 +116,15 @@
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div id="boScopeFilters" class="d-none d-flex flex-wrap gap-2 align-items-center me-2">
+                <select id="boScopeRegion" class="form-select form-select-sm" style="min-width:10rem" aria-label="Region">
+                    <option value="">كل المناطق</option>
+                </select>
+                <select id="boScopeBranch" class="form-select form-select-sm" style="min-width:10rem" aria-label="Branch">
+                    <option value="">كل الفروع</option>
+                </select>
+                <button type="button" id="boScopeApply" class="btn btn-outline-danger btn-sm">تطبيق النطاق</button>
+            </div>
             <a href="/Telecom/BackOfficeHistoricalLedger" class="btn btn-outline-telecom btn-sm">
                 <i class="bi bi-archive me-1"></i>
                 <span data-telecom-i18n="backOffice.dashboard.historicalLedger">دفتر الأستاذ التاريخي</span>
@@ -256,7 +265,7 @@
                             <th data-telecom-i18n="backOffice.dashboard.telecomQueue.kind">النوع</th>
                             <th data-telecom-i18n="backOffice.dashboard.kpi.line">الخط</th>
                             <th data-telecom-i18n="backOffice.dashboard.telecomQueue.clearance">التسوية</th>
-                            <th>SLA Status</th>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.slaStatus">حالة SLA</th>
                             <th data-telecom-i18n="backOffice.dashboard.telecomQueue.payment">الدفع</th>
                             <th data-telecom-i18n="backOffice.dashboard.telecomQueue.state">الحالة</th>
                             <th></th>
@@ -288,7 +297,7 @@
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>PAY-</th>
+                            <th data-telecom-i18n="backOffice.dashboard.telecomQueue.paymentPrefix">PAY-</th>
                             <th data-telecom-i18n="backOffice.dashboard.kpi.line">الخط</th>
                             <th data-telecom-i18n="backOffice.dashboard.kpi.amount">المبلغ</th>
                             <th data-telecom-i18n="backOffice.dashboard.kpi.status">الحالة</th>

@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -30,9 +31,10 @@ public class GetTechnicalTicketSingleResult
     public GetTechnicalTicketSingleDto? Data { get; init; }
 }
 
-public class GetTechnicalTicketSingleRequest : IRequest<GetTechnicalTicketSingleResult>
+public class GetTechnicalTicketSingleRequest : IRequest<GetTechnicalTicketSingleResult>, IRequireAnyPermission
 {
     public string Id { get; init; } = "";
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalTicketListAny;
 }
 
 public class GetTechnicalTicketSingleHandler : IRequestHandler<GetTechnicalTicketSingleRequest, GetTechnicalTicketSingleResult>

@@ -51,8 +51,8 @@
       },
       "changeNumber": {
         "aria": "فتح معالج تغيير الرقم",
-        "title": "تغيير رقم",
-        "sub": "CNR"
+        "title": "تغيير رقم الخط",
+        "sub": "CNR / MNP"
       },
       "termination": {
         "aria": "فتح معالج إنهاء الخط",
@@ -93,6 +93,11 @@
         "aria": "فتح معالج الدعم الفني",
         "title": "دعم فني",
         "sub": "تذكرة دعم"
+      },
+      "recharge": {
+        "aria": "فتح شحن رصيد مسبق الدفع",
+        "title": "شحن رصيد",
+        "sub": "Top-up"
       }
     },
     "customerWizard": {
@@ -233,7 +238,13 @@
           "voice": "الدقائق",
           "data": "الإنترنت",
           "sms": "الرسائل"
-        }
+        },
+        "prorationPreview": "معاينة مالية",
+        "priceDifference": "فرق السعر",
+        "proratedAmount": "المبلغ النسبي (الدورة الحالية)",
+        "walletBalance": "رصيد المحفظة",
+        "prorationInsufficient": "الرصيد غير كافٍ لتغطية رسوم الترحيل النسبية.",
+        "daysRemaining": "أيام متبقية في الدورة: {days}/{total}"
       },
       "lineType": {
         "label": "نوع الخط",
@@ -383,6 +394,7 @@
       "thOffer": "الباقة المستهدفة",
       "loading": "جاري التحميل…",
       "empty": "لا توجد طلبات بعد.",
+      "scheduledEffective": "تاريخ السريان",
       "dash": "—",
       "lostStolenBadge": "مفقودة/مسروقة",
       "kindLabels": {
@@ -409,11 +421,13 @@
         "3": "منجز",
         "4": "فشل",
         "5": "قيد التدقيق القانوني",
-        "6": "تجهيز الشبكة"
+        "6": "تجهيز الشبكة",
+        "11": "مجدول"
       },
       "pipeline": {
         "draft": "مسودة",
         "docs": "وثائق",
+        "scheduled": "مجدول",
         "provisioning": "تجهيز الشبكة",
         "done": "منجز"
       }
@@ -700,6 +714,7 @@
         "simIccid": "ICCID الشريحة (19 رقم)",
         "confirmActivate": "تأكيد التفعيل",
         "confirmMigrate": "تأكيد الترحيل",
+        "confirmChangeGsm": "تأكيد تغيير نوع الخط",
         "confirmTerminate": "تأكيد الإنهاء",
         "confirmChangeNumber": "تأكيد تغيير الرقم",
         "confirmSimSwap": "تأكيد التبديل",
@@ -745,6 +760,7 @@
         "noOpId": "لم يُرجع معرّف العملية",
         "confirmFailed": "فشل التأكيد",
         "executed": "تم التنفيذ",
+        "scheduledOk": "تم جدولة العملية — التنفيذ عند تاريخ السريان.",
         "searchOwnerHint": "أدخل رقم وطني أو جوال (حرفين على الأقل)",
         "noSubscriberProfile": "لا يوجد ملف مشترك للعميل المختار",
         "newLineIncomplete": "أكمل الرقم والباقة وICCID (19 رقم)",
@@ -908,6 +924,12 @@
       "subtitle": "تذاكر الدعم، الكتالوج، والشبكة",
       "bulkImport": "الاستيراد الضخم",
       "audit": "سجل عملياتي",
+      "historicalLedger": "دفتر الأستاذ التاريخي",
+      "tabs": {
+        "active": "طابور العمل النشط",
+        "tech": "العمليات الفنية والشبكة",
+        "historical": "الأرشيف التاريخي (Ledger)"
+      },
       "bentoBulk": "مراقبة الاستيراد",
       "openTickets": "طابور العمل الحي",
       "catalogSection": "كتالوج العروض",
@@ -938,6 +960,7 @@
         "inProgress": "قيد المعالجة",
         "critical": "أولوية حرجة",
         "allTicketsArchive": "الأرشيف والسجل",
+        "historicalLedger": "دفتر الأستاذ التاريخي",
         "treatTicket": "تنفيذ معالجة التذكرة",
         "saveStatus": "حفظ الحالة",
         "quickResolve": "إغلاق سريع (تم الحل)",
@@ -965,7 +988,56 @@
           "approved": "تم اعتماد الطلب — جاري التنفيذ على CBS/HLR",
           "rejected": "تم رفض الطلب",
           "paymentOk": "موثّق",
-          "paymentPending": "غير موثّق"
+          "paymentPending": "غير موثّق",
+          "slaStatus": "حالة SLA",
+          "paymentPrefix": "PAY-",
+          "slaBreached": "تجاوز SLA",
+          "slaLeft": "متبقي {time}",
+          "archived": "مؤرشف",
+          "paidPendingAudit": "مدفوع: بانتظار التدقيق",
+          "approvedBadge": "معتمد",
+          "rejectedBadge": "مرفوض",
+          "financialAuditRequired": "يتطلب صلاحية التدقيق المالي",
+          "bdrLedgerTitle": "دفتر مالي (تدقيق BDR)",
+          "bdrVerified": "موثّق ومُدقَّق",
+          "accountType": "نوع الحساب",
+          "outstandingDebt": "الدين المستحق",
+          "writeOffWaiver": "إعفاء شطب",
+          "cashCollection": "تحصيل نقدي",
+          "recordId": "المعرف",
+          "recordCreated": "تاريخ الإنشاء",
+          "approvedBy": "اعتمد {user} في {time}",
+          "rejectedBy": "رفض {user} في {time}",
+          "auditor": "مدقق"
+        },
+        "pipeline": {
+          "Pending_BackOffice_Approval": "بانتظار اعتماد الباك أوفيس",
+          "Approved_Pending_Cash": "معتمد — بانتظار التحصيل النقدي",
+          "Completed": "منجز",
+          "Failed": "فاشل",
+          "Paid_Pending_Audit": "مدفوع — بانتظار التدقيق",
+          "In_Progress": "قيد المعالجة",
+          "Executing": "جاري التنفيذ",
+          "Draft": "مسودة",
+          "Provisioning_Error": "خطأ تجهيز"
+        },
+        "accountTypes": {
+          "postpaidIndividual": "حساب فردي آجل",
+          "postpaidCorporate": "حساب شركة آجل"
+        },
+        "clearance": {
+          "Fraud": "احتيال",
+          "Payment": "دفع",
+          "Operational": "تشغيلي",
+          "Regulatory": "تنظيمي",
+          "Customer": "عميل",
+          "Billing": "فوترة"
+        },
+        "validation": {
+          "IdentityDocumentRequired": "يجب رفع وثيقة الهوية قبل الاعتماد.",
+          "PaymentReferenceRequired": "مرجع الدفع مطلوب قبل اعتماد إعادة التفعيل.",
+          "PaymentReferenceNotFound": "مرجع الدفع غير موجود في سجل الفوترة — راجع الكاشير أو CBS.",
+          "OutstandingDebt": "يجب تسوية الذمم المالية قبل الاعتماد."
         },
         "openCountHint": "مفتوحة + قيد المعالجة",
         "techToolbar": "شريط الأدوات الفني",
@@ -1069,7 +1141,10 @@
           "simSwap": "تحليلات وأداء تبديل الشرائح (SIM Swap)",
           "takeOver": "نقل الملكية (TKO)",
           "sellingLine": "مؤشرات تفعيل الخط (Selling Line)",
-          "bulkImportHint": "ترحيل النظام القديم · عملاء · باقات"
+          "bulkImportHint": "ترحيل النظام القديم · عملاء · باقات",
+          "activeHint": "الطلبات التي تنتج عن عمليات الفروع وبانتظار المراجعة والبت (Pending_BackOffice_Approval).",
+          "techHint": "تذاكر الدعم الفني، تنبيهات تسرب الإيرادات، وأوامر مزامنة الشبكة (HLR Sync).",
+          "historicalHint": "سجل كامل لجميع الطلبات التي تم البت فيها (Approved / Rejected) لأغراض التدقيق."
         },
         "grid": {
           "ticketNumber": "رقم التذكرة",
@@ -1121,6 +1196,7 @@
         "messages": {
           "loadError": "خطأ في التحميل",
           "accessDenied": "عذراً، لا تملك الصلاحيات الكافية لفتح مركز العمليات الخلفية. سجّل الخروج ثم الدخول مجدداً لتحديث الصلاحيات.",
+          "forbidden": "انتهاك أمني: ليس لديك الصلاحيات الكافية لتنفيذ هذا الإجراء.",
           "ticketsLoadFailed": "تعذر تحميل التذاكر",
           "syncfusionMissing": "مكتبة الجداول (Syncfusion) غير محمّلة — أعد تحميل الصفحة",
           "gridInitFailed": "تعذر عرض جدول التذاكر — جرّب تحديث الصفحة",
@@ -1202,6 +1278,7 @@
       "menu": "إجراءات الخط",
       "newLine": "تفعيل خط جديد",
       "migrate": "ترحيل الباقة",
+      "changeGsm": "تغيير نوع الخط (CGT)",
       "simSwap": "تبديل الشريحة",
       "changeNumber": "تغيير رقم الخط (CNR)",
       "suspension": "حظر مؤقت (SUS)",
@@ -1348,6 +1425,15 @@
       "draftHint": "مسودة CGT- جاهزة؛ التأكيد على CBS/HLR في المرحلة التالية."
     },
     "changeNumber": {
+      "modeLabel": "نوع العملية",
+      "modeInternal": "تغيير داخلي (CNR) — رقم من المخزون",
+      "modePortIn": "نقل من مشغّل آخر (MNP Port-In)",
+      "portInHint": "يتطلب مرجع طلب نقل من المشغّل المانح واعتماد الباك أوفيس قبل التفعيل.",
+      "portInMsisdn": "الرقم المنقول",
+      "donorOperator": "المشغّل المانح",
+      "portInReference": "مرجع طلب النقل (MNP)",
+      "portInReferencePh": "مثال: MNP-2026-00123",
+      "portInReferenceInvalid": "صيغة مرجع النقل غير صالحة (MNP-…)",
       "currentMsisdn": "الرقم الحالي",
       "targetMsisdn": "الرقم الجديد من المخزون",
       "changeReason": "سبب التغيير",
@@ -1449,6 +1535,17 @@
       "clearanceOperational": "تشغيلي",
       "reconnectReason": "سبب إعادة التفعيل",
       "paymentReference": "مرجع الدفع",
+      "paymentRefInvalid": "مرجع الدفع يجب أن يكون 3–64 حرفاً أبجدياً رقماً.",
+      "securityTicketId": "رقم تذكرة الأمان",
+      "securityTicketInvalid": "رقم التذكرة يجب أن يطابق الصيغة TT-XXXX أو TKT-XXXX أو RA-XXXX أو SEC-XXXX.",
+      "regulatoryDocumentNumber": "رقم الكتاب الرسمي",
+      "regulatoryAttachment": "مرفق المستند القانوني",
+      "regulatoryAttachmentInvalid": "المرفق يجب أن يكون PDF أو PNG أو JPG.",
+      "regulatoryAttachmentTooLarge": "حجم المرفق يجب ألا يتجاوز 5 ميجابايت.",
+      "regulatoryUploadFailed": "تعذّر رفع المستند التنظيمي.",
+      "regulatoryMsisdnRequired": "رقم الخط مطلوب لرفع المستند.",
+      "fraudSupervisorApproval": "موافقة ثنائية للمشرف (تسوية احتيال)",
+      "notesOptional": "ملاحظات (اختياري)",
       "fraudClearance": "تأكيد تسوية الاحتيال (مشرف)",
       "boHint": "VAL-09-03: يتطلب اعتماد الباك أوفيس.",
       "matrixTitle": "مصفوفة الأهلية (§9)",
@@ -1501,6 +1598,43 @@
       "reason": "سبب إعادة التفعيل",
       "sourceSuspension": "حظر سابق"
     },
+    "bss": {
+      "paymentReference": "مرجع الدفع",
+      "paymentRefInvalid": "مرجع الدفع يجب أن يكون 3–64 حرفاً أبجدياً رقماً.",
+      "securityTicketId": "رقم تذكرة الأمان",
+      "securityTicketInvalid": "صيغة تذكرة الأمان غير صالحة (TT-/TKT-/RA-/SEC-).",
+      "regulatoryDocumentNumber": "رقم الكتاب الرسمي",
+      "regulatoryAttachment": "مرفق المستند القانوني",
+      "regulatoryAttachmentInvalid": "المرفق يجب أن يكون PDF أو PNG أو JPG.",
+      "regulatoryAttachmentTooLarge": "حجم المرفق يجب ألا يتجاوز 5 ميجابايت.",
+      "regulatoryUploadFailed": "تعذّر رفع المرفق.",
+      "identityReverifyRequired": "مطلوب إعادة التحقق من الهوية.",
+      "identityReverifyUpload": "رفع وثيقة الهوية (إعادة تحقق KYC)",
+      "notesOptional": "ملاحظات (اختياري)",
+      "originalTransactionRef": "مرجع العملية الأصلية",
+      "originalTransactionRefInvalid": "مرجع العملية الأصلية غير صالح.",
+      "iban": "رقم IBAN (تحويل بنكي)",
+      "ibanInvalid": "صيغة IBAN غير صالحة.",
+      "walletMobile": "رقم محفظة سيريتل كاش",
+      "walletMobileInvalid": "صيغة الجوال غير صالحة (09XXXXXXXX).",
+      "payoutDestination": "وجهة الصرف",
+      "cgtMigrationPath": "مسار التحويل",
+      "cgtPathStandard": "قياسي",
+      "cgtPathRegulatory": "تنظيمي / كتاب رسمي",
+      "cgtFinancialHint": "تحويل مسبق→فاتورة أو ذمم مالية — مرجع دفع وإعادة تحقق هوية مطلوبان.",
+      "policeReportNumber": "رقم بلاغ الشرطة / تذكرة أمنية",
+      "policeReportInvalid": "صيغة بلاغ غير صالحة (POL-/TT-/TKT-).",
+      "obligationSettlementRef": "مرجع تسوية الالتزامات المالية",
+      "obligationSettlementHint": "يوجد أقساط جهاز أو ذمم على الخط — أدخل مرجع التسوية قبل نقل الملكية.",
+      "supervisorConfirmation": "تأكيد المشرف (حظر احتيال)",
+      "supervisorConfirmationHint": "يجب أن يصرّح المشرف بحظر الخط لأسباب احتيال قبل الإرسال.",
+      "effectiveDateLabel": "تاريخ السريان",
+      "effectiveImmediate": "فوري",
+      "effectiveScheduled": "مجدول",
+      "effectiveDateRequired": "حدد تاريخ السريان المجدول.",
+      "effectiveDatePast": "تاريخ السريان لا يمكن أن يكون في الماضي.",
+      "suspensionEndUsesEffectiveStart": "تاريخ نهاية إعادة التفعيل. تاريخ بداية الحظر يُحدَّد من قسم تاريخ السريان أدناه."
+    },
     "suspensionModal": {
       "title": "اعتماد حظر خط (SUS)",
       "approve": "اعتماد وتنفيذ الحظر",
@@ -1552,6 +1686,7 @@
       "depositForfeit": "مصادرة",
       "depositRefund": "استرداد للمالك السابق",
       "identityRequired": "هوية المالك الجديد",
+      "newOwnerRequired": "اختر ملف المشترك للمالك الجديد",
       "pendingBackOffice": "بانتظار اعتماد الباك أوفيس — لا يُنفَّذ على الشبكة من نقطة البيع.",
       "val0702": "VAL-07-02: ذمم مالية معلقة تمنع نقل الملكية.",
       "val0705": "VAL-07-05: أحد الأطراف على القائمة السوداء.",
@@ -1593,7 +1728,8 @@
       "tabs": {
         "profile": "البيانات والفوترة",
         "services": "الباقات والخدمات",
-        "tickets": "الشكاوى والدعم"
+        "tickets": "الشكاوى والدعم",
+        "timeline": "الخط الزمني الموحّد"
       },
       "sections": {
         "fullInfo": "معلومات العميل الكاملة",
@@ -1863,6 +1999,7 @@
         "customer360OpenedWithoutId": "تنبيه: تم فتح الصفحة بدون تحديد هوية العميل المستهدف.",
         "awaitBo": "بانتظار اعتماد الباك أوفيس من مركز Telecom Hub.",
         "confirmed": "تم التأكيد والتنفيذ.",
+        "scheduledConfirmed": "تم الجدولة — سيتم التنفيذ تلقائياً عند تاريخ السريان.",
         "doneTitle": "تمت العملية",
         "doneHint": "راجع تبويب الباقات والخدمات.",
         "prev": "السابق",
@@ -2428,6 +2565,7 @@
       "kpisAria": "مؤشرات التشغيل",
       "misAria": "تقارير MIS",
       "strategicAria": "التحليلات الاستراتيجية",
+      "exceptionsAria": "تنبيهات الإدارة العليا",
       "noPermission": "لا تملك صلاحية عرض لوحة القيادة. تواصل مع مسؤول النظام.",
       "loadFailed": "تعذّر تحميل لوحة القيادة. أعد تحميل الصفحة أو تحقق من الاتصال.",
       "cockpit": {
@@ -2459,9 +2597,52 @@
         "hubDetails": "تفاصيل مركز العمليات",
         "branchWorkload": "ضغط العمل في الفروع",
         "noBranchData": "لا بيانات فرع بعد التحميل.",
+        "revenueTitle": "إيرادات الفترة (CBS)",
+        "scopePrefix": "نطاق العرض:",
+        "region": "المنطقة",
+        "branch": "الفرع",
+        "allSyria": "كل سوريا",
+        "allBranchesInScope": "كل الفروع في النطاق",
+        "refresh": "تحديث",
         "workloadHigh": "مرتفع",
         "workloadMedium": "متوسط",
         "workloadLow": "منخفض"
+      },
+      "exceptions": {
+        "kicker": "Exception Management",
+        "title": "تنبيهات تحتاج قرار",
+        "scopePrefix": "نطاق المراقبة:",
+        "critical": "حرج",
+        "warning": "تحذير",
+        "info": "معلومة",
+        "refresh": "تحديث",
+        "open": "معالجة",
+        "allClear": "لا استثناءات تشغيلية في النطاق الحالي — الوضع مستقر.",
+        "weeklyDigest": "ملخص الأسبوع التنفيذي",
+        "exportCsv": "تصدير CSV",
+        "exportPdf": "تصدير PDF"
+      },
+      "supervisor": {
+        "kicker": "حوكمة المشرف",
+        "title": "تدقيق تدخلات المشرف",
+        "scopePrefix": "النطاق:",
+        "total": "إجمالي",
+        "bypass": "تجاوز",
+        "approved": "معتمد",
+        "refresh": "تحديث",
+        "loading": "جاري التحميل…",
+        "empty": "لا تدخلات في النطاق الحالي",
+        "colOp": "العملية",
+        "colBranch": "الفرع",
+        "colType": "النوع",
+        "colReason": "السبب",
+        "colStatus": "الحالة"
+      },
+      "geoHeatmap": {
+        "kicker": "الخريطة التشغيلية",
+        "title": "خريطة حرارة الفروع",
+        "scopePrefix": "النطاق:",
+        "loading": "جاري التحميل…"
       },
       "strategic": {
         "kicker": "Executive MIS",
@@ -2489,10 +2670,108 @@
         "colRevenue": "مساهمة الإيراد",
         "colResolution": "سرعة حل التذاكر (س)",
         "colManagerRating": "تقييم المدير",
+        "exportExcel": "تصدير Excel",
+        "exportPdf": "تصدير PDF",
+        "churn30": "تسرب 30 يوم",
+        "churn60": "تسرب 60 يوم",
+        "revenueByCategory": "الإيراد حسب الفئة",
         "loadFailedScope": "تعذّر التحميل",
         "accessGeneralManager": "المدير العام",
         "accessRegionalDirector": "مدير إقليم",
         "accessBranchManager": "مدير فرع"
+      }
+    },
+    "executiveCommandCenter": {
+      "pageTitle": "مركز قيادة الإدارة العليا",
+      "noPermission": "لا تملك صلاحية عرض مركز القيادة التنفيذية.",
+      "backToDashboard": "العودة للوحة القيادة",
+      "kicker": "الإدارة العليا",
+      "title": "مركز قيادة الإدارة العليا",
+      "tabs": {
+        "scorecard": "نظرة سريعة",
+        "network": "الشبكة والتكامل",
+        "mis": "MIS المالي",
+        "operations": "العمليات",
+        "workforce": "أداء الموظفين",
+        "alerts": "التنبيهات والتدقيق"
+      },
+      "scope": {
+        "kicker": "نطاق موحّد",
+        "scopePrefix": "النطاق:",
+        "region": "المنطقة",
+        "branch": "الفرع",
+        "from": "من",
+        "to": "إلى",
+        "allSyria": "كل سوريا",
+        "allBranches": "كل الفروع",
+        "apply": "تطبيق",
+        "lockedScope": "نطاق مقفل"
+      },
+      "scorecard": {
+        "revenue": "إيراد الفترة",
+        "arpu": "ARPU",
+        "churn30": "تسرب 30 يوم",
+        "churn60": "تسرب 60",
+        "operations": "عمليات الفترة",
+        "openTickets": "تذاكر مفتوحة",
+        "sla": "SLA",
+        "criticalAlerts": "تنبيهات حرجة",
+        "warnings": "تحذيرات",
+        "onlineNow": "متصلون الآن",
+        "bestBranch": "أفضل فرع",
+        "weakestBranch": "أضعف فرع"
+      },
+      "network": {
+        "demoBadge": "Demo",
+        "demoHint": "بيانات تكامل محاكاة — ليست اتصالاً خارجياً حياً",
+        "successRate": "نجاح التكامل (عينة)",
+        "trend7d": "اتجاه النجاح (14 يوم)",
+        "recentLogs": "آخر سجلات التكامل",
+        "noData": "لا بيانات"
+      },
+      "operations": {
+        "readOnlyHint": "مراقبة فقط — بدون صلاحيات تنفيذ باك أوفيس",
+        "recharge": "إعادة شحن اليوم",
+        "payments": "مدفوعات مكتملة",
+        "activations": "تفعيلات",
+        "pendingOps": "عمليات معلقة",
+        "topPending": "أعلى عمليات معلقة",
+        "topOverdue": "تذاكر متأخرة SLA",
+        "open": "فتح",
+        "none": "لا يوجد"
+      },
+      "workforce": {
+        "allRoles": "كل الأدوار",
+        "showroom": "معرض",
+        "backOffice": "باك أوفيس",
+        "callCenter": "كول سنتر",
+        "refresh": "تحديث",
+        "exportCsv": "تصدير CSV",
+        "scopePrefix": "النطاق:",
+        "employee": "الموظف",
+        "branch": "الفرع",
+        "score": "النتيجة",
+        "ops": "عمليات",
+        "tickets": "تذاكر",
+        "detail": "تفاصيل",
+        "noEmployees": "لا موظفين في النطاق",
+        "ops7d": "عمليات 7 أيام",
+        "ops30d": "عمليات 30 يوم",
+        "score30d": "نتيجة 30 يوم"
+      },
+      "alerts": {
+        "exceptions": "استثناءات",
+        "supervisor": "تدخلات المشرف",
+        "open": "فتح",
+        "allClear": "لا استثناءات حرجة في النطاق",
+        "supervisorHint": "تدخلات المشرف في الفترة",
+        "none": "لا سجلات"
+      },
+      "readingGuide": {
+        "title": "كيف تقرأ اللوحة",
+        "step1": "ابدأ بتبويب النظرة السريعة — 8 بطاقات KPI في 30 ثانية.",
+        "step2": "استخدم شريط النطاق الموحّد — نفس الفلاتر لكل التبويبات.",
+        "step3": "انتقل للتفاصيل: MIS مالي، عمليات، موظفين، تنبيهات."
       }
     },
     "strategicAnalytics": {

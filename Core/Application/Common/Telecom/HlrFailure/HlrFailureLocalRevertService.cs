@@ -1,92 +1,52 @@
-using Application.Common.Integrations;
 using Application.Common.Repositories;
-using Application.Common.Telecom.Billing;
 using Application.Common.Telecom.Suspension;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Common.Telecom;
+namespace Application.Common.Telecom.HlrFailure;
 
-public sealed record HlrFailureCompensationResult(
-    bool CbsReversed,
-    bool InReversed,
-    bool LocalBindCompensated,
-    string MessageAr);
-
-/// <summary>Reverses CBS + local bind when HLR hard-fails after CBS succeeded (Ghost Profile mitigation).</summary>
-public interface ITelecomHlrFailureCompensator
+public interface IHlrFailureLocalRevertService
 {
-    Task<HlrFailureCompensationResult> CompensateAsync(
+    Task<bool> RevertLocalBindAsync(
         TelecomOperationRequest operation,
-        TelecomLineProvisionContext lineContext,
         string? actorUserId,
-        string hlrErrorMessage,
         CancellationToken cancellationToken);
 }
 
-public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
+public sealed class HlrFailureLocalRevertService : IHlrFailureLocalRevertService
 {
-    private const string CompensationMessageAr =
-        "فشل تزويد الشبكة (HLR) — تم عكس الحساب المالي (CBS) وإلغاء الربط المحلي.";
-
-    private readonly IBillingRoutingOrchestrator _billingRouting;
-    private readonly ISubscriptionBindingCompensator _bindingCompensator;
     private readonly ICommandRepository<TelecomSubscription> _subscriptionRepository;
     private readonly ICommandRepository<MsisdnAsset> _msisdnRepository;
     private readonly ICommandRepository<SimInventory> _simRepository;
     private readonly ICommandRepository<SubscriberProfile> _profileRepository;
     private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
+    private readonly ISubscriptionBindingCompensator _bindingCompensator;
     private readonly IUnitOfWork _unitOfWork;
 
-    public TelecomHlrFailureCompensator(
-        IBillingRoutingOrchestrator billingRouting,
-        ISubscriptionBindingCompensator bindingCompensator,
+    public HlrFailureLocalRevertService(
         ICommandRepository<TelecomSubscription> subscriptionRepository,
         ICommandRepository<MsisdnAsset> msisdnRepository,
         ICommandRepository<SimInventory> simRepository,
         ICommandRepository<SubscriberProfile> profileRepository,
         ICommandRepository<TelecomOperationRequest> operationRepository,
+        ISubscriptionBindingCompensator bindingCompensator,
         IUnitOfWork unitOfWork)
     {
-        _billingRouting = billingRouting;
-        _bindingCompensator = bindingCompensator;
         _subscriptionRepository = subscriptionRepository;
         _msisdnRepository = msisdnRepository;
         _simRepository = simRepository;
         _profileRepository = profileRepository;
         _operationRepository = operationRepository;
+        _bindingCompensator = bindingCompensator;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<HlrFailureCompensationResult> CompensateAsync(
+    public async Task<bool> RevertLocalBindAsync(
         TelecomOperationRequest operation,
-        TelecomLineProvisionContext lineContext,
         string? actorUserId,
-        string hlrErrorMessage,
         CancellationToken cancellationToken)
     {
-        var billingRequest = TelecomProvisionRequestBuilder.ToBillingRequest(
-            operation,
-            lineContext,
-            TelecomBillingProvisionPhase.Reverse);
-
-        var routing = _billingRouting.ResolveProvisionRouting(
-            operation.Kind,
-            lineContext.SubscriptionTypeCode,
-            lineContext.SourceSubscriptionTypeCode,
-            lineContext.TargetSubscriptionTypeCode);
-
-        var compensation = await _billingRouting.CompensateProvisionAsync(
-            operation,
-            lineContext,
-            billingRequest,
-            cancellationToken);
-
-        var cbsReversed = routing.UsesCbs && compensation.Success;
-        var inReversed = routing.UsesIn && compensation.Success;
-
-        var localCompensated = false;
         if (operation.Kind == TelecomOperationKind.ChangeGsmType
             && !string.IsNullOrEmpty(operation.SourceSubscriptionTypeId))
         {
@@ -98,93 +58,65 @@ public sealed class TelecomHlrFailureCompensator : ITelecomHlrFailureCompensator
                 .Select(s => s.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (!string.IsNullOrEmpty(subId))
+            if (string.IsNullOrEmpty(subId))
             {
-                var sub = await _subscriptionRepository.GetAsync(subId, cancellationToken);
-                if (sub != null)
-                {
-                    sub.SubscriptionTypeId = operation.SourceSubscriptionTypeId;
-                    sub.UpdatedById = actorUserId;
-                    _subscriptionRepository.Update(sub);
-                    localCompensated = true;
-                    await _unitOfWork.SaveAsync(cancellationToken);
-                }
+                return false;
             }
-        }
-        else if (operation.Kind == TelecomOperationKind.TakeOver)
-        {
-            localCompensated = await RevertTakeOverOwnershipAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.SimSwap)
-        {
-            localCompensated = await RevertSimSwapAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.NumberPortability)
-        {
-            localCompensated = await RevertChangeNumberAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.Termination)
-        {
-            localCompensated = await RevertTerminationAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.Migration)
-        {
-            localCompensated = await RevertMigrationAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.TemporarySuspension)
-        {
-            localCompensated = await RevertSuspensionAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.Reconnect)
-        {
-            localCompensated = await RevertReconnectAsync(operation, actorUserId, cancellationToken);
-        }
-        else if (operation.Kind == TelecomOperationKind.NewActivation
-            && !string.IsNullOrEmpty(operation.MsisdnAssetId)
-            && !string.IsNullOrEmpty(operation.SimInventoryId))
-        {
-            var subId = await _subscriptionRepository.GetQuery()
-                .Where(s => !s.IsDeleted
-                    && s.MsisdnAssetId == operation.MsisdnAssetId
-                    && s.SubscriberProfileId == operation.SubscriberProfileId)
-                .OrderByDescending(s => s.CreatedAtUtc)
-                .Select(s => s.Id)
-                .FirstOrDefaultAsync(cancellationToken);
 
-            if (!string.IsNullOrEmpty(subId))
+            var sub = await _subscriptionRepository.GetAsync(subId, cancellationToken);
+            if (sub == null)
             {
-                await _bindingCompensator.CompensateAsync(
-                    subId,
-                    operation.MsisdnAssetId,
-                    operation.SimInventoryId,
-                    operation.SubscriberProfileId,
-                    cancellationToken);
-                localCompensated = true;
-                await _unitOfWork.SaveAsync(cancellationToken);
+                return false;
             }
+
+            sub.SubscriptionTypeId = operation.SourceSubscriptionTypeId;
+            sub.UpdatedById = actorUserId;
+            _subscriptionRepository.Update(sub);
+            await _unitOfWork.SaveAsync(cancellationToken);
+            return true;
         }
 
-        var msg = operation.Kind switch
+        return operation.Kind switch
         {
-            TelecomOperationKind.TakeOver =>
-                $"VAL-07-04: فشل HLR — تم عكس CBS واستعادة المالك السابق ({hlrErrorMessage})",
-            TelecomOperationKind.SimSwap =>
-                $"VAL-04-ROLLBACK: فشل HLR — تم عكس CBS واستعادة الشريحة السابقة ({hlrErrorMessage})",
-            TelecomOperationKind.NumberPortability =>
-                $"VAL-05-ROLLBACK: فشل HLR — تم عكس CBS واستعادة الرقم السابق ({hlrErrorMessage})",
-            TelecomOperationKind.Termination =>
-                $"VAL-10-ROLLBACK: فشل HLR — تم عكس CBS واستعادة الخط ({hlrErrorMessage})",
-            TelecomOperationKind.Migration =>
-                $"VAL-11-ROLLBACK: فشل HLR — تم عكس CBS واستعادة الباقة السابقة ({hlrErrorMessage})",
-            TelecomOperationKind.TemporarySuspension =>
-                $"VAL-08-ROLLBACK: فشل HLR — تم عكس CBS واستعادة حالة الخط ({hlrErrorMessage})",
-            TelecomOperationKind.Reconnect =>
-                $"VAL-09-ROLLBACK: فشل HLR — تم عكس CBS وإعادة الحظر ({hlrErrorMessage})",
-            _ when routing.UsesIn && !routing.UsesCbs =>
-                $"فشل HLR — تم عكس IN (Quarantined) وإلغاء الربط المحلي ({hlrErrorMessage})",
-            _ => $"{CompensationMessageAr} ({hlrErrorMessage})",
+            TelecomOperationKind.TakeOver => await RevertTakeOverOwnershipAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.SimSwap => await RevertSimSwapAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.NumberPortability => await RevertChangeNumberAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.Termination => await RevertTerminationAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.Migration => await RevertMigrationAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.TemporarySuspension => await RevertSuspensionAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.Reconnect => await RevertReconnectAsync(operation, actorUserId, cancellationToken),
+            TelecomOperationKind.NewActivation when !string.IsNullOrEmpty(operation.MsisdnAssetId)
+                && !string.IsNullOrEmpty(operation.SimInventoryId) =>
+                await RevertNewActivationBindAsync(operation, cancellationToken),
+            _ => false,
         };
-        return new HlrFailureCompensationResult(cbsReversed, inReversed, localCompensated, msg);
+    }
+
+    private async Task<bool> RevertNewActivationBindAsync(
+        TelecomOperationRequest operation,
+        CancellationToken cancellationToken)
+    {
+        var subId = await _subscriptionRepository.GetQuery()
+            .Where(s => !s.IsDeleted
+                && s.MsisdnAssetId == operation.MsisdnAssetId
+                && s.SubscriberProfileId == operation.SubscriberProfileId)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .Select(s => s.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrEmpty(subId))
+        {
+            return false;
+        }
+
+        await _bindingCompensator.CompensateAsync(
+            subId,
+            operation.MsisdnAssetId!,
+            operation.SimInventoryId!,
+            operation.SubscriberProfileId,
+            cancellationToken);
+        await _unitOfWork.SaveAsync(cancellationToken);
+        return true;
     }
 
     private async Task<bool> RevertSimSwapAsync(

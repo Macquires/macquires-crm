@@ -1,10 +1,10 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.TelecomManager.Queries;
-
 public record SellingLineRejectionReasonDto(string Reason, int Count);
 
 public class GetSellingLineActivationKpisResult
@@ -21,40 +21,47 @@ public class GetSellingLineActivationKpisResult
     public List<SellingLineRejectionReasonDto> RejectionReasons { get; init; } = new();
 }
 
-public class GetSellingLineActivationKpisRequest : IRequest<GetSellingLineActivationKpisResult>
+public class GetSellingLineActivationKpisRequest : IRequest<GetSellingLineActivationKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
     public string? BranchId { get; init; }
 }
-
 public class GetSellingLineActivationKpisHandler
     : IRequestHandler<GetSellingLineActivationKpisRequest, GetSellingLineActivationKpisResult>
 {
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(5);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetSellingLineActivationKpisHandler(IQueryContext context) => _context = context;
-
+    public GetSellingLineActivationKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
     public async Task<GetSellingLineActivationKpisResult> Handle(
         GetSellingLineActivationKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetSellingLineActivationKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.AddDays(-30);
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var query = _context.TelecomOperationRequest.AsNoTracking()
-            .Where(o => !o.IsDeleted
-                        && o.Kind == TelecomOperationKind.NewActivation
+            .InBranchScope(scope.EffectiveBranchIds)
+            .Where(o => !o.IsDeleted                        && o.Kind == TelecomOperationKind.NewActivation
                         && o.CreatedAtUtc >= from
                         && o.CreatedAtUtc <= to);
-
-        if (!string.IsNullOrWhiteSpace(request.BranchId))
-        {
-            var branch = request.BranchId.Trim();
-            query = query.Where(o => o.BranchId == branch);
-        }
 
         var ops = await query
             .Select(o => new
@@ -96,8 +103,9 @@ public class GetSellingLineActivationKpisHandler
             .Where(a => !a.IsDeleted
                         && a.ToStatus == TelecomOperationStatus.Failed
                         && a.OccurredAtUtc >= from
-                        && a.OccurredAtUtc <= to)
-            .Join(
+                        && a.OccurredAtUtc <= to
+                        && a.BranchId != null
+                        && scope.EffectiveBranchIds.Contains(a.BranchId))            .Join(
                 _context.TelecomOperationRequest.AsNoTracking().Where(o =>
                     !o.IsDeleted && o.Kind == TelecomOperationKind.NewActivation),
                 a => a.TelecomOperationRequestId,

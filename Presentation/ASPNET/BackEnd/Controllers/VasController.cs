@@ -2,20 +2,20 @@ using Application.Features.VasManager.Commands;
 using Application.Features.VasManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
 
 [Route("api/[controller]")]
-[Authorize]
 public class VasController : BaseApiController
 {
     public VasController(ISender sender) : base(sender)
     {
     }
 
+    [RequireVasCatalogManage]
     [HttpGet("GetValueAddedServiceList")]
     public async Task<ActionResult<ApiSuccessResult<GetValueAddedServiceListResult>>> GetValueAddedServiceListAsync(
         CancellationToken cancellationToken,
@@ -33,6 +33,7 @@ public class VasController : BaseApiController
         });
     }
 
+    [RequireVasSubscriber]
     [HttpGet("GetSubscriberVasPanel")]
     public async Task<ActionResult<ApiSuccessResult<GetSubscriberVasPanelResult>>> GetSubscriberVasPanelAsync(
         [FromQuery] string? msisdn,
@@ -50,6 +51,7 @@ public class VasController : BaseApiController
         });
     }
 
+    [RequireVasCatalogManage]
     [HttpPost("CreateValueAddedService")]
     public async Task<ActionResult<ApiSuccessResult<CreateValueAddedServiceResult>>> CreateValueAddedServiceAsync(
         CreateValueAddedServiceRequest request,
@@ -64,6 +66,7 @@ public class VasController : BaseApiController
         });
     }
 
+    [RequireVasCatalogManage]
     [HttpPost("UpdateValueAddedService")]
     public async Task<ActionResult<ApiSuccessResult<UpdateValueAddedServiceResult>>> UpdateValueAddedServiceAsync(
         UpdateValueAddedServiceRequest request,
@@ -78,6 +81,7 @@ public class VasController : BaseApiController
         });
     }
 
+    [RequireVasCatalogManage]
     [HttpPost("DeleteValueAddedService")]
     public async Task<ActionResult<ApiSuccessResult<DeleteValueAddedServiceResult>>> DeleteValueAddedServiceAsync(
         DeleteValueAddedServiceRequest request,
@@ -92,6 +96,7 @@ public class VasController : BaseApiController
         });
     }
 
+    [RequireVasSubscriber]
     [HttpPost("ToggleSubscriberVasService")]
     public async Task<ActionResult<ApiSuccessResult<ToggleSubscriberVasServiceResult>>> ToggleSubscriberVasServiceAsync(
         ToggleSubscriberVasServiceRequest request,

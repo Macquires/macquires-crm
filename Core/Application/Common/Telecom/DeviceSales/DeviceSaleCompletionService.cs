@@ -16,6 +16,7 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
     private readonly ICommandRepository<DeviceInstallmentScheduleLine> _scheduleRepository;
     private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
     private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingPostingIntegration _billingPosting;
     private readonly IDeviceInventoryIntegration _deviceInventoryIntegration;
     private readonly ISmsGatewayIntegration _sms;
     private readonly NumberSequenceService _numberSequence;
@@ -28,6 +29,7 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
         ICommandRepository<DeviceInstallmentScheduleLine> scheduleRepository,
         ICommandRepository<TelecomOperationRequest> operationRepository,
         IBillingSystemIntegration billing,
+        IBillingPostingIntegration billingPosting,
         IDeviceInventoryIntegration deviceInventoryIntegration,
         ISmsGatewayIntegration sms,
         NumberSequenceService numberSequence,
@@ -39,6 +41,7 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
         _scheduleRepository = scheduleRepository;
         _operationRepository = operationRepository;
         _billing = billing;
+        _billingPosting = billingPosting;
         _deviceInventoryIntegration = deviceInventoryIntegration;
         _sms = sms;
         _numberSequence = numberSequence;
@@ -68,12 +71,31 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
                 TelecomOperationKind.DeviceSale,
                 operation.CorrelationId,
                 operation.DeviceDownPaymentAmount ?? device.ListPrice,
-                ProductServiceCode: TelecomBssOperations.CbsPostDeviceSale),
+                ProductServiceCode: TelecomBssOperations.CbsPostDeviceSale,
+                BranchId: operation.BranchId),
             cancellationToken);
 
         if (!chargeResult.Success)
         {
             throw new InvalidOperationException(chargeResult.Message ?? "فشل ترحيل بيع الجهاز إلى CBS.");
+        }
+
+        var saleAmount = operation.DeviceDownPaymentAmount ?? device.ListPrice;
+        var journal = await _billingPosting.PostJournalEntryAsync(
+            new BillingJournalPostRequest(
+                operation.Id,
+                operation.Number,
+                msisdn ?? string.Empty,
+                TelecomOperationKind.DeviceSale,
+                saleAmount,
+                TelecomBssOperations.CbsPostDeviceSale,
+                operation.CorrelationId,
+                operation.BranchId),
+            cancellationToken);
+
+        if (journal.Success && !string.IsNullOrEmpty(journal.JournalEntryId))
+        {
+            operation.ProvisioningResult = journal.JournalEntryId;
         }
 
         DeviceInstallmentContract? contract = null;
@@ -82,7 +104,7 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
             var plan = await _query.InstallmentPlan.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == operation.InstallmentPlanId, cancellationToken);
 
-            var contractNumber = _numberSequence.GenerateNumber("DeviceInstallmentContract", "DIC-", "", useDate: true);
+            var contractNumber = await _numberSequence.GenerateNumberAsync("DeviceInstallmentContract", "DIC-", "", useDate: true, cancellationToken: cancellationToken);
 
             var cbsContract = await _billing.ProvisionAsync(
                 new BillingProvisionRequest(
@@ -92,7 +114,8 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
                     TelecomOperationKind.DeviceSale,
                     operation.CorrelationId,
                     operation.DeviceMonthlyInstallmentAmount ?? 0m,
-                    ProductServiceCode: TelecomBssOperations.CbsCreateDeviceInstallmentContract),
+                    ProductServiceCode: TelecomBssOperations.CbsCreateDeviceInstallmentContract,
+                    BranchId: operation.BranchId),
                 cancellationToken);
 
             if (!cbsContract.Success)
@@ -129,7 +152,7 @@ public sealed class DeviceSaleCompletionService : IDeviceSaleCompletionService
         _deviceRepository.Update(device);
 
         operation.DeviceWarrantyStartsAtUtc = DateTime.UtcNow;
-        operation.ProvisioningResult = "DeviceSaleCompleted";
+        operation.ProvisioningResult ??= "DeviceSaleCompleted";
         _operationRepository.Update(operation);
 
         await _unitOfWork.SaveAsync(cancellationToken);

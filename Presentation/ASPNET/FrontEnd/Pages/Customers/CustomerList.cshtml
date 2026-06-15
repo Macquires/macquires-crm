@@ -286,15 +286,18 @@
                                                                 <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" :disabled="isLineProcessing(sub.id)">{{ telecomT('lineActions.menu', 'Line actions') }}</button>
                                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                                                     <li v-if="gridAccess.canMigrateLine"><a class="dropdown-item" href="#" v-on:click.prevent="openMigrateModal(sub)">{{ telecomT('lineActions.migrate', 'Migrate') }}</a></li>
+                                                                    <li v-if="gridAccess.canChangeGsmLine"><a class="dropdown-item" href="#" v-on:click.prevent="openChangeGsmModal(sub)">{{ telecomT('lineActions.changeGsm', 'Change line type') }}</a></li>
                                                                     <li v-if="gridAccess.canSimSwapLine"><a class="dropdown-item" href="#" v-on:click.prevent="openSimSwapModal(sub)">{{ telecomT('lineActions.simSwap', 'SIM swap') }}</a></li>
                                                                     <li v-if="gridAccess.canChangeNumberLine"><a class="dropdown-item" href="#" v-on:click.prevent="openChangeNumberModal(sub)">{{ telecomT('lineActions.changeNumber', 'Change number') }}</a></li>
                                                                     <li v-if="gridAccess.canSuspensionLine && !isLineTerminated(sub) && !isLineSuspended(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openSuspensionModal(sub)">{{ telecomT('lineActions.suspension', 'Suspend') }}</a></li>
                                                                     <li v-if="gridAccess.canReconnectLine && isLineSuspended(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openReconnectModal(sub)">{{ telecomT('lineActions.reconnect', 'Reconnect') }}</a></li>
                                                                     <li v-if="gridAccess.canCollectionLine && !isLineTerminated(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openBadDebtModal(sub)">{{ telecomT('lineActions.collection', 'Collection') }}</a></li>
                                                                     <li v-if="gridAccess.canRefundLine && !isLineTerminated(sub)"><a class="dropdown-item" href="#" v-on:click.prevent="openRefundModal(sub)">{{ telecomT('lineActions.refund', 'Refund') }}</a></li>
-                                                                    <li v-if="gridAccess.canDeviceSaleLine"><a class="dropdown-item" href="#" v-on:click.prevent="goToC360Wizard(sub, 'deviceSale')">{{ telecomT('lineActions.deviceSale', 'Device sale') }}</a></li>
+                                                                    <li v-if="gridAccess.canDeviceSaleLine"><a class="dropdown-item" href="#" v-on:click.prevent="openDeviceSaleModal(sub)">{{ telecomT('lineActions.deviceSale', 'Device sale') }}</a></li>
                                                                     <li v-if="gridAccess.canTerminateLine && !isLineTerminated(sub)"><a class="dropdown-item text-danger" href="#" v-on:click.prevent="openTerminationModal(sub)">{{ telecomT('lineActions.terminate', 'Terminate') }}</a></li>
                                                                     <li v-if="gridAccess.canTakeOverLine"><a class="dropdown-item" href="#" v-on:click.prevent="openTakeOverModal(sub)">{{ telecomT('lineActions.takeOver', 'Transfer') }}</a></li>
+                                                                    <li><hr class="dropdown-divider" /></li>
+                                                                    <li><a class="dropdown-item" href="#" v-on:click.prevent="goToC360Wizard(sub, 'migrate')"><i class="bi bi-box-arrow-up-right me-1"></i>{{ telecomT('lineActions.openIn360', 'Open in Customer 360') }}</a></li>
                                                                 </ul>
                                                             </div>
                                                             <span v-if="sub.isPrimaryLine" class="badge bg-danger">{{ telecomT('lineActions.primaryBadge', 'Primary') }}</span>
@@ -350,7 +353,14 @@
                                     <div class="col-12" v-if="state.customer360.recentOperations?.length">
                                         <h6 class="fw-semibold mb-2">{{ telecomT('lineActions.opsPipeline', 'Operations pipeline') }}</h6>
                                         <div v-for="op in state.customer360.recentOperations" :key="op.id" class="border rounded p-2 mb-2 small">
-                                            <div class="d-flex justify-content-between"><span>{{ op.number }}</span><span class="text-muted">{{ op.correlationId?.slice(0,8) }}…</span></div>
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                                <span>{{ op.number }}</span>
+                                                <span v-if="op.statusLabelAr" class="badge rounded-pill" :class="operationStatusBadge(op.status)">{{ op.statusLabelAr }}</span>
+                                                <span v-if="formatOpEffectiveDate(op)" class="small text-muted w-100">
+                                                    {{ telecomT('ops.scheduledEffective', 'Effective') }}: {{ formatOpEffectiveDate(op) }} UTC
+                                                </span>
+                                                <span class="text-muted">{{ op.correlationId?.slice(0,8) }}…</span>
+                                            </div>
                                             <div class="c360-pipeline mt-2">
                                                 <div v-for="(st, idx) in pipelineStepsForOp(op.status)" :key="idx" class="c360-pipeline-step" :class="{ done: st.done, active: st.active, failed: st.failed }">
                                                     <div class="dot"></div>{{ st.label }}
@@ -536,10 +546,29 @@
                 <div class="modal-body">
                     <p class="small text-muted">{{ telecomT('c360.newLineHint', '') }} <a href="/Telecom/MsisdnInventory" target="_blank" rel="noopener">MSISDN</a></p>
                     <div class="mb-2">
+                        <label class="form-label small fw-semibold">{{ telecomT('wizard.lineType.label', 'Line type') }} <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" v-model="lineActionModal.activationLineTypeId" :disabled="lineActionModal.busy" v-on:change="onListActivationLineTypeChange">
+                            <option value="">{{ telecomT('wizard.lineType.placeholder', '—') }}</option>
+                            <option v-for="lt in listActivationLineTypeOptions" :key="lt.id" :value="lt.id">{{ listLineTypeDisplayName(lt) }}</option>
+                        </select>
+                    </div>
+                    <div v-if="isCorporateCustomer" class="border rounded p-2 mb-2 bg-light">
+                        <p class="small text-muted mb-2">{{ telecomT('wizard.corporateSecondPartyHint', '') }}</p>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="lineActionModal.activateSecondarySearchNationalId" /></div>
+                            <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="lineActionModal.activateSecondarySearchPhone" /></div>
+                            <div class="col-12"><button type="button" class="btn btn-outline-danger btn-sm" :disabled="lineActionModal.activateSecondaryBusy" v-on:click="searchListActivateSecondary">{{ telecomT('wizardUi.searchNewOwner', 'Search') }}</button></div>
+                        </div>
+                        <ul class="list-group list-group-flush border rounded mb-0" v-if="lineActionModal.activateSecondaryResults.length">
+                            <li v-for="c in lineActionModal.activateSecondaryResults" :key="c.id" class="list-group-item list-group-item-action small" v-on:click="selectListActivateSecondary(c)" style="cursor:pointer">{{ c.name }}</li>
+                        </ul>
+                        <p v-if="lineActionModal.activateSecondaryLabel" class="small text-success mb-0 mt-2">{{ lineActionModal.activateSecondaryLabel }}</p>
+                    </div>
+                    <div class="mb-2">
                         <label class="form-label small">MSISDN</label>
-                        <select class="form-select" v-model="lineActionModal.msisdnAssetId" :disabled="lineActionModal.busy" @@change="onNewLineMsisdnChanged">
+                        <select class="form-select" v-model="lineActionModal.msisdnAssetId" :disabled="lineActionModal.busy || !lineActionModal.activationLineTypeId" @@change="onNewLineMsisdnChanged">
                             <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
-                            <option v-for="a in lineActionModal.poolNumbers" :key="a.id" :value="a.id">{{ a.msisdn || a.id }}</option>
+                            <option v-for="a in listFilteredActivatePool" :key="a.id" :value="a.id">{{ a.msisdn || a.id }}</option>
                         </select>
                         <div v-if="!lineActionModal.busy && lineActionModal.poolNumbers.length === 0" class="form-text text-warning">
                             {{ telecomT('c360.poolEmpty', '') }}
@@ -547,10 +576,20 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label small">{{ telecomT('c360.offerLabel', 'Package') }}</label>
-                        <select class="form-select" v-model="lineActionModal.productOfferingId" :disabled="lineActionModal.busy">
+                        <select class="form-select" v-model="lineActionModal.productOfferingId" :disabled="lineActionModal.busy || !lineActionModal.activationLineTypeId" v-on:change="onListActivateOfferingChanged">
                             <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
                             <option v-for="o in lineActionModal.offerings" :key="o.id" :value="o.id">{{ o.name || o.nameEn }}</option>
                         </select>
+                    </div>
+                    <div v-if="lineActionModal.activateOfferDetailBusy" class="small text-muted mb-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('common.loading', 'Loading…') }}</div>
+                    <div v-else-if="lineActionModal.activateOfferDetail" class="card border-0 shadow-sm mb-2">
+                        <div class="card-header py-2 px-3 bg-primary bg-opacity-10 small fw-semibold">{{ listActivateOfferName }}</div>
+                        <div class="card-body py-2 px-3 small">
+                            <p v-if="listActivateOfferSummary" class="text-muted mb-2">{{ listActivateOfferSummary }}</p>
+                            <div v-if="listActivateOfferVoice" class="mb-1"><i class="bi bi-telephone-fill text-primary me-1"></i>{{ telecomT('wizard.migrationOffers.offerCard.voice', 'Voice') }}: <strong>{{ listActivateOfferVoice }}</strong></div>
+                            <div v-if="listActivateOfferData" class="mb-1"><i class="bi bi-wifi text-success me-1"></i>{{ telecomT('wizard.migrationOffers.offerCard.data', 'Data') }}: <strong>{{ listActivateOfferData }}</strong></div>
+                            <div v-if="listActivateOfferSms"><i class="bi bi-chat-dots-fill text-info me-1"></i>{{ telecomT('wizard.migrationOffers.offerCard.sms', 'SMS') }}: <strong>{{ listActivateOfferSms }}</strong></div>
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label small">{{ telecomT('c360.simIccid', 'ICCID') }}</label>
@@ -575,6 +614,20 @@
                             <input type="text" class="form-control form-control-sm" v-model="lineActionModal.dealerCode" maxlength="64" :disabled="lineActionModal.busy" />
                         </div>
                     </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">{{ telecomT('wizard.kycUpload.title', 'KYC document') }} <span class="text-danger">*</span></label>
+                        <p class="small text-muted mb-1">{{ telecomT('wizard.kycUpload.formats', 'PDF, PNG, JPG') }}</p>
+                        <input type="file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg" v-on:change="onActivateKycFileChange" :disabled="lineActionModal.busy || lineActionModal.activateKycUploadBusy" />
+                        <p v-if="lineActionModal.activateKycUploadBusy" class="small text-muted mb-0 mt-1"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('wizard.kycUpload.uploading', 'Uploading…') }}</p>
+                        <p v-else-if="lineActionModal.activateKycDocumentReferenceId" class="small text-success mb-0 mt-1"><i class="bi bi-check-circle me-1"></i>{{ telecomT('wizard.kycUpload.locked', 'Document linked') }}</p>
+                        <p v-else-if="lineActionModal.activateKycUploadError" class="small text-danger mb-0 mt-1">{{ lineActionModal.activateKycUploadError }}</p>
+                    </div>
+                    <label class="form-label small fw-semibold mt-2">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy" data-testid="list-act-effective-mode">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-act-effective-date" />
                     <div class="border rounded p-2 mb-0 bg-light" v-if="newLineOfferingDeposit() > 0">
                         <p class="small fw-semibold mb-2">{{ telecomT('wizardUi.paymentBlock', 'Payment') }}</p>
                         <div class="row g-2 mb-2">
@@ -625,15 +678,102 @@
                     <p class="small text-muted mb-2" dir="ltr">{{ lineActionModal.sub?.msisdn }}</p>
                     <p class="small" v-if="lineActionModal.currentProductName">{{ telecomT('c360.currentPlan', 'Current') }}: <strong>{{ lineActionModal.currentProductName }}</strong></p>
                     <label class="form-label small">{{ telecomT('wizard.targetOffer', 'New offer') }}</label>
-                    <select class="form-select" v-model="lineActionModal.productOfferingId" :disabled="lineActionModal.busy">
+                    <select class="form-select" v-model="lineActionModal.productOfferingId" :disabled="lineActionModal.busy" v-on:change="onListMigrateOfferingChanged">
                         <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
                         <option v-for="p in lineActionModal.migrationProducts" :key="p.id" :value="p.id">{{ p.name }}</option>
                     </select>
+                    <div v-if="lineActionModal.migrateOfferDetailBusy" class="small text-muted mt-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('common.loading', 'Loading…') }}</div>
+                    <div v-else-if="lineActionModal.migrateOfferDetail" class="card border-0 shadow-sm mt-2 mb-0">
+                        <div class="card-header py-2 px-3 bg-primary bg-opacity-10 small fw-semibold">{{ listMigrateOfferName }}</div>
+                        <div class="card-body py-2 px-3 small">
+                            <p v-if="listMigrateOfferSummary" class="text-muted mb-2">{{ listMigrateOfferSummary }}</p>
+                            <div v-if="listMigrateOfferVoice" class="mb-1"><i class="bi bi-telephone-fill text-primary me-1"></i>{{ telecomT('wizard.migrationOffers.offerCard.voice', 'Voice') }}: <strong>{{ listMigrateOfferVoice }}</strong></div>
+                            <div v-if="listMigrateOfferData" class="mb-1"><i class="bi bi-wifi text-success me-1"></i>{{ telecomT('wizard.migrationOffers.offerCard.data', 'Data') }}: <strong>{{ listMigrateOfferData }}</strong></div>
+                            <div v-if="listMigrateOfferSms"><i class="bi bi-chat-dots-fill text-info me-1"></i>{{ telecomT('wizard.migrationOffers.offerCard.sms', 'SMS') }}: <strong>{{ listMigrateOfferSms }}</strong></div>
+                        </div>
+                    </div>
+                    <div v-if="lineActionModal.mgrProrationBusy" class="small text-muted mt-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('common.loading', 'Loading…') }}</div>
+                    <div v-else-if="lineActionModal.mgrProrationPreview" class="card border-info mt-2 mb-0">
+                        <div class="card-header py-2 px-3 bg-info bg-opacity-10 small fw-semibold">{{ telecomT('wizard.migrationOffers.prorationPreview', 'Financial preview') }}</div>
+                        <div class="card-body py-2 px-3 small">
+                            <div class="d-flex justify-content-between mb-1"><span class="text-muted">{{ telecomT('wizard.migrationOffers.priceDifference', 'Price difference') }}</span><strong>{{ listMgrProrationPriceDifferenceLabel }}</strong></div>
+                            <div class="d-flex justify-content-between mb-1"><span class="text-muted">{{ telecomT('wizard.migrationOffers.proratedAmount', 'Prorated') }}</span><strong>{{ listMgrProrationAmountLabel }}</strong></div>
+                            <div class="d-flex justify-content-between mb-1"><span class="text-muted">{{ telecomT('wizard.migrationOffers.walletBalance', 'Wallet') }}</span><strong>{{ listMgrProrationWalletLabel }}</strong></div>
+                            <p class="text-muted mb-0">{{ listMgrProrationDaysLabel }}</p>
+                            <p v-if="!listMgrProrationSufficient" class="text-danger mb-0 mt-1 fw-semibold">{{ telecomT('wizard.migrationOffers.prorationInsufficient', 'Insufficient balance') }}</p>
+                        </div>
+                    </div>
+                    <label class="form-label small fw-semibold mt-3">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
                     <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitMigrate">
                         <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('c360.confirmMigrate', 'Confirm') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360ChangeGsmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ telecomT('wizard.titles.changeGsm', 'Change line type') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">{{ telecomT('c360.lineLabel', 'Line') }}: {{ lineActionModal.sub?.msisdn }}</p>
+                    <p v-if="lineActionModal.cgtCurrentTypeLabel" class="small text-muted mb-2">{{ telecomT('changeGsm.targetType', 'Type') }}: <strong>{{ lineActionModal.cgtCurrentTypeLabel }}</strong></p>
+                    <div v-if="lineActionModal.cgtTargetsBusy" class="text-muted small py-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('c360.loadingPool', 'Loading…') }}</div>
+                    <template v-else>
+                        <label class="form-label small fw-semibold">{{ telecomT('changeGsm.targetType', 'New type') }} <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm mb-2" v-model="lineActionModal.cgtTargetTypeId" v-on:change="onListCgtTargetTypeChanged" :disabled="lineActionModal.busy">
+                            <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                            <option v-for="t in lineActionModal.cgtTargets" :key="t.id" :value="t.id">{{ t.nameAr || t.nameEn }} ({{ t.code }})</option>
+                        </select>
+                        <label class="form-label small fw-semibold">{{ telecomT('changeGsm.migrationReason', 'Reason') }} <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.cgtMigrationReason" maxlength="256" :disabled="lineActionModal.busy" />
+                        <label class="form-label small fw-semibold">{{ telecomT('bss.cgtMigrationPath', 'Path') }}</label>
+                        <select class="form-select form-select-sm mb-2" v-model="lineActionModal.cgtMigrationPath" v-on:change="onListCgtPathChange" :disabled="lineActionModal.busy">
+                            <option value="Standard">{{ telecomT('bss.cgtPathStandard', 'Standard') }}</option>
+                            <option value="Regulatory">{{ telecomT('bss.cgtPathRegulatory', 'Regulatory') }}</option>
+                        </select>
+                        <div v-if="listCgtShowsFinancial" class="alert alert-warning py-2 small mb-2">{{ telecomT('bss.cgtFinancialHint', '') }}</div>
+                        <template v-if="listCgtShowsFinancial">
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssPaymentReference" dir="ltr" :placeholder="telecomT('bss.paymentReference', 'Payment ref') + ' *'" />
+                            <label class="form-label small fw-semibold">{{ telecomT('bss.identityReverifyUpload', 'ID re-verification') }} <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" v-on:change="onListCgtIdentityFileChange" :disabled="lineActionModal.busy" />
+                        </template>
+                        <template v-if="listCgtShowsRegulatory">
+                            <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssDocumentNumber" :placeholder="telecomT('bss.regulatoryDocumentNumber', 'Doc #') + ' *'" />
+                            <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" v-on:change="onListBssRegulatoryFileChange" />
+                        </template>
+                        <div v-if="lineActionModal.cgtOffersBusy" class="text-muted small py-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('c360.loadingPool', 'Loading…') }}</div>
+                        <template v-else-if="lineActionModal.cgtOffers.length">
+                            <label class="form-label small">{{ telecomT('wizard.targetOffer', 'Package') }}</label>
+                            <select class="form-select form-select-sm mb-0" v-model="lineActionModal.cgtProductOfferingId" :disabled="lineActionModal.busy">
+                                <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                                <option v-for="o in lineActionModal.cgtOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
+                            </select>
+                        </template>
+                        <label class="form-label small fw-semibold">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                        <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                            <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                            <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                        </select>
+                        <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" />
+                    </template>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitChangeGsm">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('c360.confirmChangeGsm', 'Confirm') }}
                     </button>
                 </div>
             </div>
@@ -666,11 +806,29 @@
                             <option value="NotOffered">{{ telecomT('termination.retentionNotOffered', 'Not offered') }}</option>
                         </select>
                     </div>
+                    <template v-if="listTrmShowsPayment">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssPaymentReference" dir="ltr" :placeholder="telecomT('bss.paymentReference', 'Payment ref') + ' *'" />
+                    </template>
+                    <template v-if="listTrmShowsFraud">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssSecurityTicketId" dir="ltr" :placeholder="telecomT('bss.securityTicketId', 'Ticket') + ' *'" />
+                    </template>
+                    <template v-if="listTrmShowsRegulatory">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssDocumentNumber" :placeholder="telecomT('bss.regulatoryDocumentNumber', 'Doc #') + ' *'" />
+                        <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" v-on:change="onListBssRegulatoryFileChange" />
+                    </template>
                     <div v-if="lineActionModal.trmRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('termination.boHint', '') }}</div>
-                    <div v-if="lineActionModal.trmRequiresBackOffice" class="mb-0">
+                    <div v-if="lineActionModal.trmRequiresBackOffice && listTrmRequiresLegacyIdentity" class="mb-0">
                         <label class="form-label small fw-semibold">{{ telecomT('termination.identityRequired', 'Document') }} <span class="text-danger">*</span></label>
                         <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onTerminationIdentityFileChange" :disabled="lineActionModal.busy" />
                     </div>
+                    <label class="form-label small fw-semibold mt-2">{{ telecomT('bss.notesOptional', 'Notes') }}</label>
+                    <textarea class="form-control form-control-sm mb-2" rows="2" v-model="lineActionModal.notes" maxlength="500" :disabled="lineActionModal.busy"></textarea>
+                    <label class="form-label small fw-semibold mt-3">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
@@ -695,14 +853,41 @@
                     <div v-if="lineActionModal.cnPoolBusy" class="text-muted small py-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('c360.loadingPool', 'Loading…') }}</div>
                     <template v-else>
                         <div class="mb-2">
-                            <label class="form-label small fw-semibold">{{ telecomT('changeNumber.targetMsisdn', 'New MSISDN') }} <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm" v-model="lineActionModal.cnTargetMsisdnAssetId" v-on:change="onChangeNumberTargetPickedList" :disabled="lineActionModal.busy">
-                                <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
-                                <option v-for="a in lineActionModal.cnPoolNumbers" :key="a.id || a.Id" :value="a.id || a.Id">
-                                    {{ a.msisdn || a.Msisdn }}
-                                </option>
+                            <label class="form-label small fw-semibold">{{ telecomT('changeNumber.modeLabel', 'Change mode') }}</label>
+                            <select class="form-select form-select-sm" v-model="lineActionModal.cnChangeMode" v-on:change="onCnChangeModeChangeList" :disabled="lineActionModal.busy">
+                                <option value="Internal">{{ telecomT('changeNumber.modeInternal', 'Internal pool') }}</option>
+                                <option value="PortIn">{{ telecomT('changeNumber.modePortIn', 'MNP Port-In') }}</option>
                             </select>
                         </div>
+                        <template v-if="listCnShowsInternalPool">
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">{{ telecomT('changeNumber.targetMsisdn', 'New MSISDN') }} <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" v-model="lineActionModal.cnTargetMsisdnAssetId" v-on:change="onChangeNumberTargetPickedList" :disabled="lineActionModal.busy">
+                                    <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                                    <option v-for="a in lineActionModal.cnPoolNumbers" :key="a.id || a.Id" :value="a.id || a.Id">
+                                        {{ a.msisdn || a.Msisdn }}
+                                    </option>
+                                </select>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <div class="alert alert-info py-2 small mb-2">{{ telecomT('changeNumber.portInHint', 'Port-In from another operator') }}</div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">{{ telecomT('changeNumber.portInMsisdn', 'Port-In MSISDN') }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm font-monospace" dir="ltr" v-model="lineActionModal.cnPortInMsisdn" maxlength="16" :disabled="lineActionModal.busy" />
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">{{ telecomT('changeNumber.donorOperator', 'Donor operator') }} <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" v-model="lineActionModal.cnDonorOperatorCode" :disabled="lineActionModal.busy">
+                                    <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                                    <option v-for="d in listCnDonorOperators" :key="d" :value="d">{{ d }}</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">{{ telecomT('changeNumber.portInReference', 'MNP reference') }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm font-monospace" dir="ltr" v-model="lineActionModal.cnPortInReference" :placeholder="telecomT('changeNumber.portInReferencePh', 'MNP-2026-00123')" :disabled="lineActionModal.busy" />
+                            </div>
+                        </template>
                         <div class="mb-2">
                             <label class="form-label small fw-semibold">{{ telecomT('changeNumber.changeReason', 'Reason') }} <span class="text-danger">*</span></label>
                             <select class="form-select form-select-sm" v-model="lineActionModal.cnNumberChangeReason" :disabled="lineActionModal.busy">
@@ -710,16 +895,31 @@
                                 <option value="CustomerRequest">{{ telecomT('changeNumber.reasonCustomer', 'Customer') }}</option>
                                 <option value="Damaged">{{ telecomT('changeNumber.reasonDamaged', 'Damaged') }}</option>
                                 <option value="PremiumUpgrade">{{ telecomT('changeNumber.reasonPremium', 'Premium') }}</option>
+                                <option value="PortIn">{{ telecomT('changeNumber.modePortIn', 'MNP Port-In') }}</option>
                                 <option value="Other">{{ telecomT('changeNumber.reasonOther', 'Other') }}</option>
                             </select>
                         </div>
-                        <div v-if="lineActionModal.cnRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('changeNumber.premiumHint', '') }}</div>
-                        <div v-if="lineActionModal.cnRequiresBackOffice" class="mb-2">
+                        <div v-if="lineActionModal.cnRequiresBackOffice && listCnShowsInternalPool" class="alert alert-warning py-2 small mb-2">{{ telecomT('changeNumber.premiumHint', '') }}</div>
+                        <div v-if="lineActionModal.cnRequiresBackOffice && listCnShowsInternalPool" class="mb-2">
                             <label class="form-label small">{{ telecomT('changeNumber.premiumFee', 'Premium fee') }}</label>
                             <input type="number" min="0" step="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.cnPremiumFeeAmount" :disabled="lineActionModal.busy" />
+                            <template v-if="listCnShowsPremiumPayment">
+                                <label class="form-label small fw-semibold">{{ telecomT('bss.paymentReference', 'Payment ref') }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssPaymentReference" dir="ltr" :placeholder="telecomT('bss.paymentReference', 'Payment ref')" />
+                            </template>
                             <label class="form-label small fw-semibold">{{ telecomT('changeNumber.paymentDocHint', 'Payment receipt') }} <span class="text-danger">*</span></label>
                             <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onChangeNumberPaymentFileChange" :disabled="lineActionModal.busy" />
                         </div>
+                        <div v-else-if="lineActionModal.cnRequiresBackOffice" class="mb-2">
+                            <label class="form-label small fw-semibold">{{ telecomT('changeNumber.paymentDocHint', 'Supporting document') }} <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onChangeNumberPaymentFileChange" :disabled="lineActionModal.busy" />
+                        </div>
+                        <label class="form-label small fw-semibold">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                        <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                            <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                            <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                        </select>
+                        <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" />
                     </template>
                 </div>
                 <div class="modal-footer">
@@ -752,16 +952,23 @@
                         </select>
                     </div>
                     <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="simLostStolenList" v-model="lineActionModal.simLostOrStolen" :disabled="lineActionModal.busy" />
+                        <input class="form-check-input" type="checkbox" id="simLostStolenList" v-model="lineActionModal.simLostOrStolen" v-on:change="onSimLostOrStolenChangeList" :disabled="lineActionModal.busy" />
                         <label class="form-check-label small" for="simLostStolenList">{{ telecomT('simSwap.lostOrStolen', 'Lost/stolen') }}</label>
                     </div>
                     <p v-if="lineActionModal.simLostOrStolen" class="small text-warning mb-2">{{ telecomT('simSwap.lostOrStolenHint', '') }}</p>
-                    <div v-if="lineActionModal.simLostOrStolen" class="mb-2">
+                    <template v-if="listSimShowsLostStolenFields">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssSecurityTicketId" dir="ltr" :placeholder="telecomT('bss.policeReportNumber', 'Police report') + ' *'" />
                         <label class="form-label small fw-semibold">{{ telecomT('simSwap.identityRequired', 'ID') }} <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onSimSwapIdentityFileChange" :disabled="lineActionModal.busy" />
-                    </div>
+                        <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onSimSwapIdentityFileChange" :disabled="lineActionModal.busy" />
+                    </template>
                     <label class="form-label small">{{ telecomT('c360.simIccid', 'ICCID') }}</label>
                     <input type="text" class="form-control font-monospace" dir="ltr" maxlength="19" v-model="lineActionModal.simIccid" :disabled="lineActionModal.busy" />
+                    <label class="form-label small fw-semibold mt-3">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
@@ -791,7 +998,9 @@
                             <input type="text" class="form-control form-control-sm" v-model="lineActionModal.takeoverSearchPhone" :placeholder="telecomT('onboarding.msisdnPh', 'MSISDN')" />
                         </div>
                         <div class="col-12">
-                            <button type="button" class="btn btn-outline-danger btn-sm" :disabled="lineActionModal.busy" v-on:click="searchTakeoverTarget">{{ telecomT('c360.searchNewOwner', 'Search') }}</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" :disabled="lineActionModal.takeoverSearchBusy" v-on:click="searchTakeoverTarget">
+                                <span v-if="lineActionModal.takeoverSearchBusy" class="spinner-border spinner-border-sm me-1"></span>{{ telecomT('c360.searchNewOwner', 'Search') }}
+                            </button>
                         </div>
                     </div>
                     <ul class="list-group list-group-flush border rounded mb-2" v-if="lineActionModal.takeoverResults.length">
@@ -799,6 +1008,11 @@
                             {{ c.name }} · {{ c.phoneNumber || '—' }}
                         </li>
                     </ul>
+                    <div v-if="listTkoShowsObligationSettlement" class="alert alert-danger py-2 small mb-2">{{ telecomT('bss.obligationSettlementHint', '') }}</div>
+                    <template v-if="listTkoShowsObligationSettlement">
+                        <label class="form-label small fw-semibold">{{ telecomT('bss.obligationSettlementRef', 'Settlement ref') }} <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssPaymentReference" dir="ltr" />
+                    </template>
                     <div class="row g-2 mb-2">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">{{ telecomT('takeOver.transferReason', 'Reason') }} <span class="text-danger">*</span></label>
@@ -814,6 +1028,12 @@
                             </select>
                         </div>
                     </div>
+                    <label class="form-label small fw-semibold">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" />
                     <div class="mb-2">
                         <label class="form-label small fw-semibold">{{ telecomT('takeOver.identityRequired', 'ID') }} <span class="text-danger">*</span></label>
                         <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -841,12 +1061,45 @@
                         <option value="CustomerRequest">{{ telecomT('suspension.typeCustomer', 'Customer') }}</option><option value="Billing">{{ telecomT('suspension.typeBilling', 'Billing') }}</option><option value="Fraud">{{ telecomT('suspension.typeFraud', 'Fraud') }}</option><option value="Regulatory">{{ telecomT('suspension.typeRegulatory', 'Regulatory') }}</option><option value="Operational">{{ telecomT('suspension.typeOperational', 'Operational') }}</option>
                     </select>
                     <select class="form-select form-select-sm mb-2" v-model="lineActionModal.susBarringLevel" :disabled="lineActionModal.busy">
-                        <option value="Full">{{ telecomT('suspension.barringFull', 'Full') }}</option><option value="InboundOnly">{{ telecomT('suspension.barringInbound', 'Inbound') }}</option><option value="OutboundOnly">{{ telecomT('suspension.barringOutbound', 'Outbound') }}</option>
+                        <option v-for="b in barringLevelOptions" :key="b.value" :value="b.value">{{ telecomT(b.key, b.value) }}</option>
                     </select>
                     <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.susSuspensionReason" :placeholder="telecomT('suspension.suspensionReason', 'Reason') + ' *'" :disabled="lineActionModal.busy" />
-                    <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="susAutoList" v-model="lineActionModal.susAutoReconnectEnabled" /><label class="form-check-label small" for="susAutoList">{{ telecomT('suspension.autoReconnect', 'Auto-reconnect') }}</label></div>
-                    <input v-if="lineActionModal.susAutoReconnectEnabled" type="datetime-local" class="form-control form-control-sm mb-2" v-model="lineActionModal.susEndDateLocal" />
-                    <div v-if="lineActionModal.susRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ telecomT('suspension.boHint', '') }}</div>
+                    <template v-if="listSusShowsPayment">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssPaymentReference" dir="ltr" :placeholder="telecomT('bss.paymentReference', 'Payment ref') + ' *'" />
+                    </template>
+                    <template v-if="listSusShowsFraud">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssSecurityTicketId" dir="ltr" :placeholder="telecomT('bss.securityTicketId', 'Ticket') + ' *'" />
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="susSupervisorList" v-model="lineActionModal.bssSupervisorConfirmed" />
+                            <label class="form-check-label small" for="susSupervisorList">{{ telecomT('bss.supervisorConfirmation', 'Supervisor confirmation') }} <span class="text-danger">*</span></label>
+                        </div>
+                        <p class="small text-muted mb-2">{{ telecomT('bss.supervisorConfirmationHint', '') }}</p>
+                    </template>
+                    <template v-if="listSusShowsRegulatory">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssDocumentNumber" :placeholder="telecomT('bss.regulatoryDocumentNumber', 'Doc #') + ' *'" />
+                        <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" v-on:change="onListBssRegulatoryFileChange" />
+                    </template>
+                    <template v-if="listSusShowsSimple">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.notes" maxlength="500" :placeholder="telecomT('bss.notesOptional', 'Notes')" :disabled="lineActionModal.busy" />
+                    </template>
+                    <label class="form-label small fw-semibold">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" />
+                    <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="susAutoList" v-model="lineActionModal.susAutoReconnectEnabled" v-on:change="onListSusAutoReconnectChange" /><label class="form-check-label small" for="susAutoList">{{ telecomT('suspension.autoReconnect', 'Auto-reconnect') }}</label></div>
+                    <div v-if="lineActionModal.susAutoReconnectEnabled" class="mb-2">
+                        <label class="form-label small fw-semibold">{{ telecomT('suspension.endDate', 'End date') }} *</label>
+                        <input type="date" class="form-control form-control-sm" v-model="lineActionModal.susEndDateLocal" :min="listSuspensionStartDateLocal()" :max="listSuspensionMaxEndDateLocal()" :disabled="lineActionModal.busy" />
+                        <p class="small text-muted mb-0 mt-1">{{ telecomT('bss.suspensionEndUsesEffectiveStart', 'Start date follows the effective date above.') }}</p>
+                    </div>
+                    <div v-if="lineActionModal.susRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('suspension.boHint', '') }}</div>
+                    <div v-if="listSusRequiresStep2Identity" class="mb-2">
+                        <label class="form-label small fw-semibold">{{ telecomT('suspension.kycDocument', 'KYC document') }} <span class="text-danger">*</span></label>
+                        <p class="small text-muted mb-1">{{ telecomT('suspension.kycDocumentHint', '') }}</p>
+                        <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onListSusIdentityFileChange" :disabled="lineActionModal.busy" />
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
@@ -862,14 +1115,41 @@
                 <div class="modal-header"><h5 class="modal-title text-danger">{{ telecomT('wizard.titles.reconnect', 'Reconnect') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <p class="small text-muted mb-2" dir="ltr">{{ telecomT('c360.lineLabel', 'Line') }}: {{ lineActionModal.sub?.msisdn }}</p>
-                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rcnClearanceType" v-on:change="loadListReconnectEligibility" :disabled="lineActionModal.busy">
-                        <option value="Customer">{{ telecomT('reconnect.clearanceCustomer', 'Customer') }}</option><option value="Payment">{{ telecomT('reconnect.clearancePayment', 'Payment') }}</option><option value="Fraud">{{ telecomT('reconnect.clearanceFraud', 'Fraud') }}</option><option value="Regulatory">{{ telecomT('reconnect.clearanceRegulatory', 'Regulatory') }}</option>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rcnClearanceType" v-on:change="onListRcnClearanceChange" :disabled="lineActionModal.busy">
+                        <option value="Customer">{{ telecomT('reconnect.clearanceCustomer', 'Customer') }}</option>
+                        <option value="Payment">{{ telecomT('reconnect.clearancePayment', 'Payment') }}</option>
+                        <option value="Fraud">{{ telecomT('reconnect.clearanceFraud', 'Fraud') }}</option>
+                        <option value="Regulatory">{{ telecomT('reconnect.clearanceRegulatory', 'Regulatory') }}</option>
+                        <option value="Operational">{{ telecomT('reconnect.clearanceOperational', 'Operational') }}</option>
                     </select>
                     <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnReconnectReason" :placeholder="telecomT('reconnect.reconnectReason', 'Reason') + ' *'" v-on:blur="loadListReconnectEligibility" />
-                    <input v-if="lineActionModal.rcnClearanceType === 'Payment'" type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnPaymentReference" :placeholder="telecomT('reconnect.paymentReference', 'Payment ref') + ' *'" v-on:blur="loadListReconnectEligibility" />
+                    <template v-if="listRcnShowsPaymentRef">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnPaymentReference" dir="ltr" :placeholder="telecomT('reconnect.paymentReference', 'Payment ref') + ' *'" v-on:blur="loadListReconnectEligibility" />
+                    </template>
+                    <template v-if="listRcnShowsFraudFields">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnSecurityTicketId" dir="ltr" :placeholder="telecomT('reconnect.securityTicketId', 'Security ticket') + ' *'" v-on:blur="loadListReconnectEligibility" />
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="rcnFraudDualList" v-model="lineActionModal.rcnFraudClearanceConfirmed" v-on:change="loadListReconnectEligibility" />
+                            <label class="form-check-label small" for="rcnFraudDualList">{{ telecomT('reconnect.fraudSupervisorApproval', 'Supervisor approval') }}</label>
+                        </div>
+                    </template>
+                    <template v-if="listRcnShowsRegulatoryFields">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rcnDocumentNumber" :placeholder="telecomT('reconnect.regulatoryDocumentNumber', 'Official doc #') + ' *'" v-on:blur="loadListReconnectEligibility" />
+                        <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" v-on:change="onListRcnRegulatoryFileChange" />
+                    </template>
                     <div v-if="lineActionModal.rcnEligibilityBusy" class="small text-muted">{{ telecomT('reconnect.matrixLoading', 'Checking…') }}</div>
                     <div v-else-if="lineActionModal.rcnEligibility" class="alert py-2 small mb-2" :class="(lineActionModal.rcnEligibility.allowed || lineActionModal.rcnEligibility.Allowed) ? 'alert-success' : 'alert-danger'">{{ lineActionModal.rcnEligibility.messageAr || lineActionModal.rcnEligibility.MessageAr }}</div>
-                    <div v-if="lineActionModal.rcnRequiresBackOffice" class="form-check mb-0"><input class="form-check-input" type="checkbox" id="rcnFraudList" v-model="lineActionModal.rcnFraudClearanceConfirmed" v-on:change="loadListReconnectEligibility" /><label class="form-check-label small" for="rcnFraudList">{{ telecomT('reconnect.fraudClearance', 'Fraud clearance') }}</label></div>
+                    <div v-if="lineActionModal.rcnRequiresBackOffice && !listRcnShowsFraudFields" class="form-check mb-2"><input class="form-check-input" type="checkbox" id="rcnFraudList" v-model="lineActionModal.rcnFraudClearanceConfirmed" v-on:change="loadListReconnectEligibility" /><label class="form-check-label small" for="rcnFraudList">{{ telecomT('reconnect.fraudClearance', 'Fraud clearance') }}</label></div>
+                    <div v-if="listRcnBdrApproved" class="mt-2 p-3 bg-light rounded border border-success">
+                        <h6 class="fw-bold text-success mb-2 small">VAL-09-02 {{ telecomT('reconnect.bdrGatewayTitle', 'Postpaid reconnect payment') }}</h6>
+                        <p class="small text-muted mb-0">{{ telecomT('reconnect.bdrGatewayHint', 'Enter payment reference above before submitting.') }}</p>
+                    </div>
+                    <label class="form-label small fw-semibold mt-2">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy" data-testid="list-rcn-effective-mode">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-rcn-effective-date" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
@@ -887,12 +1167,26 @@
                     <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rfdRefundType" v-on:change="onRefundTypeChangeList">
                         <option value="Deposit">{{ telecomT('refund.typeDeposit', 'Deposit') }}</option><option value="WalletBalance">{{ telecomT('refund.typeWallet', 'Wallet') }}</option><option value="Overpayment">{{ telecomT('refund.typeOverpayment', 'Overpayment') }}</option><option value="SyriatelCash">{{ telecomT('refund.typeSyriatelCash', 'Syriatel Cash') }}</option>
                     </select>
-                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rfdRefundMethod">
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.rfdRefundMethod" v-on:change="onRefundMethodChangeList">
                         <option value="CreditNote">{{ telecomT('refund.methodCreditNote', 'Credit note') }}</option><option value="WalletCredit">{{ telecomT('refund.methodWallet', 'Wallet') }}</option><option value="BankTransfer">{{ telecomT('refund.methodBank', 'Bank') }}</option><option value="Cash">{{ telecomT('refund.methodCash', 'Cash') }}</option>
                     </select>
                     <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.rfdRefundAmount" :placeholder="telecomT('refund.refundAmount', 'Amount') + ' *'" />
                     <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.rfdRefundReason" :placeholder="telecomT('refund.refundReason', 'Reason') + ' *'" />
+                    <template v-if="listRfdShowsOriginalTxRef">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssOriginalTransactionRef" dir="ltr" :placeholder="telecomT('bss.originalTransactionRef', 'Original ref') + ' *'" />
+                    </template>
+                    <template v-if="listRfdShowsPayoutDestination">
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssPayoutDestination" dir="ltr" :placeholder="telecomT(listRfdPayoutLabelKey, 'Payout') + ' *'" />
+                    </template>
+                    <div v-if="lineActionModal.rfdDepositSnapshot != null" class="small text-muted mb-1">{{ telecomT('refund.depositSnapshot', 'Deposit') }}: <strong>{{ lineActionModal.rfdDepositSnapshot }}</strong></div>
+                    <div v-if="lineActionModal.rfdWalletSnapshot != null" class="small text-muted mb-2">{{ telecomT('refund.walletSnapshot', 'Wallet') }}: <strong>{{ lineActionModal.rfdWalletSnapshot }}</strong></div>
                     <div v-if="lineActionModal.rfdRequiresBackOffice"><input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onRefundIdentityFileChange" :disabled="lineActionModal.busy" /></div>
+                    <label class="form-label small fw-semibold mt-2">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy" data-testid="list-rfd-effective-mode">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-rfd-effective-date" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
@@ -907,19 +1201,150 @@
             <div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">{{ telecomT('wizard.titles.badDebt', 'Collections') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bdrCollectionAction" v-on:change="loadListBadDebtEligibility">
-                        <option value="PaymentRecorded">{{ telecomT('badDebt.actionPayment', 'Payment') }}</option><option value="DunningEscalation">{{ telecomT('badDebt.actionDunning', 'Dunning') }}</option><option value="WriteOffPartial">{{ telecomT('badDebt.actionWriteOffPartial', 'Partial write-off') }}</option><option value="WriteOffFull">{{ telecomT('badDebt.actionWriteOffFull', 'Full write-off') }}</option>
+                    <p class="small text-muted mb-2" dir="ltr">{{ telecomT('c360.lineLabel', 'Line') }}: {{ lineActionModal.sub?.msisdn }}</p>
+                    <label class="form-label small fw-semibold">{{ telecomT('badDebt.collectionAction', 'Action') }} <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bdrCollectionAction" v-on:change="onBdrActionChangeList" :disabled="lineActionModal.busy">
+                        <option value="PaymentRecorded">{{ telecomT('badDebt.actionPayment', 'Payment') }}</option>
+                        <option value="PaymentPlan">{{ telecomT('badDebt.actionPaymentPlan', 'Payment plan') }}</option>
+                        <option value="DunningEscalation">{{ telecomT('badDebt.actionDunning', 'Dunning') }}</option>
+                        <option value="AgencyReferral">{{ telecomT('badDebt.actionAgency', 'Agency referral') }}</option>
+                        <option value="WriteOffPartial">{{ telecomT('badDebt.actionWriteOffPartial', 'Partial write-off') }}</option>
+                        <option value="WriteOffFull">{{ telecomT('badDebt.actionWriteOffFull', 'Full write-off') }}</option>
                     </select>
-                    <div v-if="lineActionModal.bdrCollectionAction === 'PaymentRecorded'">
-                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrPaymentReference" :placeholder="telecomT('badDebt.paymentReference', 'Payment ref')" v-on:blur="loadListBadDebtEligibility" />
-                        <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrCollectedAmount" :placeholder="telecomT('badDebt.collectedAmount', 'Amount')" v-on:blur="loadListBadDebtEligibility" />
+                    <label class="form-label small">{{ telecomT('badDebt.dunningStage', 'Dunning stage') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bdrDunningStage" v-on:change="onBdrActionChangeList" :disabled="lineActionModal.busy">
+                        <option value="Reminder1">{{ telecomT('badDebt.dunningStages.Reminder1', 'Reminder 1') }}</option>
+                        <option value="Reminder2">{{ telecomT('badDebt.dunningStages.Reminder2', 'Reminder 2') }}</option>
+                        <option value="SoftBar">{{ telecomT('badDebt.dunningStages.SoftBar', 'Soft bar') }}</option>
+                        <option value="HardBar">{{ telecomT('badDebt.dunningStages.HardBar', 'Hard bar') }}</option>
+                        <option value="WriteOffPending">{{ telecomT('badDebt.dunningStages.WriteOffPending', 'Write-off pending') }}</option>
+                    </select>
+                    <div v-if="lineActionModal.bdrEligibility && (lineActionModal.bdrEligibility.outstandingBalanceSnapshot != null || lineActionModal.bdrEligibility.OutstandingBalanceSnapshot != null)" class="small text-muted mb-2">
+                        {{ telecomT('badDebt.balanceSnapshot', 'Balance') }}: <strong class="text-danger">{{ lineActionModal.bdrEligibility.outstandingBalanceSnapshot ?? lineActionModal.bdrEligibility.OutstandingBalanceSnapshot }}</strong> {{ telecomT('common.currencySuffix', 'SYP') }}
                     </div>
-                    <div v-if="lineActionModal.bdrEligibilityBusy" class="small text-muted">{{ telecomT('reconnect.matrixLoading', 'Checking…') }}</div>
-                    <div v-else-if="lineActionModal.bdrEligibility" class="alert py-2 small mb-0" :class="(lineActionModal.bdrEligibility.allowed || lineActionModal.bdrEligibility.Allowed) ? 'alert-success' : 'alert-danger'">{{ lineActionModal.bdrEligibility.messageAr || lineActionModal.bdrEligibility.MessageAr }}</div>
+                    <template v-if="lineActionModal.bdrCollectionAction === 'PaymentRecorded'">
+                        <label class="form-label small">{{ telecomT('badDebt.collectedAmount', 'Amount') }} *</label>
+                        <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrCollectedAmount" v-on:blur="onBdrActionChangeList" :disabled="lineActionModal.busy" />
+                        <label class="form-label small">{{ telecomT('badDebt.paymentReference', 'Payment ref') }} *</label>
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrPaymentReference" dir="ltr" v-on:blur="onBdrActionChangeList" :disabled="lineActionModal.busy" />
+                    </template>
+                    <template v-if="lineActionModal.bdrCollectionAction === 'PaymentPlan'">
+                        <label class="form-label small">{{ telecomT('badDebt.paymentPlanMonths', 'Plan months') }}</label>
+                        <input type="number" min="1" max="36" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrPaymentPlanMonths" :disabled="lineActionModal.busy" />
+                    </template>
+                    <template v-if="lineActionModal.bdrCollectionAction === 'AgencyReferral'">
+                        <label class="form-label small">{{ telecomT('badDebt.agencyReference', 'Agency reference') }}</label>
+                        <input type="text" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrAgencyReference" dir="ltr" :disabled="lineActionModal.busy" />
+                    </template>
+                    <template v-if="lineActionModal.bdrCollectionAction === 'WriteOffPartial' || lineActionModal.bdrCollectionAction === 'WriteOffFull'">
+                        <label class="form-label small">{{ telecomT('badDebt.writeOffAmount', 'Write-off amount') }} *</label>
+                        <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="lineActionModal.bdrWriteOffAmount" v-on:blur="onBdrActionChangeList" :disabled="lineActionModal.busy" />
+                    </template>
+                    <div v-if="lineActionModal.bdrEligibilityBusy" class="alert alert-light py-2 small mb-2">{{ telecomT('badDebt.matrixLoading', 'Checking…') }}</div>
+                    <div v-else-if="lineActionModal.bdrEligibility" class="alert py-2 small mb-2" :class="(lineActionModal.bdrEligibility.allowed || lineActionModal.bdrEligibility.Allowed) ? ((lineActionModal.bdrEligibility.requiresBackOfficeApproval || lineActionModal.bdrEligibility.RequiresBackOfficeApproval) ? 'alert-warning' : 'alert-success') : 'alert-danger'">
+                        <strong>{{ telecomT('badDebt.matrixTitle', 'Eligibility') }}:</strong>
+                        {{ lineActionModal.bdrEligibility.messageAr || lineActionModal.bdrEligibility.MessageAr }}
+                    </div>
+                    <div v-if="lineActionModal.bdrCollectionAction === 'WriteOffPartial' || lineActionModal.bdrCollectionAction === 'WriteOffFull'" class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="bdrSupervisorList" v-model="lineActionModal.bdrSupervisorConfirmed" v-on:change="onBdrActionChangeList" />
+                        <label class="form-check-label small" for="bdrSupervisorList">{{ telecomT('bss.supervisorConfirmation', 'Supervisor confirmation') }} <span class="text-danger">*</span></label>
+                    </div>
+                    <div v-if="lineActionModal.bdrRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ telecomT('badDebt.boHint', '') }}</div>
+                    <label class="form-label small fw-semibold">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy" data-testid="list-bdr-effective-mode">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-bdr-effective-date" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
                     <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitBadDebt"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.bdrRequiresBackOffice ? telecomT('common.sendBackOffice', 'Back office') : telecomT('c360.confirmCollection', 'Confirm') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360DeviceSaleModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ telecomT('wizard.titles.deviceSale', 'Device sale') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">{{ telecomT('c360.lineLabel', 'Line') }}: {{ lineActionModal.sub?.msisdn }}</p>
+                    <label class="form-label small fw-semibold">{{ telecomT('deviceSale.deviceImei', 'Device') }} *</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.devInventoryId" v-on:change="onListDevicePicked" :disabled="lineActionModal.busy">
+                        <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                        <option v-for="d in lineActionModal.devDevices" :key="d.id" :value="d.id">{{ d.deviceModel || d.DeviceModel }} — {{ d.imei || d.Imei }}</option>
+                    </select>
+                    <label class="form-label small fw-semibold">{{ telecomT('deviceSale.saleType', 'Sale type') }} *</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.devSaleType" :disabled="lineActionModal.busy">
+                        <option value="Cash">{{ telecomT('deviceSale.saleCash', 'Cash') }}</option>
+                        <option value="Installment">{{ telecomT('deviceSale.saleInstallment', 'Installment') }}</option>
+                    </select>
+                    <template v-if="lineActionModal.devSaleType === 'Installment'">
+                        <label class="form-label small">{{ telecomT('deviceSale.installmentPlan', 'Plan') }} *</label>
+                        <select class="form-select form-select-sm mb-2" v-model="lineActionModal.devInstallmentPlanId" :disabled="lineActionModal.busy">
+                            <option value="">{{ telecomT('common.selectPlaceholder', '— Select —') }}</option>
+                            <option v-for="p in lineActionModal.devPlans" :key="p.id" :value="p.id">{{ p.name || p.Name }}</option>
+                        </select>
+                        <label class="form-label small">{{ telecomT('deviceSale.downPayment', 'Down payment') }}</label>
+                        <input type="number" min="0" class="form-control form-control-sm mb-2" v-model="lineActionModal.devDownPayment" :disabled="lineActionModal.busy" />
+                        <label class="form-label small">{{ telecomT('deviceSale.paymentChannel', 'Payment channel') }}</label>
+                        <select class="form-select form-select-sm mb-2" v-model.number="lineActionModal.devPaymentChannel" :disabled="lineActionModal.busy">
+                            <option :value="0">{{ telecomT('refund.methodCash', 'Cash') }}</option>
+                            <option :value="1">{{ telecomT('refund.methodWallet', 'Wallet') }}</option>
+                        </select>
+                        <label class="form-label small">{{ telecomT('deviceSale.paymentReferencePh', 'Payment reference') }}</label>
+                        <input type="text" class="form-control form-control-sm mb-0" v-model="lineActionModal.devPaymentReference" dir="ltr" :disabled="lineActionModal.busy" />
+                    </template>
+                    <p v-if="lineActionModal.devFinancingPreview" class="small text-muted mt-2 mb-0">{{ lineActionModal.devFinancingPreview }}</p>
+                    <div v-if="lineActionModal.devRequiresFinance" class="alert alert-warning py-2 small mt-2 mb-2">{{ telecomT('deviceSale.financeApproval', '') }}</div>
+                    <label class="form-label small fw-semibold">{{ telecomT('bss.effectiveDateLabel', 'Effective date') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model="lineActionModal.bssEffectiveMode" :disabled="lineActionModal.busy" data-testid="list-dev-effective-mode">
+                        <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
+                        <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
+                    </select>
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-dev-effective-date" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitDeviceSale">
+                        <span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ lineActionModal.devRequiresFinance ? telecomT('common.sendBackOffice', 'Back office') : telecomT('wizard.titles.deviceSale', 'Confirm') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="C360SupportTicketModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ telecomT('supportTicket.title', 'Open support ticket') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2" dir="ltr">{{ telecomT('c360.lineLabel', 'Line') }}: {{ lineActionModal.sub?.msisdn }}</p>
+                    <label class="form-label small fw-semibold">{{ telecomT('supportTicket.issueType', 'Issue type') }}</label>
+                    <select class="form-select form-select-sm mb-2" v-model.number="lineActionModal.supportIssueType" data-testid="list-support-issue-type" :disabled="lineActionModal.supportBusy">
+                        <option :value="0">{{ telecomT('supportTicket.issueNetwork', 'Network') }}</option>
+                        <option :value="1">{{ telecomT('supportTicket.issueBilling', 'Billing') }}</option>
+                        <option :value="2">{{ telecomT('supportTicket.issueSimBlock', 'SIM block') }}</option>
+                        <option :value="3">{{ telecomT('supportTicket.issueActivation', 'Activation') }}</option>
+                    </select>
+                    <label class="form-label small fw-semibold">{{ telecomT('wizard.notes', 'Notes') }}</label>
+                    <textarea class="form-control form-control-sm" rows="3" v-model="lineActionModal.supportNotes" :placeholder="telecomT('supportTicket.notesPh', '')" :disabled="lineActionModal.supportBusy"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.supportBusy">{{ telecomT('common.cancel', 'Cancel') }}</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.supportBusy" v-on:click="submitSupportTicket">
+                        <span v-if="lineActionModal.supportBusy" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ telecomT('supportTicket.create', 'Create') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -937,5 +1362,10 @@
         <span style="color:${subscriptionTypeDisplayColor}">${subscriptionTypeName}</span>
     </script>
     <script src="~/lib/indotalent/activation-channel-ui.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-reconnect-clearance.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-offer-detail.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-bss-wizard-clearance.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-vas-toggle.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-recharge-flow.js" asp-append-version="true"></script>
     <script src="~/FrontEnd/Pages/Customers/CustomerList.cshtml.js"></script>
 }

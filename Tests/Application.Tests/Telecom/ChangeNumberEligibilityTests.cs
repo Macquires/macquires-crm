@@ -42,4 +42,26 @@ public class ChangeNumberEligibilityTests
             { 100m, null, true },
             { null, "PAY-REF-1", true },
         };
+
+    [Theory]
+    [InlineData("PortIn", true)]
+    [InlineData("portin", true)]
+    [InlineData("Internal", false)]
+    [InlineData(null, false)]
+    public void IsPortInMode_detects_port_in(string? mode, bool expected)
+    {
+        Assert.Equal(expected, ChangeNumberWellKnown.IsPortInMode(mode));
+    }
+
+    [Theory]
+    [InlineData("MTN", true)]
+    [InlineData("AFRICELL", true)]
+    [InlineData("OTHER", true)]
+    [InlineData("SYRIATEL", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsValidDonorOperator_rejects_home_operator(string? code, bool expected)
+    {
+        Assert.Equal(expected, ChangeNumberWellKnown.IsValidDonorOperator(code));
+    }
 }

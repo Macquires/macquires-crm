@@ -3,8 +3,9 @@ using Domain.Common;
 namespace Domain.Entities;
 
 /// <summary>Per-attempt log for external billing/charging (demo resilience story).</summary>
-public class BillingIntegrationLog : BaseEntity
+public class BillingIntegrationLog : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public string? TelecomOperationRequestId { get; set; }
     public TelecomOperationRequest? TelecomOperationRequest { get; set; }
 

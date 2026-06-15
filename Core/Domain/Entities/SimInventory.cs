@@ -4,8 +4,9 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>مخزون الشرائح (ICCID) — منفصل عن تجمع الأرقام MSISDN.</summary>
-public class SimInventory : BaseEntity
+public class SimInventory : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public string Iccid { get; private set; } = null!;
     public SimType SimType { get; private set; } = SimType.Physical;
     public bool IsESim => SimType == SimType.ESim;

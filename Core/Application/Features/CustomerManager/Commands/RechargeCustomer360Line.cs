@@ -21,8 +21,9 @@ public class RechargeCustomer360LineResult
     public string? CorrelationId { get; init; }
 }
 
-public class RechargeCustomer360LineRequest : IRequest<RechargeCustomer360LineResult>
+public class RechargeCustomer360LineRequest : IRequest<RechargeCustomer360LineResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.PaymentAny;
     public string CustomerId { get; init; } = "";
     public string SubscriptionId { get; init; } = "";
     public decimal Amount { get; init; }

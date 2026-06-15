@@ -25,6 +25,7 @@ public class SimInventoryConfiguration : BaseEntityConfiguration<SimInventory>
             .HasConversion(v => v == null ? null! : FieldEncryptionScope.Encrypt(v), v => v == null ? null : FieldEncryptionScope.Decrypt(v));
         builder.Property(x => x.Puk2).HasMaxLength(16);
         builder.Property(x => x.Status).HasConversion<int>();
+        builder.Property(x => x.BranchId).HasMaxLength(50);
         builder.Property(x => x.SubscriberProfileId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.RowVersion).IsRowVersion();
 
@@ -33,6 +34,9 @@ public class SimInventoryConfiguration : BaseEntityConfiguration<SimInventory>
             .HasFilter("[IsDeleted] = 0");
 
         builder.HasIndex(x => new { x.Status, x.CreatedAtUtc });
+
+        builder.HasIndex(x => x.BranchId)
+            .HasFilter("[BranchId] IS NOT NULL");
 
         builder.HasOne(x => x.SubscriberProfile)
             .WithMany(x => x.SimInventories)

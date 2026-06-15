@@ -25,7 +25,7 @@ public class GetBadDebtKpisHandlerTests
             Op("BDR-4", TelecomOperationStatus.PendingDocuments, BadDebtWellKnown.WriteOffFull, null, 1000m, now, "BackOffice"));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetBadDebtKpisHandler(ctx);
+        var handler = new GetBadDebtKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetBadDebtKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -41,7 +41,7 @@ public class GetBadDebtKpisHandlerTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -55,18 +55,16 @@ public class GetBadDebtKpisHandlerTests
         decimal? writeOff,
         DateTime created,
         string? approval = null) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.BadDebtRecovery,
-            Status = status,
-            CollectionAction = action,
-            CollectedAmount = collected,
-            WriteOffAmount = writeOff,
-            CreatedAtUtc = created,
-            ApprovalLevelRequired = approval,
-            SubscriberProfileId = "prof-bdr",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.BadDebtRecovery;
+            op.Status = status;
+            op.CollectionAction = action;
+            op.CollectedAmount = collected;
+            op.WriteOffAmount = writeOff;
+            op.CreatedAtUtc = created;
+            op.ApprovalLevelRequired = approval;
+            op.SubscriberProfileId = "prof-bdr";
+        });
 }

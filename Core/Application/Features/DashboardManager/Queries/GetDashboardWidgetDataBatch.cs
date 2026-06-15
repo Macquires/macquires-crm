@@ -10,11 +10,12 @@ public class GetDashboardWidgetDataBatchResult
         = new Dictionary<string, DashboardWidgetDataDto>();
 }
 
-public class GetDashboardWidgetDataBatchRequest : IRequest<GetDashboardWidgetDataBatchResult>
+public class GetDashboardWidgetDataBatchRequest : IRequest<GetDashboardWidgetDataBatchResult>, IRequireAnyPermission
 {
     public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
     public IReadOnlyList<string> ProviderKeys { get; init; } = Array.Empty<string>();
     public string? PreviewPersona { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
 }
 
 public class GetDashboardWidgetDataBatchHandler : IRequestHandler<GetDashboardWidgetDataBatchRequest, GetDashboardWidgetDataBatchResult>

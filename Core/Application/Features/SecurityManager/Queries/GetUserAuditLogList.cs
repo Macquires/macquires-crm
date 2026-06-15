@@ -11,9 +11,9 @@ public class GetUserAuditLogListResult
     public int TotalCount { get; init; }
 }
 
-public class GetUserAuditLogListRequest : IRequest<GetUserAuditLogListResult>, IRequirePermission
+public class GetUserAuditLogListRequest : IRequest<GetUserAuditLogListResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminAuditView;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.AuditViewAny;
     public string? SearchTerm { get; init; }
     public string? CustomerId { get; init; }
     public string? UserId { get; init; }

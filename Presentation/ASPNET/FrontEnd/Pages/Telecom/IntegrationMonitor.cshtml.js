@@ -23,6 +23,7 @@ const App = {
             rows: [],
             totalCount: 0,
             healthItems: [],
+            liveEvents: [],
             filters: {
                 msisdn: '',
                 integrationSystem: '',
@@ -32,6 +33,8 @@ const App = {
         });
 
         const mainGridRef = Vue.ref(null);
+        const liveConnected = Vue.ref(false);
+        let liveConnection = null;
         const mainGrid = { obj: null };
 
         const contentLang = () =>
@@ -219,6 +222,40 @@ const App = {
             mainGrid.obj.appendTo(host);
         };
 
+        const connectLiveFeed = async () => {
+            if (typeof signalR === 'undefined') return;
+            try {
+                liveConnection = new signalR.HubConnectionBuilder()
+                    .withUrl('/hubs/integration-live')
+                    .withAutomaticReconnect()
+                    .build();
+
+                liveConnection.on('integrationEvent', (ev) => {
+                    const atUtc = ev.atUtc ?? ev.AtUtc ?? new Date().toISOString();
+                    state.liveEvents.unshift({
+                        atUtc,
+                        atDisplay: formatDt(atUtc),
+                        system: ev.system ?? ev.System ?? '—',
+                        operation: ev.operation ?? ev.Operation ?? '—',
+                        msisdn: ev.msisdn ?? ev.Msisdn,
+                        message: ev.message ?? ev.Message ?? '',
+                        success: ev.success ?? ev.Success ?? true,
+                    });
+                    if (state.liveEvents.length > 50) state.liveEvents.pop();
+                });
+
+                liveConnection.onreconnected(() => { liveConnected.value = true; });
+                liveConnection.onclose(() => { liveConnected.value = false; });
+
+                await liveConnection.start();
+                await liveConnection.invoke('JoinIntegrationConsole');
+                liveConnected.value = true;
+            } catch (e) {
+                console.warn('IntegrationMonitor: SignalR live feed unavailable', e);
+                liveConnected.value = false;
+            }
+        };
+
         const onLocaleChanged = () => {
             localeTick.value++;
             window.TelecomI18n?.applyDom?.();
@@ -258,7 +295,7 @@ const App = {
                 await SecurityManager.authorizePage(['TelecomAdmin', 'TelecomManagement', 'TelecomBackOffice']);
                 await SecurityManager.validateToken?.();
 
-                await Promise.all([methods.loadHealth(), methods.load()]);
+                await Promise.all([methods.loadHealth(), methods.load(), connectLiveFeed()]);
 
                 const sfReady = await waitForSyncfusion();
                 if (!sfReady) {
@@ -286,9 +323,10 @@ const App = {
 
         Vue.onUnmounted(() => {
             document.documentElement.removeEventListener('syriatel-locale-changed', onLocaleChanged);
+            if (liveConnection) liveConnection.stop();
         });
 
-        return { state, handler, mainGridRef, healthBadge, ti };
+        return { state, handler, mainGridRef, healthBadge, ti, liveConnected };
     },
 };
 

@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using FluentValidation;
 using MediatR;
@@ -25,8 +26,9 @@ public class GetHlrProvisioningLogListResult
     public int TotalCount { get; init; }
 }
 
-public class GetHlrProvisioningLogListRequest : IRequest<GetHlrProvisioningLogListResult>
+public class GetHlrProvisioningLogListRequest : IRequest<GetHlrProvisioningLogListResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
     public string? TelecomOperationRequestId { get; init; }
     public string? OperationNumber { get; init; }
     public bool? Success { get; init; }

@@ -23,6 +23,22 @@
 
     <div class="telecom-bento-card mb-3">
         <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong data-telecom-i18n="integrationMonitor.liveTitle">Live integration feed</strong>
+                <span class="badge" :class="liveConnected ? 'bg-success' : 'bg-secondary'" v-text="liveConnected ? ti('liveConnected') : ti('liveDisconnected')"></span>
+            </div>
+            <div class="integration-live-feed border rounded p-2 bg-dark text-light" style="max-height:180px;overflow-y:auto;font-family:monospace;font-size:0.75rem;">
+                <div v-if="!state.liveEvents.length" class="text-muted" v-text="ti('liveEmpty')"></div>
+                <div v-for="(ev, idx) in state.liveEvents" :key="idx" :class="ev.success ? 'text-success' : 'text-danger'">
+                    <span v-text="ev.atDisplay"></span> · <span v-text="ev.system"></span> · <span v-text="ev.operation"></span>
+                    <span v-if="ev.msisdn" v-text="' · ' + ev.msisdn"></span> — <span v-text="ev.message"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="telecom-bento-card mb-3">
+        <div class="card-body py-3">
             <p class="text-muted small mb-0">
                 <span data-telecom-i18n="integrationMonitor.intro">Monitor HLR, CBS, and SMS gateway integration requests — line by line.</span>
                 <a href="/Administration/GlobalSettings" class="ms-1" data-telecom-i18n="integrationMonitor.settingsLink">Global settings</a>
@@ -79,5 +95,6 @@
 </div>
 
 @section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
     <script src="~/FrontEnd/Pages/Telecom/IntegrationMonitor.cshtml.js" asp-append-version="true"></script>
 }

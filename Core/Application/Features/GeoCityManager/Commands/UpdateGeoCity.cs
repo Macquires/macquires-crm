@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,14 +11,14 @@ public class UpdateGeoCityResult
     public GeoCity? Data { get; set; }
 }
 
-public class UpdateGeoCityRequest : IRequest<UpdateGeoCityResult>
+public class UpdateGeoCityRequest : IRequest<UpdateGeoCityResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
     public string? Name { get; init; }
     public string? Governorate { get; init; }
     public bool IsActive { get; init; } = true;
     public int SortOrder { get; init; }
-    public string? UpdatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ManageAny;
 }
 
 public class UpdateGeoCityValidator : AbstractValidator<UpdateGeoCityRequest>
@@ -34,13 +35,16 @@ public class UpdateGeoCityHandler : IRequestHandler<UpdateGeoCityRequest, Update
 {
     private readonly ICommandRepository<GeoCity> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UpdateGeoCityHandler(
         ICommandRepository<GeoCity> repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateGeoCityResult> Handle(UpdateGeoCityRequest request, CancellationToken cancellationToken)
@@ -52,7 +56,7 @@ public class UpdateGeoCityHandler : IRequestHandler<UpdateGeoCityRequest, Update
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.Name = request.Name;
         entity.Governorate = request.Governorate;
         entity.IsActive = request.IsActive;

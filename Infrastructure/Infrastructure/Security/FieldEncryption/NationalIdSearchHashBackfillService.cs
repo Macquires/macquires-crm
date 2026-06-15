@@ -93,6 +93,7 @@ public sealed class NationalIdSearchHashBackfillService : INationalIdSearchHashB
     private async Task<HashSet<string>> LoadReservedHashesAsync(CancellationToken cancellationToken)
     {
         var existing = await _context.Customer
+            .IgnoreQueryFilters()
             .OfType<IndividualCustomer>()
             .AsNoTracking()
             .Where(c => !c.IsDeleted && c.NationalIdSearchHash != null && c.NationalIdSearchHash != "")

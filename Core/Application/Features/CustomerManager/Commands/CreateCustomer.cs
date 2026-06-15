@@ -18,7 +18,7 @@ public class CreateCustomerResult
     public Customer? Data { get; set; }
 }
 
-public class CreateCustomerRequest : IRequest<CreateCustomerResult>
+public class CreateCustomerRequest : IRequest<CreateCustomerResult>, IRequireAnyPermission
 {
     public string? Name { get; set; }
     public string? Description { get; set; }
@@ -39,7 +39,6 @@ public class CreateCustomerRequest : IRequest<CreateCustomerResult>
     public string? TikTok { get; set; }
     public string? CustomerGroupId { get; set; }
     public string? CustomerCategoryId { get; set; }
-    public string? CreatedById { get; init; }
 
     [System.Text.Json.Serialization.JsonPropertyName("subscriberType")]
     public CustomerKind? CustomerKind { get; set; }
@@ -55,6 +54,8 @@ public class CreateCustomerRequest : IRequest<CreateCustomerResult>
     /// <summary>Telecom Hub / POS onboarding — minimal fields; defaults applied before validation.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("posQuickRegister")]
     public bool PosQuickRegister { get; set; }
+
+    public IReadOnlyList<string> PermissionKeys => CustomerPermissionSets.ManageAny;
 }
 
 public class CreateCustomerValidator : AbstractValidator<CreateCustomerRequest>
@@ -115,6 +116,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
     private readonly IQueryContext _query;
     private readonly IFieldEncryptionService _encryption;
     private readonly IUserAuditService _audit;
+    private readonly IOperatorContext _operator;
 
     public CreateCustomerHandler(
         ICommandRepository<Customer> repository,
@@ -123,7 +125,8 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
         NumberSequenceService numberSequenceService,
         IQueryContext query,
         IFieldEncryptionService encryption,
-        IUserAuditService audit)
+        IUserAuditService audit,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _profileRepository = profileRepository;
@@ -132,12 +135,15 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
         _query = query;
         _encryption = encryption;
         _audit = audit;
+        _operator = operatorContext;
     }
 
     public async Task<CreateCustomerResult> Handle(CreateCustomerRequest request, CancellationToken cancellationToken = default)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        var branchId = OperatorActor.ResolveBranchId(_operator);
         var address = new PostalAddress(request.Street, request.City, request.State, request.ZipCode, request.Country);
-        var accountNumber = _numberSequenceService.GenerateNumber(nameof(Customer), "", "CST");
+        var accountNumber = await _numberSequenceService.GenerateNumberAsync(nameof(Customer), "", "CST", cancellationToken: cancellationToken);
         var kind = request.CustomerKind ?? CustomerKind.Individual;
 
         if (kind == CustomerKind.Corporate)
@@ -164,13 +170,14 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
                 request.AuthorizedSignatory,
                 CompanyLegalStatus.Unknown,
                 request.Description);
-            entity.CreatedById = request.CreatedById;
+            entity.CreatedById = actorUserId;
+            entity.BranchId = branchId;
             entity.UpdateContact(request.EmailAddress, request.PhoneNumber, request.FaxNumber, request.Website);
             entity.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
             await _repository.CreateAsync(entity, cancellationToken);
             await _unitOfWork.SaveAsync(cancellationToken);
-            await CreateDefaultProfileAsync(entity.Id, request, cancellationToken);
-            await LogCustomerCreatedAsync(entity, request, cancellationToken);
+            await CreateDefaultProfileAsync(entity.Id, actorUserId, branchId, cancellationToken);
+            await LogCustomerCreatedAsync(entity, actorUserId, request, cancellationToken);
             return new CreateCustomerResult { Data = entity };
         }
 
@@ -198,22 +205,23 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
             request.Gender ?? Gender.Unknown,
             string.IsNullOrWhiteSpace(request.Occupation) ? null : request.Occupation.Trim(),
             request.Description);
-        individual.CreatedById = request.CreatedById;
+        individual.CreatedById = actorUserId;
+        individual.BranchId = branchId;
         individual.SetNationalIdSearchHash(nationalIdHash);
         individual.UpdateContact(request.EmailAddress, request.PhoneNumber, request.FaxNumber, request.Website);
         individual.UpdateSocial(request.WhatsApp, request.LinkedIn, request.Facebook, request.Instagram, request.TwitterX, request.TikTok);
         await _repository.CreateAsync(individual, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
-        await CreateDefaultProfileAsync(individual.Id, request, cancellationToken);
-        await LogCustomerCreatedAsync(individual, request, cancellationToken);
+        await CreateDefaultProfileAsync(individual.Id, actorUserId, branchId, cancellationToken);
+        await LogCustomerCreatedAsync(individual, actorUserId, request, cancellationToken);
         return new CreateCustomerResult { Data = individual };
     }
 
-    private Task LogCustomerCreatedAsync(Customer entity, CreateCustomerRequest request, CancellationToken ct) =>
+    private Task LogCustomerCreatedAsync(Customer entity, string actorUserId, CreateCustomerRequest request, CancellationToken ct) =>
         _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.CreatedById ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.CustomerCreated,
                 EntityType = nameof(Customer),
                 EntityId = entity.Id,
@@ -222,7 +230,11 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
             },
             ct);
 
-    private async Task CreateDefaultProfileAsync(string customerId, CreateCustomerRequest request, CancellationToken ct)
+    private async Task CreateDefaultProfileAsync(
+        string customerId,
+        string actorUserId,
+        string? branchId,
+        CancellationToken ct)
     {
         var profile = new SubscriberProfile
         {
@@ -231,7 +243,8 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerRequest, Crea
             OperationalStatus = SubscriberOperationalStatus.Pending,
             LoyaltyPoints = 0,
             LoyaltyTier = "Bronze",
-            CreatedById = request.CreatedById
+            CreatedById = actorUserId,
+            BranchId = branchId,
         };
         await _profileRepository.CreateAsync(profile, ct);
         await _unitOfWork.SaveAsync(ct);

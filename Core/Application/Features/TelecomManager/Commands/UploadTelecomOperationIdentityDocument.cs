@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Application.Common.Telecom.BackOffice;
 using Domain.Entities;
@@ -13,12 +14,13 @@ public class UploadTelecomOperationIdentityDocumentResult
     public TelecomOperationRequest? Data { get; set; }
 }
 
-public class UploadTelecomOperationIdentityDocumentRequest : IRequest<UploadTelecomOperationIdentityDocumentResult>
+public class UploadTelecomOperationIdentityDocumentRequest : IRequest<UploadTelecomOperationIdentityDocumentResult>, IRequireAnyPermission
 {
     public string Id { get; init; } = null!;
     public Stream FileStream { get; init; } = null!;
     public string FileName { get; init; } = null!;
-    public string? UpdatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CreateAny;
 }
 
 public class UploadTelecomOperationIdentityDocumentValidator : AbstractValidator<UploadTelecomOperationIdentityDocumentRequest>
@@ -39,17 +41,20 @@ public class UploadTelecomOperationIdentityDocumentHandler
     private readonly ITelecomOperationOrchestrator _orchestrator;
     private readonly ITelecomOperationDocumentStore _documentStore;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UploadTelecomOperationIdentityDocumentHandler(
         ICommandRepository<TelecomOperationRequest> repository,
         ITelecomOperationOrchestrator orchestrator,
         ITelecomOperationDocumentStore documentStore,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _orchestrator = orchestrator;
         _documentStore = documentStore;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UploadTelecomOperationIdentityDocumentResult> Handle(
@@ -78,7 +83,7 @@ public class UploadTelecomOperationIdentityDocumentHandler
             await _orchestrator.TransitionAsync(
                 entity,
                 TelecomOperationStatus.PendingDocuments,
-                request.UpdatedById,
+                OperatorActor.RequireUserId(_operator),
                 "رفع هوية — قيد التدقيق القانوني",
                 cancellationToken);
         }

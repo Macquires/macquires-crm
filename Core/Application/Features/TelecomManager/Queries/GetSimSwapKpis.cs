@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,10 +20,12 @@ public class GetSimSwapKpisResult
     public List<SimSwapReasonCountDto> TopReasons { get; init; } = new();
 }
 
-public class GetSimSwapKpisRequest : IRequest<GetSimSwapKpisResult>
+public class GetSimSwapKpisRequest : IRequest<GetSimSwapKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetSimSwapKpisHandler : IRequestHandler<GetSimSwapKpisRequest, GetSimSwapKpisResult>
@@ -30,17 +33,32 @@ public class GetSimSwapKpisHandler : IRequestHandler<GetSimSwapKpisRequest, GetS
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(20);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetSimSwapKpisHandler(IQueryContext context) => _context = context;
+    public GetSimSwapKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetSimSwapKpisResult> Handle(
         GetSimSwapKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetSimSwapKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.SimSwap
                         && o.CreatedAtUtc >= from

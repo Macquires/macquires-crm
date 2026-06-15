@@ -10,6 +10,7 @@ public interface ITakeOverEligibilityChecker
         string? msisdnAssetId,
         string transferReason,
         string? excludeOperationId = null,
+        string? obligationSettlementReference = null,
         CancellationToken cancellationToken = default);
 
     void ValidateDocumentsForConfirm(TelecomOperationRequest operation);

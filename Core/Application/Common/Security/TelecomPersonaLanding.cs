@@ -6,9 +6,10 @@ namespace Application.Common.Security;
 public static class TelecomPersonaLanding
 {
     public const string TelecomHub = "/Telecom/TelecomHub";
+    public const string ExecutiveCommandCenter = "/Executive/CommandCenter";
     public const string SysAdmin = TelecomHub;
     public const string BackOffice = TelecomHub;
-    public const string Executive = TelecomHub;
+    public const string Executive = ExecutiveCommandCenter;
     public const string Retail = TelecomHub;
     public const string CallCenter = TelecomHub;
     public const string DefaultFallback = TelecomHub;

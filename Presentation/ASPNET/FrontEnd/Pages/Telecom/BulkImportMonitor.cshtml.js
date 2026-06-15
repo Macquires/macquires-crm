@@ -1,3 +1,14 @@
+const waitForSyncfusion = async (maxMs = 8000) => {
+    const step = 100;
+    let waited = 0;
+    while (typeof ej === 'undefined' || !ej.grids) {
+        if (waited >= maxMs) return false;
+        await new Promise((r) => setTimeout(r, step));
+        waited += step;
+    }
+    return true;
+};
+
 const App = {
     setup() {
         const pick = (o, ...keys) => {
@@ -319,31 +330,59 @@ const App = {
         };
 
         Vue.onMounted(async () => {
-            await window.TelecomI18n?.ensureLoaded?.();
-            window.TelecomI18n?.applyDom?.();
-            const pageTitle = window.TelecomI18n?.t?.('bulkImport.title');
-            if (pageTitle) document.title = pageTitle;
-            document.documentElement.addEventListener('syriatel-locale-changed', () => {
-                state.locale = document.documentElement.lang?.startsWith('en') ? 'en' : 'ar';
-                window.TelecomI18n?.applyDom?.();
-                if (mainGrid) {
-                    const rows = state.jobs;
-                    mainGrid.destroy();
-                    mainGrid = null;
-                    buildMainGrid();
-                    if (mainGrid) mainGrid.dataSource = rows;
+            try {
+                if (typeof PortalNavigation !== 'undefined' && PortalNavigation.syncOperatorSession) {
+                    await PortalNavigation.syncOperatorSession(true);
                 }
-            });
-            if (typeof SecurityManager !== 'undefined') {
-                await SecurityManager.authorizePage(['TelecomBackOffice', 'TelecomAdmin']);
+                await window.TelecomI18n?.ensureLoaded?.();
+                window.TelecomI18n?.applyDom?.();
+                const pageTitle = window.TelecomI18n?.t?.('bulkImport.title');
+                if (pageTitle) document.title = pageTitle;
+                document.documentElement.addEventListener('syriatel-locale-changed', () => {
+                    state.locale = document.documentElement.lang?.startsWith('en') ? 'en' : 'ar';
+                    window.TelecomI18n?.applyDom?.();
+                    if (mainGrid) {
+                        const rows = state.jobs;
+                        mainGrid.destroy();
+                        mainGrid = null;
+                        buildMainGrid();
+                        if (mainGrid) mainGrid.dataSource = rows;
+                    }
+                });
+
+                if (typeof SecurityManager !== 'undefined') {
+                    const ok = await SecurityManager.authorizeTelecomAccess({
+                        roles: ['TelecomBackOffice', 'TelecomAdmin'],
+                        permissions: ['bulk.import.monitor', 'bulk.import.upload'],
+                    });
+                    if (!ok) {
+                        SecurityManager.denyPageAccess();
+                        return;
+                    }
+                }
+
+                const sfReady = await waitForSyncfusion();
+                if (!sfReady) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: t('syncfusionMissing', 'Grid library not ready'),
+                            text: t('syncfusionMissingHint', 'Reload the page or check Syncfusion scripts.'),
+                        });
+                    }
+                    return;
+                }
+
+                await Vue.nextTick();
+                buildMainGrid();
+                buildErrorsGrid();
+                if (errorsModalRef.value) {
+                    errorsModal = new bootstrap.Modal(errorsModalRef.value);
+                }
+                await loadJobs();
+            } finally {
+                if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
             }
-            buildMainGrid();
-            buildErrorsGrid();
-            if (errorsModalRef.value) {
-                errorsModal = new bootstrap.Modal(errorsModalRef.value);
-            }
-            await loadJobs();
-            if (typeof hideSpinnerAndShowContent === 'function') hideSpinnerAndShowContent();
         });
 
         Vue.onUnmounted(() => {
@@ -356,6 +395,7 @@ const App = {
             errorsGridRef,
             errorsModalRef,
             fileInputRef,
+            t,
             loadJobs,
             onFileSelected,
             uploadFile,

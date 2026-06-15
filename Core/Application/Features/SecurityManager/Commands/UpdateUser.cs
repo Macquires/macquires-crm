@@ -11,16 +11,15 @@ public class UpdateUserResult
     public UpdateUserResultDto? Data { get; set; }
 }
 
-public class UpdateUserRequest : IRequest<UpdateUserResult>, IRequirePermission
+public class UpdateUserRequest : IRequest<UpdateUserResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminUsersManage;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? UserId { get; init; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
     public bool? EmailConfirmed { get; init; }
     public bool? IsBlocked { get; init; }
     public bool? IsDeleted { get; init; }
-    public string? UpdatedById { get; init; }
     public string? PrimaryMenuPersona { get; init; }
     public string? ManagerUserId { get; init; }
     public string? OrgUnitId { get; init; }
@@ -41,11 +40,16 @@ public class UpdateUserHandler : IRequestHandler<UpdateUserRequest, UpdateUserRe
 {
     private readonly ISecurityService _securityService;
     private readonly IUserAuditService _audit;
+    private readonly IOperatorContext _operator;
 
-    public UpdateUserHandler(ISecurityService securityService, IUserAuditService audit)
+    public UpdateUserHandler(
+        ISecurityService securityService,
+        IUserAuditService audit,
+        IOperatorContext operatorContext)
     {
         _securityService = securityService;
         _audit = audit;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateUserResult> Handle(UpdateUserRequest request, CancellationToken cancellationToken)
@@ -57,6 +61,8 @@ public class UpdateUserHandler : IRequestHandler<UpdateUserRequest, UpdateUserRe
             persona = parsed;
         }
 
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
         var result = await _securityService.UpdateUserAsync(
             request.UserId ?? "",
             request.FirstName ?? "",
@@ -64,7 +70,7 @@ public class UpdateUserHandler : IRequestHandler<UpdateUserRequest, UpdateUserRe
             request.EmailConfirmed ?? true,
             request.IsBlocked ?? false,
             request.IsDeleted ?? false,
-            request.UpdatedById ?? "",
+            actorUserId,
             persona,
             request.ManagerUserId,
             request.OrgUnitId,
@@ -75,7 +81,7 @@ public class UpdateUserHandler : IRequestHandler<UpdateUserRequest, UpdateUserRe
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.UpdatedById ?? request.UserId ?? "system",
+                ActorUserId = actorUserId,
                 UserId = request.UserId,
                 ActionType = UserAuditActionTypes.UserUpdated,
                 EntityType = "ApplicationUser",

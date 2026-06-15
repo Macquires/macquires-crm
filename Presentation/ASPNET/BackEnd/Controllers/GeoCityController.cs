@@ -2,8 +2,8 @@ using Application.Features.GeoCityManager.Commands;
 using Application.Features.GeoCityManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -15,7 +15,7 @@ public class GeoCityController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("CreateGeoCity")]
     public async Task<ActionResult<ApiSuccessResult<CreateGeoCityResult>>> CreateGeoCityAsync(
         CreateGeoCityRequest request,
@@ -31,7 +31,7 @@ public class GeoCityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("UpdateGeoCity")]
     public async Task<ActionResult<ApiSuccessResult<UpdateGeoCityResult>>> UpdateGeoCityAsync(
         UpdateGeoCityRequest request,
@@ -47,7 +47,7 @@ public class GeoCityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataManage]
     [HttpPost("DeleteGeoCity")]
     public async Task<ActionResult<ApiSuccessResult<DeleteGeoCityResult>>> DeleteGeoCityAsync(
         DeleteGeoCityRequest request,
@@ -63,7 +63,7 @@ public class GeoCityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireReferenceDataRead]
     [HttpGet("GetGeoCityList")]
     public async Task<ActionResult<ApiSuccessResult<GetGeoCityListResult>>> GetGeoCityListAsync(
         CancellationToken cancellationToken,

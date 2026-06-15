@@ -6,7 +6,7 @@ namespace Infrastructure.DataAccessManager.EFCore.Contexts;
 
 public class QueryContext : DataContext, IQueryContext
 {
-    public QueryContext(DbContextOptions<DataContext> options, IOperatorContext operatorContext)
+    public QueryContext(DbContextOptions<QueryContext> options, IOperatorContext operatorContext)
         : base(options, operatorContext)
     {
     }

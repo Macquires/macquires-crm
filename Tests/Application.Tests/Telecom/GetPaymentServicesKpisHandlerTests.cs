@@ -23,7 +23,7 @@ public class GetPaymentServicesKpisHandlerTests
             Pay("PAY-3", PaymentTransactionStatus.Reversed, 2000m, now, now.AddMinutes(2)));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetPaymentServicesKpisHandler(ctx);
+        var handler = new GetPaymentServicesKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetPaymentServicesKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -38,7 +38,7 @@ public class GetPaymentServicesKpisHandlerTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -63,6 +63,7 @@ public class GetPaymentServicesKpisHandlerTests
             Msisdn = "0939000100",
             CreatedAtUtc = created,
             ConfirmedAtUtc = confirmed,
+            BranchId = TestOperatorContext.DefaultBranchId,
             IsDeleted = false,
         };
 }

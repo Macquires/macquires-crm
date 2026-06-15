@@ -1,4 +1,5 @@
-﻿using Application.Common.Services.SecurityManager;
+﻿using Application.Common.Security;
+using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
 
@@ -11,8 +12,9 @@ public class GetRoleListResult
     public List<GetRoleListResultDto>? Data { get; init; }
 }
 
-public class GetRoleListRequest : IRequest<GetRoleListResult>
+public class GetRoleListRequest : IRequest<GetRoleListResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.RolesManageAny;
 }
 
 public class GetRoleListValidator : AbstractValidator<GetRoleListRequest>

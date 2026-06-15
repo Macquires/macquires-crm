@@ -34,6 +34,7 @@ public class CustomerConfiguration : BaseEntityConfiguration<Customer>
         builder.Property(x => x.CustomerGroupId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.CustomerCategoryId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.OrgUnitId).HasMaxLength(IdConsts.MaxLength);
+        builder.Property(x => x.BranchId).HasMaxLength(IdConsts.MaxLength);
         builder.Property(x => x.Status).HasConversion<int>();
         builder.Property(x => x.StatusReasonCode).HasConversion<int>();
         builder.Property(x => x.StatusReasonNote).HasMaxLength(DescriptionConsts.MaxLength);
@@ -51,6 +52,7 @@ public class CustomerConfiguration : BaseEntityConfiguration<Customer>
         builder.HasIndex(e => e.AccountNumber).IsUnique().HasFilter("[IsDeleted] = 0");
         builder.HasIndex(e => e.PrimaryPhone);
         builder.HasIndex(e => e.OrgUnitId);
+        builder.HasIndex(e => e.BranchId).HasFilter("[BranchId] IS NOT NULL");
 
         builder.HasOne(x => x.OrgUnit)
             .WithMany()

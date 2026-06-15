@@ -1,5 +1,6 @@
 ﻿using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
@@ -38,9 +39,10 @@ public class GetCompanyListResult
     public List<GetCompanyListDto>? Data { get; init; }
 }
 
-public class GetCompanyListRequest : IRequest<GetCompanyListResult>
+public class GetCompanyListRequest : IRequest<GetCompanyListResult>, IRequirePermission
 {
     public bool IsDeleted { get; init; } = false;
+    public string PermissionKey => PermissionCatalog.AdminSettingsManage;
 }
 
 

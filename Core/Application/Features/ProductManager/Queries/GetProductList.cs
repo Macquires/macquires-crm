@@ -1,5 +1,6 @@
 ﻿using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
@@ -39,9 +40,10 @@ public class GetProductListResult
     public List<GetProductListDto>? Data { get; init; }
 }
 
-public class GetProductListRequest : IRequest<GetProductListResult>
+public class GetProductListRequest : IRequest<GetProductListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 public class GetProductListHandler : IRequestHandler<GetProductListRequest, GetProductListResult>

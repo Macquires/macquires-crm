@@ -2,21 +2,15 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
-using Application.Common.Settings;
 using Application.Common.Security;
 using Application.Common.Telecom;
-using Application.Common.Telecom.ChangeGsm;
-using Application.Common.Telecom.SellingLine;
-using Application.Common.Telecom.ChangeNumber;
-using Application.Common.Telecom.Termination;
-using Application.Common.Telecom.OfferSubscription;
-using Application.Common.Telecom.Suspension;
-using Application.Common.Telecom.Reconnect;
-using Application.Common.Telecom.SimSwap;
-using Application.Common.Telecom.TakeOver;
-using Application.Common.Telecom.DeviceSales;
-using Application.Common.Telecom.Refund;
 using Application.Common.Telecom.BadDebt;
+using Application.Common.Telecom.ChangeNumber;
+using Application.Common.Telecom.OperationCreate;
+using Application.Common.Telecom.Reconnect;
+using Application.Common.Telecom.Refund;
+using Application.Common.Telecom.Suspension;
+using Application.Common.Telecom.Termination;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -51,7 +45,7 @@ public class CreateTelecomOperationRequestResult
 {
     public TelecomOperationRequest? Data { get; set; }
 }
-public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequestResult>
+public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequestResult>, IRequireAnyPermission
 {
     public TelecomOperationKind Kind { get; init; }
     public string SubscriberProfileId { get; init; } = null!;
@@ -65,17 +59,18 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
     public string? ProductId { get; init; }
     public string? Notes { get; init; }
     public string? TargetOfferName { get; init; }
+
+    /// <summary>§11 MGR — scheduled effective date (UTC).</summary>
+    public DateTime? MigrationEffectiveDateUtc { get; init; }
+
     public string? SimInventoryId { get; init; }
 
     /// <summary>Resolves <see cref="SimInventoryId"/> when set (available SIM in pool).</summary>
     public string? SimIccid { get; init; }
-    public string? CreatedById { get; init; }
 
     public ActivationChannel? ActivationChannel { get; set; }
 
     public string? DealerCode { get; init; }
-
-    public string? BranchId { get; init; }
 
     /// <summary>§6 Change GSM — target subscription type lookup id.</summary>
     public string? TargetSubscriptionTypeId { get; init; }
@@ -109,8 +104,21 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
     /// <summary>§5 Change Number — reason.</summary>
     public string? NumberChangeReason { get; init; }
 
+    /// <summary>§5 Internal (CNR) vs Port-In (MNP).</summary>
+    public string? NumberChangeMode { get; init; }
+
+    /// <summary>§5 MNP — MSISDN to port from donor operator.</summary>
+    public string? PortInMsisdn { get; init; }
+
+    /// <summary>§5 MNP — donor operator code.</summary>
+    public string? DonorOperatorCode { get; init; }
+
     /// <summary>§5 Premium fee (VAL-05-02).</summary>
     public decimal? PremiumFeeAmount { get; init; }
+
+    public DateTime? NumberChangeEffectiveDateUtc { get; init; }
+
+    public DateTime? SimSwapEffectiveDateUtc { get; init; }
 
     /// <summary>§10 Termination — Voluntary, Collections, Regulatory, Fraud.</summary>
     public string? TerminationType { get; init; }
@@ -119,6 +127,16 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
     public string? TerminationReason { get; init; }
 
     public DateTime? TerminationEffectiveDateUtc { get; init; }
+
+    public DateTime? ActivationEffectiveDateUtc { get; init; }
+
+    public DateTime? ReconnectEffectiveDateUtc { get; init; }
+
+    public DateTime? RefundEffectiveDateUtc { get; init; }
+
+    public DateTime? BadDebtEffectiveDateUtc { get; init; }
+
+    public DateTime? DeviceSaleEffectiveDateUtc { get; init; }
 
     /// <summary>§10 VAL-10-05 — retention offer outcome (voluntary).</summary>
     public string? RetentionOfferOutcome { get; init; }
@@ -165,6 +183,10 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
 
     public string? RefundMethod { get; init; }
 
+    public string? RefundCbsReference { get; init; }
+
+    public string? RefundGatewayReference { get; init; }
+
     /// <summary>§16 BDR.</summary>
     public string? CollectionAction { get; init; }
 
@@ -184,6 +206,8 @@ public class CreateTelecomOperationRequest : IRequest<CreateTelecomOperationRequ
 
     /// <summary>KYC vault document reference (required for new line activation).</summary>
     public string? KycDocumentReferenceId { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CreateAny;
 }
 
 public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTelecomOperationRequest>
@@ -237,6 +261,10 @@ public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTe
             .NotEmpty()
             .MaximumLength(256)
             .When(x => x.Kind == TelecomOperationKind.TakeOver);
+        RuleFor(x => x.PaymentReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.TakeOver
+                       && string.Equals(x.TakeOverObligationStatus, "Settled", StringComparison.OrdinalIgnoreCase));
         RuleFor(x => x.ReplacementReason)
             .NotEmpty()
             .MaximumLength(256)
@@ -249,12 +277,32 @@ public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTe
             .Must(x => !string.IsNullOrWhiteSpace(x.SimInventoryId) || !string.IsNullOrWhiteSpace(x.SimIccid))
             .When(x => x.Kind == TelecomOperationKind.SimSwap)
             .WithMessage("يجب تحديد الشريحة الجديدة (ICCID أو معرّف المخزون).");
+        RuleFor(x => x.AgencyReference)
+            .NotEmpty()
+            .MaximumLength(128)
+            .When(x => x.Kind == TelecomOperationKind.SimSwap && x.IsLostOrStolenReport);
         RuleFor(x => x.MsisdnAssetId)
             .NotEmpty()
             .When(x => x.Kind == TelecomOperationKind.NumberPortability);
         RuleFor(x => x.TargetMsisdnAssetId)
             .NotEmpty()
-            .When(x => x.Kind == TelecomOperationKind.NumberPortability);
+            .When(x => x.Kind == TelecomOperationKind.NumberPortability
+                       && !ChangeNumberWellKnown.IsPortInMode(x.NumberChangeMode));
+        RuleFor(x => x.PortInMsisdn)
+            .NotEmpty()
+            .MaximumLength(32)
+            .When(x => x.Kind == TelecomOperationKind.NumberPortability
+                       && ChangeNumberWellKnown.IsPortInMode(x.NumberChangeMode));
+        RuleFor(x => x.DonorOperatorCode)
+            .NotEmpty()
+            .MaximumLength(32)
+            .When(x => x.Kind == TelecomOperationKind.NumberPortability
+                       && ChangeNumberWellKnown.IsPortInMode(x.NumberChangeMode));
+        RuleFor(x => x.AgencyReference)
+            .NotEmpty()
+            .MaximumLength(128)
+            .When(x => x.Kind == TelecomOperationKind.NumberPortability
+                       && ChangeNumberWellKnown.IsPortInMode(x.NumberChangeMode));
         RuleFor(x => x.NumberChangeReason)
             .NotEmpty()
             .MaximumLength(256)
@@ -293,6 +341,11 @@ public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTe
         RuleFor(x => x.SuspensionEndDateUtc)
             .NotNull()
             .When(x => x.Kind == TelecomOperationKind.TemporarySuspension && x.AutoReconnectEnabled);
+        RuleFor(x => x.FraudClearanceConfirmed)
+            .Equal(true)
+            .When(x => x.Kind == TelecomOperationKind.TemporarySuspension
+                       && string.Equals(x.SuspensionType, SuspensionWellKnown.Fraud, StringComparison.OrdinalIgnoreCase))
+            .WithMessage("تأكيد المشرف مطلوب لحظر الاحتيال.");
         RuleFor(x => x.MsisdnAssetId)
             .NotEmpty()
             .When(x => x.Kind == TelecomOperationKind.Reconnect);
@@ -304,6 +357,69 @@ public class CreateTelecomOperationRequestValidator : AbstractValidator<CreateTe
             .NotEmpty()
             .MaximumLength(32)
             .When(x => x.Kind == TelecomOperationKind.Reconnect);
+        RuleFor(x => x.PaymentReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.Reconnect
+                       && string.Equals(x.ClearanceType, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.AgencyReference)
+            .NotEmpty()
+            .MaximumLength(128)
+            .When(x => x.Kind == TelecomOperationKind.Reconnect
+                       && string.Equals(x.ClearanceType, ReconnectWellKnown.Fraud, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.CollectionNote)
+            .NotEmpty()
+            .MaximumLength(512)
+            .When(x => x.Kind == TelecomOperationKind.Reconnect
+                       && string.Equals(x.ClearanceType, ReconnectWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.KycDocumentReferenceId)
+            .NotEmpty()
+            .MaximumLength(50)
+            .When(x => x.Kind == TelecomOperationKind.Reconnect
+                       && string.Equals(x.ClearanceType, ReconnectWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.PaymentReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.TemporarySuspension
+                       && string.Equals(x.SuspensionType, SuspensionWellKnown.Billing, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.AgencyReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.TemporarySuspension
+                       && string.Equals(x.SuspensionType, SuspensionWellKnown.Fraud, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.CollectionNote)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.TemporarySuspension
+                       && string.Equals(x.SuspensionType, SuspensionWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.KycDocumentReferenceId)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.TemporarySuspension
+                       && string.Equals(x.SuspensionType, SuspensionWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.PaymentReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.Termination
+                       && string.Equals(x.TerminationType, TerminationWellKnown.Collections, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.AgencyReference)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.Termination
+                       && string.Equals(x.TerminationType, TerminationWellKnown.Fraud, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.CollectionNote)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.Termination
+                       && string.Equals(x.TerminationType, TerminationWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.KycDocumentReferenceId)
+            .NotEmpty()
+            .When(x => x.Kind == TelecomOperationKind.Termination
+                       && string.Equals(x.TerminationType, TerminationWellKnown.Regulatory, StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.RefundCbsReference)
+            .NotEmpty()
+            .MaximumLength(128)
+            .When(x => x.Kind == TelecomOperationKind.DepositRefundSettlement
+                       && (string.Equals(x.RefundType, RefundWellKnown.TypeDeposit, StringComparison.OrdinalIgnoreCase)
+                           || string.Equals(x.RefundType, RefundWellKnown.TypeOverpayment, StringComparison.OrdinalIgnoreCase)));
+        RuleFor(x => x.RefundGatewayReference)
+            .NotEmpty()
+            .MaximumLength(128)
+            .When(x => x.Kind == TelecomOperationKind.DepositRefundSettlement
+                       && (string.Equals(x.RefundMethod, RefundWellKnown.MethodBankTransfer, StringComparison.OrdinalIgnoreCase)
+                           || string.Equals(x.RefundType, RefundWellKnown.TypeSyriatelCash, StringComparison.OrdinalIgnoreCase)));
         RuleFor(x => x.MsisdnAssetId)
             .NotEmpty()
             .When(x => x.Kind == TelecomOperationKind.Migration);
@@ -365,283 +481,39 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
     private readonly IUnitOfWork _unitOfWork;
     private readonly NumberSequenceService _numberSequenceService;
     private readonly IQueryContext _queryContext;
-    private readonly IBillingSystemIntegration _billing;
-    private readonly ITechnicalTicketQueueIngestionService _ticketQueue;
-    private readonly IGlobalSettingsProvider _globalSettings;
-    private readonly ISellingLineEligibilityChecker _sellingLineEligibility;
-    private readonly IChangeGsmEligibilityChecker _changeGsmEligibility;
-    private readonly ITakeOverEligibilityChecker _takeOverEligibility;
-    private readonly ISimSwapEligibilityChecker _simSwapEligibility;
-    private readonly IChangeNumberEligibilityChecker _changeNumberEligibility;
-    private readonly ITerminationEligibilityChecker _terminationEligibility;
-    private readonly ISuspensionEligibilityChecker _suspensionEligibility;
-    private readonly IReconnectEligibilityChecker _reconnectEligibility;
-    private readonly IOfferSubscriptionEligibilityChecker _offerSubscriptionEligibility;
-    private readonly IPermissionEvaluator _permissions;
-    private readonly IDeviceSalesEligibilityChecker _deviceSalesEligibility;
-    private readonly IRefundEligibilityChecker _refundEligibility;
-    private readonly IBadDebtEligibilityChecker _badDebtEligibility;
-    private readonly ICommandRepository<DeviceInventory> _deviceInventoryRepository;
-    private readonly IKycDocumentStorageService _kycDocumentStorage;
+    private readonly IOperationCreateStrategyRegistry _createStrategies;
+    private readonly IOperationCreatePostCreateService _postCreate;
+    private readonly IOperatorContext _operator;
 
     public CreateTelecomOperationRequestHandler(
         ICommandRepository<TelecomOperationRequest> repository,
         IUnitOfWork unitOfWork,
         NumberSequenceService numberSequenceService,
         IQueryContext queryContext,
-        IBillingSystemIntegration billing,
-        ITechnicalTicketQueueIngestionService ticketQueue,
-        IGlobalSettingsProvider globalSettings,
-        ISellingLineEligibilityChecker sellingLineEligibility,
-        IChangeGsmEligibilityChecker changeGsmEligibility,
-        ITakeOverEligibilityChecker takeOverEligibility,
-        ISimSwapEligibilityChecker simSwapEligibility,
-        IChangeNumberEligibilityChecker changeNumberEligibility,
-        ITerminationEligibilityChecker terminationEligibility,
-        ISuspensionEligibilityChecker suspensionEligibility,
-        IReconnectEligibilityChecker reconnectEligibility,
-        IOfferSubscriptionEligibilityChecker offerSubscriptionEligibility,
-        IPermissionEvaluator permissions,
-        IDeviceSalesEligibilityChecker deviceSalesEligibility,
-        IRefundEligibilityChecker refundEligibility,
-        IBadDebtEligibilityChecker badDebtEligibility,
-        ICommandRepository<DeviceInventory> deviceInventoryRepository,
-        IKycDocumentStorageService kycDocumentStorage)
+        IOperationCreateStrategyRegistry createStrategies,
+        IOperationCreatePostCreateService postCreate,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _numberSequenceService = numberSequenceService;
         _queryContext = queryContext;
-        _billing = billing;
-        _ticketQueue = ticketQueue;
-        _globalSettings = globalSettings;
-        _sellingLineEligibility = sellingLineEligibility;
-        _changeGsmEligibility = changeGsmEligibility;
-        _takeOverEligibility = takeOverEligibility;
-        _simSwapEligibility = simSwapEligibility;
-        _changeNumberEligibility = changeNumberEligibility;
-        _terminationEligibility = terminationEligibility;
-        _suspensionEligibility = suspensionEligibility;
-        _reconnectEligibility = reconnectEligibility;
-        _offerSubscriptionEligibility = offerSubscriptionEligibility;
-        _permissions = permissions;
-        _deviceSalesEligibility = deviceSalesEligibility;
-        _refundEligibility = refundEligibility;
-        _badDebtEligibility = badDebtEligibility;
-        _deviceInventoryRepository = deviceInventoryRepository;
-        _kycDocumentStorage = kycDocumentStorage;
+        _createStrategies = createStrategies;
+        _postCreate = postCreate;
+        _operator = operatorContext;
     }
 
     public async Task<CreateTelecomOperationRequestResult> Handle(
         CreateTelecomOperationRequest request,
         CancellationToken cancellationToken)
     {
-        TakeOverEligibilityResult? takeOverEligibility = null;
-        if (request.Kind == TelecomOperationKind.TakeOver)
-        {
-            await EnsureTakeOverCreatePermissionAsync(request.CreatedById, cancellationToken);
+        var actorUserId = _operator.UserId
+            ?? throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء العملية.");
+        var branchId = string.IsNullOrWhiteSpace(_operator.BranchId) ? null : _operator.BranchId.Trim();
 
-            takeOverEligibility = await _takeOverEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.SecondarySubscriberProfileId!,
-                request.MsisdnAssetId,
-                request.TransferReason!,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!takeOverEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(takeOverEligibility.MessageAr);
-            }
-        }
-
-        if (request.Kind == TelecomOperationKind.NewActivation)
-        {
-            await ValidateNewActivationLineCapAsync(request, cancellationToken);
-            await ValidateNewActivationKycDocumentAsync(request, cancellationToken);
-        }
-
-        SimSwapEligibilityResult? simSwapEligibility = null;
-        if (request.Kind == TelecomOperationKind.SimSwap)
-        {
-            await EnsureSimSwapCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            simSwapEligibility = await _simSwapEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId,
-                string.IsNullOrEmpty((request.SimInventoryId ?? string.Empty).Trim()) ? null : request.SimInventoryId,
-                request.SimIccid,
-                request.ReplacementReason!,
-                request.IsLostOrStolenReport,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!simSwapEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(simSwapEligibility.MessageAr);
-            }
-        }
-
-        ChangeNumberEligibilityResult? changeNumberEligibility = null;
-        if (request.Kind == TelecomOperationKind.NumberPortability)
-        {
-            await EnsureChangeNumberCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            changeNumberEligibility = await _changeNumberEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                request.TargetMsisdnAssetId!,
-                request.NumberChangeReason!,
-                request.PremiumFeeAmount,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!changeNumberEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(changeNumberEligibility.MessageAr);
-            }
-        }
-
-        TerminationEligibilityResult? terminationEligibility = null;
-        if (request.Kind == TelecomOperationKind.Termination)
-        {
-            await EnsureTerminationCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            terminationEligibility = await _terminationEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                request.TerminationType!,
-                request.TerminationReason!,
-                request.RetentionOfferOutcome,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!terminationEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(terminationEligibility.MessageAr);
-            }
-        }
-
-        SuspensionEligibilityResult? suspensionEligibility = null;
-        if (request.Kind == TelecomOperationKind.TemporarySuspension)
-        {
-            await EnsureSuspensionCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            suspensionEligibility = await _suspensionEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                request.SuspensionType!,
-                request.SuspensionReason!,
-                request.BarringLevel ?? SuspensionWellKnown.BarringFull,
-                request.AutoReconnectEnabled,
-                request.SuspensionEndDateUtc,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!suspensionEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(suspensionEligibility.MessageAr);
-            }
-        }
-
-        ReconnectEligibilityResult? reconnectEligibility = null;
-        if (request.Kind == TelecomOperationKind.Reconnect)
-        {
-            await EnsureReconnectCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            reconnectEligibility = await _reconnectEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                request.ReconnectReason!,
-                request.ClearanceType ?? ReconnectWellKnown.Customer,
-                request.PaymentReference,
-                request.FraudClearanceConfirmed,
-                request.SourceSuspensionOperationId,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!reconnectEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(reconnectEligibility.MessageAr);
-            }
-        }
-
-        DeviceSalesEligibilityResult? deviceSalesEligibility = null;
-        if (request.Kind == TelecomOperationKind.DeviceSale)
-        {
-            deviceSalesEligibility = await _deviceSalesEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.DeviceInventoryId!,
-                request.DeviceSaleType!.Value,
-                request.DeviceInstallmentPlanId,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!deviceSalesEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(deviceSalesEligibility.MessageAr);
-            }
-        }
-
-        BadDebtEligibilityResult? badDebtEligibility = null;
-        if (request.Kind == TelecomOperationKind.BadDebtRecovery)
-        {
-            await EnsureBadDebtCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            badDebtEligibility = await _badDebtEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                request.CollectionAction!,
-                request.DunningStage,
-                request.PaymentReference,
-                request.CollectedAmount,
-                request.WriteOffAmount,
-                request.CollectionApprovalConfirmed,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!badDebtEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(badDebtEligibility.MessageAr);
-            }
-        }
-
-        RefundEligibilityResult? refundEligibility = null;
-        if (request.Kind == TelecomOperationKind.DepositRefundSettlement)
-        {
-            await EnsureRefundCreatePermissionAsync(request.CreatedById, cancellationToken);
-
-            refundEligibility = await _refundEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                request.RefundType!,
-                request.RefundMethod!,
-                request.RefundAmount!.Value,
-                request.RefundReason!,
-                excludeOperationId: null,
-                cancellationToken: cancellationToken);
-
-            if (!refundEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(refundEligibility.MessageAr);
-            }
-        }
-
-        ChangeGsmEligibilityResult? changeGsmEligibility = null;
-        if (request.Kind == TelecomOperationKind.ChangeGsmType)
-        {
-            changeGsmEligibility = await _changeGsmEligibility.ValidateForCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId,
-                request.TargetSubscriptionTypeId!,
-                request.GsmMigrationReason,
-                cancellationToken);
-
-            if (!changeGsmEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(changeGsmEligibility.MessageAr);
-            }
-        }
+        var createContext = new OperationCreateContext(request, actorUserId);
+        var createStrategy = _createStrategies.Resolve(request.Kind);
+        await createStrategy.ValidateForCreateAsync(createContext, cancellationToken);
 
         var offeringIdInput = (request.ProductOfferingId ?? string.Empty).Trim();
         if (request.Kind == TelecomOperationKind.ChangeGsmType
@@ -677,50 +549,9 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             resolvedProductId = productIdInput;
         }
 
-        OfferSubscriptionEligibilityResult? migrationEligibility = null;
-        if (request.Kind == TelecomOperationKind.Migration)
-        {
-            if (string.IsNullOrEmpty(resolvedProductId) || string.IsNullOrEmpty(resolvedOfferingId))
-            {
-                throw new BusinessRuleViolationException(
-                    "ترحيل الباقة يتطلب اختيار عرض تجاري مربوط بمنتج تقني (CBS).");
-            }
-
-            migrationEligibility = await _offerSubscriptionEligibility.ValidateForMigrationCreateAsync(
-                request.SubscriberProfileId,
-                request.MsisdnAssetId!,
-                resolvedOfferingId,
-                resolvedProductId,
-                excludeOperationId: null,
-                cancellationToken);
-
-            if (!migrationEligibility.Allowed)
-            {
-                throw new BusinessRuleViolationException(migrationEligibility.MessageAr);
-            }
-        }
-        else if (request.Kind == TelecomOperationKind.NewActivation
-                 && !string.IsNullOrEmpty(resolvedProductId))
-        {
-            await _sellingLineEligibility.ValidateCatalogForCreateAsync(
-                request, resolvedProductId, resolvedOfferingId, cancellationToken);
-            await _sellingLineEligibility.ValidateForCreateAsync(request, cancellationToken);
-        }
-        else if (request.Kind == TelecomOperationKind.ChangeGsmType
-                 && !string.IsNullOrEmpty(resolvedProductId)
-                 && changeGsmEligibility != null)
-        {
-            await ValidateCatalogSelectionForChangeGsmAsync(
-                changeGsmEligibility.SourceSubscriptionTypeId!,
-                request.TargetSubscriptionTypeId!,
-                resolvedProductId,
-                resolvedOfferingId,
-                cancellationToken);
-        }
-        else if (request.Kind == TelecomOperationKind.NewActivation)
-        {
-            await _sellingLineEligibility.ValidateForCreateAsync(request, cancellationToken);
-        }
+        createContext.ResolvedOfferingId = resolvedOfferingId;
+        createContext.ResolvedProductId = resolvedProductId;
+        await createStrategy.ValidateCatalogAsync(createContext, cancellationToken);
 
         var simInventoryId = (request.SimInventoryId ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(simInventoryId) && !string.IsNullOrWhiteSpace(request.SimIccid))
@@ -737,21 +568,13 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             simInventoryId = sim.Id;
         }
 
-        if (request.Kind == TelecomOperationKind.SimSwap
-            && simSwapEligibility != null
-            && !string.IsNullOrEmpty(simSwapEligibility.NewSimInventoryId))
-        {
-            simInventoryId = simSwapEligibility.NewSimInventoryId;
-        }
-
         var (entityName, prefix) = TelecomNumberSequence.ForKind(request.Kind);
-        var number = _numberSequenceService.GenerateNumber(entityName, prefix, "", useDate: false);
+        var number = await _numberSequenceService.GenerateNumberAsync(entityName, prefix, "", useDate: false, cancellationToken: cancellationToken);
 
         var notes = BuildNotes(request);
 
         var channel = request.ActivationChannel ?? ActivationChannel.Showroom;
         var dealerCode = string.IsNullOrWhiteSpace(request.DealerCode) ? null : request.DealerCode.Trim();
-        var branchId = string.IsNullOrWhiteSpace(request.BranchId) ? null : request.BranchId.Trim();
 
         var entity = new TelecomOperationRequest
         {
@@ -771,583 +594,23 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
             ActivationChannel = channel,
             DealerCode = dealerCode,
             BranchId = branchId,
-            CreatedById = request.CreatedById,
+            CreatedById = actorUserId,
             IsLostOrStolenReport = request.IsLostOrStolenReport,
             FraudClearanceConfirmed = false,
             AutoReconnectEnabled = false,
             NotificationSuppressed = false,
         };
 
-        if (request.Kind == TelecomOperationKind.NewActivation
-            && !string.IsNullOrWhiteSpace(request.TargetSubscriptionTypeId))
-        {
-            entity.TargetSubscriptionTypeId = request.TargetSubscriptionTypeId.Trim();
-        }
-
-        if (request.Kind == TelecomOperationKind.NewActivation
-            && !string.IsNullOrWhiteSpace(request.KycDocumentReferenceId))
-        {
-            entity.KycDocumentReferenceId = request.KycDocumentReferenceId.Trim();
-            entity.DocumentStatus = TelecomDocumentStatus.Uploaded;
-        }
-
-        if (request.Kind == TelecomOperationKind.ChangeGsmType && changeGsmEligibility != null)
-        {
-            entity.SourceSubscriptionTypeId = changeGsmEligibility.SourceSubscriptionTypeId;
-            entity.TargetSubscriptionTypeId = request.TargetSubscriptionTypeId!.Trim();
-            entity.GsmMigrationReason = request.GsmMigrationReason!.Trim();
-            entity.GsmEffectiveDateUtc = request.GsmEffectiveDateUtc ?? DateTime.UtcNow;
-            entity.GsmCompatibilityStatus = changeGsmEligibility.CompatibilityStatus;
-            entity.Notes = AppendChangeGsmAudit(entity.Notes, changeGsmEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.TakeOver && takeOverEligibility != null)
-        {
-            entity.TransferReason = request.TransferReason!.Trim();
-            entity.DepositTransferPolicy = request.DepositTransferPolicy ?? DepositTransferPolicy.TransferToNewOwner;
-            entity.TakeOverEffectiveDateUtc = request.TakeOverEffectiveDateUtc ?? DateTime.UtcNow;
-            entity.TakeOverObligationStatus = string.IsNullOrWhiteSpace(request.TakeOverObligationStatus)
-                ? "Unknown"
-                : request.TakeOverObligationStatus.Trim();
-            entity.ApprovalLevelRequired = "BackOffice";
-            entity.OldCustomerId = takeOverEligibility.OldCustomerId;
-            entity.NewCustomerId = takeOverEligibility.NewCustomerId;
-            entity.PriorSubscriberProfileId = request.SubscriberProfileId;
-            entity.Notes = AppendTakeOverAudit(entity.Notes, takeOverEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.SimSwap && simSwapEligibility != null)
-        {
-            entity.ReplacementReason = request.ReplacementReason!.Trim();
-            entity.IsLostOrStolenReport = request.IsLostOrStolenReport;
-            entity.PriorSimInventoryId = simSwapEligibility.PriorSimInventoryId;
-            if (request.IsLostOrStolenReport)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-                entity.Status = TelecomOperationStatus.PendingDocuments;
-            }
-
-            entity.Notes = AppendSimSwapAudit(entity.Notes, simSwapEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.NumberPortability && changeNumberEligibility != null)
-        {
-            entity.PriorMsisdnAssetId = changeNumberEligibility.PriorMsisdnAssetId ?? request.MsisdnAssetId;
-            entity.TargetMsisdnAssetId = changeNumberEligibility.TargetMsisdnAssetId ?? request.TargetMsisdnAssetId;
-            entity.NumberChangeReason = request.NumberChangeReason!.Trim();
-            entity.NumberChangeMode = ChangeNumberModes.Internal;
-            entity.PremiumFeeAmount = request.PremiumFeeAmount;
-            if (changeNumberEligibility.RequiresBackOfficeApproval)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-            }
-
-            entity.Notes = AppendChangeNumberAudit(entity.Notes, changeNumberEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.Termination && terminationEligibility != null)
-        {
-            entity.TerminationType = request.TerminationType!.Trim();
-            entity.TerminationReason = request.TerminationReason!.Trim();
-            entity.TerminationEffectiveDateUtc = request.TerminationEffectiveDateUtc ?? DateTime.UtcNow;
-            entity.RetentionOfferOutcome = (request.RetentionOfferOutcome ?? string.Empty).Trim();
-            entity.PriorMsisdnAssetId = terminationEligibility.MsisdnAssetId ?? request.MsisdnAssetId;
-            entity.PriorSimInventoryId = terminationEligibility.PriorSimInventoryId;
-            entity.DeprovisionStatus = "Pending";
-            if (terminationEligibility.RequiresBackOfficeApproval)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-            }
-
-            entity.Notes = AppendTerminationAudit(entity.Notes, terminationEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.Migration && migrationEligibility != null)
-        {
-            entity.PriorProductId = migrationEligibility.PriorProductId;
-            entity.PriorProductOfferingId = migrationEligibility.PriorProductOfferingId;
-            entity.Notes = AppendOfferMigrationAudit(entity.Notes, migrationEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.TemporarySuspension && suspensionEligibility != null)
-        {
-            entity.SuspensionType = request.SuspensionType!.Trim();
-            entity.SuspensionReason = request.SuspensionReason!.Trim();
-            entity.BarringLevel = (request.BarringLevel ?? SuspensionWellKnown.BarringFull).Trim();
-            entity.SuspensionStartDateUtc = request.SuspensionStartDateUtc ?? DateTime.UtcNow;
-            entity.SuspensionEndDateUtc = request.SuspensionEndDateUtc;
-            entity.AutoReconnectEnabled = request.AutoReconnectEnabled;
-            entity.NotificationSuppressed = request.NotificationSuppressed;
-            entity.BarStatus = "Pending";
-            if (suspensionEligibility.RequiresBackOfficeApproval)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-            }
-
-            entity.Notes = AppendSuspensionAudit(entity.Notes, suspensionEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.DeviceSale && deviceSalesEligibility != null)
-        {
-            entity.DeviceInventoryId = deviceSalesEligibility.DeviceInventoryId ?? request.DeviceInventoryId!.Trim();
-            entity.DeviceSaleType = request.DeviceSaleType;
-            entity.InstallmentPlanId = request.DeviceInstallmentPlanId?.Trim();
-            entity.DeviceFinancingDecision = deviceSalesEligibility.FinancingDecision;
-            entity.DeviceApprovalLevelRequired = deviceSalesEligibility.ApprovalLevelRequired;
-            entity.DeviceFinancingNoteAr = deviceSalesEligibility.FinancingNoteAr;
-            entity.DeviceDownPaymentAmount = deviceSalesEligibility.RequiredDownPayment;
-            entity.DeviceMonthlyInstallmentAmount = deviceSalesEligibility.MonthlyInstallment;
-            entity.DeviceCreditScoreSnapshot = deviceSalesEligibility.CreditScoreSnapshot;
-            entity.ProvisioningResult = "Pending";
-            if (deviceSalesEligibility.RequiresFinanceApproval)
-            {
-                entity.ApprovalLevelRequired = deviceSalesEligibility.ApprovalLevelRequired;
-            }
-
-            entity.Notes = string.IsNullOrEmpty(entity.Notes)
-                ? deviceSalesEligibility.MessageAr
-                : $"{entity.Notes}\n{deviceSalesEligibility.MessageAr}";
-        }
-
-        if (request.Kind == TelecomOperationKind.DepositRefundSettlement && refundEligibility != null)
-        {
-            entity.RefundType = request.RefundType!.Trim();
-            entity.RefundMethod = request.RefundMethod!.Trim();
-            entity.RefundReason = request.RefundReason!.Trim();
-            entity.RefundAmount = request.RefundAmount;
-            entity.DepositBalanceSnapshot = refundEligibility.DepositBalanceSnapshot;
-            entity.WalletBalanceSnapshot = refundEligibility.WalletBalanceSnapshot;
-            entity.RefundSettlementStatus = RefundWellKnown.SettlementPending;
-            entity.RequiresDualApproval = refundEligibility.RequiresDualApproval;
-            entity.ProvisioningResult = "Pending";
-            if (refundEligibility.RequiresBackOfficeApproval)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-                entity.Status = TelecomOperationStatus.PendingDocuments;
-            }
-
-            entity.Notes = AppendRefundAudit(entity.Notes, refundEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.BadDebtRecovery && badDebtEligibility != null)
-        {
-            entity.CollectionAction = request.CollectionAction!.Trim();
-            entity.DunningStage = string.IsNullOrWhiteSpace(request.DunningStage)
-                ? BadDebtWellKnown.Reminder1
-                : request.DunningStage.Trim();
-            entity.PriorDunningStage = entity.DunningStage;
-            entity.OutstandingBalanceSnapshot = badDebtEligibility.OutstandingBalanceSnapshot;
-            entity.CollectedAmount = request.CollectedAmount;
-            entity.WriteOffAmount = request.WriteOffAmount;
-            entity.AgencyReference = string.IsNullOrWhiteSpace(request.AgencyReference)
-                ? null
-                : request.AgencyReference.Trim();
-            entity.PaymentPlanMonths = request.PaymentPlanMonths;
-            entity.CollectionNote = string.IsNullOrWhiteSpace(request.CollectionNote)
-                ? null
-                : request.CollectionNote.Trim();
-            entity.PaymentReference = string.IsNullOrWhiteSpace(request.PaymentReference)
-                ? null
-                : request.PaymentReference.Trim();
-            entity.FraudClearanceConfirmed = request.CollectionApprovalConfirmed;
-            entity.CollectionSettlementStatus = BadDebtWellKnown.SettlementPending;
-            entity.ProvisioningResult = "Pending";
-            if (request.PaymentPlanMonths is > 0)
-            {
-                entity.NextDunningDueUtc = DateTime.UtcNow.AddMonths(request.PaymentPlanMonths.Value);
-            }
-
-            if (badDebtEligibility.RequiresBackOfficeApproval)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-                entity.Status = TelecomOperationStatus.PendingDocuments;
-
-                // GLOBAL HARDENING: SLA Countdown for BDR
-                var slaMinutes = await _globalSettings.GetIntAsync(GlobalSettingKeys.TelecomBdrTicketSlaMinutes, 2, cancellationToken: cancellationToken);
-                entity.SlaExpirationTimeUtc = DateTime.UtcNow.AddMinutes(slaMinutes);
-            }
-
-            entity.Notes = AppendBadDebtAudit(entity.Notes, badDebtEligibility);
-        }
-
-        if (request.Kind == TelecomOperationKind.Reconnect && reconnectEligibility != null)
-        {
-            entity.ReconnectReason = request.ReconnectReason!.Trim();
-            entity.ClearanceType = (request.ClearanceType ?? ReconnectWellKnown.Customer).Trim();
-            entity.PaymentReference = string.IsNullOrWhiteSpace(request.PaymentReference)
-                ? null
-                : request.PaymentReference.Trim();
-            entity.SourceSuspensionOperationId = reconnectEligibility.SourceSuspensionOperationId;
-            entity.FraudClearanceConfirmed = request.FraudClearanceConfirmed;
-            entity.FraudClearanceByUserId = request.FraudClearanceConfirmed ? request.CreatedById : null;
-            entity.IsLostOrStolenReport = false;
-            entity.AutoReconnectEnabled = false;
-            entity.NotificationSuppressed = false;
-            if (reconnectEligibility.RequiresBackOfficeApproval)
-            {
-                entity.ApprovalLevelRequired = "BackOffice";
-            }
-
-            // GLOBAL HARDENING: Route B Bypass to Advance
-            if (request.Notes?.Contains("BypassToAdvance:true") == true)
-            {
-                entity.Status = TelecomOperationStatus.Paid_Pending_BackOffice_Clearance;
-                entity.ApprovalLevelRequired = "BackOffice";
-            }
-
-            entity.Notes = AppendReconnectAudit(entity.Notes, reconnectEligibility);
-        }
+        var buildContext = new OperationCreateBuildContext(createContext, entity, simInventoryId, branchId, actorUserId);
+        await createStrategy.ApplyToEntityAsync(buildContext, cancellationToken);
+        entity.SimInventoryId = string.IsNullOrEmpty(buildContext.SimInventoryId) ? null : buildContext.SimInventoryId;
 
         await _repository.CreateAsync(entity, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
 
-        if (entity.Kind == TelecomOperationKind.DeviceSale && !string.IsNullOrEmpty(entity.DeviceInventoryId))
-        {
-            var device = await _deviceInventoryRepository.GetAsync(entity.DeviceInventoryId, cancellationToken);
-            if (device != null && device.Status == DeviceInventoryStatus.Available)
-            {
-                device.ReserveForOperation(entity.Id);
-                device.UpdatedById = request.CreatedById;
-                _deviceInventoryRepository.Update(device);
-                await _unitOfWork.SaveAsync(cancellationToken);
-            }
-        }
-
-        if (entity.Kind is not TelecomOperationKind.NewActivation
-            and not TelecomOperationKind.DeviceSale
-            and not TelecomOperationKind.DepositRefundSettlement)
-        {
-            await _ticketQueue.EnqueueFromTelecomOperationAsync(entity, request.CreatedById, cancellationToken);
-        }
+        await _postCreate.RunAsync(entity, actorUserId, cancellationToken);
 
         return new CreateTelecomOperationRequestResult { Data = entity };
-    }
-
-    private async Task ValidateCatalogSelectionForChangeGsmAsync(
-        string sourceTypeId,
-        string targetTypeId,
-        string resolvedProductId,
-        string? resolvedOfferingId,
-        CancellationToken cancellationToken)
-    {
-        var product = await _queryContext.Product
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => !p.IsDeleted && p.Id == resolvedProductId, cancellationToken)
-            ?? throw new BusinessRuleViolationException("المنتج التقني المرتبط غير موجود.");
-
-        if (!string.IsNullOrEmpty(resolvedOfferingId))
-        {
-            var offering = await _queryContext.ProductOffering
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == resolvedOfferingId, cancellationToken);
-
-            if (offering != null
-                && !string.IsNullOrEmpty(offering.CompatibleSubscriptionTypeId)
-                && offering.CompatibleSubscriptionTypeId != targetTypeId)
-            {
-                throw new BusinessRuleViolationException(
-                    "العرض التجاري المختار غير متوافق مع نوع الخط الهدف بعد التحويل.");
-            }
-        }
-
-        if (!string.IsNullOrEmpty(product.CompatibleSubscriptionTypeId)
-            && product.CompatibleSubscriptionTypeId != targetTypeId)
-        {
-            throw new BusinessRuleViolationException(
-                "الباقة المختارة غير متوافقة مع نوع الخط الهدف (CGT).");
-        }
-    }
-
-    private static string? AppendChangeGsmAudit(string? notes, ChangeGsmEligibilityResult eligibility)
-    {
-        var stamp =
-            $"CGT|src={eligibility.SourceTypeCode ?? eligibility.SourceSubscriptionTypeId}|tgt={eligibility.TargetTypeCode}|status={eligibility.CompatibilityStatus}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private async Task EnsureSimSwapCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب تبديل الشريحة.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineSimSwapRequest,
-            PermissionCatalog.TelecomLineSimSwap,
-            PermissionCatalog.TelecomLineSimSwapApprove,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب تبديل الشريحة (telecom.line.simswap_request).");
-    }
-
-    private async Task EnsureTakeOverCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب نقل الملكية.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineTransferRequest,
-            PermissionCatalog.TelecomLineTransferOwnership,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب نقل الملكية (telecom.line.transfer_request).");
-    }
-
-    private static string? AppendTakeOverAudit(string? notes, TakeOverEligibilityResult eligibility)
-    {
-        var stamp = $"TKO|msisdn={eligibility.Msisdn ?? "—"}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private static string? AppendSimSwapAudit(string? notes, SimSwapEligibilityResult eligibility)
-    {
-        var stamp = $"SIM|msisdn={eligibility.Msisdn ?? "—"}|prior={eligibility.PriorSimInventoryId ?? "—"}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private static string? AppendChangeNumberAudit(string? notes, ChangeNumberEligibilityResult eligibility)
-    {
-        var stamp =
-            $"CNR|cur={eligibility.CurrentMsisdn ?? "—"}|tgt={eligibility.TargetMsisdn ?? "—"}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private async Task EnsureTerminationCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب إنهاء الخط.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineTerminationRequest,
-            PermissionCatalog.TelecomLineTermination,
-            PermissionCatalog.TelecomLineTerminationApprove,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب إنهاء الخط (telecom.line.termination_request).");
-    }
-
-    private static string? AppendTerminationAudit(string? notes, TerminationEligibilityResult eligibility)
-    {
-        var stamp =
-            $"TRM|msisdn={eligibility.Msisdn ?? "—"}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private static string? AppendOfferMigrationAudit(string? notes, OfferSubscriptionEligibilityResult eligibility)
-    {
-        var stamp =
-            $"MGR|msisdn={eligibility.Msisdn ?? "—"}|priorProduct={eligibility.PriorProductId ?? "—"}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private async Task EnsureSuspensionCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب حظر الخط.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineSuspensionRequest,
-            PermissionCatalog.TelecomLineSuspension,
-            PermissionCatalog.TelecomLineSuspensionApprove,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب حظر الخط (telecom.line.suspension_request).");
-    }
-
-    private async Task EnsureRefundCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب استرداد مالي.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineRefundRequest,
-            PermissionCatalog.TelecomLineRefund,
-            PermissionCatalog.TelecomLineRefundApprove,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب الاسترداد (telecom.line.refund_request).");
-    }
-
-    private async Task EnsureReconnectCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب إعادة التفعيل.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineReconnectRequest,
-            PermissionCatalog.TelecomLineReconnect,
-            PermissionCatalog.TelecomLineReconnectApprove,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب إعادة التفعيل (telecom.line.reconnect_request).");
-    }
-
-    private static string? AppendRefundAudit(string? notes, RefundEligibilityResult eligibility)
-    {
-        var stamp =
-            $"RFD|msisdn={eligibility.Msisdn ?? "—"}|deposit={eligibility.DepositBalanceSnapshot:N0}|wallet={eligibility.WalletBalanceSnapshot:N0}|dual={eligibility.RequiresDualApproval}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.OutcomeCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private static string? AppendSuspensionAudit(string? notes, SuspensionEligibilityResult eligibility)
-    {
-        var stamp =
-            $"SUS|msisdn={eligibility.Msisdn ?? "—"}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private static string? AppendReconnectAudit(string? notes, ReconnectEligibilityResult eligibility)
-    {
-        var stamp =
-            $"RCN|msisdn={eligibility.Msisdn ?? "—"}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private async Task EnsureBadDebtCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب التحصيل.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineCollectionRequest,
-            PermissionCatalog.TelecomLineCollection,
-            PermissionCatalog.TelecomLineCollectionApprove,
-            PermissionCatalog.TelecomLineCollectionManage,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب التحصيل (telecom.line.collection_request).");
-    }
-
-    private static string? AppendBadDebtAudit(string? notes, BadDebtEligibilityResult eligibility)
-    {
-        var stamp =
-            $"BDR|msisdn={eligibility.Msisdn ?? "—"}|balance={eligibility.OutstandingBalanceSnapshot:N0}|bo={eligibility.RequiresBackOfficeApproval}|code={eligibility.ValidationCode}";
-        return string.IsNullOrWhiteSpace(notes) ? stamp : $"{notes} | {stamp}";
-    }
-
-    private async Task EnsureChangeNumberCreatePermissionAsync(string? userId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new BusinessRuleViolationException("يجب تسجيل الدخول لإنشاء طلب تغيير الرقم.");
-        }
-
-        string[] keys =
-        [
-            PermissionCatalog.TelecomLineChangeNumberRequest,
-            PermissionCatalog.TelecomLineChangeNumber,
-            PermissionCatalog.TelecomLineChangeNumberApprove,
-            PermissionCatalog.CustomerUpdate,
-            PermissionCatalog.TelecomCustomerProvisioning,
-        ];
-
-        foreach (var key in keys)
-        {
-            if (await _permissions.HasPermissionAsync(userId, key, cancellationToken))
-            {
-                return;
-            }
-        }
-
-        throw new BusinessRuleViolationException(
-            "ليس لديك صلاحية إنشاء طلب تغيير الرقم (telecom.line.change_number_request).");
     }
 
     private static string? BuildNotes(CreateTelecomOperationRequest request)
@@ -1371,70 +634,5 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         }
 
         return $"{auditPrefix} | {existing}";
-    }
-
-    private Task ValidateNewActivationKycDocumentAsync(
-        CreateTelecomOperationRequest request,
-        CancellationToken cancellationToken)
-    {
-        var referenceId = (request.KycDocumentReferenceId ?? string.Empty).Trim();
-        if (string.IsNullOrEmpty(referenceId))
-        {
-            throw new BusinessRuleViolationException(TelecomUserMessages.ValAct12KycRequired);
-        }
-
-        if (!_kycDocumentStorage.DocumentExists(referenceId))
-        {
-            throw new BusinessRuleViolationException(TelecomUserMessages.ValAct12KycVaultMissing);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    private async Task ValidateNewActivationLineCapAsync(
-        CreateTelecomOperationRequest request,
-        CancellationToken cancellationToken)
-    {
-        var maxLines = await _globalSettings.GetIntAsync(
-            GlobalSettingKeys.TelecomMaxActiveLinesPerIndividual,
-            defaultValue: 5,
-            min: 1,
-            max: 20,
-            cancellationToken);
-
-        var customerId = await _queryContext.SubscriberProfile.AsNoTracking()
-            .Where(p => !p.IsDeleted && p.Id == request.SubscriberProfileId)
-            .Select(p => p.CustomerId)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (string.IsNullOrEmpty(customerId))
-        {
-            return;
-        }
-
-        var isIndividual = await _queryContext.Customer.AsNoTracking()
-            .Where(c => !c.IsDeleted && c.Id == customerId)
-            .Select(c => c.CustomerKind)
-            .FirstOrDefaultAsync(cancellationToken) == CustomerKind.Individual;
-
-        if (!isIndividual)
-        {
-            return;
-        }
-
-        var activeLineCount = await (
-            from s in _queryContext.TelecomSubscription.AsNoTracking()
-            join m in _queryContext.MsisdnAsset.AsNoTracking() on s.MsisdnAssetId equals m.Id
-            join p in _queryContext.SubscriberProfile.AsNoTracking() on s.SubscriberProfileId equals p.Id
-            where !s.IsDeleted && !m.IsDeleted && p.CustomerId == customerId
-                  && m.PoolStatus == MsisdnPoolStatus.Active
-            select s.Id
-        ).CountAsync(cancellationToken);
-
-        if (activeLineCount >= maxLines)
-        {
-            throw new BusinessRuleViolationException(
-                $"تجاوز الحد التنظيمي للخطوط النشطة ({maxLines}) لهذا العميل.");
-        }
     }
 }

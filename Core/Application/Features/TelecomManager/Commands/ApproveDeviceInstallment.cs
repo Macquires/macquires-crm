@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom.DeviceSales;
 using Domain.Entities;
 using Domain.Enums;
@@ -13,12 +14,13 @@ public class ApproveDeviceInstallmentResult
     public TelecomOperationRequest? Data { get; init; }
 }
 
-public class ApproveDeviceInstallmentRequest : IRequest<ApproveDeviceInstallmentResult>
+public class ApproveDeviceInstallmentRequest : IRequest<ApproveDeviceInstallmentResult>, IRequirePermission
 {
     public string OperationId { get; init; } = null!;
     public bool Approved { get; init; }
     public string? Comments { get; init; }
-    public string? UpdatedById { get; init; }
+
+    public string PermissionKey => PermissionCatalog.TelecomDeviceInstallmentApprove;
 }
 
 public class ApproveDeviceInstallmentValidator : AbstractValidator<ApproveDeviceInstallmentRequest>
@@ -33,11 +35,16 @@ public class ApproveDeviceInstallmentHandler : IRequestHandler<ApproveDeviceInst
 {
     private readonly ICommandRepository<TelecomOperationRequest> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
-    public ApproveDeviceInstallmentHandler(ICommandRepository<TelecomOperationRequest> repository, IUnitOfWork unitOfWork)
+    public ApproveDeviceInstallmentHandler(
+        ICommandRepository<TelecomOperationRequest> repository,
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<ApproveDeviceInstallmentResult> Handle(
@@ -65,7 +72,7 @@ public class ApproveDeviceInstallmentHandler : IRequestHandler<ApproveDeviceInst
             entity.Notes = AppendNote(entity.Notes, $"[FinanceApproved] {request.Comments}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         _repository.Update(entity);
         await _unitOfWork.SaveAsync(cancellationToken);
         return new ApproveDeviceInstallmentResult { Data = entity };

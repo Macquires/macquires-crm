@@ -3,7 +3,7 @@ using Application.Features.SecurityManager.Queries;
 using Application.Features.TelecomBackOfficeManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
-using Infrastructure.SecurityManager.Roles;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,17 +38,9 @@ public class SecurityController : BaseApiController
     [AllowAnonymous]
     [HttpPost("Logout")]
     public async Task<ActionResult<ApiSuccessResult<LogoutResult>>> LogoutAsync(
-        [FromBody] LogoutRequest? request,
         CancellationToken cancellationToken)
     {
-        var userId = request?.UserId?.Trim();
-        if (string.IsNullOrEmpty(userId))
-        {
-            userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? User.FindFirstValue("sub");
-        }
-
-        var response = await _sender.Send(new LogoutRequest { UserId = userId }, cancellationToken);
+        var response = await _sender.Send(new LogoutRequest(), cancellationToken);
 
         return Ok(new ApiSuccessResult<LogoutResult>
         {
@@ -145,7 +137,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpPost("ValidateToken")]
     public async Task<ActionResult<ApiSuccessResult<ValidateTokenResult>>> ValidateTokenAsync(
         ValidateTokenRequest request,
@@ -163,7 +155,7 @@ public class SecurityController : BaseApiController
     }
 
     /// <summary>Authoritative permissions, landing path, and menu for the current operator (fixes stale localStorage).</summary>
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpGet("GetOperatorSession")]
     public async Task<ActionResult<ApiSuccessResult<GetOperatorSessionResult>>> GetOperatorSessionAsync(
         CancellationToken cancellationToken)
@@ -187,27 +179,12 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpGet("GetMyProfileList")]
     public async Task<ActionResult<ApiSuccessResult<GetMyProfileListResult>>> GetMyProfileListAsync(
-        [FromQuery] string? userId,
-        CancellationToken cancellationToken
-        )
+        CancellationToken cancellationToken)
     {
-        var effectiveUserId = string.IsNullOrWhiteSpace(userId)
-            ? User.FindFirstValue(ClaimTypes.NameIdentifier)
-            : userId.Trim();
-
-        if (string.IsNullOrWhiteSpace(effectiveUserId))
-        {
-            return BadRequest(new ApiErrorResult
-            {
-                Code = StatusCodes.Status400BadRequest,
-                Message = "User id is required.",
-            });
-        }
-
-        var request = new GetMyProfileListRequest { UserId = effectiveUserId };
+        var request = new GetMyProfileListRequest();
         var response = await _sender.Send(request, cancellationToken);
 
         return Ok(new ApiSuccessResult<GetMyProfileListResult>
@@ -218,7 +195,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpPost("UpdateMyProfile")]
     public async Task<ActionResult<ApiSuccessResult<UpdateMyProfileResult>>> UpdateMyProfileAsync(
         UpdateMyProfileRequest request,
@@ -235,7 +212,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpPost("UpdateMyProfilePassword")]
     public async Task<ActionResult<ApiSuccessResult<UpdateMyProfilePasswordResult>>> UpdateMyProfilePasswordAsync(
         UpdateMyProfilePasswordRequest request,
@@ -253,7 +230,7 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminRolesManage]
     [HttpGet("GetRoleList")]
     public async Task<ActionResult<ApiSuccessResult<GetRoleListResult>>> GetRoleListAsync(
         CancellationToken cancellationToken
@@ -271,14 +248,13 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpGet("GetUserList")]
     public async Task<ActionResult<ApiSuccessResult<GetUserListResult>>> GetUserListAsync(
         CancellationToken cancellationToken
         )
     {
-        var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var request = new GetUserListRequest { ActorUserId = actorId };
+        var request = new GetUserListRequest();
         var response = await _sender.Send(request, cancellationToken);
 
         return Ok(new ApiSuccessResult<GetUserListResult>
@@ -289,7 +265,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("CreateUser")]
     public async Task<ActionResult<ApiSuccessResult<CreateUserResult>>> CreateUserAsync(
         CreateUserRequest request,
@@ -307,7 +283,7 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("UpdateUser")]
     public async Task<ActionResult<ApiSuccessResult<UpdateUserResult>>> UpdateUserAsync(
         UpdateUserRequest request,
@@ -324,7 +300,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("DeleteUser")]
     public async Task<ActionResult<ApiSuccessResult<DeleteUserResult>>> DeleteUserAsync(
     DeleteUserRequest request,
@@ -342,7 +318,7 @@ public class SecurityController : BaseApiController
     }
 
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("UpdatePasswordUser")]
     public async Task<ActionResult<ApiSuccessResult<UpdatePasswordUserResult>>> UpdatePasswordUserAsync(
     UpdatePasswordUserRequest request,
@@ -359,7 +335,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("GetUserRoles")]
     public async Task<ActionResult<ApiSuccessResult<GetUserRolesResult>>> GetUserRolesAsync(GetUserRolesRequest request, CancellationToken cancellationToken)
     {
@@ -373,7 +349,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("UpdateUserRole")]
     public async Task<ActionResult<ApiSuccessResult<UpdateUserRoleResult>>> UpdateUserRoleAsync(UpdateUserRoleRequest request, CancellationToken cancellationToken)
     {
@@ -387,7 +363,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpPost("UpdateMyProfileAvatar")]
     public async Task<ActionResult<ApiSuccessResult<UpdateMyProfileAvatarResult>>> UpdateMyProfileAvatarAsync(UpdateMyProfileAvatarRequest request, CancellationToken cancellationToken)
     {
@@ -401,7 +377,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpGet("GetMenuBadges")]
     public async Task<ActionResult<ApiSuccessResult<GetMenuBadgesResult>>> GetMenuBadgesAsync(CancellationToken cancellationToken)
     {
@@ -414,7 +390,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminRolesManage]
     [HttpGet("GetPermissionCatalog")]
     public async Task<ActionResult<ApiSuccessResult<GetPermissionCatalogResult>>> GetPermissionCatalogAsync(
         CancellationToken cancellationToken)
@@ -428,7 +404,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminRolesManage]
     [HttpGet("GetRolePermissions")]
     public async Task<ActionResult<ApiSuccessResult<GetRolePermissionsResult>>> GetRolePermissionsAsync(
         [FromQuery] string? roleName,
@@ -452,7 +428,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminRolesManage]
     [HttpPost("CloneRolePermissions")]
     public async Task<ActionResult<ApiSuccessResult<CloneRolePermissionsResult>>> CloneRolePermissionsAsync(
         CloneRolePermissionsRequest request,
@@ -467,7 +443,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminRolesManage]
     [HttpPost("UpdateRolePermissions")]
     public async Task<ActionResult<ApiSuccessResult<UpdateRolePermissionsResult>>> UpdateRolePermissionsAsync(
         UpdateRolePermissionsRequest request,
@@ -482,7 +458,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminSettingsManage]
     [HttpGet("GetGlobalSettings")]
     public async Task<ActionResult<ApiSuccessResult<GetGlobalSettingsResult>>> GetGlobalSettingsAsync(
         CancellationToken cancellationToken)
@@ -496,7 +472,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminSettingsManage]
     [HttpPost("UpdateGlobalSettings")]
     public async Task<ActionResult<ApiSuccessResult<UpdateGlobalSettingsResult>>> UpdateGlobalSettingsAsync(
         UpdateGlobalSettingsRequest request,
@@ -511,7 +487,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminAuditView]
     [HttpGet("ResolveAuditDisplayNames")]
     public async Task<ActionResult<ApiSuccessResult<ResolveAuditDisplayNamesResult>>> ResolveAuditDisplayNamesAsync(
         [FromQuery] string? profileId,
@@ -535,7 +511,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminAuditView]
     [HttpGet("GetUserAuditLogList")]
     public async Task<ActionResult<ApiSuccessResult<GetUserAuditLogListResult>>> GetUserAuditLogListAsync(
         [FromQuery] GetUserAuditLogListRequest request,
@@ -550,7 +526,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpGet("GetOrgUnitList")]
     public async Task<ActionResult<ApiSuccessResult<GetOrgUnitListResult>>> GetOrgUnitListAsync(
         CancellationToken cancellationToken)
@@ -564,7 +540,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("CreateOrgUnit")]
     public async Task<ActionResult<ApiSuccessResult<CreateOrgUnitResult>>> CreateOrgUnitAsync(
         CreateOrgUnitRequest request,
@@ -579,7 +555,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.Admin)]
+    [RequireAdminUsersManage]
     [HttpPost("UpdateOrgUnit")]
     public async Task<ActionResult<ApiSuccessResult<UpdateOrgUnitResult>>> UpdateOrgUnitAsync(
         UpdateOrgUnitRequest request,
@@ -594,7 +570,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [Authorize]
+    [RequireAuthenticatedOperator]
     [HttpPost("GetPersonaMenuNavigation")]
     public async Task<ActionResult<ApiSuccessResult<GetPersonaMenuNavigationResult>>> GetPersonaMenuNavigationAsync(
         GetPersonaMenuNavigationRequest request,

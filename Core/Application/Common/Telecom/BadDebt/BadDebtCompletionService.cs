@@ -12,17 +12,20 @@ public sealed class BadDebtCompletionService : IBadDebtCompletionService
 {
     private readonly IQueryContext _query;
     private readonly IBillingSystemIntegration _billing;
+    private readonly IBillingPostingIntegration _billingPosting;
     private readonly ISmsGatewayIntegration _sms;
     private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
 
     public BadDebtCompletionService(
         IQueryContext query,
         IBillingSystemIntegration billing,
+        IBillingPostingIntegration billingPosting,
         ISmsGatewayIntegration sms,
         ICommandRepository<TelecomOperationRequest> operationRepository)
     {
         _query = query;
         _billing = billing;
+        _billingPosting = billingPosting;
         _sms = sms;
         _operationRepository = operationRepository;
     }
@@ -68,7 +71,8 @@ public sealed class BadDebtCompletionService : IBadDebtCompletionService
                 TelecomOperationKind.BadDebtRecovery,
                 operation.CorrelationId,
                 amount > 0 ? amount : null,
-                ProductServiceCode: cbsCode),
+                ProductServiceCode: cbsCode,
+                BranchId: operation.BranchId),
             cancellationToken);
 
         if (!cbsResult.Success)
@@ -79,6 +83,27 @@ public sealed class BadDebtCompletionService : IBadDebtCompletionService
 
         operation.CollectionSettlementStatus = BadDebtWellKnown.SettlementCompleted;
         operation.ProvisioningResult = cbsResult.Message ?? $"BDR-CBS-{operation.Number}";
+
+        var journalAmount = amount > 0 ? amount : operation.OutstandingBalanceSnapshot ?? 0m;
+        if (journalAmount > 0)
+        {
+            var journal = await _billingPosting.PostJournalEntryAsync(
+                new BillingJournalPostRequest(
+                    operation.Id,
+                    operation.Number,
+                    msisdn,
+                    TelecomOperationKind.BadDebtRecovery,
+                    journalAmount,
+                    cbsCode,
+                    operation.CorrelationId,
+                    operation.BranchId),
+                cancellationToken);
+
+            if (journal.Success && !string.IsNullOrEmpty(journal.JournalEntryId))
+            {
+                operation.ProvisioningResult = journal.JournalEntryId;
+            }
+        }
 
         if (string.Equals(action, BadDebtWellKnown.DunningEscalation, StringComparison.OrdinalIgnoreCase)
             && !string.IsNullOrEmpty(msisdn))

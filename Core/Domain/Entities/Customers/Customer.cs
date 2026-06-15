@@ -8,7 +8,7 @@ namespace Domain.Entities;
 /// <summary>
 /// طرف العميل في BSS (TPH). الهوية القانونية هنا؛ الخطوط على <see cref="SubscriberProfile"/>.
 /// </summary>
-public abstract class Customer : BaseEntity
+public abstract class Customer : BaseEntity, IHasBranchId
 {
     public CustomerKind CustomerKind { get; protected set; }
     public string DisplayName { get; protected set; } = null!;
@@ -36,6 +36,9 @@ public abstract class Customer : BaseEntity
     /// <summary>Home branch for strategic MIS scoping.</summary>
     public string? OrgUnitId { get; protected set; }
     public OrgUnit? OrgUnit { get; protected set; }
+
+    /// <summary>RLS branch scope — mirrors <see cref="OrgUnitId"/> when the org unit is a branch.</summary>
+    public string? BranchId { get; set; }
 
     public ICollection<CustomerContact> CustomerContactList { get; protected set; } = new List<CustomerContact>();
     public ICollection<CustomerIdentityDocument> IdentityDocuments { get; protected set; } = new List<CustomerIdentityDocument>();
@@ -92,5 +95,9 @@ public abstract class Customer : BaseEntity
         CustomerCategoryId = categoryId;
     }
 
-    public void SetOrgUnitId(string? orgUnitId) => OrgUnitId = orgUnitId;
+    public void SetOrgUnitId(string? orgUnitId)
+    {
+        OrgUnitId = orgUnitId;
+        BranchId = orgUnitId;
+    }
 }

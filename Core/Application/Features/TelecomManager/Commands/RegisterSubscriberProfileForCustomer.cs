@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
@@ -18,7 +19,7 @@ public class RegisterSubscriberProfileForCustomerResult
     public TelecomSubscription? TelecomSubscription { get; set; }
 }
 
-public class RegisterSubscriberProfileForCustomerRequest : IRequest<RegisterSubscriberProfileForCustomerResult>
+public class RegisterSubscriberProfileForCustomerRequest : IRequest<RegisterSubscriberProfileForCustomerResult>, IRequireAnyPermission
 {
     public string CustomerId { get; init; } = "";
     public string PrimaryMsisdn { get; init; } = "";
@@ -26,7 +27,8 @@ public class RegisterSubscriberProfileForCustomerRequest : IRequest<RegisterSubs
     public string? SimInventoryId { get; init; }
     public string? ProductOfferingId { get; init; }
     public ServiceLineType ServiceLineType { get; init; } = ServiceLineType.Mobile;
-    public string? CreatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CustomerProvisioningAny;
 }
 
 public class RegisterSubscriberProfileForCustomerValidator : AbstractValidator<RegisterSubscriberProfileForCustomerRequest>
@@ -54,6 +56,7 @@ public class RegisterSubscriberProfileForCustomerHandler
     private readonly ICommandRepository<TelecomSubscription> _subscriptionRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISubscriptionBindingExecutor _bindingExecutor;
+    private readonly IOperatorContext _operator;
 
     public RegisterSubscriberProfileForCustomerHandler(
         IQueryContext query,
@@ -61,7 +64,8 @@ public class RegisterSubscriberProfileForCustomerHandler
         ICommandRepository<MsisdnAsset> msisdnRepository,
         ICommandRepository<TelecomSubscription> subscriptionRepository,
         IUnitOfWork unitOfWork,
-        ISubscriptionBindingExecutor bindingExecutor)
+        ISubscriptionBindingExecutor bindingExecutor,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _profileRepository = profileRepository;
@@ -69,12 +73,15 @@ public class RegisterSubscriberProfileForCustomerHandler
         _subscriptionRepository = subscriptionRepository;
         _unitOfWork = unitOfWork;
         _bindingExecutor = bindingExecutor;
+        _operator = operatorContext;
     }
 
     public async Task<RegisterSubscriberProfileForCustomerResult> Handle(
         RegisterSubscriberProfileForCustomerRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        var branchId = OperatorActor.ResolveBranchId(_operator);
         var customerId = request.CustomerId.Trim();
         var customerExists = await _query.Customer.AsNoTracking().IsDeletedEqualTo()
             .AnyAsync(c => c.Id == customerId, cancellationToken);
@@ -119,7 +126,8 @@ public class RegisterSubscriberProfileForCustomerHandler
             ServiceLineType = request.ServiceLineType,
             LoyaltyPoints = 0,
             LoyaltyTier = "Bronze",
-            CreatedById = request.CreatedById
+            CreatedById = actorUserId,
+            BranchId = branchId,
         };
         await _profileRepository.CreateAsync(profile, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
@@ -133,7 +141,8 @@ public class RegisterSubscriberProfileForCustomerHandler
             {
                 Msisdn = msisdn,
                 CountryCode = "963",
-                CreatedById = request.CreatedById
+                CreatedById = actorUserId,
+                BranchId = branchId,
             };
             await _msisdnRepository.CreateAsync(asset, cancellationToken);
             await _unitOfWork.SaveAsync(cancellationToken);
@@ -151,7 +160,7 @@ public class RegisterSubscriberProfileForCustomerHandler
                     profile.Id,
                     Guid.CreateVersion7().ToString()),
                 typeLookup.Id,
-                request.CreatedById,
+                actorUserId,
                 requireStrictReservation: false,
                 cancellationToken);
             await _unitOfWork.SaveAsync(cancellationToken);
@@ -178,7 +187,7 @@ public class RegisterSubscriberProfileForCustomerHandler
             SubscriptionTypeId = typeLookup.Id,
             DocumentStatus = TelecomDocumentStatus.Missing,
             IsPrimaryLine = !partyHasLine,
-            CreatedById = request.CreatedById
+            CreatedById = actorUserId,
         };
         await _subscriptionRepository.CreateAsync(subscription, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);

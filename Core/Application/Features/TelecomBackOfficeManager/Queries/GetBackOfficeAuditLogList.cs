@@ -1,4 +1,5 @@
 using Application.Common.Audit;
+using Application.Common.Security;
 using FluentValidation;
 using MediatR;
 
@@ -18,15 +19,15 @@ public class GetBackOfficeAuditLogListResult
     public BackOfficeAuditSummaryDto Summary { get; init; } = new();
 }
 
-public class GetBackOfficeAuditLogListRequest : IRequest<GetBackOfficeAuditLogListResult>
+public class GetBackOfficeAuditLogListRequest : IRequest<GetBackOfficeAuditLogListResult>, IRequireAnyPermission
 {
-    public string? ActorUserId { get; init; }
     public string? SearchTerm { get; init; }
     public string? ActionType { get; init; }
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
     public int Skip { get; init; }
     public int Take { get; init; } = 100;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.AuditViewAny;
 }
 
 public class GetBackOfficeAuditLogListValidator : AbstractValidator<GetBackOfficeAuditLogListRequest>
@@ -57,23 +58,28 @@ public class GetBackOfficeAuditLogListHandler : IRequestHandler<GetBackOfficeAud
     ];
 
     private readonly IUserAuditReadService _read;
+    private readonly IOperatorContext _operator;
 
-    public GetBackOfficeAuditLogListHandler(IUserAuditReadService read) => _read = read;
+    public GetBackOfficeAuditLogListHandler(IUserAuditReadService read, IOperatorContext operatorContext)
+    {
+        _read = read;
+        _operator = operatorContext;
+    }
 
     public async Task<GetBackOfficeAuditLogListResult> Handle(
         GetBackOfficeAuditLogListRequest request,
         CancellationToken cancellationToken)
     {
-        var listQuery = BuildListQuery(request);
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        var listQuery = BuildListQuery(request, actorUserId);
         var result = await _read.QueryAsync(listQuery, cancellationToken);
 
         var todayStart = DateTime.UtcNow.Date;
-        var actorId = request.ActorUserId;
 
         var logsToday = await _read.CountAsync(
             new UserAuditLogQuery
             {
-                ActorUserId = actorId,
+                ActorUserId = actorUserId,
                 ActionTypes = BackOfficeActionTypes,
                 FromUtc = todayStart,
             },
@@ -82,7 +88,7 @@ public class GetBackOfficeAuditLogListHandler : IRequestHandler<GetBackOfficeAud
         var networkToday = await _read.CountAsync(
             new UserAuditLogQuery
             {
-                ActorUserId = actorId,
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.NetworkCommandExecuted,
                 FromUtc = todayStart,
             },
@@ -101,13 +107,13 @@ public class GetBackOfficeAuditLogListHandler : IRequestHandler<GetBackOfficeAud
         };
     }
 
-    private static UserAuditLogQuery BuildListQuery(GetBackOfficeAuditLogListRequest request)
+    private static UserAuditLogQuery BuildListQuery(GetBackOfficeAuditLogListRequest request, string actorUserId)
     {
         var hasActionFilter = !string.IsNullOrWhiteSpace(request.ActionType);
 
         return new UserAuditLogQuery
         {
-            ActorUserId = request.ActorUserId,
+            ActorUserId = actorUserId,
             SearchTerm = request.SearchTerm,
             ActionType = hasActionFilter ? request.ActionType : null,
             ActionTypes = hasActionFilter ? null : BackOfficeActionTypes,

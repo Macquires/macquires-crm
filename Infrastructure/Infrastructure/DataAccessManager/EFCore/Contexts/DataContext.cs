@@ -7,21 +7,25 @@ using Infrastructure.DataAccessManager.EFCore.Converters;
 using Infrastructure.SecurityManager.AspNetIdentity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Reflection;
 
 namespace Infrastructure.DataAccessManager.EFCore.Contexts;
 
 public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
 {
-    private readonly string? _branchId;
-    private readonly bool _bypassBranchFilter;
+    private readonly IOperatorContext _operatorContext;
 
     public DataContext(
-        DbContextOptions<DataContext> options,
+        DbContextOptions options,
         IOperatorContext operatorContext) : base(options)
     {
-        _branchId = operatorContext.BranchId;
-        _bypassBranchFilter = ResolveBypassBranchFilter(operatorContext);
+        _operatorContext = operatorContext;
     }
+
+    private bool BypassBranchFilter => ResolveBypassBranchFilter(_operatorContext);
+
+    private string? CurrentBranchId => _operatorContext.BranchId;
 
     private static bool ResolveBypassBranchFilter(IOperatorContext operatorContext)
     {
@@ -34,6 +38,11 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
             string.Equals(r, TelecomEnterpriseRoleMatrix.RoleAdmin, StringComparison.OrdinalIgnoreCase)
             || string.Equals(r, TelecomEnterpriseRoleMatrix.RoleManagement, StringComparison.OrdinalIgnoreCase)
             || string.Equals(r, TelecomEnterpriseRoleMatrix.RoleOperationsManager, StringComparison.OrdinalIgnoreCase));
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -155,51 +164,73 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
                 continue;
             }
 
-            var parameter = System.Linq.Expressions.Expression.Parameter(clrType, "e");
-
-            var isDeletedProperty = System.Linq.Expressions.Expression.Property(parameter, nameof(Domain.Common.IHasIsDeleted.IsDeleted));
-            var isDeletedFilter = System.Linq.Expressions.Expression.Equal(isDeletedProperty, System.Linq.Expressions.Expression.Constant(false));
-
-            System.Linq.Expressions.Expression combinedFilter = isDeletedFilter;
-
-            if (typeof(Domain.Common.IHasBranchId).IsAssignableFrom(clrType))
-            {
-                combinedFilter = System.Linq.Expressions.Expression.AndAlso(
-                    combinedFilter,
-                    BuildBranchFilter(parameter, clrType));
-            }
-
-            var filterExpr = System.Linq.Expressions.Expression.Lambda(combinedFilter, parameter);
-            modelBuilder.Entity(clrType).HasQueryFilter(filterExpr);
+            var configureMethod = typeof(DataContext)
+                .GetMethod(nameof(ConfigureQueryFilter), BindingFlags.NonPublic | BindingFlags.Instance)!
+                .MakeGenericMethod(clrType);
+            configureMethod.Invoke(this, new object[] { modelBuilder });
         }
 
         modelBuilder.ApplyNullableBitAsBoolConvention();
     }
 
-    private System.Linq.Expressions.Expression BuildBranchFilter(
-        System.Linq.Expressions.ParameterExpression parameter,
-        Type clrType)
+    private void ConfigureQueryFilter<T>(ModelBuilder modelBuilder) where T : class, Domain.Common.IHasIsDeleted
     {
-        if (_bypassBranchFilter)
+        if (typeof(Domain.Common.IHasBranchId).IsAssignableFrom(typeof(T)))
         {
-            return System.Linq.Expressions.Expression.Constant(true);
+            modelBuilder.Entity<T>().HasQueryFilter(e =>
+                !e.IsDeleted && MatchesBranchFilter(((Domain.Common.IHasBranchId)e).BranchId));
+        }
+        else
+        {
+            modelBuilder.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
+        }
+    }
+
+    private bool MatchesBranchFilter(string? entityBranchId)
+    {
+        if (BypassBranchFilter)
+        {
+            return true;
         }
 
-        var branchIdProperty = System.Linq.Expressions.Expression.Property(parameter, nameof(Domain.Common.IHasBranchId.BranchId));
-
-        if (string.IsNullOrEmpty(_branchId))
+        if (string.IsNullOrEmpty(CurrentBranchId))
         {
-            return System.Linq.Expressions.Expression.Constant(false);
+            return false;
         }
 
-        var matchesBranch = System.Linq.Expressions.Expression.Equal(
-            branchIdProperty,
-            System.Linq.Expressions.Expression.Constant(_branchId));
+        return string.Equals(entityBranchId, CurrentBranchId, StringComparison.Ordinal);
+    }
 
-        var nullBranch = System.Linq.Expressions.Expression.Equal(
-            branchIdProperty,
-            System.Linq.Expressions.Expression.Constant(null, typeof(string)));
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ApplyInitialRowVersions();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
 
-        return System.Linq.Expressions.Expression.OrElse(matchesBranch, nullBranch);
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyInitialRowVersions();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        ApplyInitialRowVersions();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void ApplyInitialRowVersions()
+    {
+        var seed = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 };
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State == EntityState.Added))
+        {
+            foreach (var property in entry.Properties.Where(p =>
+                         p.Metadata.ClrType == typeof(byte[])
+                         && string.Equals(p.Metadata.Name, "RowVersion", StringComparison.Ordinal)
+                         && p.CurrentValue is null))
+            {
+                property.CurrentValue = seed;
+            }
+        }
     }
 }

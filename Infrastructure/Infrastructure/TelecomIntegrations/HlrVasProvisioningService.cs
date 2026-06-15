@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using Application.Common.CQS.Queries;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Settings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -15,6 +17,7 @@ namespace Infrastructure.TelecomIntegrations;
 public sealed class HlrVasProvisioningService : IVasProvisioningService
 {
     private readonly ICommandRepository<BillingIntegrationLog> _logRepository;
+    private readonly IQueryContext _query;
     private readonly ITelecomIntegrationLogWriter _integrationLog;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOptions<TelecomBillingOptions> _options;
@@ -24,6 +27,7 @@ public sealed class HlrVasProvisioningService : IVasProvisioningService
 
     public HlrVasProvisioningService(
         ICommandRepository<BillingIntegrationLog> logRepository,
+        IQueryContext query,
         ITelecomIntegrationLogWriter integrationLog,
         IUnitOfWork unitOfWork,
         IOptions<TelecomBillingOptions> options,
@@ -31,6 +35,7 @@ public sealed class HlrVasProvisioningService : IVasProvisioningService
         IntegrationEnablement integrations)
     {
         _logRepository = logRepository;
+        _query = query;
         _integrationLog = integrationLog;
         _unitOfWork = unitOfWork;
         _options = options;
@@ -148,6 +153,11 @@ public sealed class HlrVasProvisioningService : IVasProvisioningService
             return;
         }
 
+        var branchId = await _query.TelecomOperationRequest.AsNoTracking()
+            .Where(o => o.Id == telecomOperationRequestId)
+            .Select(o => o.BranchId)
+            .FirstOrDefaultAsync(cancellationToken);
+
         await _logRepository.CreateAsync(new BillingIntegrationLog
         {
             TelecomOperationRequestId = telecomOperationRequestId,
@@ -157,7 +167,8 @@ public sealed class HlrVasProvisioningService : IVasProvisioningService
             IntegrationTarget = "HLR-VAS-Mock",
             CorrelationId = correlationId,
             RequestPayload = command,
-            ResponsePayload = success ? "OK" : message
+            ResponsePayload = success ? "OK" : message,
+            BranchId = branchId
         }, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
     }

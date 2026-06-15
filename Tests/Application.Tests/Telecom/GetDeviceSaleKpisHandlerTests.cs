@@ -23,7 +23,7 @@ public class GetDeviceSaleKpisHandlerTests
             Op("DEV-3", TelecomOperationStatus.Failed, DeviceSaleType.Installment, now, null, "Stock unavailable"));
         await ctx.SaveChangesAsync();
 
-        var handler = new GetDeviceSaleKpisHandler(ctx);
+        var handler = new GetDeviceSaleKpisHandler(ctx, StubOperationalAnalyticsScopeService.Instance);
         var result = await handler.Handle(
             new GetDeviceSaleKpisRequest { FromUtc = now.Date, ToUtc = now.AddHours(1) },
             CancellationToken.None);
@@ -41,7 +41,7 @@ public class GetDeviceSaleKpisHandlerTests
     private static QueryContext CreateContext()
     {
         DashboardTestEncryption.EnsureInitialized();
-        var options = new DbContextOptionsBuilder<DataContext>()
+        var options = new DbContextOptionsBuilder<QueryContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new QueryContext(options, TestOperatorContext.Instance);
@@ -54,18 +54,16 @@ public class GetDeviceSaleKpisHandlerTests
         DateTime created,
         string? overrideCode,
         string? failNote = null) =>
-        new()
+        TelecomTestEntityFactory.Operation(op =>
         {
-            Id = Guid.NewGuid().ToString(),
-            Number = number,
-            Kind = TelecomOperationKind.DeviceSale,
-            Status = status,
-            DeviceSaleType = saleType,
-            DeviceOverrideReasonCode = overrideCode,
-            DeviceFinancingNoteAr = failNote,
-            CreatedAtUtc = created,
-            ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(20) : null,
-            SubscriberProfileId = "prof-dev",
-            IsDeleted = false,
-        };
+            op.Number = number;
+            op.Kind = TelecomOperationKind.DeviceSale;
+            op.Status = status;
+            op.DeviceSaleType = saleType;
+            op.DeviceOverrideReasonCode = overrideCode;
+            op.DeviceFinancingNoteAr = failNote;
+            op.CreatedAtUtc = created;
+            op.ConfirmedAtUtc = status == TelecomOperationStatus.Completed ? created.AddMinutes(20) : null;
+            op.SubscriberProfileId = "prof-dev";
+        });
 }

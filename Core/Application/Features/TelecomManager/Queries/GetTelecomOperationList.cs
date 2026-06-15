@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using AutoMapper;
 using Domain.Entities;
@@ -29,6 +30,7 @@ public record GetTelecomOperationListDto
     public bool IsLostOrStolenReport { get; init; }
     public string? ApprovalLevelRequired { get; init; }
     public DateTime? CreatedAtUtc { get; init; }
+    public DateTime? ScheduledEffectiveDateUtc { get; init; }
 }
 
 public class GetTelecomOperationListProfile : Profile
@@ -56,9 +58,10 @@ public class GetTelecomOperationListResult
     public List<GetTelecomOperationListDto>? Data { get; init; }
 }
 
-public class GetTelecomOperationListRequest : IRequest<GetTelecomOperationListResult>
+public class GetTelecomOperationListRequest : IRequest<GetTelecomOperationListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; }
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.OperationsViewAny;
 }
 
 public class GetTelecomOperationListHandler : IRequestHandler<GetTelecomOperationListRequest, GetTelecomOperationListResult>
@@ -98,6 +101,7 @@ public class GetTelecomOperationListHandler : IRequestHandler<GetTelecomOperatio
                 ReplacementReason = src.ReplacementReason,
                 IsLostOrStolenReport = src.IsLostOrStolenReport,
                 ApprovalLevelRequired = src.ApprovalLevelRequired,
+                ScheduledEffectiveDateUtc = TelecomOperationSchedulePolicy.ResolveEffectiveDateUtc(src),
             };
         }).ToList();
 

@@ -1,7 +1,6 @@
 using Application.Common.Repositories;
+using ASPNET.BackEnd.Common.Attributes;
 using Domain.Entities;
-using Infrastructure.SecurityManager.Roles;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -14,7 +13,7 @@ namespace ASPNET.BackEnd.Controllers;
 
 [ApiController]
 [Route("api/huawei-cbs-mock")]
-[Authorize(Roles = TelecomRoles.RolesDemoIntegrations)]
+[RequireTelecomAdminSettings]
 public class HuaweiCbsMockController : ControllerBase
 {
     private readonly ICommandRepository<BillingIntegrationLog> _logRepository;
@@ -221,6 +220,11 @@ public class HuaweiCbsMockController : ControllerBase
 
             if (!string.IsNullOrEmpty(targetOperationId))
             {
+                var operation = await _operationRepository.GetQuery()
+                    .Where(o => o.Id == targetOperationId)
+                    .Select(o => new { o.BranchId })
+                    .FirstOrDefaultAsync(cancellationToken);
+
                 var previousAttempts = await _logRepository.GetQuery()
                     .Where(l => l.TelecomOperationRequestId == targetOperationId)
                     .Select(l => l.AttemptNumber)
@@ -234,7 +238,8 @@ public class HuaweiCbsMockController : ControllerBase
                     AttemptNumber = nextAttempt,
                     Success = success,
                     Message = message,
-                    IntegrationTarget = "HuaweiCBS-Mock"
+                    IntegrationTarget = "HuaweiCBS-Mock",
+                    BranchId = operation?.BranchId
                 };
                 await _logRepository.CreateAsync(log, cancellationToken);
                 await _unitOfWork.SaveAsync(cancellationToken);

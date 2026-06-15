@@ -1,4 +1,5 @@
 using Application.Common.BulkImport;
+using Application.Common.Security;
 using Domain.Enums;
 using MediatR;
 
@@ -11,9 +12,10 @@ public class DownloadBulkImportTemplateResult
     public string ContentType { get; init; } = "text/csv";
 }
 
-public class DownloadBulkImportTemplateRequest : IRequest<DownloadBulkImportTemplateResult>
+public class DownloadBulkImportTemplateRequest : IRequest<DownloadBulkImportTemplateResult>, IRequireAnyPermission
 {
     public BulkImportJobType JobType { get; init; }
+    public IReadOnlyList<string> PermissionKeys => BulkImportPermissionSets.MonitorAny;
 }
 
 public class DownloadBulkImportTemplateHandler : IRequestHandler<DownloadBulkImportTemplateRequest, DownloadBulkImportTemplateResult>

@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Security;
 using Application.Common.Services.SecurityManager;
 using FluentValidation;
 using MediatR;
@@ -25,8 +26,9 @@ public class GetOrgUnitListResult
     public List<GetOrgUnitListResultDto>? Data { get; init; }
 }
 
-public class GetOrgUnitListRequest : IRequest<GetOrgUnitListResult>
+public class GetOrgUnitListRequest : IRequest<GetOrgUnitListResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
 }
 
 public class GetOrgUnitListValidator : AbstractValidator<GetOrgUnitListRequest>

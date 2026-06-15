@@ -4,8 +4,9 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>تجمع أرقام MSISDN ودورة حياتها (منفصل عن مخزون الشرائح).</summary>
-public class MsisdnAsset : BaseEntity
+public class MsisdnAsset : BaseEntity, IHasBranchId
 {
+    public string? BranchId { get; set; }
     public string Msisdn { get; set; } = null!;
     /// <summary>شريحة مُدخلة مع الرقم (استيراد/مستودع) قبل ربط ملف المشترك.</summary>
     public string? PairedIccid { get; set; }

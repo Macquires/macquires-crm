@@ -1,7 +1,9 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Distributed;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
@@ -19,11 +21,12 @@ public class ReserveMsisdnForCustomerResult
     public DateTime? ReservedUntilUtc { get; init; }
 }
 
-public class ReserveMsisdnForCustomerRequest : IRequest<ReserveMsisdnForCustomerResult>
+public class ReserveMsisdnForCustomerRequest : IRequest<ReserveMsisdnForCustomerResult>, IRequireAnyPermission
 {
     public string MsisdnAssetId { get; init; } = "";
     public string CustomerId { get; init; } = "";
-    public string? ReservedByUserId { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.ReserveMsisdnAny;
 }
 
 public class ReserveMsisdnForCustomerValidator : AbstractValidator<ReserveMsisdnForCustomerRequest>
@@ -41,23 +44,39 @@ public class ReserveMsisdnForCustomerHandler : IRequestHandler<ReserveMsisdnForC
     private readonly IQueryContext _query;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITelecomInventoryRulesProvider _inventoryRules;
+    private readonly IDistributedLock _distributedLock;
+    private readonly IOperatorContext _operator;
 
     public ReserveMsisdnForCustomerHandler(
         ICommandRepository<MsisdnAsset> msisdnRepository,
         IQueryContext query,
         IUnitOfWork unitOfWork,
-        ITelecomInventoryRulesProvider inventoryRules)
+        ITelecomInventoryRulesProvider inventoryRules,
+        IDistributedLock distributedLock,
+        IOperatorContext operatorContext)
     {
         _msisdnRepository = msisdnRepository;
         _query = query;
         _unitOfWork = unitOfWork;
         _inventoryRules = inventoryRules;
+        _distributedLock = distributedLock;
+        _operator = operatorContext;
     }
 
     public async Task<ReserveMsisdnForCustomerResult> Handle(
         ReserveMsisdnForCustomerRequest request,
         CancellationToken cancellationToken)
     {
+        await using var lockHandle = await _distributedLock.TryAcquireAsync(
+            $"msisdn-reserve:{request.MsisdnAssetId}",
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+
+        if (lockHandle == null)
+        {
+            throw new BusinessRuleViolationException("الرقم قيد الحجز من موظف آخر — أعد المحاولة بعد لحظات.");
+        }
+
         var customerExists = await _query.Customer.AsNoTracking().IsDeletedEqualTo()
             .AnyAsync(c => c.Id == request.CustomerId, cancellationToken);
         if (!customerExists)
@@ -89,7 +108,7 @@ public class ReserveMsisdnForCustomerHandler : IRequestHandler<ReserveMsisdnForC
         var reservationDuration = await _inventoryRules.GetMsisdnReservationDurationAsync(cancellationToken);
         asset.ReserveForCustomer(request.CustomerId, utcNow, reservationDuration);
         ClearDecoupledPairingFields(asset);
-        asset.UpdatedById = request.ReservedByUserId;
+        asset.UpdatedById = OperatorActor.RequireUserId(_operator);
         _msisdnRepository.Update(asset);
         await _unitOfWork.SaveAsync(cancellationToken);
 

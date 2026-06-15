@@ -113,7 +113,8 @@ public sealed class PaymentServicesReversalService : IPaymentServicesReversalSer
                 payment.Number,
                 payment.Msisdn!,
                 payment.Amount,
-                payment.CorrelationId),
+                payment.CorrelationId,
+                payment.BranchId),
             cancellationToken);
 
         if (!reverseResult.Success)

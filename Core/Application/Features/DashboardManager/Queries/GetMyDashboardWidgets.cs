@@ -12,10 +12,11 @@ public class GetMyDashboardWidgetsResult
     public string? PrimaryMenuPersona { get; init; }
 }
 
-public class GetMyDashboardWidgetsRequest : IRequest<GetMyDashboardWidgetsResult>
+public class GetMyDashboardWidgetsRequest : IRequest<GetMyDashboardWidgetsResult>, IRequireAnyPermission
 {
     public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
     public string? PreviewPersona { get; init; }
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
 }
 
 public class GetMyDashboardWidgetsHandler : IRequestHandler<GetMyDashboardWidgetsRequest, GetMyDashboardWidgetsResult>

@@ -1,9 +1,11 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Distributed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -47,6 +49,14 @@ public sealed class DeviceInstallmentDelinquencyHostedService : BackgroundServic
     private async Task ProcessOverdueAsync(CancellationToken cancellationToken)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
+        var gate = scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>();
+        using (gate.Enter())
+        {
+            await scope.TryRunUnderDistributedLockAsync(
+                "hosted-device-installment-delinquency",
+                TimeSpan.FromMinutes(30),
+                async ct =>
+                {
         var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
         var contractRepo = scope.ServiceProvider.GetRequiredService<ICommandRepository<DeviceInstallmentContract>>();
         var scheduleRepo = scope.ServiceProvider.GetRequiredService<ICommandRepository<DeviceInstallmentScheduleLine>>();
@@ -57,16 +67,16 @@ public sealed class DeviceInstallmentDelinquencyHostedService : BackgroundServic
         var overdueLines = await query.DeviceInstallmentScheduleLine.AsNoTracking().IsDeletedEqualTo()
             .Where(l => l.Status == InstallmentScheduleLineStatus.Pending && l.DueDateUtc < now)
             .Select(l => new { l.Id, l.DeviceInstallmentContractId })
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
 
         foreach (var line in overdueLines)
         {
-            var sched = await scheduleRepo.GetAsync(line.Id, cancellationToken);
+            var sched = await scheduleRepo.GetAsync(line.Id, ct);
             if (sched == null) continue;
             sched.Status = InstallmentScheduleLineStatus.Overdue;
             scheduleRepo.Update(sched);
 
-            var contract = await contractRepo.GetAsync(line.DeviceInstallmentContractId, cancellationToken);
+            var contract = await contractRepo.GetAsync(line.DeviceInstallmentContractId, ct);
             if (contract == null || contract.Status == InstallmentContractStatus.Delinquent)
             {
                 continue;
@@ -77,25 +87,28 @@ public sealed class DeviceInstallmentDelinquencyHostedService : BackgroundServic
             contractRepo.Update(contract);
 
             var op = await query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
-                .FirstOrDefaultAsync(o => o.Id == contract.TelecomOperationRequestId, cancellationToken);
+                .FirstOrDefaultAsync(o => o.Id == contract.TelecomOperationRequestId, ct);
             if (op != null)
             {
                 var operation = await query.TelecomOperationRequest
-                    .FirstOrDefaultAsync(o => o.Id == op.Id, cancellationToken);
+                    .FirstOrDefaultAsync(o => o.Id == op.Id, ct);
                 if (operation != null)
                 {
                     await ticketQueue.EnqueueDeviceInstallmentCollectionsAsync(
                         operation,
                         contract.ContractNumber,
                         "VAL-14-04: قسط متأخر — يتطلب متابعة تحصيل",
-                        cancellationToken);
+                        ct);
                 }
             }
         }
 
         if (overdueLines.Count > 0)
         {
-            await unitOfWork.SaveAsync(cancellationToken);
+            await unitOfWork.SaveAsync(ct);
+        }
+                },
+                cancellationToken);
         }
     }
 }

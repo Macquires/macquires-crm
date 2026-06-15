@@ -1,0 +1,50 @@
+<header class="strategic-exec-hero mb-3">    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+            <p class="strategic-exec-kicker mb-1">{{ t('kicker') }}</p>
+            <h2 class="h5 mb-1 fw-bold text-syriatel-red">{{ t('title') }}</h2>
+            <p class="strategic-exec-sub mb-0">
+                {{ t('scopePrefix') }} <strong>{{ data?.scopeLabelAr || '—' }}</strong>
+                <span v-if="loading" class="ms-2 spinner-border spinner-border-sm text-danger" role="status"></span>
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span v-if="data?.criticalCount > 0" class="badge bg-danger">{{ data.criticalCount }} {{ t('critical') }}</span>
+            <span v-if="data?.warningCount > 0" class="badge bg-warning text-dark">{{ data.warningCount }} {{ t('warning') }}</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @@click="load" :disabled="loading">{{ t('refresh') }}</button>
+            <button type="button" class="btn btn-outline-success btn-sm" @@click="exportCsv" :disabled="loading || !data?.items?.length">{{ t('exportCsv') }}</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" @@click="exportPdf" :disabled="loading || !data?.items?.length">{{ t('exportPdf') }}</button>
+        </div>
+    </div>
+</header>
+
+<div v-if="digest?.summaryAr" class="alert alert-light border mb-3 py-3">
+    <p class="small text-muted mb-1"><i class="bi bi-journal-text me-1"></i>{{ t('weeklyDigest') }}</p>
+    <p class="mb-2">{{ digest.summaryAr }}</p>
+    <ul v-if="digest.aiInsightsAr?.length" class="small mb-2 ps-3">
+        <li v-for="(ins, i) in digest.aiInsightsAr" :key="i">{{ ins }}</li>
+    </ul>
+    <div class="d-flex flex-wrap gap-2">
+        <span v-for="(h, idx) in digest.highlights || []" :key="idx"
+              class="badge rounded-pill bg-white text-dark border px-3 py-2">
+            <span class="text-muted">{{ h.labelAr }}</span>
+            <strong class="ms-1">{{ h.valueAr }}</strong>
+            <span v-if="h.trendAr" class="text-muted ms-1 small">({{ h.trendAr }})</span>
+        </span>
+    </div>
+</div>
+
+<div v-if="!loading && (!data?.items || data.items.length === 0)" class="alert alert-success mb-0">    <i class="bi bi-check-circle me-2"></i>{{ t('allClear') }}
+</div>
+
+<ul v-else class="list-group list-group-flush strategic-panel p-0 overflow-hidden">
+    <li v-for="item in data?.items || []" :key="item.code + (item.branchId || '') + (item.occurredAtUtc || '')"
+        class="list-group-item d-flex flex-wrap justify-content-between align-items-start gap-2 py-3 bg-transparent">
+        <div class="flex-grow-1">
+            <span class="badge me-2" :class="severityClass(item.severity)">{{ severityLabel(item.severity) }}</span>
+            <strong>{{ item.titleAr }}</strong>
+            <p class="text-muted small mb-0 mt-1">{{ item.detailAr }}</p>
+            <span v-if="item.branchName" class="badge bg-light text-dark border mt-1">{{ item.branchName }}</span>
+        </div>
+        <a v-if="item.actionUrl" :href="item.actionUrl" class="btn btn-sm btn-outline-danger">{{ t('open') }}</a>
+    </li>
+</ul>

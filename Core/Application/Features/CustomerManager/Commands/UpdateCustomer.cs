@@ -17,7 +17,7 @@ public class UpdateCustomerResult
     public Customer? Data { get; set; }
 }
 
-public class UpdateCustomerRequest : IRequest<UpdateCustomerResult>
+public class UpdateCustomerRequest : IRequest<UpdateCustomerResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
     public string? Name { get; set; }
@@ -39,7 +39,6 @@ public class UpdateCustomerRequest : IRequest<UpdateCustomerResult>
     public string? TikTok { get; set; }
     public string? CustomerGroupId { get; set; }
     public string? CustomerCategoryId { get; set; }
-    public string? UpdatedById { get; init; }
 
     [System.Text.Json.Serialization.JsonPropertyName("subscriberType")]
     public CustomerKind? CustomerKind { get; set; }
@@ -48,6 +47,8 @@ public class UpdateCustomerRequest : IRequest<UpdateCustomerResult>
     public string? CommercialRegistration { get; set; }
     public string? TaxNumber { get; set; }
     public string? AuthorizedSignatory { get; set; }
+
+    public IReadOnlyList<string> PermissionKeys => CustomerPermissionSets.ManageAny;
 }
 
 public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerRequest>
@@ -74,19 +75,22 @@ public class UpdateCustomerHandler : IRequestHandler<UpdateCustomerRequest, Upda
     private readonly IQueryContext _query;
     private readonly IFieldEncryptionService _encryption;
     private readonly IUserAuditService _audit;
+    private readonly IOperatorContext _operator;
 
     public UpdateCustomerHandler(
         ICommandRepository<Customer> repository,
         IUnitOfWork unitOfWork,
         IQueryContext query,
         IFieldEncryptionService encryption,
-        IUserAuditService audit)
+        IUserAuditService audit,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _query = query;
         _encryption = encryption;
         _audit = audit;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateCustomerResult> Handle(UpdateCustomerRequest request, CancellationToken cancellationToken)
@@ -97,7 +101,9 @@ public class UpdateCustomerHandler : IRequestHandler<UpdateCustomerRequest, Upda
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+
+        entity.UpdatedById = actorUserId;
         entity.SetDisplayName(request.Name!);
         entity.SetDescription(request.Description);
         entity.UpdateAddress(new PostalAddress(request.Street, request.City, request.State, request.ZipCode, request.Country));
@@ -144,7 +150,7 @@ public class UpdateCustomerHandler : IRequestHandler<UpdateCustomerRequest, Upda
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.UpdatedById ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.CustomerUpdated,
                 EntityType = nameof(Customer),
                 EntityId = entity.Id,

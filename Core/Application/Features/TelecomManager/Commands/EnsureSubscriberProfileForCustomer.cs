@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -16,10 +17,11 @@ public class EnsureSubscriberProfileForCustomerResult
     public bool Created { get; set; }
 }
 
-public class EnsureSubscriberProfileForCustomerRequest : IRequest<EnsureSubscriberProfileForCustomerResult>
+public class EnsureSubscriberProfileForCustomerRequest : IRequest<EnsureSubscriberProfileForCustomerResult>, IRequireAnyPermission
 {
     public string CustomerId { get; init; } = "";
-    public string? CreatedById { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.CustomerProvisioningAny;
 }
 
 public class EnsureSubscriberProfileForCustomerValidator : AbstractValidator<EnsureSubscriberProfileForCustomerRequest>
@@ -36,21 +38,26 @@ public class EnsureSubscriberProfileForCustomerHandler
     private readonly IQueryContext _query;
     private readonly ICommandRepository<SubscriberProfile> _profileRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public EnsureSubscriberProfileForCustomerHandler(
         IQueryContext query,
         ICommandRepository<SubscriberProfile> profileRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _profileRepository = profileRepository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<EnsureSubscriberProfileForCustomerResult> Handle(
         EnsureSubscriberProfileForCustomerRequest request,
         CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        var branchId = OperatorActor.ResolveBranchId(_operator);
         var customerId = request.CustomerId.Trim();
         var customerExists = await _query.Customer.AsNoTracking().IsDeletedEqualTo()
             .AnyAsync(c => c.Id == customerId, cancellationToken);
@@ -80,7 +87,8 @@ public class EnsureSubscriberProfileForCustomerHandler
             ServiceLineType = ServiceLineType.Mobile,
             LoyaltyPoints = 0,
             LoyaltyTier = "Bronze",
-            CreatedById = request.CreatedById,
+            CreatedById = actorUserId,
+            BranchId = branchId,
         };
         await _profileRepository.CreateAsync(profile, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);

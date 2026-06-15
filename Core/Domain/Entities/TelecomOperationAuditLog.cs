@@ -4,7 +4,7 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>Audit trail for <see cref="TelecomOperationRequest"/> status transitions.</summary>
-public class TelecomOperationAuditLog : BaseEntity
+public class TelecomOperationAuditLog : BaseEntity, IHasBranchId
 {
     public string TelecomOperationRequestId { get; set; } = null!;
     public TelecomOperationRequest? TelecomOperationRequest { get; set; }

@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -13,7 +14,7 @@ public class CreateProductOfferingResult
 }
 
 // ─── Request ───
-public class CreateProductOfferingRequest : IRequest<CreateProductOfferingResult>
+public class CreateProductOfferingRequest : IRequest<CreateProductOfferingResult>, IRequireAnyPermission
 {
     public string? Name { get; init; }
     public string? NameEn { get; init; }
@@ -24,7 +25,6 @@ public class CreateProductOfferingRequest : IRequest<CreateProductOfferingResult
     public DateTime? ValidFromUtc { get; init; }
     public DateTime? ValidToUtc { get; init; }
     public int SortOrder { get; init; }
-    public string? CreatedById { get; init; }
 
     public string? EligibilityRules { get; init; }
     public string? AssetCompatibility { get; init; }
@@ -46,6 +46,8 @@ public class CreateProductOfferingRequest : IRequest<CreateProductOfferingResult
 
     /// <summary>Inline price plans to create together with the offering (optional).</summary>
     public List<CreatePricePlanDto>? PricePlans { get; init; }
+
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ManageAny;
 }
 
 public record CreateProductOfferingComponentDto
@@ -100,24 +102,28 @@ public class CreateProductOfferingHandler : IRequestHandler<CreateProductOfferin
     private readonly ICommandRepository<ProductOfferingComponent> _componentRepository;
     private readonly ICommandRepository<PricePlan> _pricePlanRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public CreateProductOfferingHandler(
         ICommandRepository<ProductOffering> offeringRepository,
         ICommandRepository<ProductOfferingComponent> componentRepository,
         ICommandRepository<PricePlan> pricePlanRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _offeringRepository = offeringRepository;
         _componentRepository = componentRepository;
         _pricePlanRepository = pricePlanRepository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<CreateProductOfferingResult> Handle(CreateProductOfferingRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         var entity = new ProductOffering
         {
-            CreatedById = request.CreatedById,
+            CreatedById = actorUserId,
             Name = request.Name!,
             NameEn = request.NameEn,
             Description = request.Description,
@@ -152,7 +158,7 @@ public class CreateProductOfferingHandler : IRequestHandler<CreateProductOfferin
             {
                 var component = new ProductOfferingComponent
                 {
-                    CreatedById = request.CreatedById,
+                    CreatedById = actorUserId,
                     ProductOfferingId = entity.Id,
                     ComponentType = comp.ComponentType,
                     Label = comp.Label,
@@ -173,7 +179,7 @@ public class CreateProductOfferingHandler : IRequestHandler<CreateProductOfferin
             {
                 var pricePlan = new PricePlan
                 {
-                    CreatedById = request.CreatedById,
+                    CreatedById = actorUserId,
                     ProductOfferingId = entity.Id,
                     PlanType = pp.PlanType,
                     Price = pp.Price,

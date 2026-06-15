@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,10 +11,10 @@ public class DeleteProductResult
     public Product? Data { get; set; }
 }
 
-public class DeleteProductRequest : IRequest<DeleteProductResult>
+public class DeleteProductRequest : IRequest<DeleteProductResult>, IRequireAnyPermission
 {
     public string? Id { get; init; }
-    public string? DeletedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ManageAny;
 }
 
 public class DeleteProductValidator : AbstractValidator<DeleteProductRequest>
@@ -28,14 +29,16 @@ public class DeleteProductHandler : IRequestHandler<DeleteProductRequest, Delete
 {
     private readonly ICommandRepository<Product> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public DeleteProductHandler(
         ICommandRepository<Product> repository,
-        IUnitOfWork unitOfWork
-        )
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<DeleteProductResult> Handle(DeleteProductRequest request, CancellationToken cancellationToken)
@@ -48,7 +51,7 @@ public class DeleteProductHandler : IRequestHandler<DeleteProductRequest, Delete
             throw new Exception($"Entity not found: {request.Id}");
         }
 
-        entity.UpdatedById = request.DeletedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
 
         _repository.Delete(entity);
         await _unitOfWork.SaveAsync(cancellationToken);

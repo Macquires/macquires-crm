@@ -14,15 +14,14 @@ public class CreateOrgUnitResult
     public OrgUnit? Data { get; init; }
 }
 
-public class CreateOrgUnitRequest : IRequest<CreateOrgUnitResult>, IRequirePermission
+public class CreateOrgUnitRequest : IRequest<CreateOrgUnitResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminUsersManage;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
     public string? NameAr { get; init; }
     public string? NameEn { get; init; }
     public string? ParentId { get; init; }
     public string? ManagerUserId { get; init; }
     public bool? IsActive { get; init; }
-    public string? CreatedById { get; init; }
 }
 
 public class CreateOrgUnitValidator : AbstractValidator<CreateOrgUnitRequest>
@@ -39,17 +38,20 @@ public class CreateOrgUnitHandler : IRequestHandler<CreateOrgUnitRequest, Create
     private readonly IUnitOfWork _unitOfWork;
     private readonly IQueryContext _query;
     private readonly ISecurityService _securityService;
+    private readonly IOperatorContext _operator;
 
     public CreateOrgUnitHandler(
         ICommandRepository<OrgUnit> repository,
         IUnitOfWork unitOfWork,
         IQueryContext query,
-        ISecurityService securityService)
+        ISecurityService securityService,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _query = query;
         _securityService = securityService;
+        _operator = operatorContext;
     }
 
     public async Task<CreateOrgUnitResult> Handle(CreateOrgUnitRequest request, CancellationToken cancellationToken)
@@ -69,7 +71,7 @@ public class CreateOrgUnitHandler : IRequestHandler<CreateOrgUnitRequest, Create
             ParentId = string.IsNullOrWhiteSpace(request.ParentId) ? null : request.ParentId.Trim(),
             ManagerUserId = string.IsNullOrWhiteSpace(request.ManagerUserId) ? null : request.ManagerUserId.Trim(),
             IsActive = request.IsActive ?? true,
-            CreatedById = request.CreatedById,
+            CreatedById = OperatorActor.RequireUserId(_operator),
             CreatedAtUtc = DateTime.UtcNow,
         };
 

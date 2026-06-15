@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
@@ -74,9 +75,10 @@ public class GetProductOfferingListResult
 }
 
 // ─── Request ───
-public class GetProductOfferingListRequest : IRequest<GetProductOfferingListResult>
+public class GetProductOfferingListRequest : IRequest<GetProductOfferingListResult>, IRequireAnyPermission
 {
     public bool IsDeleted { get; init; } = false;
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 // ─── Handler ───

@@ -104,7 +104,6 @@ const App = {
                     const res = await services.cloneRole({
                         sourceRoleName: state.selectedRole,
                         newRoleName: newName.trim(),
-                        createdById: StorageManager.getUserId(),
                     });
                     if (res?.data?.code === 200) {
                         await methods.load();
@@ -128,7 +127,6 @@ const App = {
                     const res = await services.updateRolePermissions({
                         roleName: state.selectedRole,
                         permissionKeys: state.selectedPermissionKeys,
-                        updatedById: StorageManager.getUserId(),
                     });
                     if (res?.data?.code === 200) {
                         Swal.fire({

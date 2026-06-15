@@ -14,7 +14,8 @@ namespace Infrastructure.SeedManager.Systems;
 /// msisdn_available → MsisdnAsset (Available);
 /// operations_today → TelecomOperationRequest created today UTC;
 /// network_pulse → BillingIntegrationLog success rate;
-/// integration_health → BillingIntegrationLog by IntegrationTarget.
+/// integration_health → BillingIntegrationLog by IntegrationTarget;
+/// branch_heat_top → top branches by revenue (executive MIS).
 /// </summary>
 public class DashboardWidgetSeeder
 {
@@ -24,49 +25,82 @@ public class DashboardWidgetSeeder
 
     public async Task GenerateDataAsync()
     {
-        if (await _context.DashboardWidget.AnyAsync())
+        if (!await _context.DashboardWidget.AnyAsync())
         {
-            return;
+            var widgets = BuildDefaultWidgets();
+            await _context.DashboardWidget.AddRangeAsync(widgets);
+            await _context.SaveChangesAsync();
         }
 
-        var widgets = new List<DashboardWidget>
+        await EnsureExecutiveCockpitWidgetsAsync();
+    }
+
+    private async Task EnsureExecutiveCockpitWidgetsAsync()
+    {
+        var patches = new[]
         {
-            // Executive
-            W("exec_subscribers", "المشتركون", "Subscribers", "bi-people", "subscriber_count", "Executive", DashboardWidgetGridSize.Medium, 10, 60),
-            W("exec_subscriptions", "خطوط نشطة", "Active lines", "bi-sim", "active_subscriptions", "Executive", DashboardWidgetGridSize.Medium, 11, 60),
-            W("exec_network", "نبض الشبكة", "Network pulse", "bi-activity", "network_pulse", "Executive", DashboardWidgetGridSize.Large, 12, 30),
-            W("exec_mis", "التحليلات الاستراتيجية", "Strategic analytics", "bi-graph-up-arrow", null, "Executive", DashboardWidgetGridSize.Medium, 20, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#strategic-analytics", ctaAr: "عرض التحليلات"),
-
-            // CallCenter
-            W("cc_search", "بحث عالمي", "Omni search", "bi-search", null, "CallCenter", DashboardWidgetGridSize.Full, 1, kind: DashboardWidgetKind.OmniSearch),
-            W("cc_pending", "عمليات معلقة", "Pending ops", "bi-hourglass-split", "pending_operations", "CallCenter", DashboardWidgetGridSize.Medium, 10, 30),
-            W("cc_network", "حالة التكامل", "Integration", "bi-broadcast", "network_pulse", "CallCenter", DashboardWidgetGridSize.Medium, 11, 60),
-            W("cc_subscribers", "سجل المشتركين", "Registry", "bi-person-lines-fill", "subscriber_count", "CallCenter", DashboardWidgetGridSize.Medium, 12, 120),
-
-            // Retail
-            W("retail_ops_today", "عمليات اليوم", "Ops today", "bi-lightning-charge", "operations_today", "Retail", DashboardWidgetGridSize.Medium, 10, 60),
-            W("retail_msisdn", "أرقام متاحة", "MSISDN pool", "bi-telephone", "msisdn_available", "Retail", DashboardWidgetGridSize.Medium, 11, 60),
-            W("retail_activate", "تفعيل خط", "Activate", "bi-plus-circle", null, "Retail", DashboardWidgetGridSize.Medium, 5, kind: DashboardWidgetKind.Cta, ctaUrl: "/Telecom/TelecomHub", ctaAr: "معالج التفعيل"),
-            W("retail_catalog", "كتالوج العروض", "Catalog", "bi-box-seam", null, "Retail", DashboardWidgetGridSize.Medium, 20, kind: DashboardWidgetKind.Cta, ctaUrl: "/Telecom/ProductCatalog", ctaAr: "الكتالوج"),
-
-            // BackOffice
-            W("bo_pending", "موافقات معلقة", "Approvals", "bi-clipboard-check", "pending_operations", "BackOffice", DashboardWidgetGridSize.Medium, 10, 30),
-            W("bo_bulk", "استيراد نشط", "Bulk import", "bi-cloud-upload", "bulk_import_active", "BackOffice", DashboardWidgetGridSize.Medium, 11, 30),
-            W("bo_hub", "مركز العمليات", "NOC", "bi-broadcast", null, "BackOffice", DashboardWidgetGridSize.Medium, 12, kind: DashboardWidgetKind.Cta, ctaUrl: "/Telecom/TelecomHub", ctaAr: "مركز العمليات"),
-
-            // SysAdmin
-            W("admin_integrations", "صحة التكاملات", "Integrations", "bi-hdd-network", "integration_health", "SysAdmin", DashboardWidgetGridSize.Large, 10, 60),
-            W("admin_bulk", "مهام خلفية", "Background jobs", "bi-cpu", "bulk_import_active", "SysAdmin", DashboardWidgetGridSize.Medium, 11, 30),
-            W("admin_subscribers", "المشتركون", "Subscribers", "bi-people", "subscriber_count", "SysAdmin", DashboardWidgetGridSize.Medium, 12, 120),
+            W("exec_branch_heat", "حرارة الفروع", "Branch heat", "bi-geo-alt", "branch_heat_top", "Executive", DashboardWidgetGridSize.Large, 13, 120, kind: DashboardWidgetKind.StatusList),
+            W("exec_exceptions", "تنبيهات الإدارة", "Executive alerts", "bi-exclamation-triangle", null, "Executive", DashboardWidgetGridSize.Medium, 21, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#executive-exceptions", ctaAr: "عرض التنبيهات"),
+            W("exec_geo_map", "خريطة الفروع", "Branch map", "bi-map", null, "Executive", DashboardWidgetGridSize.Medium, 22, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#branch-geo-heatmap", ctaAr: "الخريطة"),
+            W("exec_supervisor", "تدقيق المشرف", "Supervisor audit", "bi-person-check", null, "Executive", DashboardWidgetGridSize.Medium, 23, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#supervisor-interventions", ctaAr: "التدقيق"),
         };
 
-        // Shared across all personas
-        widgets.Add(W("all_customers", "إجمالي العملاء", "Customers", "bi-person-badge", "subscriber_count",
-            "Executive,CallCenter,Retail,BackOffice,SysAdmin", DashboardWidgetGridSize.Small, 0, 120));
+        var added = false;
+        foreach (var widget in patches)
+        {
+            if (await _context.DashboardWidget.AnyAsync(w => w.WidgetKey == widget.WidgetKey))
+            {
+                continue;
+            }
 
-        await _context.DashboardWidget.AddRangeAsync(widgets);
-        await _context.SaveChangesAsync();
+            await _context.DashboardWidget.AddAsync(widget);
+            added = true;
+        }
+
+        if (added)
+        {
+            await _context.SaveChangesAsync();
+        }
     }
+
+    private static List<DashboardWidget> BuildDefaultWidgets() =>
+    [
+        // Executive
+        W("exec_subscribers", "المشتركون", "Subscribers", "bi-people", "subscriber_count", "Executive", DashboardWidgetGridSize.Medium, 10, 60),
+        W("exec_subscriptions", "خطوط نشطة", "Active lines", "bi-sim", "active_subscriptions", "Executive", DashboardWidgetGridSize.Medium, 11, 60),
+        W("exec_network", "نبض الشبكة", "Network pulse", "bi-activity", "network_pulse", "Executive", DashboardWidgetGridSize.Large, 12, 30),
+        W("exec_branch_heat", "حرارة الفروع", "Branch heat", "bi-geo-alt", "branch_heat_top", "Executive", DashboardWidgetGridSize.Large, 13, 120, kind: DashboardWidgetKind.StatusList),
+        W("exec_mis", "التحليلات الاستراتيجية", "Strategic analytics", "bi-graph-up-arrow", null, "Executive", DashboardWidgetGridSize.Medium, 20, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#strategic-analytics", ctaAr: "عرض التحليلات"),
+        W("exec_exceptions", "تنبيهات الإدارة", "Executive alerts", "bi-exclamation-triangle", null, "Executive", DashboardWidgetGridSize.Medium, 21, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#executive-exceptions", ctaAr: "عرض التنبيهات"),
+        W("exec_geo_map", "خريطة الفروع", "Branch map", "bi-map", null, "Executive", DashboardWidgetGridSize.Medium, 22, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#branch-geo-heatmap", ctaAr: "الخريطة"),
+        W("exec_supervisor", "تدقيق المشرف", "Supervisor audit", "bi-person-check", null, "Executive", DashboardWidgetGridSize.Medium, 23, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#supervisor-interventions", ctaAr: "التدقيق"),
+
+        // CallCenter
+        W("cc_search", "بحث عالمي", "Omni search", "bi-search", null, "CallCenter", DashboardWidgetGridSize.Full, 1, kind: DashboardWidgetKind.OmniSearch),
+        W("cc_pending", "عمليات معلقة", "Pending ops", "bi-hourglass-split", "pending_operations", "CallCenter", DashboardWidgetGridSize.Medium, 10, 30),
+        W("cc_network", "حالة التكامل", "Integration", "bi-broadcast", "network_pulse", "CallCenter", DashboardWidgetGridSize.Medium, 11, 60),
+        W("cc_subscribers", "سجل المشتركين", "Registry", "bi-person-lines-fill", "subscriber_count", "CallCenter", DashboardWidgetGridSize.Medium, 12, 120),
+
+        // Retail
+        W("retail_ops_today", "عمليات اليوم", "Ops today", "bi-lightning-charge", "operations_today", "Retail", DashboardWidgetGridSize.Medium, 10, 60),
+        W("retail_msisdn", "أرقام متاحة", "MSISDN pool", "bi-telephone", "msisdn_available", "Retail", DashboardWidgetGridSize.Medium, 11, 60),
+        W("retail_activate", "تفعيل خط", "Activate", "bi-plus-circle", null, "Retail", DashboardWidgetGridSize.Medium, 5, kind: DashboardWidgetKind.Cta, ctaUrl: "/Telecom/TelecomHub", ctaAr: "معالج التفعيل"),
+        W("retail_catalog", "كتالوج العروض", "Catalog", "bi-box-seam", null, "Retail", DashboardWidgetGridSize.Medium, 20, kind: DashboardWidgetKind.Cta, ctaUrl: "/Telecom/ProductCatalog", ctaAr: "الكتالوج"),
+
+        // BackOffice
+        W("bo_pending", "موافقات معلقة", "Approvals", "bi-clipboard-check", "pending_operations", "BackOffice", DashboardWidgetGridSize.Medium, 10, 30),
+        W("bo_bulk", "استيراد نشط", "Bulk import", "bi-cloud-upload", "bulk_import_active", "BackOffice", DashboardWidgetGridSize.Medium, 11, 30),
+        W("bo_hub", "مركز العمليات", "NOC", "bi-broadcast", null, "BackOffice", DashboardWidgetGridSize.Medium, 12, kind: DashboardWidgetKind.Cta, ctaUrl: "/Telecom/TelecomHub", ctaAr: "مركز العمليات"),
+
+        // SysAdmin
+        W("admin_integrations", "صحة التكاملات", "Integrations", "bi-hdd-network", "integration_health", "SysAdmin", DashboardWidgetGridSize.Large, 10, 60),
+        W("admin_bulk", "مهام خلفية", "Background jobs", "bi-cpu", "bulk_import_active", "SysAdmin", DashboardWidgetGridSize.Medium, 11, 30),
+        W("admin_subscribers", "المشتركون", "Subscribers", "bi-people", "subscriber_count", "SysAdmin", DashboardWidgetGridSize.Medium, 12, 120),
+
+        // Shared across all personas
+        W("all_customers", "إجمالي العملاء", "Customers", "bi-person-badge", "subscriber_count",
+            "Executive,CallCenter,Retail,BackOffice,SysAdmin", DashboardWidgetGridSize.Small, 0, 120),
+    ];
 
     private static DashboardWidget W(
         string key,

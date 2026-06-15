@@ -14,11 +14,15 @@ public class MenuBadgesDto
     /// <summary>Bulk import monitor — jobs pending or processing.</summary>
     public int BulkImportActive { get; init; }
 
+    /// <summary>Executive MIS — critical operational exceptions in user scope.</summary>
+    public int CriticalExecutiveExceptions { get; init; }
+
     public IReadOnlyDictionary<string, int> ToDictionary() => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
     {
         ["pendingOperations"] = PendingOperations,
         ["overdueTickets"] = OverdueTickets,
         ["openTechnicalTickets"] = OpenTechnicalTickets,
         ["bulkImportActive"] = BulkImportActive,
+        ["criticalExecutiveExceptions"] = CriticalExecutiveExceptions,
     };
 }

@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
@@ -106,12 +107,13 @@ public class GetCustomerListResult
     public int TotalCount { get; init; }
 }
 
-public class GetCustomerListRequest : IRequest<GetCustomerListResult>
+public class GetCustomerListRequest : IRequest<GetCustomerListResult>, IRequirePermission
 {
     public bool IsDeleted { get; init; }
     public string? CustomerId { get; init; }
     public int Skip { get; init; }
     public int Take { get; init; }
+    public string PermissionKey => PermissionCatalog.CustomerView;
 }
 
 public class GetCustomerListHandler : IRequestHandler<GetCustomerListRequest, GetCustomerListResult>

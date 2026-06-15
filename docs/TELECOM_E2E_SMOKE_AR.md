@@ -28,6 +28,11 @@
 | 3 | RFD | استرداد تأمين/محفظة | RFD- + BO إن Syriatel Cash |
 | 4 | BDR | تحصيل دفعة على 0939000002 | BDR- + تحديث ذمة |
 | 5 | DEV | بيع جهاز | DEV- + عقد تقسيط |
+| 5b | ACT scheduled | تفعيل بتاريخ سريان مستقبلي | Scheduled + worker |
+| 5c | MNP | نقل رقم Port-In | ExternalCorrelationId من Mock |
+| 5d | VAS | تعطيل خدمة | Deactivate VAS notes |
+| 5e | SUS fraud | حظر احتيال من List | BackOffice approval |
+| 5f | RCN→BDR | إعادة تفعيل بعد تحصيل | RCN بعد BDR |
 
 ## Bulk import (`/Telecom/BulkImportMonitor`)
 - [ ] تبديل اللغة: أعمدة الشبكة + حالات المهام + رابط Hub

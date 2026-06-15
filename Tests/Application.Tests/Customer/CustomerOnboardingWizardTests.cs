@@ -478,7 +478,7 @@ public class CustomerOnboardingWizardTests
 
         var handler = CustomerOnboardingTestSupport.CreateEnsureHandler(ctx);
         var result = await handler.Handle(
-            new EnsureSubscriberProfileForCustomerRequest { CustomerId = customer.Id, CreatedById = "user-1" },
+            new EnsureSubscriberProfileForCustomerRequest { CustomerId = customer.Id },
             CancellationToken.None);
 
         Assert.True(result.Created);
@@ -715,7 +715,7 @@ public class CustomerOnboardingWizardTests
         var customer = await CustomerOnboardingTestSupport.SeedIndividualAsync(ctx, nationalId, "0937001234", "POS جديد");
         var ensure = CustomerOnboardingTestSupport.CreateEnsureHandler(ctx);
         var profile = await ensure.Handle(
-            new EnsureSubscriberProfileForCustomerRequest { CustomerId = customer.Id, CreatedById = "pos-user" },
+            new EnsureSubscriberProfileForCustomerRequest { CustomerId = customer.Id },
             CancellationToken.None);
 
         Assert.True(profile.Created);

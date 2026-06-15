@@ -73,12 +73,24 @@ public class FileImageService : IFileImageService
 
     public async Task<Stream> GetFileStreamAsync(string fileName, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(fileName)
+            || string.Equals(fileName, "undefined", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(fileName, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            fileName = "noimage.png";
+        }
+
         if (await _storageProvider.ExistsAsync(fileName, cancellationToken))
         {
             return await _storageProvider.GetAsync(fileName, cancellationToken);
         }
 
-        // Fallback or error handling
+        if (!string.Equals(fileName, "noimage.png", StringComparison.OrdinalIgnoreCase)
+            && await _storageProvider.ExistsAsync("noimage.png", cancellationToken))
+        {
+            return await _storageProvider.GetAsync("noimage.png", cancellationToken);
+        }
+
         throw new FileNotFoundException("The requested file was not found in storage.", fileName);
     }
 }

@@ -10,9 +10,10 @@ public class GetRolePermissionsResult
     public IReadOnlyList<string>? PermissionKeys { get; init; }
 }
 
-public class GetRolePermissionsRequest : IRequest<GetRolePermissionsResult>
+public class GetRolePermissionsRequest : IRequest<GetRolePermissionsResult>, IRequireAnyPermission
 {
     public string? RoleName { get; init; }
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.RolesManageAny;
 }
 
 public class GetRolePermissionsValidator : AbstractValidator<GetRolePermissionsRequest>

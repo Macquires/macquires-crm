@@ -38,6 +38,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
     private readonly IUserAuditService _audit;
     private readonly IUnitOfWork _unitOfWork;
     private readonly INationalIdSearchHashBackfillService _nationalIdBackfill;
+    private readonly IFieldEncryptionService _encryption;
 
     public TelecomCustomer360EnrichmentSeeder(
         DataContext context,
@@ -54,7 +55,8 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         NumberSequenceService numberSequence,
         IUserAuditService audit,
         IUnitOfWork unitOfWork,
-        INationalIdSearchHashBackfillService nationalIdBackfill)
+        INationalIdSearchHashBackfillService nationalIdBackfill,
+        IFieldEncryptionService encryption)
     {
         _context = context;
         _query = query;
@@ -71,6 +73,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         _audit = audit;
         _unitOfWork = unitOfWork;
         _nationalIdBackfill = nationalIdBackfill;
+        _encryption = encryption;
     }
 
     public async Task EnsureEnrichedAsync()
@@ -199,7 +202,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         }
     }
 
-    private static void EnrichPartyFields(Customer customer, int index, Random rnd)
+    private void EnrichPartyFields(Customer customer, int index, Random rnd)
     {
         var city = DemoSyrianSubscriberCatalog.Cities[index % DemoSyrianSubscriberCatalog.Cities.Length];
         var street = DemoSyrianSubscriberCatalog.Streets[rnd.Next(DemoSyrianSubscriberCatalog.Streets.Length)];
@@ -247,6 +250,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 individual.Nationality ?? "سورية",
                 individual.Gender == Gender.Unknown ? (rnd.Next(2) == 0 ? Gender.Male : Gender.Female) : individual.Gender,
                 individual.Occupation ?? DemoSyrianSubscriberCatalog.Occupations[rnd.Next(DemoSyrianSubscriberCatalog.Occupations.Length)]);
+            individual.SyncNationalIdSearchHash(_encryption);
         }
         else if (customer is CorporateCustomer corporate)
         {
@@ -279,11 +283,12 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         {
             var first = DemoSyrianSubscriberCatalog.FullNames[rnd.Next(DemoSyrianSubscriberCatalog.FullNames.Length)];
             var prefix = rnd.Next(2) == 0 ? "093" : "099";
+            var contactNumber = await _numberSequence.GenerateNumberAsync(nameof(CustomerContact), "", "CC");
             await _contactRepository.CreateAsync(new CustomerContact
             {
                 CustomerId = customer.Id,
                 Name = first,
-                Number = _numberSequence.GenerateNumber(nameof(CustomerContact), "", "CC"),
+                Number = contactNumber,
                 JobTitle = DemoSyrianSubscriberCatalog.Occupations[rnd.Next(DemoSyrianSubscriberCatalog.Occupations.Length)],
                 EmailAddress = $"contact.{rnd.Next(100000, 999999)}@syriatel-demo.local",
                 PhoneNumber = $"{prefix}{rnd.Next(1000000, 9999999)}",
@@ -479,11 +484,16 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             .ToListAsync();
 
         var existingBySub = existingVas.GroupBy(v => v.TelecomSubscriptionId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.TelecomValueAddedServiceId).ToHashSet());
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => x.TelecomValueAddedServiceId)
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .Select(id => id!)
+                    .ToHashSet());
 
         foreach (var sub in subs)
         {
-            var existingSet = existingBySub.GetValueOrDefault(sub.Id) ?? new HashSet<string?>();
+            var existingSet = existingBySub.GetValueOrDefault(sub.Id) ?? new HashSet<string>();
             var existingCount = existingSet.Count;
 
             var target = Math.Min(5, vasCatalog.Count);
@@ -616,10 +626,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             }
 
             var pick = titles[StableHash(customer.Id) % titles.Length];
+            var ticketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT");
             await _ticketRepository.CreateAsync(new TelecomTechnicalTicket
             {
                 CreatedById = SystemActor,
-                TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+                TicketNumber = ticketNumber,
                 Msisdn = line.Msisdn,
                 CustomerId = customer.Id,
                 SubscriberProfileId = line.SubscriberProfileId,
@@ -675,10 +686,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             }
 
             var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.ServiceModification);
+            var operationNumber = await _numberSequence.GenerateNumberAsync(entityName, prefix, "", useDate: false);
             var op = new TelecomOperationRequest
             {
                 Kind = TelecomOperationKind.ServiceModification,
-                Number = _numberSequence.GenerateNumber(entityName, prefix, "", useDate: false),
+                Number = operationNumber,
                 Status = TelecomOperationStatus.Completed,
                 DocumentStatus = TelecomDocumentStatus.Verified,
                 SubscriberProfileId = line.SubscriberProfileId,
@@ -700,6 +712,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 Success = true,
                 Message = "CBS-OK-200: تمت مزامنة الرصيد والباقة بنجاح.",
                 IntegrationTarget = "Huawei CBS API v2.1",
+                BranchId = op.BranchId,
             });
         }
 

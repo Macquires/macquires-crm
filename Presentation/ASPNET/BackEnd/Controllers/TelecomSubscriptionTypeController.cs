@@ -2,9 +2,8 @@ using Application.Features.TelecomSubscriptionTypeManager.Commands;
 using Application.Features.TelecomSubscriptionTypeManager.Queries;
 using ASPNET.BackEnd.Common.Base;
 using ASPNET.BackEnd.Common.Models;
-using Infrastructure.SecurityManager.Roles;
+using ASPNET.BackEnd.Common.Attributes;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNET.BackEnd.Controllers;
@@ -16,7 +15,7 @@ public class TelecomSubscriptionTypeController : BaseApiController
     {
     }
 
-    [Authorize]
+    [RequireReferenceDataRead]
     [HttpGet("GetTelecomSubscriptionTypeList")]
     public async Task<ActionResult<ApiSuccessResult<GetTelecomSubscriptionTypeListResult>>> GetTelecomSubscriptionTypeListAsync(
         CancellationToken cancellationToken,
@@ -35,7 +34,7 @@ public class TelecomSubscriptionTypeController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesManageTelecomLineTypes)]
+    [RequireTelecomLineTypeManage]
     [HttpPost("CreateTelecomSubscriptionType")]
     public async Task<ActionResult<ApiSuccessResult<CreateTelecomSubscriptionTypeResult>>> CreateTelecomSubscriptionTypeAsync(
         CreateTelecomSubscriptionTypeRequest request,
@@ -50,7 +49,7 @@ public class TelecomSubscriptionTypeController : BaseApiController
         });
     }
 
-    [Authorize(Roles = TelecomRoles.RolesManageTelecomLineTypes)]
+    [RequireTelecomLineTypeManage]
     [HttpPost("UpdateTelecomSubscriptionType")]
     public async Task<ActionResult<ApiSuccessResult<UpdateTelecomSubscriptionTypeResult>>> UpdateTelecomSubscriptionTypeAsync(
         UpdateTelecomSubscriptionTypeRequest request,

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Application.Common.Security;
 using Application.Common.Services.FileImageManager;
 using FluentValidation;
 using MediatR;
@@ -10,13 +11,13 @@ public class CreateImageResult
     public string? ImageName { get; init; }
 }
 
-public class CreateImageRequest : IRequest<CreateImageResult>
+public class CreateImageRequest : IRequest<CreateImageResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => FileAttachmentPermissionSets.UploadAny;
     public string? OriginalFileName { get; init; }
     public string? Extension { get; init; }
     public byte[]? Data { get; init; }
     public long? Size { get; init; }
-    public string? CreatedById { get; init; }
     public string? Description { get; init; }
 }
 
@@ -41,10 +42,12 @@ public class CreateImageValidator : AbstractValidator<CreateImageRequest>
 public class CreateImageHandler : IRequestHandler<CreateImageRequest, CreateImageResult>
 {
     private readonly IFileImageService _uploadImage;
+    private readonly IOperatorContext _operator;
 
-    public CreateImageHandler(IFileImageService uploadImage)
+    public CreateImageHandler(IFileImageService uploadImage, IOperatorContext operatorContext)
     {
         _uploadImage = uploadImage;
+        _operator = operatorContext;
     }
 
     public async Task<CreateImageResult> Handle(CreateImageRequest request, CancellationToken cancellationToken)
@@ -56,10 +59,9 @@ public class CreateImageHandler : IRequestHandler<CreateImageRequest, CreateImag
             stream,
             request.Size,
             request.Description,
-            request.CreatedById,
+            OperatorActor.RequireUserId(_operator),
             cancellationToken);
 
         return new CreateImageResult { ImageName = result };
     }
 }
-

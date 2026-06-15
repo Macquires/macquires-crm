@@ -88,7 +88,7 @@ public class TelecomTechnicalTicketSeeder
                 continue;
             }
 
-            await _repository.CreateAsync(BuildTicket(line, blueprint, systemUserId));
+            await _repository.CreateAsync(await BuildTicketAsync(line, blueprint, systemUserId));
         }
 
         for (var i = Blueprints.Length; i < existing.Count; i++)
@@ -142,13 +142,14 @@ public class TelecomTechnicalTicketSeeder
             .ToListAsync();
     }
 
-    private TelecomTechnicalTicket BuildTicket(ActiveLine line, TicketBlueprint blueprint, string systemUserId)
+    private async Task<TelecomTechnicalTicket> BuildTicketAsync(ActiveLine line, TicketBlueprint blueprint, string systemUserId)
     {
         var summary = blueprint.Summary.Replace("\"", "'", StringComparison.Ordinal);
+        var ticketNumber = await _numberSequence.GenerateNumberAsync(nameof(TelecomTechnicalTicket), "", "TT");
         return new TelecomTechnicalTicket
         {
             CreatedById = systemUserId,
-            TicketNumber = _numberSequence.GenerateNumber(nameof(TelecomTechnicalTicket), "", "TT"),
+            TicketNumber = ticketNumber,
             Msisdn = line.Msisdn,
             CustomerId = line.CustomerId,
             SubscriberProfileId = line.SubscriberProfileId,

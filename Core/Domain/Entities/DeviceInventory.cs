@@ -4,7 +4,7 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>مخزون أجهزة/راوترات — IMEI محكوم (§14).</summary>
-public class DeviceInventory : BaseEntity
+public class DeviceInventory : BaseEntity, IHasBranchId
 {
     public string Imei { get; set; } = null!;
     public string Model { get; set; } = null!;

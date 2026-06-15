@@ -26,30 +26,30 @@
                     throw error;
                 }
             },
-            createMainData: async (name, description, createdById) => {
+            createMainData: async (name, description) => {
                 try {
                     const response = await AxiosManager.post('/CustomerCategory/CreateCustomerCategory', {
-                        name, description, createdById
+                        name, description
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            updateMainData: async (id, name, description, updatedById) => {
+            updateMainData: async (id, name, description) => {
                 try {
                     const response = await AxiosManager.post('/CustomerCategory/UpdateCustomerCategory', {
-                        id, name, description, updatedById
+                        id, name, description
                     });
                     return response;
                 } catch (error) {
                     throw error;
                 }
             },
-            deleteMainData: async (id, deletedById) => {
+            deleteMainData: async (id) => {
                 try {
                     const response = await AxiosManager.post('/CustomerCategory/DeleteCustomerCategory', {
-                        id, deletedById
+                        id
                     });
                     return response;
                 } catch (error) {
@@ -108,10 +108,10 @@
                     if (!isValid) return;
 
                     const response = state.id === ''
-                        ? await services.createMainData(state.name, state.description, StorageManager.getUserId())
+                        ? await services.createMainData(state.name, state.description)
                         : state.deleteMode
-                            ? await services.deleteMainData(state.id, StorageManager.getUserId())
-                            : await services.updateMainData(state.id, state.name, state.description, StorageManager.getUserId());
+                            ? await services.deleteMainData(state.id)
+                            : await services.updateMainData(state.id, state.name, state.description);
 
                     if (response.data.code === 200) {
                         await methods.populateMainData();

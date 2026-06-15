@@ -14,7 +14,7 @@
     </div>
 </header>
 
-<section v-if="metrics?.canUseFilters" class="strategic-filter-bar mb-4 p-3 rounded-3">
+<section v-if="metrics?.canUseFilters && !hideFilters" class="strategic-filter-bar mb-4 p-3 rounded-3">
     <div class="row g-3 align-items-end">
         <div class="col-md-5">
             <label class="form-label strategic-label">{{ t('region') }}</label>
@@ -44,6 +44,7 @@
             <h3 class="strategic-card-title">{{ t('revenueCenter') }}</h3>
             <p class="strategic-metric-xl text-danger mb-0">{{ formatMoney(metrics?.revenueIndex) }}</p>
             <p class="strategic-metric-sub mb-2">ARPU <span class="text-syriatel-red">{{ t('arpuHint') }}</span>: {{ formatMoney(metrics?.arpu) }}</p>
+            <p class="strategic-metric-sub mb-2">{{ t('churn30') }}: {{ formatPercent(metrics?.churnPercent30) }} · {{ t('churn60') }}: {{ formatPercent(metrics?.churnPercent60) }}</p>
             <span class="strategic-delta" :class="deltaClass(metrics?.revenueChangePercent)">
                 {{ formatPercent(metrics?.revenueChangePercent) }}
             </span>
@@ -81,7 +82,24 @@
     </div>
 </section>
 
+<section v-if="metrics?.revenueByCategory?.length" class="strategic-panel p-3 mb-4">
+    <h3 class="strategic-panel-title">{{ t('revenueByCategory') }}</h3>
+    <ul class="list-group list-group-flush">
+        <li v-for="(cat, idx) in metrics.revenueByCategory" :key="idx"
+            class="list-group-item d-flex justify-content-between bg-transparent px-0">
+            <span>{{ cat.category }}</span>
+            <span><strong>{{ formatMoney(cat.amount) }}</strong> <span class="text-muted small">({{ formatPercent(cat.percent) }})</span></span>
+        </li>
+    </ul>
+</section>
+
 <section class="strategic-panel p-3 mb-4">
-    <h3 class="strategic-panel-title mb-3">{{ t('branchMatrix') }}</h3>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h3 class="strategic-panel-title mb-0">{{ t('branchMatrix') }}</h3>
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-secondary" @@click="exportLeaderboardCsv" :disabled="loading">{{ t('exportExcel') }}</button>
+            <button type="button" class="btn btn-outline-secondary" @@click="exportLeaderboardPdf" :disabled="loading">{{ t('exportPdf') }}</button>
+        </div>
+    </div>
     <div id="ExecutiveLeaderboardGrid"></div>
 </section>

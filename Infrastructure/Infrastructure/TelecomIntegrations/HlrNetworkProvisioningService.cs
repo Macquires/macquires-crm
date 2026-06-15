@@ -4,6 +4,7 @@ using Application.Common.Repositories;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Settings;
+using Infrastructure.TelecomIntegrations.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -21,6 +22,8 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
     private readonly ILogger<HlrNetworkProvisioningService> _logger;
     private readonly IntegrationEnablement _integrations;
     private readonly AsyncCircuitBreakerPolicy _circuitBreaker;
+    private readonly IOptions<TelecomHttpIntegrationOptions> _httpOptions;
+    private readonly SimulatorHlrHttpClient _hlrHttp;
 
     public HlrNetworkProvisioningService(
         ICommandRepository<BillingIntegrationLog> logRepository,
@@ -28,7 +31,9 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
         IUnitOfWork unitOfWork,
         IOptions<TelecomBillingOptions> options,
         ILogger<HlrNetworkProvisioningService> logger,
-        IntegrationEnablement integrations)
+        IntegrationEnablement integrations,
+        IOptions<TelecomHttpIntegrationOptions> httpOptions,
+        SimulatorHlrHttpClient hlrHttp)
     {
         _logRepository = logRepository;
         _integrationLog = integrationLog;
@@ -36,6 +41,8 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
         _options = options;
         _logger = logger;
         _integrations = integrations;
+        _httpOptions = httpOptions;
+        _hlrHttp = hlrHttp;
         _circuitBreaker = Policy
             .Handle<Exception>()
             .CircuitBreakerAsync(
@@ -74,6 +81,11 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
                 QueuedForSync: true);
         }
 
+        if (TelecomIntegrationMode.IsHttp(_httpOptions.Value))
+        {
+            return await ProvisionViaHttpAsync(request, operationName, requestPayload, sw, cancellationToken);
+        }
+
         var opt = _options.Value;
         var attempt = 0;
 
@@ -103,6 +115,7 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
                         request.CorrelationId,
                         requestPayload,
                         "OK",
+                        request.BranchId,
                         cancellationToken);
                     return new NetworkProvisionResult(true, $"HLR OK (attempt {attempt})");
                 }));
@@ -123,6 +136,7 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
                 request.CorrelationId,
                 requestPayload,
                 ex.Message,
+                request.BranchId,
                 cancellationToken);
             var result = new NetworkProvisionResult(false, "الشبكة مشغولة — سيتم إعادة المحاولة تلقائياً.", DeferRetry: true);
             await WriteIntegrationLogAsync(
@@ -141,11 +155,43 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
                 request.CorrelationId,
                 requestPayload,
                 ex.Message,
+                request.BranchId,
                 cancellationToken);
             await WriteIntegrationLogAsync(
                 request, operationName, requestPayload, ex.Message, false, "ERROR", sw.ElapsedMilliseconds, cancellationToken);
             return new NetworkProvisionResult(false, ex.Message);
         }
+    }
+
+    private async Task<NetworkProvisionResult> ProvisionViaHttpAsync(
+        NetworkProvisionRequest request,
+        string operationName,
+        string requestPayload,
+        Stopwatch sw,
+        CancellationToken cancellationToken)
+    {
+        var result = await _hlrHttp.ProvisionAsync(request, cancellationToken);
+        await WriteBillingLogAsync(
+            request.OperationId,
+            1,
+            result.Success,
+            result.Message ?? "",
+            "Simulator-HLR-HTTP",
+            request.CorrelationId,
+            requestPayload,
+            result.Success ? "OK" : result.Message,
+            request.BranchId,
+            cancellationToken);
+        await WriteIntegrationLogAsync(
+            request,
+            operationName,
+            requestPayload,
+            result.Message,
+            result.Success,
+            result.Success ? "200" : "500",
+            sw.ElapsedMilliseconds,
+            cancellationToken);
+        return result;
     }
 
     private Task WriteIntegrationLogAsync(
@@ -177,11 +223,13 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
         string? correlationId,
         string? requestPayload,
         string? responsePayload,
+        string? branchId,
         CancellationToken cancellationToken)
     {
         await _logRepository.CreateAsync(new BillingIntegrationLog
         {
             TelecomOperationRequestId = operationId,
+            BranchId = branchId,
             AttemptNumber = attempt,
             Success = success,
             Message = message,

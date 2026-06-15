@@ -4,7 +4,7 @@ using Domain.Enums;
 namespace Domain.Entities;
 
 /// <summary>Unified telecom operation (Activation, MGR, TKO, SIM swap, …).</summary>
-public class TelecomOperationRequest : BaseEntity
+public class TelecomOperationRequest : BaseEntity, IHasBranchId
 {
     public TelecomOperationKind Kind { get; set; }
 
@@ -43,12 +43,33 @@ public class TelecomOperationRequest : BaseEntity
     /// <summary>§11 MGR rollback — commercial offering before package change.</summary>
     public string? PriorProductOfferingId { get; set; }
 
+    /// <summary>§11 Scheduled package migration effective date (UTC).</summary>
+    public DateTime? MigrationEffectiveDateUtc { get; set; }
+
     public string? Notes { get; set; }
 
     /// <summary>Target plan / offer label for migrations (e.g. «سيريتل ميكس») — demo field.</summary>
     public string? TargetOfferName { get; set; }
 
     public DateTime? ConfirmedAtUtc { get; set; }
+
+    /// <summary>§3 ACT — scheduled activation effective date (UTC).</summary>
+    public DateTime? ActivationEffectiveDateUtc { get; set; }
+
+    /// <summary>§9 RCN — scheduled reconnection effective date (UTC).</summary>
+    public DateTime? ReconnectEffectiveDateUtc { get; set; }
+
+    /// <summary>§15 RFD — scheduled refund effective date (UTC).</summary>
+    public DateTime? RefundEffectiveDateUtc { get; set; }
+
+    /// <summary>§16 BDR — scheduled collection effective date (UTC).</summary>
+    public DateTime? BadDebtEffectiveDateUtc { get; set; }
+
+    /// <summary>§14 DEV — scheduled device sale effective date (UTC).</summary>
+    public DateTime? DeviceSaleEffectiveDateUtc { get; set; }
+
+    /// <summary>§5 MNP — external port-in correlation id from gateway.</summary>
+    public string? ExternalCorrelationId { get; set; }
 
     /// <summary>Stored identity scan for legal review (relative path under telecom-ops upload root).</summary>
     public string? IdentityDocumentStorageKey { get; set; }
@@ -109,6 +130,8 @@ public class TelecomOperationRequest : BaseEntity
     /// <summary>§4 Lost/Stolen path — requires BackOffice approval (no showroom confirm).</summary>
     public bool IsLostOrStolenReport { get; set; }
 
+    public DateTime? SimSwapEffectiveDateUtc { get; set; }
+
     /// <summary>Active SIM id captured at initiation (quarantine + HLR rollback anchor).</summary>
     public string? PriorSimInventoryId { get; set; }
 
@@ -124,8 +147,16 @@ public class TelecomOperationRequest : BaseEntity
     /// <summary>§5 Premium number fee (VAL-05-02).</summary>
     public decimal? PremiumFeeAmount { get; set; }
 
-    /// <summary>§5 Internal vs Port-In (demo: Internal).</summary>
+    /// <summary>§5 Internal pool reassignment (CNR) vs donor port-in (MNP).</summary>
     public string? NumberChangeMode { get; set; }
+
+    /// <summary>§5 MNP Port-In — MSISDN to port from donor operator.</summary>
+    public string? PortInMsisdn { get; set; }
+
+    /// <summary>§5 MNP Port-In — donor operator code (e.g. MTN).</summary>
+    public string? DonorOperatorCode { get; set; }
+
+    public DateTime? NumberChangeEffectiveDateUtc { get; set; }
 
     /// <summary>§10 Termination — Voluntary, Collections, Regulatory, Fraud.</summary>
     public string? TerminationType { get; set; }

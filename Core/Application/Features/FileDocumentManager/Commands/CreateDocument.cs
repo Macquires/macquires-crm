@@ -1,4 +1,5 @@
-﻿using Application.Common.Services.FileDocumentManager;
+﻿using Application.Common.Security;
+using Application.Common.Services.FileDocumentManager;
 using FluentValidation;
 using MediatR;
 
@@ -9,14 +10,14 @@ public class CreateDocumentResult
     public string? DocumentName { get; init; }
 }
 
-public class CreateDocumentRequest : IRequest<CreateDocumentResult>
+public class CreateDocumentRequest : IRequest<CreateDocumentResult>, IRequireAnyPermission
 {
     public string? OriginalFileName { get; init; }
     public string? Extension { get; init; }
     public byte[]? Data { get; init; }
     public long? Size { get; init; }
-    public string? CreatedById { get; init; }
     public string? Description { get; init; }
+    public IReadOnlyList<string> PermissionKeys => FileAttachmentPermissionSets.UploadAny;
 }
 
 public class CreateDocumentValidator : AbstractValidator<CreateDocumentRequest>
@@ -40,10 +41,12 @@ public class CreateDocumentValidator : AbstractValidator<CreateDocumentRequest>
 public class CreateDocumentHandler : IRequestHandler<CreateDocumentRequest, CreateDocumentResult>
 {
     private readonly IFileDocumentService _uploadDocument;
+    private readonly IOperatorContext _operator;
 
-    public CreateDocumentHandler(IFileDocumentService uploadDocument)
+    public CreateDocumentHandler(IFileDocumentService uploadDocument, IOperatorContext operatorContext)
     {
         _uploadDocument = uploadDocument;
+        _operator = operatorContext;
     }
 
     public async Task<CreateDocumentResult> Handle(CreateDocumentRequest request, CancellationToken cancellationToken)
@@ -54,10 +57,9 @@ public class CreateDocumentHandler : IRequestHandler<CreateDocumentRequest, Crea
             request.Data,
             request.Size,
             request.Description,
-            request.CreatedById,
+            OperatorActor.RequireUserId(_operator),
             cancellationToken);
 
         return new CreateDocumentResult { DocumentName = result };
     }
 }
-

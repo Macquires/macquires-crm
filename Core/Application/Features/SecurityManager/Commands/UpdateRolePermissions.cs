@@ -11,12 +11,11 @@ public class UpdateRolePermissionsResult
     public IReadOnlyList<string>? PermissionKeys { get; init; }
 }
 
-public class UpdateRolePermissionsRequest : IRequest<UpdateRolePermissionsResult>, IRequirePermission
+public class UpdateRolePermissionsRequest : IRequest<UpdateRolePermissionsResult>, IRequireAnyPermission
 {
-    public string PermissionKey => PermissionCatalog.AdminRolesManage;
+    IReadOnlyList<string> IRequireAnyPermission.PermissionKeys => AdminPermissionSets.RolesManageAny;
     public string? RoleName { get; init; }
     public List<string>? PermissionKeys { get; init; }
-    public string? UpdatedById { get; init; }
 }
 
 public class UpdateRolePermissionsValidator : AbstractValidator<UpdateRolePermissionsRequest>
@@ -32,15 +31,21 @@ public class UpdateRolePermissionsHandler : IRequestHandler<UpdateRolePermission
 {
     private readonly IPermissionEvaluator _evaluator;
     private readonly IUserAuditService _audit;
+    private readonly IOperatorContext _operator;
 
-    public UpdateRolePermissionsHandler(IPermissionEvaluator evaluator, IUserAuditService audit)
+    public UpdateRolePermissionsHandler(
+        IPermissionEvaluator evaluator,
+        IUserAuditService audit,
+        IOperatorContext operatorContext)
     {
         _evaluator = evaluator;
         _audit = audit;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateRolePermissionsResult> Handle(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
     {
+        var actorUserId = OperatorActor.RequireUserId(_operator);
         var valid = new HashSet<string>(PermissionCatalog.All.Select(p => p.Key), StringComparer.OrdinalIgnoreCase);
         var keys = (request.PermissionKeys ?? [])
             .Where(k => valid.Contains(k))
@@ -50,13 +55,13 @@ public class UpdateRolePermissionsHandler : IRequestHandler<UpdateRolePermission
         await _evaluator.UpdateRolePermissionsAsync(
             request.RoleName ?? "",
             keys,
-            request.UpdatedById,
+            actorUserId,
             cancellationToken);
 
         await _audit.LogAsync(
             new UserAuditLogRequest
             {
-                ActorUserId = request.UpdatedById ?? "system",
+                ActorUserId = actorUserId,
                 ActionType = UserAuditActionTypes.RolePermissionsUpdated,
                 EntityType = "Role",
                 EntityId = request.RoleName,

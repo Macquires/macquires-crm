@@ -80,7 +80,6 @@ const App = {
 
                 try {
                     state.isSubmitting = true;
-                    const uid = StorageManager.getUserId();
                     const body =
                         state.id === ''
                             ? {
@@ -91,7 +90,6 @@ const App = {
                                   sortOrder: Number(state.sortOrder) || 0,
                                   isActive: state.isActive,
                                   isDefault: state.isDefault && state.isActive,
-                                  createdById: uid,
                               }
                             : {
                                   id: state.id,
@@ -102,7 +100,6 @@ const App = {
                                   sortOrder: Number(state.sortOrder) || 0,
                                   isActive: state.isActive,
                                   isDefault: state.isDefault && state.isActive,
-                                  updatedById: uid,
                               };
 
                     const response = state.id === '' ? await services.create(body) : await services.update(body);

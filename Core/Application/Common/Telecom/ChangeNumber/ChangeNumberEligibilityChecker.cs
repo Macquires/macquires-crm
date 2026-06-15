@@ -2,6 +2,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -149,6 +150,135 @@ public sealed class ChangeNumberEligibilityChecker : IChangeNumberEligibilityChe
             "Allowed");
     }
 
+    public async Task<ChangeNumberEligibilityResult> ValidateForPortInCreateAsync(
+        string subscriberProfileId,
+        string currentMsisdnAssetId,
+        string portInMsisdn,
+        string donorOperatorCode,
+        string numberChangeReason,
+        string? portInReference,
+        string? excludeOperationId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(numberChangeReason))
+        {
+            throw new BusinessRuleViolationException("سبب نقل الرقم مطلوب.");
+        }
+
+        if (string.IsNullOrWhiteSpace(portInReference))
+        {
+            throw new BusinessRuleViolationException("مرجع طلب النقل (MNP) مطلوب.");
+        }
+
+        var donor = (donorOperatorCode ?? string.Empty).Trim().ToUpperInvariant();
+        if (!ChangeNumberWellKnown.IsValidDonorOperator(donor))
+        {
+            return Deny(
+                "VAL-MNP-01: مشغّل المانح غير صالح أو يطابق المشغّل المحلي.",
+                null,
+                null,
+                null,
+                currentMsisdnAssetId.Trim(),
+                null,
+                true,
+                "InvalidDonor");
+        }
+
+        var canonicalPortIn = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(portInMsisdn)
+            ?? throw new BusinessRuleViolationException("رقم النقل غير صالح.");
+
+        var profileId = subscriberProfileId.Trim();
+        var currentId = currentMsisdnAssetId.Trim();
+
+        var profile = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
+            .Include(p => p.Customer)
+            .FirstOrDefaultAsync(p => p.Id == profileId, cancellationToken)
+            ?? throw new BusinessRuleViolationException("ملف المشترك غير موجود.");
+
+        EnsureCustomerEligible(profile.Customer);
+
+        var currentAsset = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            .FirstOrDefaultAsync(m => m.Id == currentId, cancellationToken)
+            ?? throw new BusinessRuleViolationException("رقم الخط الحالي غير موجود.");
+
+        if (currentAsset.PoolStatus != MsisdnPoolStatus.Active)
+        {
+            return Deny(
+                $"VAL-MNP-02: لا يمكن نقل الرقم — حالة الخط الحالي {currentAsset.PoolStatus}.",
+                profile.CustomerId,
+                currentAsset.Msisdn,
+                canonicalPortIn,
+                currentId,
+                null,
+                true,
+                "CurrentNotActive");
+        }
+
+        if (!string.Equals(currentAsset.SubscriberProfileId, profileId, StringComparison.Ordinal))
+        {
+            return Deny(
+                "VAL-MNP-02: الخط الحالي غير مربوط بملف المشترك.",
+                profile.CustomerId,
+                currentAsset.Msisdn,
+                canonicalPortIn,
+                currentId,
+                null,
+                true,
+                "CurrentNotOwned");
+        }
+
+        if (string.Equals(currentAsset.Msisdn, canonicalPortIn, StringComparison.Ordinal))
+        {
+            return Deny(
+                "VAL-MNP-03: رقم النقل مطابق للرقم الحالي.",
+                profile.CustomerId,
+                currentAsset.Msisdn,
+                canonicalPortIn,
+                currentId,
+                null,
+                true,
+                "SameNumber");
+        }
+
+        var portInActive = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo(false)
+            .Include(s => s.MsisdnAsset)
+            .AnyAsync(
+                s => s.MsisdnAsset != null
+                     && s.MsisdnAsset.Msisdn == canonicalPortIn
+                     && s.MsisdnAsset.PoolStatus == MsisdnPoolStatus.Active,
+                cancellationToken);
+        if (portInActive)
+        {
+            return Deny(
+                "VAL-MNP-04: رقم النقل نشط مسبقاً على الشبكة.",
+                profile.CustomerId,
+                currentAsset.Msisdn,
+                canonicalPortIn,
+                currentId,
+                null,
+                true,
+                "PortInAlreadyActive");
+        }
+
+        if (!string.IsNullOrEmpty(currentAsset.Msisdn))
+        {
+            await EnsureNoOutstandingDebtAsync(currentAsset.Msisdn, cancellationToken);
+        }
+
+        await EnsureNoBlockingChangeNumberAsync(currentId, excludeOperationId, cancellationToken);
+
+        return new ChangeNumberEligibilityResult(
+            true,
+            "نقل الرقم (MNP Port-In) مسموح — بانتظار اعتماد الباك أوفيس.",
+            profile.CustomerId,
+            currentAsset.Msisdn,
+            canonicalPortIn,
+            currentId,
+            null,
+            true,
+            "PortInAllowed");
+    }
+
     public async Task<ChangeNumberEligibilityResult> ValidateForConfirmAsync(
         TelecomOperationRequest operation,
         CancellationToken cancellationToken = default)
@@ -158,26 +288,44 @@ public sealed class ChangeNumberEligibilityChecker : IChangeNumberEligibilityChe
             throw new BusinessRuleViolationException("سبب تغيير الرقم غير مسجل في الطلب.");
         }
 
-        var currentId = operation.MsisdnAssetId
+        if (ChangeNumberWellKnown.IsPortInMode(operation.NumberChangeMode))
+        {
+            var currentId = operation.MsisdnAssetId
+                ?? throw new BusinessRuleViolationException("الرقم الحالي غير محدد في الطلب.");
+            var result = await ValidateForPortInCreateAsync(
+                operation.SubscriberProfileId,
+                currentId,
+                operation.PortInMsisdn ?? string.Empty,
+                operation.DonorOperatorCode ?? string.Empty,
+                operation.NumberChangeReason,
+                operation.AgencyReference,
+                operation.Id,
+                cancellationToken);
+            return result.Allowed
+                ? result
+                : result;
+        }
+
+        var currentIdInternal = operation.MsisdnAssetId
             ?? throw new BusinessRuleViolationException("الرقم الحالي غير محدد في الطلب.");
         var targetId = operation.TargetMsisdnAssetId
             ?? throw new BusinessRuleViolationException("الرقم المستهدف غير محدد في الطلب.");
 
-        var result = await ValidateForCreateAsync(
+        var resultInternal = await ValidateForCreateAsync(
             operation.SubscriberProfileId,
-            currentId,
+            currentIdInternal,
             targetId,
             operation.NumberChangeReason,
             operation.PremiumFeeAmount,
             operation.Id,
             cancellationToken);
 
-        if (!result.Allowed)
+        if (!resultInternal.Allowed)
         {
-            return result;
+            return resultInternal;
         }
 
-        if (result.RequiresBackOfficeApproval
+        if (resultInternal.RequiresBackOfficeApproval
             && !ChangeNumberWellKnown.IsPremiumFeeSatisfied(
                 await LoadTargetCategoryAsync(targetId, cancellationToken),
                 operation.PremiumFeeAmount,
@@ -185,16 +333,16 @@ public sealed class ChangeNumberEligibilityChecker : IChangeNumberEligibilityChe
         {
             return Deny(
                 "VAL-05-02: الرقم المميز يتطلب اعتماد مالي أو إيصال دفع قبل التفعيل.",
-                result.CustomerId,
-                result.CurrentMsisdn,
-                result.TargetMsisdn,
-                result.PriorMsisdnAssetId,
-                result.TargetMsisdnAssetId,
+                resultInternal.CustomerId,
+                resultInternal.CurrentMsisdn,
+                resultInternal.TargetMsisdn,
+                resultInternal.PriorMsisdnAssetId,
+                resultInternal.TargetMsisdnAssetId,
                 true,
                 "PremiumNotCleared");
         }
 
-        return result;
+        return resultInternal;
     }
 
     private async Task<MsisdnCategory> LoadTargetCategoryAsync(string targetId, CancellationToken cancellationToken)

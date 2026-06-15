@@ -1,6 +1,8 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using Domain.Enums;
+using Infrastructure.Distributed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,31 +35,41 @@ public class MsisdnReservationCleanupService : BackgroundService
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var inventoryRules = scope.ServiceProvider.GetRequiredService<ITelecomInventoryRulesProvider>();
-                var reservationDuration = await inventoryRules.GetMsisdnReservationDurationAsync(stoppingToken);
-                var pollMinutes = Math.Clamp(reservationDuration.TotalMinutes / 3, 1, 15);
-                pollInterval = TimeSpan.FromMinutes(pollMinutes);
-
-                var dbContext = scope.ServiceProvider.GetRequiredService<DataAccessManager.EFCore.Contexts.DataContext>();
-
-                var utcNow = DateTime.UtcNow;
-
-                var expiredReservations = await dbContext.MsisdnAsset
-                    .Where(m => !m.IsDeleted
-                        && m.PoolStatus == MsisdnPoolStatus.Reserved
-                        && m.ReservedUntilUtc != null
-                        && m.ReservedUntilUtc < utcNow)
-                    .ToListAsync(stoppingToken);
-
-                if (expiredReservations.Count > 0)
+                using (scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>().Enter())
                 {
-                    foreach (var asset in expiredReservations)
-                    {
-                        asset.ReleaseReservationIfExpired(utcNow);
-                        _logger.LogInformation("Released expired MSISDN reservation for {Msisdn}", asset.Msisdn);
-                    }
+                    await scope.TryRunUnderDistributedLockAsync(
+                        "hosted-msisdn-reservation-cleanup",
+                        TimeSpan.FromMinutes(4),
+                        async ct =>
+                        {
+                    var inventoryRules = scope.ServiceProvider.GetRequiredService<ITelecomInventoryRulesProvider>();
+                    var reservationDuration = await inventoryRules.GetMsisdnReservationDurationAsync(stoppingToken);
+                    var pollMinutes = Math.Clamp(reservationDuration.TotalMinutes / 3, 1, 15);
+                    pollInterval = TimeSpan.FromMinutes(pollMinutes);
 
-                    await dbContext.SaveChangesAsync(stoppingToken);
+                    var dbContext = scope.ServiceProvider.GetRequiredService<DataAccessManager.EFCore.Contexts.DataContext>();
+
+                    var utcNow = DateTime.UtcNow;
+
+                    var expiredReservations = await dbContext.MsisdnAsset
+                        .Where(m => !m.IsDeleted
+                            && m.PoolStatus == MsisdnPoolStatus.Reserved
+                            && m.ReservedUntilUtc != null
+                            && m.ReservedUntilUtc < utcNow)
+                        .ToListAsync(stoppingToken);
+
+                    if (expiredReservations.Count > 0)
+                    {
+                        foreach (var asset in expiredReservations)
+                        {
+                            asset.ReleaseReservationIfExpired(utcNow);
+                            _logger.LogInformation("Released expired MSISDN reservation for {Msisdn}", asset.Msisdn);
+                        }
+
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                    }
+                        },
+                        stoppingToken);
                 }
             }
             catch (Exception ex)

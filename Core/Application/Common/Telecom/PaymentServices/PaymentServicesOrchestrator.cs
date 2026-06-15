@@ -353,7 +353,8 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
                 payment.Number,
                 payment.Msisdn!,
                 payment.Amount,
-                payment.CorrelationId),
+                payment.CorrelationId,
+                payment.BranchId),
             cancellationToken);
 
         if (!rechargeResult.Success)
@@ -518,11 +519,28 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
 
         await _eligibility.EnsureRechargeVelocityAsync(msisdn, createdById, cancellationToken);
 
+        var branchId = OperatorActor.ResolveBranchId(_operatorContext);
+        if (string.IsNullOrEmpty(branchId))
+        {
+            branchId = await _query.SubscriberProfile.AsNoTracking()
+                .Where(p => p.Id == subscription.SubscriberProfileId)
+                .Select(p => p.BranchId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (string.IsNullOrEmpty(branchId))
+        {
+            branchId = await _query.Customer.AsNoTracking()
+                .Where(c => c.Id == customerId)
+                .Select(c => c.BranchId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         var payment = new TelecomPaymentTransaction
 
         {
 
-            Number = _numberSequence.GenerateNumber(nameof(TelecomPaymentTransaction), "", "PAY"),
+            Number = await _numberSequence.GenerateNumberAsync(nameof(TelecomPaymentTransaction), "", "PAY", cancellationToken: cancellationToken),
 
             CorrelationId = Guid.CreateVersion7().ToString(),
 
@@ -545,6 +563,8 @@ public sealed partial class PaymentServicesOrchestrator : IPaymentServicesOrches
             Msisdn = msisdn,
 
             VoucherCode = voucherCode,
+
+            BranchId = branchId,
 
             CreatedById = createdById,
 

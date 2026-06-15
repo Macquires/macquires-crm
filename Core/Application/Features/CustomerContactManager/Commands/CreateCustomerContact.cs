@@ -1,4 +1,5 @@
 ﻿using Application.Common.Repositories;
+using Application.Common.Security;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using FluentValidation;
@@ -11,7 +12,7 @@ public class CreateCustomerContactResult
     public CustomerContact? Data { get; set; }
 }
 
-public class CreateCustomerContactRequest : IRequest<CreateCustomerContactResult>
+public class CreateCustomerContactRequest : IRequest<CreateCustomerContactResult>, IRequireAnyPermission
 {
     public string? Name { get; init; }
     public string? JobTitle { get; set; }
@@ -19,7 +20,7 @@ public class CreateCustomerContactRequest : IRequest<CreateCustomerContactResult
     public string? EmailAddress { get; set; }
     public string? Description { get; set; }
     public string? CustomerId { get; set; }
-    public string? CreatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => CustomerPermissionSets.ManageAny;
 }
 
 public class CreateCustomerContactValidator : AbstractValidator<CreateCustomerContactRequest>
@@ -38,30 +39,33 @@ public class CreateCustomerContactHandler : IRequestHandler<CreateCustomerContac
     private readonly ICommandRepository<CustomerContact> _repository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly NumberSequenceService _numberSequenceService;
+    private readonly IOperatorContext _operator;
 
     public CreateCustomerContactHandler(
         ICommandRepository<CustomerContact> repository,
         IUnitOfWork unitOfWork,
-        NumberSequenceService numberSequenceService
-        )
+        NumberSequenceService numberSequenceService,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _numberSequenceService = numberSequenceService;
+        _operator = operatorContext;
     }
 
     public async Task<CreateCustomerContactResult> Handle(CreateCustomerContactRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = new CustomerContact();
-        entity.CreatedById = request.CreatedById;
-
-        entity.Name = request.Name;
-        entity.Number = _numberSequenceService.GenerateNumber(nameof(CustomerContact), "", "CC");
-        entity.JobTitle = request.JobTitle;
-        entity.PhoneNumber = request.PhoneNumber;
-        entity.EmailAddress = request.EmailAddress;
-        entity.Description = request.Description;
-        entity.CustomerId = request.CustomerId;
+        var entity = new CustomerContact
+        {
+            CreatedById = OperatorActor.RequireUserId(_operator),
+            Name = request.Name,
+            Number = await _numberSequenceService.GenerateNumberAsync(nameof(CustomerContact), "", "CC", cancellationToken: cancellationToken),
+            JobTitle = request.JobTitle,
+            PhoneNumber = request.PhoneNumber,
+            EmailAddress = request.EmailAddress,
+            Description = request.Description,
+            CustomerId = request.CustomerId,
+        };
 
         await _repository.CreateAsync(entity, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);

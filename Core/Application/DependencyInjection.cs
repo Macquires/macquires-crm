@@ -18,6 +18,12 @@ using Application.Common.Telecom.Refund;
 using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.BadDebt;
 using Application.Common.Telecom.Billing;
+using Application.Common.Telecom.Customer360;
+using Application.Common.Telecom.UniversalSearch;
+using Application.Common.Telecom.Analytics;
+using Application.Common.Telecom.Activation;
+using Application.Common.Telecom.Confirm;
+using Application.Common.Telecom.HlrFailure;
 using Application.Common.Telecom.Inventory;
 using Domain.Services;
 using FluentValidation;
@@ -42,11 +48,17 @@ public static class DependencyInjection
         services.AddScoped<ISubscriptionBindingExecutor, SubscriptionBindingExecutor>();
         services.AddScoped<ITelecomOperationOrchestrator, TelecomOperationOrchestrator>();
         services.AddScoped<ITelecomActivationWorkflow, TelecomActivationWorkflow>();
+        services.AddScoped<ITelecomActivationScheduler, TelecomActivationScheduler>();
+        services.AddScoped<ITelecomActivationProvisioningExecutor, TelecomActivationProvisioningExecutor>();
+        services.AddScoped<ITelecomActivationMsisdnReservationService, TelecomActivationMsisdnReservationService>();
         services.AddScoped<ITechnicalTicketQueueIngestionService, TechnicalTicketQueueIngestionService>();
         services.AddScoped<ISubscriptionBindingCompensator, SubscriptionBindingCompensator>();
         services.AddScoped<ITelecomHlrFailureCompensator, TelecomHlrFailureCompensator>();
+        services.AddScoped<IHlrFailureLocalRevertService, HlrFailureLocalRevertService>();
         services.AddScoped<IBillingRoutingOrchestrator, BillingRoutingOrchestrator>();
         services.AddScoped<ISellingLineEligibilityChecker, SellingLineEligibilityChecker>();
+        services.AddScoped<IConfirmTelecomOperationPermissionGate, ConfirmTelecomOperationPermissionGate>();
+        services.AddScoped<IConfirmTelecomOperationSellingLineOverrideApplier, ConfirmTelecomOperationSellingLineOverrideApplier>();
         services.AddScoped<IMsisdnPoolSimKitProvisioner, MsisdnPoolSimKitProvisioner>();
         services.AddScoped<IActivationChannelLabelProvider, ActivationChannelLabelProvider>();
         services.AddScoped<IChangeGsmEligibilityChecker, ChangeGsmEligibilityChecker>();
@@ -62,6 +74,7 @@ public static class DependencyInjection
         services.AddScoped<IOfferSubscriptionEligibilityChecker, OfferSubscriptionEligibilityChecker>();
         services.AddScoped<IMigrationCompletionService, MigrationCompletionService>();
         services.AddScoped<IVasCompletionService, VasCompletionService>();
+        services.AddScoped<IVasOperationApplicator, VasOperationApplicator>();
         services.AddScoped<ISuspensionEligibilityChecker, SuspensionEligibilityChecker>();
         services.AddScoped<ISuspensionCompletionService, SuspensionCompletionService>();
         services.AddScoped<IReconnectEligibilityChecker, ReconnectEligibilityChecker>();
@@ -83,6 +96,10 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberAccessAuditService, SubscriberAccessAuditService>();
         services.AddScoped<ITelecomInventoryRulesProvider, TelecomInventoryRulesProvider>();
         services.AddScoped<IMsisdnRecyclingService, MsisdnRecyclingService>();
+        services.AddScoped<ICustomer360KindDetailsResolver, Customer360KindDetailsResolver>();
+        services.AddScoped<ICustomer360SubscriptionAssembler, Customer360SubscriptionAssembler>();
+        services.AddScoped<ICustomer360OperationsLoader, Customer360OperationsLoader>();
+        services.AddScoped<ITelecomUniversalSearchDataService, TelecomUniversalSearchDataService>();
 
         //>>> MediatR
         services.AddMediatR(x =>
@@ -104,12 +121,18 @@ public static class DependencyInjection
         {
             typeof(IRequirePermission),
             typeof(IRequireAnyPermission),
+            typeof(IRequireAuthenticatedOperator),
+            typeof(IOperationalKpiScopeRequest),
+            typeof(IOperationalKpiRequest),
         };
 
         var assembly = Assembly.GetExecutingAssembly();
         var featureTypes = assembly.GetTypes()
             .Where(type => type is { IsClass: true, IsAbstract: false })
-            .Where(type => type.Namespace != null && type.Namespace.StartsWith("Application.Features", StringComparison.Ordinal));
+            .Where(type => type.Namespace != null && type.Namespace.StartsWith("Application.Features", StringComparison.Ordinal))
+            .Where(type => !ImplementsOpenGeneric(type, typeof(IRequest<>)))
+            .Where(type => !ImplementsOpenGeneric(type, typeof(IRequestHandler<,>)))
+            .Where(type => !ImplementsOpenGeneric(type, typeof(INotificationHandler<>)));
 
         foreach (var type in featureTypes)
         {
@@ -128,5 +151,8 @@ public static class DependencyInjection
 
         return services;
     }
+
+    private static bool ImplementsOpenGeneric(Type type, Type openGeneric) =>
+        type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == openGeneric);
 }
 

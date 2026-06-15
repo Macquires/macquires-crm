@@ -39,13 +39,13 @@ public class UserActivityMiddleware
 
         cache.Set(cacheKey, true, Throttle);
 
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, context.RequestAborted);
         if (user == null)
         {
             return;
         }
 
         user.LastActivityAtUtc = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
     }
 }

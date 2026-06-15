@@ -121,23 +121,16 @@ public sealed class PaymentGatewayMockIntegration : IPaymentGatewayIntegration
         return Task.FromResult(new WalletRefundResult(true, "تم إيداع المحفظة (Mock).", txnId));
     }
 
-    public Task<VoucherValidationResult> RedeemVoucherAsync(string voucherCode, CancellationToken cancellationToken = default)
+    public async Task<VoucherValidationResult> RedeemVoucherAsync(string voucherCode, CancellationToken cancellationToken = default)
     {
-        var validation = ValidateVoucherAsync(new VoucherValidationRequest(voucherCode), cancellationToken);
-        return validation.ContinueWith(
-            t =>
-            {
-                if (!t.Result.Valid)
-                {
-                    return t.Result;
-                }
+        var validation = await ValidateVoucherAsync(new VoucherValidationRequest(voucherCode), cancellationToken);
+        if (!validation.Valid)
+        {
+            return validation;
+        }
 
-                var code = voucherCode.Trim();
-                UsedVouchers.Add(code);
-                return new VoucherValidationResult(true, "تم استهلاك القسيمة.", t.Result.FaceValue);
-            },
-            cancellationToken,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        var code = voucherCode.Trim();
+        UsedVouchers.Add(code);
+        return new VoucherValidationResult(true, "تم استهلاك القسيمة.", validation.FaceValue);
     }
 }

@@ -16,10 +16,10 @@ public class ExportInventoryBulkImportErrorsResult
     public string ContentType { get; init; } = "text/csv";
 }
 
-public class ExportInventoryBulkImportErrorsRequest : IRequest<ExportInventoryBulkImportErrorsResult>
+public class ExportInventoryBulkImportErrorsRequest : IRequest<ExportInventoryBulkImportErrorsResult>, IRequireAnyPermission
 {
     public string JobId { get; init; } = "";
-    public string? ActorUserId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => BulkImportPermissionSets.MonitorAny;
 }
 
 public class ExportInventoryBulkImportErrorsValidator : AbstractValidator<ExportInventoryBulkImportErrorsRequest>
@@ -32,11 +32,16 @@ public class ExportInventoryBulkImportErrorsHandler
 {
     private readonly IQueryContext _query;
     private readonly IUserScopeService _userScope;
+    private readonly IOperatorContext _operator;
 
-    public ExportInventoryBulkImportErrorsHandler(IQueryContext query, IUserScopeService userScope)
+    public ExportInventoryBulkImportErrorsHandler(
+        IQueryContext query,
+        IUserScopeService userScope,
+        IOperatorContext operatorContext)
     {
         _query = query;
         _userScope = userScope;
+        _operator = operatorContext;
     }
 
     public async Task<ExportInventoryBulkImportErrorsResult> Handle(
@@ -50,10 +55,10 @@ public class ExportInventoryBulkImportErrorsHandler
             return new ExportInventoryBulkImportErrorsResult();
         }
 
-        if (!string.IsNullOrEmpty(request.ActorUserId)
-            && !string.IsNullOrEmpty(job.CreatedById)
-            && !await _userScope.CanAccessUserAsync(request.ActorUserId, job.CreatedById, cancellationToken)
-            && !await _userScope.IsUnrestrictedAdminAsync(request.ActorUserId, cancellationToken))
+        var actorUserId = OperatorActor.RequireUserId(_operator);
+        if (!string.IsNullOrEmpty(job.CreatedById)
+            && !await _userScope.CanAccessUserAsync(actorUserId, job.CreatedById, cancellationToken)
+            && !await _userScope.IsUnrestrictedAdminAsync(actorUserId, cancellationToken))
         {
             return new ExportInventoryBulkImportErrorsResult();
         }

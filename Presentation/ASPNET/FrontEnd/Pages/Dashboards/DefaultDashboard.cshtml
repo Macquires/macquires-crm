@@ -13,6 +13,11 @@
             <section class="dash-unified-cards" data-telecom-i18n-title="defaultDashboard.kpisAria" aria-label="Operational KPIs">
                 <div id="syrBentoCockpit" class="syr-bento-grid syr-bento-single-row" data-persona=""></div>
             </section>
+            <section id="executive-exceptions" class="dash-unified-exceptions d-none mt-4" data-telecom-i18n-title="defaultDashboard.exceptionsAria" aria-label="Executive exceptions">
+                <div id="executiveExceptionsApp" v-cloak class="strategic-exec-root">
+                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_ExecutiveExceptionsEmbed.cshtml")
+                </div>
+            </section>
             <section id="mis-reports" class="dash-unified-mis d-none mt-4" data-telecom-i18n-title="defaultDashboard.misAria" aria-label="MIS reports">
                 <div id="misReportsApp" v-cloak class="strategic-exec-root">
                     @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml")
@@ -22,6 +27,12 @@
                 <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root">
                     @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
                 </div>
+            </section>
+            <section id="branch-geo-heatmap" class="dash-unified-geo d-none mt-4" aria-label="Branch geo heatmap">
+                <div id="branchGeoHeatmapApp" v-cloak class="strategic-exec-root"></div>
+            </section>
+            <section id="supervisor-interventions" class="dash-unified-supervisor d-none mt-4" aria-label="Supervisor interventions">
+                <div id="supervisorInterventionApp" v-cloak class="strategic-exec-root"></div>
             </section>
         </div>
     </div>
@@ -49,7 +60,8 @@
         }
         .syriatel-dash-slim .syr-bento-single-row .syr-bento-card .syr-bento-value { font-size: 1.35rem; }
         .dash-unified-strategic,
-        .dash-unified-mis { width: 100%; }
+        .dash-unified-mis,
+        .dash-unified-exceptions { width: 100%; }
         .mis-workload-badge {
             background: var(--sys-bg) !important;
             color: var(--sys-text-main) !important;
@@ -167,8 +179,12 @@
 }
 
 @section scripts {
+    <script src="~/lib/indotalent/executive-exceptions-panel.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/syr-bento-cockpit.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/mis-reports-panel.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/strategic-analytics-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/supervisor-intervention-panel.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/branch-geo-heatmap-panel.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
     <script src="~/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml.js" asp-append-version="true"></script>
 }

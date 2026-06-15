@@ -525,9 +525,6 @@ const ProductCatalogApp = {
                 if (state.isEditMode) {
                     url = '/ProductOffering/UpdateProductOffering';
                     payload.id = state.upsertForm.id;
-                    payload.updatedById = StorageManager.getUserId();
-                } else {
-                    payload.createdById = StorageManager.getUserId();
                 }
 
                 const response = await AxiosManager.post(url, payload);
@@ -573,7 +570,6 @@ const ProductCatalogApp = {
             try {
                 const response = await AxiosManager.post('/ProductOffering/DeleteProductOffering', {
                     id: id,
-                    deletedById: StorageManager.getUserId()
                 });
                 if (response?.data?.code === 200) {
                     Swal.fire({

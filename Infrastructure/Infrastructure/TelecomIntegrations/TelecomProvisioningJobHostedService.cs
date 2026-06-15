@@ -1,4 +1,7 @@
+using Application.Common.Security;
 using Application.Common.Telecom;
+using Infrastructure.Distributed;
+using Infrastructure.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -43,17 +46,28 @@ public sealed class TelecomProvisioningJobHostedService : BackgroundService
     private async Task FlushPendingProvisioningAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
-        var sync = scope.ServiceProvider.GetRequiredService<IPendingExternalSyncService>();
-        var result = await sync.FlushAsync("telecom-provisioning-job", cancellationToken);
-
-        if (result.Processed > 0)
+        var gate = scope.ServiceProvider.GetRequiredService<ISystemExecutionGate>();
+        using (gate.Enter())
         {
-            _logger.LogInformation(
-                "Telecom provisioning job processed {Processed}: ok={Succeeded}, pending={StillPending}, failed={Failed}",
-                result.Processed,
-                result.Succeeded,
-                result.StillPending,
-                result.Failed);
+            await scope.TryRunUnderDistributedLockAsync(
+                "hosted-telecom-provisioning-flush",
+                TimeSpan.FromMinutes(2),
+                async ct =>
+                {
+            var sync = scope.ServiceProvider.GetRequiredService<IPendingExternalSyncService>();
+            var result = await sync.FlushAsync(SystemOperatorContext.SystemUserId, ct);
+
+            if (result.Processed > 0)
+            {
+                _logger.LogInformation(
+                    "Telecom provisioning job processed {Processed}: ok={Succeeded}, pending={StillPending}, failed={Failed}",
+                    result.Processed,
+                    result.Succeeded,
+                    result.StillPending,
+                    result.Failed);
+            }
+                },
+                cancellationToken);
         }
     }
 }

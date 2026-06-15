@@ -7,6 +7,8 @@ public interface IOperationConfirmStrategy
 {
     TelecomOperationKind Kind { get; }
 
+    bool RequiresNetworkProvision { get; }
+
     Task<OperationConfirmValidationResult> ValidateForConfirmAsync(
         TelecomOperationRequest entity,
         string? actorUserId,

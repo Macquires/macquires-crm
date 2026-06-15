@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Integrations;
+using Application.Common.Security;
 using Application.Common.Telecom;
 using FluentValidation;
 using MediatR;
@@ -30,9 +31,11 @@ public class QueryLiveNetworkStatusByTicketResult
     public LiveNetworkStatusDto? Data { get; init; }
 }
 
-public class QueryLiveNetworkStatusByTicketRequest : IRequest<QueryLiveNetworkStatusByTicketResult>
+public class QueryLiveNetworkStatusByTicketRequest : IRequest<QueryLiveNetworkStatusByTicketResult>, IRequireAnyPermission
 {
     public string TicketId { get; init; } = "";
+
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.TechnicalViewAny;
 }
 
 public class QueryLiveNetworkStatusByTicketValidator : AbstractValidator<QueryLiveNetworkStatusByTicketRequest>

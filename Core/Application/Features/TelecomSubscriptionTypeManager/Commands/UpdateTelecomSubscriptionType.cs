@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -13,8 +14,9 @@ public class UpdateTelecomSubscriptionTypeResult
     public TelecomSubscriptionTypeLookup? Data { get; set; }
 }
 
-public class UpdateTelecomSubscriptionTypeRequest : IRequest<UpdateTelecomSubscriptionTypeResult>
+public class UpdateTelecomSubscriptionTypeRequest : IRequest<UpdateTelecomSubscriptionTypeResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.LineTypeManageAny;
     public string? Id { get; init; }
     public string? Code { get; init; }
     public string? NameAr { get; init; }
@@ -23,7 +25,6 @@ public class UpdateTelecomSubscriptionTypeRequest : IRequest<UpdateTelecomSubscr
     public int SortOrder { get; init; }
     public bool IsActive { get; init; } = true;
     public bool IsDefault { get; init; }
-    public string? UpdatedById { get; init; }
 }
 
 public class UpdateTelecomSubscriptionTypeValidator : AbstractValidator<UpdateTelecomSubscriptionTypeRequest>
@@ -43,15 +44,18 @@ public class UpdateTelecomSubscriptionTypeHandler
     private readonly ICommandRepository<TelecomSubscriptionTypeLookup> _repository;
     private readonly IQueryContext _query;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public UpdateTelecomSubscriptionTypeHandler(
         ICommandRepository<TelecomSubscriptionTypeLookup> repository,
         IQueryContext query,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _query = query;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<UpdateTelecomSubscriptionTypeResult> Handle(
@@ -91,7 +95,7 @@ public class UpdateTelecomSubscriptionTypeHandler
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsDefault, false), cancellationToken);
         }
 
-        entity.UpdatedById = request.UpdatedById;
+        entity.UpdatedById = OperatorActor.RequireUserId(_operator);
         entity.Code = code;
         entity.NameAr = (request.NameAr ?? string.Empty).Trim();
         entity.NameEn = (request.NameEn ?? string.Empty).Trim();

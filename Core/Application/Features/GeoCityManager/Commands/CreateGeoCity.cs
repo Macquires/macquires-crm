@@ -1,4 +1,5 @@
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -10,13 +11,13 @@ public class CreateGeoCityResult
     public GeoCity? Data { get; set; }
 }
 
-public class CreateGeoCityRequest : IRequest<CreateGeoCityResult>
+public class CreateGeoCityRequest : IRequest<CreateGeoCityResult>, IRequireAnyPermission
 {
     public string? Name { get; init; }
     public string? Governorate { get; init; }
     public bool IsActive { get; init; } = true;
     public int SortOrder { get; init; }
-    public string? CreatedById { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.ManageAny;
 }
 
 public class CreateGeoCityValidator : AbstractValidator<CreateGeoCityRequest>
@@ -32,20 +33,23 @@ public class CreateGeoCityHandler : IRequestHandler<CreateGeoCityRequest, Create
 {
     private readonly ICommandRepository<GeoCity> _repository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public CreateGeoCityHandler(
         ICommandRepository<GeoCity> repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<CreateGeoCityResult> Handle(CreateGeoCityRequest request, CancellationToken cancellationToken = default)
     {
         var entity = new GeoCity
         {
-            CreatedById = request.CreatedById,
+            CreatedById = OperatorActor.RequireUserId(_operator),
             Name = request.Name,
             Governorate = request.Governorate,
             IsActive = request.IsActive,

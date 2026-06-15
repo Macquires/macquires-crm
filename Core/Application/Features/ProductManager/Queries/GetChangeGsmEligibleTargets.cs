@@ -1,5 +1,6 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Security;
 using Application.Common.Telecom.ChangeGsm;
 using Domain.Entities;
 using MediatR;
@@ -19,14 +20,16 @@ public class GetChangeGsmEligibleTargetsResult
 {
     public List<GetChangeGsmEligibleTargetDto> Data { get; init; } = new();
     public string? CurrentSubscriptionTypeId { get; init; }
+    public string? CurrentSubscriptionTypeCode { get; init; }
     public string? CurrentSubscriptionTypeLabel { get; init; }
     public string? CurrentMsisdn { get; init; }
 }
 
-public class GetChangeGsmEligibleTargetsRequest : IRequest<GetChangeGsmEligibleTargetsResult>
+public class GetChangeGsmEligibleTargetsRequest : IRequest<GetChangeGsmEligibleTargetsResult>, IRequireAnyPermission
 {
     public string SubscriberProfileId { get; init; } = "";
     public string? MsisdnAssetId { get; init; }
+    public IReadOnlyList<string> PermissionKeys => ProductCatalogPermissionSets.ReadAny;
 }
 
 public class GetChangeGsmEligibleTargetsHandler
@@ -93,6 +96,7 @@ public class GetChangeGsmEligibleTargetsHandler
         {
             Data = lookups,
             CurrentSubscriptionTypeId = sourceId,
+            CurrentSubscriptionTypeCode = lookup?.Code,
             CurrentSubscriptionTypeLabel = label,
             CurrentMsisdn = chosen.MsisdnAsset?.Msisdn,
         };

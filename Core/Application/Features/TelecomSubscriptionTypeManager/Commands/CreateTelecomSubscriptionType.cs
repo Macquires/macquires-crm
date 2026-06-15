@@ -1,6 +1,7 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Repositories;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -13,8 +14,9 @@ public class CreateTelecomSubscriptionTypeResult
     public TelecomSubscriptionTypeLookup? Data { get; set; }
 }
 
-public class CreateTelecomSubscriptionTypeRequest : IRequest<CreateTelecomSubscriptionTypeResult>
+public class CreateTelecomSubscriptionTypeRequest : IRequest<CreateTelecomSubscriptionTypeResult>, IRequireAnyPermission
 {
+    public IReadOnlyList<string> PermissionKeys => ReferenceDataPermissionSets.LineTypeManageAny;
     public string? Code { get; init; }
     public string? NameAr { get; init; }
     public string? NameEn { get; init; }
@@ -22,7 +24,6 @@ public class CreateTelecomSubscriptionTypeRequest : IRequest<CreateTelecomSubscr
     public int SortOrder { get; init; }
     public bool IsActive { get; init; } = true;
     public bool IsDefault { get; init; }
-    public string? CreatedById { get; init; }
 }
 
 public class CreateTelecomSubscriptionTypeValidator : AbstractValidator<CreateTelecomSubscriptionTypeRequest>
@@ -41,15 +42,18 @@ public class CreateTelecomSubscriptionTypeHandler
     private readonly ICommandRepository<TelecomSubscriptionTypeLookup> _repository;
     private readonly IQueryContext _query;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IOperatorContext _operator;
 
     public CreateTelecomSubscriptionTypeHandler(
         ICommandRepository<TelecomSubscriptionTypeLookup> repository,
         IQueryContext query,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IOperatorContext operatorContext)
     {
         _repository = repository;
         _query = query;
         _unitOfWork = unitOfWork;
+        _operator = operatorContext;
     }
 
     public async Task<CreateTelecomSubscriptionTypeResult> Handle(
@@ -68,7 +72,7 @@ public class CreateTelecomSubscriptionTypeHandler
 
         var entity = new TelecomSubscriptionTypeLookup
         {
-            CreatedById = request.CreatedById,
+            CreatedById = OperatorActor.RequireUserId(_operator),
             Code = code,
             NameAr = (request.NameAr ?? string.Empty).Trim(),
             NameEn = (request.NameEn ?? string.Empty).Trim(),

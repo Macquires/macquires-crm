@@ -1,4 +1,5 @@
 using Application.Common.CQS.Queries;
+using Application.Common.Telecom.Analytics;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +21,12 @@ public class GetTerminationKpisResult
     public List<TerminationReasonCountDto> TopReasons { get; init; } = new();
 }
 
-public class GetTerminationKpisRequest : IRequest<GetTerminationKpisResult>
+public class GetTerminationKpisRequest : IRequest<GetTerminationKpisResult>, IOperationalKpiRequest
 {
     public DateTime? FromUtc { get; init; }
     public DateTime? ToUtc { get; init; }
+    public string? RegionId { get; init; }
+    public string? BranchId { get; init; }
 }
 
 public class GetTerminationKpisHandler : IRequestHandler<GetTerminationKpisRequest, GetTerminationKpisResult>
@@ -31,17 +34,32 @@ public class GetTerminationKpisHandler : IRequestHandler<GetTerminationKpisReque
     private static readonly TimeSpan SlaTarget = TimeSpan.FromMinutes(30);
 
     private readonly IQueryContext _context;
+    private readonly IOperationalAnalyticsScopeService _scopeService;
 
-    public GetTerminationKpisHandler(IQueryContext context) => _context = context;
+    public GetTerminationKpisHandler(
+        IQueryContext context,
+        IOperationalAnalyticsScopeService scopeService)
+    {
+        _context = context;
+        _scopeService = scopeService;
+    }
 
     public async Task<GetTerminationKpisResult> Handle(
         GetTerminationKpisRequest request,
         CancellationToken cancellationToken)
     {
+        var scope = await _scopeService.ResolveScopeAsync(
+            request.RegionId, request.BranchId, cancellationToken);
+        if (scope.EffectiveBranchIds.Count == 0)
+        {
+            return new GetTerminationKpisResult();
+        }
+
         var from = request.FromUtc ?? DateTime.UtcNow.Date;
         var to = request.ToUtc ?? DateTime.UtcNow;
 
         var ops = await _context.TelecomOperationRequest.AsNoTracking()
+            .InBranchScope(scope.EffectiveBranchIds)
             .Where(o => !o.IsDeleted
                         && o.Kind == TelecomOperationKind.Termination
                         && o.CreatedAtUtc >= from
