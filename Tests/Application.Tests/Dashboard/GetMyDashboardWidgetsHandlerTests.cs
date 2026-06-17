@@ -105,6 +105,7 @@ public class GetMyDashboardWidgetsHandlerTests
     {
         public string? UserId => null;
         public IReadOnlyList<string> Roles => [];
+        public IReadOnlyList<string> Permissions => [];
         public TelecomMenuPersona? EffectivePersona => null;
         public bool IsAuthenticated => false;
         public string? BranchId => null;

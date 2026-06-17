@@ -14,18 +14,24 @@ namespace Infrastructure.DataAccessManager.EFCore.Contexts;
 
 public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
 {
-    private readonly IOperatorContext _operatorContext;
+    private readonly bool _bypassBranchFilter;
+    private readonly string? _branchIdFilter;
 
     public DataContext(
+        DbContextOptions<DataContext> options,
+        IOperatorContext operatorContext) : base(options)
+    {
+        _bypassBranchFilter = ResolveBypassBranchFilter(operatorContext);
+        _branchIdFilter = operatorContext.BranchId;
+    }
+
+    protected DataContext(
         DbContextOptions options,
         IOperatorContext operatorContext) : base(options)
     {
-        _operatorContext = operatorContext;
+        _bypassBranchFilter = ResolveBypassBranchFilter(operatorContext);
+        _branchIdFilter = operatorContext.BranchId;
     }
-
-    private bool BypassBranchFilter => ResolveBypassBranchFilter(_operatorContext);
-
-    private string? CurrentBranchId => _operatorContext.BranchId;
 
     private static bool ResolveBypassBranchFilter(IOperatorContext operatorContext)
     {
@@ -34,10 +40,7 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
             return false;
         }
 
-        return operatorContext.Roles.Any(r =>
-            string.Equals(r, TelecomEnterpriseRoleMatrix.RoleAdmin, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(r, TelecomEnterpriseRoleMatrix.RoleManagement, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(r, TelecomEnterpriseRoleMatrix.RoleOperationsManager, StringComparison.OrdinalIgnoreCase));
+        return PermissionScopeRules.CanBypassBranchFilter(operatorContext.Permissions);
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -178,27 +181,16 @@ public class DataContext : IdentityDbContext<ApplicationUser>, IEntityDbSet
         if (typeof(Domain.Common.IHasBranchId).IsAssignableFrom(typeof(T)))
         {
             modelBuilder.Entity<T>().HasQueryFilter(e =>
-                !e.IsDeleted && MatchesBranchFilter(((Domain.Common.IHasBranchId)e).BranchId));
+                !e.IsDeleted && (
+                    _bypassBranchFilter
+                    || _branchIdFilter == null
+                    || EF.Property<string>(e, nameof(Domain.Common.IHasBranchId.BranchId)) == null
+                    || EF.Property<string>(e, nameof(Domain.Common.IHasBranchId.BranchId)) == _branchIdFilter));
         }
         else
         {
             modelBuilder.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
         }
-    }
-
-    private bool MatchesBranchFilter(string? entityBranchId)
-    {
-        if (BypassBranchFilter)
-        {
-            return true;
-        }
-
-        if (string.IsNullOrEmpty(CurrentBranchId))
-        {
-            return false;
-        }
-
-        return string.Equals(entityBranchId, CurrentBranchId, StringComparison.Ordinal);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

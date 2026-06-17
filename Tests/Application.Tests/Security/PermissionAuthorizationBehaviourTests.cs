@@ -66,7 +66,7 @@ public sealed class PermissionAuthorizationBehaviourTests
     }
 
     [Fact]
-    public async Task KpiRequest_RequiresTelecomReportsMis()
+    public async Task KpiRequest_Allows_TelecomReportsMis()
     {
         var evaluator = new StubPermissionEvaluator
         {
@@ -83,6 +83,26 @@ public sealed class PermissionAuthorizationBehaviourTests
 
         Assert.NotNull(result);
         Assert.Contains(PermissionCatalog.TelecomReportsMis, evaluator.CheckedKeys);
+    }
+
+    [Fact]
+    public async Task KpiRequest_Allows_BackOfficeDashboardAccess()
+    {
+        var evaluator = new StubPermissionEvaluator
+        {
+            Granted = [PermissionCatalog.BulkImportMonitor],
+        };
+        var behaviour = new PermissionAuthorizationBehaviour<GetChangeGsmTypeKpisRequest, GetChangeGsmTypeKpisResult>(
+            TestOperatorContext.Instance,
+            evaluator);
+
+        var result = await behaviour.Handle(
+            new GetChangeGsmTypeKpisRequest(),
+            () => Task.FromResult(new GetChangeGsmTypeKpisResult()),
+            CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Contains(PermissionCatalog.BulkImportMonitor, evaluator.CheckedKeys);
     }
 
     [Fact]
@@ -248,6 +268,7 @@ public sealed class PermissionAuthorizationBehaviourTests
     {
         public string? UserId => null;
         public IReadOnlyList<string> Roles { get; } = [];
+        public IReadOnlyList<string> Permissions { get; } = [];
         public TelecomMenuPersona? EffectivePersona => null;
         public bool IsAuthenticated => false;
         public string? BranchId => null;

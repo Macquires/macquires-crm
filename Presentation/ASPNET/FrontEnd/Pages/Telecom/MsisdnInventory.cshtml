@@ -4,7 +4,9 @@
 }
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 
-<div id="app" v-cloak class="telecom-premium-page">
+@{ ViewData["PortalPageVcloak"] = true; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div id="msisdn-inventory-page" class="container-fluid py-3">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>

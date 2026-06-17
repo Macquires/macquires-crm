@@ -47,9 +47,23 @@ const StorageManager = {
         try {
             StorageManager.clearAccessTokenCookie();
             localStorage.clear();
-            sessionStorage.removeItem('syrSessionSynced');
+            StorageManager.clearUiSessionState();
         } catch (error) {
             console.error('Failed to clear localStorage', error);
+        }
+    },
+
+    clearUiSessionState: () => {
+        try {
+            [
+                'syrSessionSynced',
+                'syrPreviewPersona',
+                'syrNavExpandedModules',
+                'syrSidebarScrollPosition',
+                'sidebarScrollPosition',
+            ].forEach((key) => sessionStorage.removeItem(key));
+        } catch (_) {
+            /* ignore */
         }
     },
 
@@ -147,7 +161,21 @@ const StorageManager = {
     getUserRoles: () => StorageManager.get(STORAGE_KEYS.USER_ROLES),
     removeUserRoles: () => StorageManager.remove(STORAGE_KEYS.USER_ROLES),
 
-    saveMenuNavigation: (navigations) => StorageManager.save(STORAGE_KEYS.MENU_NAVIGATION, navigations),
+    saveMenuNavigation: (navigations) => {
+        const rows = Array.isArray(navigations) ? navigations : [];
+        const normalized = rows.map((r) => {
+            const nav = r.navURL || r.navUrl || r.NavURL || '';
+            return Object.assign({}, r, {
+                id: String(r.id ?? r.Id ?? ''),
+                pid: r.pid ?? r.Pid ?? null,
+                name: r.name ?? r.Name ?? '',
+                navURL: nav,
+                navUrl: nav,
+                hasChild: !!(r.hasChild ?? r.HasChild),
+            });
+        });
+        StorageManager.save(STORAGE_KEYS.MENU_NAVIGATION, normalized);
+    },
     getMenuNavigation: () => StorageManager.get(STORAGE_KEYS.MENU_NAVIGATION),
     removeMenuNavigation: () => StorageManager.remove(STORAGE_KEYS.MENU_NAVIGATION),
 
@@ -169,8 +197,8 @@ const StorageManager = {
 
     PERSONA_LANDING_PATHS: {
         SysAdmin: '/Telecom/TelecomHub',
-        BackOffice: '/Telecom/TelecomHub',
-        Executive: '/Telecom/TelecomHub',
+        BackOffice: '/Telecom/BackOfficeDashboard',
+        Executive: '/Executive/CommandCenter?tab=scorecard',
         Retail: '/Telecom/TelecomHub',
         CallCenter: '/Telecom/TelecomHub',
     },
@@ -181,7 +209,7 @@ const StorageManager = {
             path: '/Administration/UserList',
         },
         {
-            any: ['bulk.import.upload', 'bulk.import.monitor', 'telecom.asset.manage'],
+            any: ['bulk.import.upload', 'bulk.import.monitor', 'telecom.asset.manage', 'admin.settings.manage'],
             path: '/Telecom/BackOfficeDashboard',
         },
         { any: ['customer.view'], path: '/Telecom/TelecomHub' },
@@ -355,9 +383,7 @@ const StorageManager = {
     },
 
     saveLoginResult: (data) => {
-        try {
-            sessionStorage.removeItem('syrSessionSynced');
-        } catch (_) { /* ignore */ }
+        StorageManager.clearUiSessionState();
         const p = StorageManager.loginPayload(data);
         StorageManager.saveAccessToken(StorageManager.pickLoginField(p, 'accessToken', 'AccessToken'));
         StorageManager.saveRefreshToken(StorageManager.pickLoginField(p, 'refreshToken', 'RefreshToken'));
@@ -387,18 +413,20 @@ const StorageManager = {
         StorageManager.saveIsAuthenticated(StorageManager.getUserId() != null);
     },
 
-    /** Syriatel telecom roles — keep in sync with Infrastructure.SecurityManager.Roles.TelecomRoles */
-    getSyriatelTelecomRoleSet: () =>
-        new Set(['TelecomAdmin', 'TelecomShowroom', 'TelecomBackOffice', 'TelecomCallCenter', 'TelecomManagement']),
-
-    isStrictSyriatelTelecomWorkspaceUser: () => {
-        const roles = StorageManager.getUserRoles();
-        if (!roles || roles.length === 0) {
+    /** True when the operator has any telecom workspace permission (role-name agnostic). */
+    isTelecomWorkspaceUser: () => {
+        const perms = StorageManager.getPermissions();
+        if (!perms || perms.length === 0) {
             return false;
         }
-        const telecom = StorageManager.getSyriatelTelecomRoleSet();
-        return roles.every((r) => telecom.has(r));
+        const prefixes = ['telecom.', 'bulk.import.', 'customer.', 'admin.'];
+        return perms.some((p) => {
+            const key = String(p).toLowerCase();
+            return prefixes.some((prefix) => key.startsWith(prefix));
+        });
     },
+
+    isStrictSyriatelTelecomWorkspaceUser: () => StorageManager.isTelecomWorkspaceUser(),
 
     /** Display name for Operator Console top bar (persona for demos). */
     getSyriatelOperatorConsoleDisplayName: () => {

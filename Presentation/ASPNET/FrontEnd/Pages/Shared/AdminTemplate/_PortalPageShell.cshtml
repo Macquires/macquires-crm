@@ -1,0 +1,24 @@
+@{
+
+    var pageId = ViewData["PortalPageId"] as string ?? "app";
+
+    var extraClass = ViewData["PortalPageClass"] as string ?? "";
+
+    var vcloak = ViewData["PortalPageVcloak"] as bool? == true ? " v-cloak" : "";
+
+    var extraAttrs = ViewData["PortalPageAttrs"] as string ?? "";
+
+    var useInner = ViewData["PortalPageInner"] as bool? != false;
+
+}
+
+<div id="@pageId" class="telecom-premium-page syr-portal-page@extraClass@vcloak"@Html.Raw(string.IsNullOrWhiteSpace(extraAttrs) ? "" : " " + extraAttrs)>
+
+@if (useInner)
+
+{
+
+    @Html.Raw("<div class=\"container-fluid py-3 px-3 px-lg-4\">")
+
+}
+

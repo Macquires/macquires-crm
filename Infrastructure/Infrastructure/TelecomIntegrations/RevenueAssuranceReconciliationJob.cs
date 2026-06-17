@@ -115,28 +115,28 @@ public sealed class RevenueAssuranceReconciliationJob : BackgroundService
                                 }
 
                                 var ticket = new TelecomTechnicalTicket
-                                        {
-                                            TicketNumber = $"RA-{DateTime.UtcNow:yyyyMMdd}-{msisdn.Substring(Math.Max(0, msisdn.Length - 4))}",
-                                            Msisdn = msisdn,
-                                            CustomerId = profile.CustomerId,
-                                            SubscriberProfileId = sub.SubscriberProfileId,
-                                            TicketCategory = TechnicalTicketCategory.RevenueAssurance,
-                                            IssueType = TechnicalTicketIssueType.Network,
-                                            Priority = TechnicalTicketPriority.High,
-                                            Status = TechnicalTicketStatus.Open,
-                                            Notes = $"Revenue Leakage Alert: CRM status is {profile.OperationalStatus} but HLR status is ACTIVE. Technical sync required to prevent unauthorized usage.",
-                                            CreatedById = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
-                                            OpenedByUserId = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
-                                            CreatedByChannel = TechnicalTicketCreatedByChannel.SystemJob
-                                        };
+                                {
+                                    TicketNumber = BuildUniqueRevenueTicketNumber(msisdn),
+                                    Msisdn = msisdn,
+                                    CustomerId = profile.CustomerId,
+                                    SubscriberProfileId = sub.SubscriberProfileId,
+                                    TicketCategory = TechnicalTicketCategory.RevenueAssurance,
+                                    IssueType = TechnicalTicketIssueType.Network,
+                                    Priority = TechnicalTicketPriority.High,
+                                    Status = TechnicalTicketStatus.Open,
+                                    Notes = $"Revenue Leakage Alert: CRM status is {profile.OperationalStatus} but HLR status is ACTIVE. Technical sync required to prevent unauthorized usage.",
+                                    CreatedById = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
+                                    OpenedByUserId = TechnicalTicketCreatedByChannel.RevenueAssuranceSystemUserId,
+                                    CreatedByChannel = TechnicalTicketCreatedByChannel.SystemJob
+                                };
 
-                                        await ticketRepo.CreateAsync(ticket, ct);
-                                        await unitOfWork.SaveAsync(ct);
+                                await ticketRepo.CreateAsync(ticket, ct);
+                                await unitOfWork.SaveAsync(ct);
 
-                                        _logger.LogInformation(
-                                            "Created RevenueLeakageAlert ticket {TicketNumber} for {Msisdn}.",
-                                            ticket.TicketNumber,
-                                            msisdn);
+                                _logger.LogInformation(
+                                    "Created RevenueLeakageAlert ticket {TicketNumber} for {Msisdn}.",
+                                    ticket.TicketNumber,
+                                    msisdn);
                             }
                         },
                         stoppingToken);
@@ -149,5 +149,12 @@ public sealed class RevenueAssuranceReconciliationJob : BackgroundService
 
             await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
         }
+    }
+
+    private static string BuildUniqueRevenueTicketNumber(string msisdn)
+    {
+        var suffix = msisdn.Length >= 4 ? msisdn[^4..] : msisdn;
+        var token = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        return $"RA-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{suffix}-{token}";
     }
 }

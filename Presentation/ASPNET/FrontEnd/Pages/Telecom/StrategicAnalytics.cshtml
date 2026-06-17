@@ -5,7 +5,9 @@
 
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 
-<div class="form-card strategic-analytics-page" id="formcard">
+@{ ViewData["PortalPageId"] = "strategicAnalyticsShell"; ViewData["PortalPageClass"] = " strategic-analytics-page"; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div id="strategicAnalyticsGate" class="text-center py-5 d-none">
         <p class="text-light opacity-75 mb-3" data-telecom-i18n="strategicAnalytics.noPermission">You do not have permission to view strategic analytics.</p>
         <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-light" data-telecom-i18n="strategicAnalytics.backToDashboard">Back to dashboard</a>
@@ -14,7 +16,8 @@
     <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root strategic-exec-dark">
         @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
     </div>
-</div>
+
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section styles {
     <style>

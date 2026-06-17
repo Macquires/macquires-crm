@@ -33,15 +33,17 @@
     padding: 1rem 0 2rem;
 }
 
-/* Inside admin layout: do not force viewport band (breaks non-admin RTL shell) */
-body.syr-tel-portal .form-card.telecom-premium-page,
-body.syr-tel-portal .adminbody > .telecom-premium-page,
-body.syr-tel-portal .adminbody > #app.telecom-premium-page,
-body.syr-tel-portal .adminbody #bo-dashboard-page.telecom-premium-page {
-    min-height: 0;
-    background: transparent;
-    padding-top: 0;
-    padding-bottom: 1rem;
+/* Inside admin layout: unified page shell (all roles — see portal-content-layout.css) */
+body.syr-tel-portal .adminbody .syr-portal-page,
+body.syr-tel-portal .adminbody .telecom-premium-page {
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    background: transparent !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
 }
 
 body.syr-tel-portal .form-card.telecom-premium-page {
@@ -412,6 +414,11 @@ body.syr-tel-portal .form-card.telecom-premium-page {
     color: var(--sys-card-bg) !important;
 }
 
+.telecom-premium-page .tile-changeGsm {
+    background: linear-gradient(145deg, #3730a3 0%, #6366f1 100%) !important;
+    color: var(--sys-card-bg) !important;
+}
+
 .telecom-premium-page .tile-migrate,
 .telecom-premium-page .tile-takeover,
 .telecom-premium-page .tile-simswap,
@@ -718,8 +725,7 @@ body.syr-tel-portal .adminbody {
 /* =============================================================================
    Global system palette — Bootstrap, portal shell, Syncfusion, legacy admin
    ============================================================================= */
-body.syr-tel-portal,
-body.syriatel-operator-console {
+body.syr-tel-portal {
     font-family: var(--sys-font-stack);
     color: var(--sys-text-main);
     background: var(--sys-bg) !important;
@@ -782,24 +788,39 @@ body.syr-tel-portal .btn-outline-danger:hover {
     background: var(--sys-brand-red-ring) !important;
 }
 
-body.syr-tel-portal .bg-primary,
-body.syr-tel-portal .bg-danger {
+body.syr-tel-portal .bg-primary:not(.bg-opacity-10):not([class*="bg-opacity-"]),
+body.syr-tel-portal .bg-danger:not(.bg-opacity-10):not([class*="bg-opacity-"]) {
     background-color: var(--sys-brand-red) !important;
 }
 
-/* Offer wizard cards: theme forces solid red on bg-primary/bg-danger — keep header text readable */
-body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary,
-body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger {
+/* Offer wizard cards: translucent headers keep dark text; solid brand headers stay white */
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-opacity-10,
+body.syr-tel-portal .wizard-offer-detail-card .card-header[class*="bg-opacity-"] {
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-opacity-10 .wizard-offer-code,
+body.syr-tel-portal .wizard-offer-detail-card .card-header[class*="bg-opacity-"] .wizard-offer-code {
+    color: var(--sys-text-muted) !important;
+}
+
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-opacity-10 .bi,
+body.syr-tel-portal .wizard-offer-detail-card .card-header[class*="bg-opacity-"] .bi {
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary:not(.bg-opacity-10):not([class*="bg-opacity-"]),
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger:not(.bg-opacity-10):not([class*="bg-opacity-"]) {
     color: #fff !important;
 }
 
-body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary .wizard-offer-code,
-body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger .wizard-offer-code {
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary:not(.bg-opacity-10):not([class*="bg-opacity-"]) .wizard-offer-code,
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger:not(.bg-opacity-10):not([class*="bg-opacity-"]) .wizard-offer-code {
     color: rgba(255, 255, 255, 0.85) !important;
 }
 
-body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary .bi,
-body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger .bi {
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-primary:not(.bg-opacity-10):not([class*="bg-opacity-"]) .bi,
+body.syr-tel-portal .wizard-offer-detail-card .card-header.bg-danger:not(.bg-opacity-10):not([class*="bg-opacity-"]) .bi {
     color: #fff !important;
 }
 
@@ -857,6 +878,19 @@ body.syr-tel-portal .syriatel-brand-accent,
 .telecom-premium-page .text-primary,
 .telecom-premium-page .text-secondary {
     color: var(--sys-text-muted) !important;
+}
+
+/* Telecom Hub KPI strip — restore semantic value colors */
+.telecom-premium-page .telecom-kpi-value.text-warning {
+    color: #b45309 !important;
+}
+
+.telecom-premium-page .telecom-kpi-value.text-success {
+    color: #15803d !important;
+}
+
+.telecom-premium-page .telecom-kpi-value.text-danger {
+    color: var(--sys-brand-red) !important;
 }
 
 .telecom-premium-page .bg-white {
@@ -1131,4 +1165,248 @@ body.syr-tel-portal .sidebar.syr-sidebar::-webkit-scrollbar {
     background: #0d6efd;
     animation: telecom-pulse-muted 1.6s ease-in-out infinite;
     vertical-align: middle;
+}
+
+/* ── Executive Command Center — light strategic panels (TelecomHub-aligned) ── */
+
+.executive-cc-root {
+    max-width: 1400px;
+    margin-inline: auto;
+    width: 100%;
+}
+
+.telecom-premium-page .executive-cc-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    padding-inline-start: 0;
+}
+
+.telecom-premium-page .executive-cc-tabs .nav-item {
+    list-style: none;
+}
+
+.telecom-premium-page .executive-cc-tabs .nav-link {
+    color: var(--sys-text-muted);
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.telecom-premium-page .executive-cc-tabs .nav-link:hover {
+    background: var(--sys-bg);
+    border-color: color-mix(in srgb, var(--sys-brand-red) 25%, var(--sys-border));
+    color: var(--sys-text-main);
+}
+
+.telecom-premium-page .executive-cc-tabs .nav-link.active {
+    background: var(--sys-brand-red);
+    border-color: var(--sys-brand-red);
+    color: #fff;
+}
+
+.telecom-premium-page .executive-trend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.telecom-premium-page .executive-trend-date {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.telecom-premium-page .executive-trend-value {
+    flex: 0 0 auto;
+    margin-inline-start: 1rem;
+    white-space: nowrap;
+}
+
+.telecom-premium-page .executive-log-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.telecom-premium-page .executive-log-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.telecom-premium-page .executive-log-time {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    margin-inline-start: 1rem;
+}
+
+.telecom-premium-page .strategic-exec-kicker {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sys-brand-red);
+    font-weight: 700;
+}
+
+.telecom-premium-page .strategic-exec-sub {
+    color: var(--sys-text-muted);
+    font-size: 0.9rem;
+}
+
+.telecom-premium-page .strategic-exec-hero {
+    border: 1px solid var(--sys-border);
+    border-inline-start: 4px solid var(--sys-brand-red);
+    border-radius: var(--sys-radius);
+    background: linear-gradient(135deg, var(--sys-card-bg) 0%, var(--sys-bg) 100%);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--sys-shadow-card);
+}
+
+[dir="rtl"] .telecom-premium-page .strategic-exec-hero {
+    border-inline-start: none;
+    border-inline-end: 4px solid var(--sys-brand-red);
+}
+
+.telecom-premium-page .strategic-filter-bar,
+.telecom-premium-page .executive-scope-bar.strategic-filter-bar {
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    box-shadow: var(--sys-shadow-card);
+}
+
+.telecom-premium-page .strategic-label {
+    color: var(--sys-text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.telecom-premium-page .strategic-bento-card {
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    padding: 1.25rem 1.35rem;
+    box-shadow: var(--sys-shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.telecom-premium-page .strategic-bento-card:hover {
+    box-shadow: var(--sys-shadow-card-hover);
+    border-color: color-mix(in srgb, var(--sys-brand-red) 30%, var(--sys-border));
+    transform: translateY(-1px);
+}
+
+.telecom-premium-page .strategic-card-title {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--sys-text-muted);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.telecom-premium-page .strategic-metric-xl {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--sys-text-main);
+    line-height: 1.15;
+}
+
+.telecom-premium-page .strategic-metric-lg {
+    font-size: 1.55rem;
+    font-weight: 600;
+    color: var(--sys-text-main);
+}
+
+.telecom-premium-page .strategic-metric-unit {
+    font-size: 0.9rem;
+    color: var(--sys-text-muted);
+    font-weight: 400;
+}
+
+.telecom-premium-page .strategic-metric-sub {
+    font-size: 0.85rem;
+    color: var(--sys-text-muted);
+}
+
+.telecom-premium-page .strategic-delta {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.telecom-premium-page .strategic-delta-up {
+    color: #15803d;
+}
+
+.telecom-premium-page .strategic-delta-down {
+    color: var(--sys-brand-red);
+}
+
+.telecom-premium-page .strategic-panel {
+    background: var(--sys-card-bg);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius);
+    box-shadow: var(--sys-shadow-card);
+}
+
+.telecom-premium-page .strategic-panel .list-group-item {
+    color: var(--sys-text-main);
+    border-color: var(--sys-border);
+}
+
+.telecom-premium-page .strategic-panel-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--sys-text-main);
+}
+
+.telecom-premium-page .strategic-badge-level {
+    background: color-mix(in srgb, var(--sys-brand-red) 10%, var(--sys-card-bg));
+    color: var(--sys-brand-red);
+    border: 1px solid var(--sys-brand-red-ring);
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+}
+
+.telecom-premium-page .btn-strategic-gold {
+    background-color: var(--sys-brand-red);
+    border-color: var(--sys-brand-red);
+    color: #fff;
+    font-weight: 600;
+    border-radius: calc(var(--sys-radius) - 2px);
+}
+
+.telecom-premium-page .btn-strategic-gold:hover,
+.telecom-premium-page .btn-strategic-gold:focus {
+    background-color: var(--sys-brand-red-hover);
+    border-color: var(--sys-brand-red-hover);
+    color: #fff;
+    box-shadow: 0 4px 14px var(--sys-brand-red-ring);
+}
+
+.telecom-premium-page .nav-tabs .nav-link {
+    color: var(--sys-text-muted);
+    border-color: var(--sys-border);
+}
+
+.telecom-premium-page .nav-tabs .nav-link.active {
+    color: var(--sys-brand-red);
+    background: var(--sys-card-bg);
+    border-color: var(--sys-border) var(--sys-border) var(--sys-card-bg);
+    font-weight: 600;
+}
+
+.telecom-premium-page #ExecutiveLeaderboardGrid .e-grid {
+    background: transparent;
+    border-color: var(--sys-border);
+}
+
+.telecom-premium-page .geo-heatmap-canvas {
+    border-color: var(--sys-border) !important;
 }

@@ -1,4 +1,3 @@
-using Application.Common.Exceptions;
 using Application.Common.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -46,7 +45,6 @@ public class HasAnyPermissionAttribute : Attribute, IAsyncAuthorizationFilter
             }
         }
 
-        throw new UnauthorizedPermissionException(
-            "Security Block: Missing granular system permission required for this operations pipeline.");
+        throw PermissionAuthorizationFailure.MissingAny(context, _permissions);
     }
 }

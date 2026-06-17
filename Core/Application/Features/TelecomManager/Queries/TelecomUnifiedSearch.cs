@@ -22,7 +22,7 @@ public class TelecomUnifiedSearchResult
 
 public class TelecomUnifiedSearchRequest : IRequest<TelecomUnifiedSearchResult>, IRequireAnyPermission
 {
-    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.UnifiedSearchAny;
     public string? NationalId { get; init; }
     public string? CommercialRegistrationId { get; init; }
     public string? Msisdn { get; init; }

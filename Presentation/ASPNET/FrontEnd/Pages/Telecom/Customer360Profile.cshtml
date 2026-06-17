@@ -279,7 +279,9 @@
     }
 </style>
 
-<div id="app" v-cloak class="telecom-premium-page">
+@{ ViewData["PortalPageVcloak"] = true; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="container-fluid py-4" id="c360-page">
         <div v-if="state.loadError" class="alert alert-danger shadow-sm">{{ state.loadError }}</div>
         <div v-if="state.loading" class="c360-skel mb-3"></div>
@@ -594,7 +596,7 @@
                         <i class="bi bi-arrow-up-circle c360-action-icon" style="color:var(--sys-text-main)"></i>
                         <span class="small fw-semibold d-block">{{ ui.actions.migrate }}</span>
                     </button>
-                    <button type="button" class="c360-action-card border-0" :class="{ 'is-locked': !can.changeGsm }" :disabled="!can.changeGsm || state.isProvisioningInFlight" @@click="openProvisioningWizard('changeGsm')">
+                    <button type="button" class="c360-action-card border-0" data-testid="c360-action-changeGsm" :class="{ 'is-locked': !can.changeGsm }" :disabled="!can.changeGsm || state.isProvisioningInFlight" @@click="openProvisioningWizard('changeGsm')">
                         <i class="bi bi-shuffle c360-action-icon" style="color:var(--sys-brand-red)"></i>
                         <span class="small fw-semibold d-block">{{ ui.actions.changeGsm }}</span>
                     </button>
@@ -848,7 +850,7 @@
             <div v-show="state.activeTab === 'timeline'" class="mb-4">
                 <div class="telecom-bento-card">
                     <div class="card-body p-4">
-                        <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-clock-history me-2"></i>{{ ui.tabs?.timeline || 'الخط الزمني' }}</h2>
+                        <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-clock-history me-2"></i>{{ ui.tabs.timeline }}</h2>
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <button v-for="f in timelineFilters" :key="f.id" type="button"
                                 class="btn btn-sm" :class="state.timelineKindFilter === f.id ? 'btn-danger' : 'btn-outline-secondary'"
@@ -856,20 +858,20 @@
                         </div>
                         <div v-if="!mappedTimeline.length" class="text-center text-muted py-5">
                             <i class="bi bi-hourglass display-6 d-block mb-2 opacity-50"></i>
-                            لا أحداث مسجّلة بعد.
+                            {{ ui.timeline.noEvents }}
                         </div>
                         <ul v-else class="list-group list-group-flush">
                             <li v-for="(ev, idx) in mappedTimeline" :key="idx" class="list-group-item px-0 py-3 bg-transparent">
                                 <div class="d-flex flex-wrap justify-content-between gap-2">
                                     <div>
-                                        <strong>{{ ev.titleAr }}</strong>
+                                        <strong>{{ ev.title }}</strong>
                                         <span v-if="ev.status" class="badge bg-light text-dark border ms-2">{{ ev.status }}</span>
                                         <p class="small text-muted mb-0 mt-1">{{ ev.subtitle }}</p>
                                         <span v-if="ev.referenceId" class="small font-monospace text-muted">{{ ev.referenceId }}</span>
                                     </div>
                                     <div class="text-end">
                                         <span class="small text-muted d-block">{{ ev.display }}</span>
-                                        <a v-if="ev.actionUrl" :href="ev.actionUrl" class="btn btn-sm btn-outline-danger mt-1">فتح</a>
+                                        <a v-if="ev.actionUrl" :href="ev.actionUrl" class="btn btn-sm btn-outline-danger mt-1">{{ ui.timeline.open }}</a>
                                     </div>
                                 </div>
                             </li>
@@ -877,7 +879,7 @@
                         <div v-if="state.timelineHasMore" class="text-center mt-3">
                             <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.timelineLoading" @@click="loadMoreTimeline">
                                 <span v-if="state.timelineLoading" class="spinner-border spinner-border-sm me-1"></span>
-                                تحميل المزيد
+                                {{ ui.timeline.loadMore }}
                             </button>
                         </div>
                     </div>
@@ -990,7 +992,7 @@
                                 <option v-for="ln in lineOptions" :key="ln.key" :value="ln.key">{{ ln.label }}</option>
                             </select>
                         </div>
-                        <div v-if="state.wizard.kind === 'takeover'" class="border rounded p-3 mb-3 bg-light">
+                        <div v-if="state.wizard.kind === 'takeover'" class="border rounded p-3 mb-3 bg-light" data-testid="c360-tko-wizard">
                             <label class="form-label small fw-semibold">{{ t360('wizard.secondaryLabel', 'New owner') }} <span class="text-danger">*</span></label>
                             <div class="row g-2 mb-2">
                                 <div class="col-md-6"><input type="text" class="form-control form-control-sm" v-model="state.wizard.takeoverSearchNationalId" :placeholder="ui.fields.nationalId" /></div>
@@ -1020,7 +1022,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">{{ t360('takeOver.depositPolicy', 'Deposit') }}</label>
-                                    <select class="form-select form-select-sm" v-model.number="state.wizard.takeoverDepositPolicy">
+                                    <select class="form-select form-select-sm" v-model.number="state.wizard.takeoverDepositPolicy" data-testid="c360-tko-deposit-policy">
                                         <option :value="1">{{ t360('takeOver.depositTransfer', '') }}</option>
                                         <option :value="0">{{ t360('takeOver.depositRetain', '') }}</option>
                                         <option :value="2">{{ t360('takeOver.depositForfeit', '') }}</option>
@@ -1037,7 +1039,7 @@
                         <div v-if="state.wizard.kind === 'migrate'" class="mb-3">
                             <p v-if="state.wizard.mgrCurrentPlan" class="small text-muted">{{ t360('wizard.migrationOffers.currentPlan', 'Current') }}: <strong>{{ state.wizard.mgrCurrentPlan }}</strong></p>
                             <div v-if="state.wizard.migrationBusy" class="c360-skel" style="height:3rem;"></div>
-                            <select v-else class="form-select" v-model="state.wizard.selectedOfferingId" @@change="onWizardOfferingChanged">
+                            <select v-else class="form-select" v-model="state.wizard.selectedOfferingId" data-testid="c360-mgr-offering-select" @@change="onWizardOfferingChanged">
                                 <option value="">{{ t360('wizard.targetOffer', 'New plan') }}</option>
                                 <option v-for="o in state.wizard.migrationOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
                             </select>
@@ -1072,7 +1074,7 @@
                         <div v-if="state.wizard.kind === 'termination'" class="mb-3">
                             <p class="small text-muted mb-2">{{ t360('termination.currentMsisdn', 'Line') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
                             <label class="form-label small fw-semibold">{{ t360('termination.terminationType', 'Type') }} <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.trmTerminationType" @@change="onTerminationTypeChange">
+                            <select id="c360TrmTerminationType" class="form-select form-select-sm mb-2" v-model="state.wizard.trmTerminationType" data-testid="c360-trm-termination-type" @@change="onTerminationTypeChange">
                                 <option value="Voluntary">{{ t360('termination.typeVoluntary', '') }}</option>
                                 <option value="Collections">{{ t360('termination.typeCollections', '') }}</option>
                                 <option value="Regulatory">{{ t360('termination.typeRegulatory', '') }}</option>
@@ -1096,7 +1098,7 @@
                             </template>
                             <template v-if="trmShowsFraud">
                                 <label class="form-label small fw-semibold">{{ t360('bss.securityTicketId', 'Ticket') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" data-testid="c360-trm-fraud-ticket" />
                             </template>
                             <template v-if="trmShowsRegulatory">
                                 <label class="form-label small fw-semibold">{{ t360('bss.regulatoryDocumentNumber', 'Doc #') }} *</label>
@@ -1113,7 +1115,7 @@
                         <div v-if="state.wizard.kind === 'changeNumber'" class="mb-3">
                             <p class="small text-muted mb-2">{{ t360('changeNumber.currentMsisdn', 'Current') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.cnCurrentMsisdn || state.wizard.primaryLabel }}</strong></p>
                             <label class="form-label small fw-semibold">{{ t360('changeNumber.modeLabel', 'Type') }}</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnChangeMode" @@change="onCnChangeModeChange">
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnChangeMode" data-testid="c360-cn-change-mode" @@change="onCnChangeModeChange">
                                 <option value="Internal">{{ t360('changeNumber.modeInternal', 'Internal CNR') }}</option>
                                 <option value="PortIn">{{ t360('changeNumber.modePortIn', 'MNP Port-In') }}</option>
                             </select>
@@ -1130,8 +1132,8 @@
                             </template>
                             <template v-else>
                                 <div class="alert alert-info py-2 small mb-2">{{ t360('changeNumber.portInHint', '') }}</div>
-                                <input type="text" class="form-control form-control-sm mb-2 font-monospace" dir="ltr" v-model="state.wizard.cnPortInMsisdn" :placeholder="t360('changeNumber.portInMsisdn', '')" />
-                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnDonorOperatorCode">
+                                <input type="text" class="form-control form-control-sm mb-2 font-monospace" dir="ltr" v-model="state.wizard.cnPortInMsisdn" data-testid="c360-cn-port-in-msisdn" :placeholder="t360('changeNumber.portInMsisdn', '')" />
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cnDonorOperatorCode" data-testid="c360-cn-donor-operator">
                                     <option value="">—</option>
                                     <option v-for="d in cnDonorOperators" :key="d" :value="d">{{ d }}</option>
                                 </select>
@@ -1158,51 +1160,51 @@
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                             </div>
                         </div>
-                        <div v-if="state.wizard.kind === 'changeGsm'" class="mb-3">
+                        <div v-if="state.wizard.kind === 'changeGsm'" class="mb-3" data-testid="c360-cgt-wizard">
                             <p v-if="state.wizard.cgtCurrentTypeLabel" class="small text-muted">{{ t360('changeGsm.targetType', 'Type') }}: <strong>{{ state.wizard.cgtCurrentTypeLabel }}</strong></p>
                             <div v-if="state.wizard.cgtTargetsBusy" class="c360-skel" style="height:3rem;"></div>
                             <template v-else>
                                 <label class="form-label small fw-semibold">{{ t360('changeGsm.targetType', 'New type') }} <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cgtTargetTypeId" @@change="onCgtTargetTypeChanged">
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cgtTargetTypeId" data-testid="c360-cgt-target-type" @@change="onCgtTargetTypeChanged">
                                     <option value="">{{ t360('common.selectPlaceholder', '—') }}</option>
                                     <option v-for="t in state.wizard.cgtTargets" :key="t.id" :value="t.id">{{ t.nameAr }} ({{ t.code }})</option>
                                 </select>
                                 <label class="form-label small fw-semibold">{{ t360('changeGsm.migrationReason', 'Reason') }} <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.cgtMigrationReason" maxlength="256" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.cgtMigrationReason" maxlength="256" data-testid="c360-cgt-migration-reason" />
                                 <label class="form-label small fw-semibold">{{ t360('bss.cgtMigrationPath', 'Path') }}</label>
-                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cgtMigrationPath" @@change="onCgtPathChange">
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.cgtMigrationPath" data-testid="c360-cgt-migration-path" @@change="onCgtPathChange">
                                     <option value="Standard">{{ t360('bss.cgtPathStandard', '') }}</option>
                                     <option value="Regulatory">{{ t360('bss.cgtPathRegulatory', '') }}</option>
                                 </select>
                                 <div v-if="cgtShowsFinancial" class="alert alert-warning py-2 small mb-2">{{ t360('bss.cgtFinancialHint', '') }}</div>
                                 <template v-if="cgtShowsFinancial">
                                     <label class="form-label small fw-semibold">{{ t360('bss.paymentReference', 'Payment ref') }} *</label>
-                                    <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" />
+                                    <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" data-testid="c360-cgt-payment-ref" />
                                     <label class="form-label small fw-semibold">{{ t360('bss.identityReverifyUpload', 'KYC') }} *</label>
-                                    <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" @@change="onBssIdentityFileChange" />
+                                    <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" data-testid="c360-cgt-identity-upload" @@change="onBssIdentityFileChange" />
                                 </template>
                                 <template v-if="cgtShowsRegulatory">
                                     <label class="form-label small fw-semibold">{{ t360('bss.regulatoryDocumentNumber', 'Doc #') }} *</label>
-                                    <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssDocumentNumber" />
+                                    <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssDocumentNumber" data-testid="c360-cgt-regulatory-doc-no" />
                                     <label class="form-label small fw-semibold">{{ t360('bss.regulatoryAttachment', 'Attachment') }} *</label>
-                                    <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" @@change="onBssRegulatoryFileChange" />
+                                    <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png" data-testid="c360-cgt-regulatory-upload" @@change="onBssRegulatoryFileChange" />
                                 </template>
                                 <label class="form-label small text-muted">{{ t360('wizard.targetOffer', 'Offer') }} ({{ t360('wizard.optional', 'optional') }})</label>
                                 <div v-if="state.wizard.cgtOffersBusy" class="c360-skel" style="height:2.5rem;"></div>
-                                <select v-else class="form-select form-select-sm" v-model="state.wizard.selectedOfferingId">
+                                <select v-else class="form-select form-select-sm" v-model="state.wizard.selectedOfferingId" data-testid="c360-cgt-offering-select">
                                     <option value="">—</option>
                                     <option v-for="o in state.wizard.cgtOffers" :key="o.id" :value="o.id">{{ o.name }} ({{ o.serviceCode }})</option>
                                 </select>
                             </template>
                         </div>
-                        <div v-if="state.wizard.kind === 'addpackage'" class="mb-3">
+                        <div v-if="state.wizard.kind === 'addpackage'" class="mb-3" data-testid="c360-vas-wizard">
                             <div v-if="state.wizard.catalogBusy" class="c360-skel mb-2" style="height:4rem;"></div>
-                            <select v-else class="form-select mb-2" v-model="state.wizard.selectedVasCode">
+                            <select v-else class="form-select mb-2" v-model="state.wizard.selectedVasCode" data-testid="c360-vas-service-select">
                                 <option value="">{{ t360('wizard.vasPlaceholder', 'VAS') }}</option>
                                 <option v-for="v in state.wizard.vasCatalog" :key="v.serviceCode" :value="v.serviceCode">{{ v.nameAr }} ({{ v.serviceCode }})</option>
                             </select>
                             <label class="form-label small">{{ t360('vas.actionLabel', 'Action') }}</label>
-                            <select class="form-select form-select-sm" v-model="state.wizard.vasAction">
+                            <select class="form-select form-select-sm" v-model="state.wizard.vasAction" data-testid="c360-vas-action-select">
                                 <option value="Activate">{{ t360('vas.activate', 'Activate') }}</option>
                                 <option value="Deactivate">{{ t360('vas.deactivate', 'Deactivate') }}</option>
                             </select>
@@ -1222,7 +1224,7 @@
                         <div v-if="state.wizard.kind === 'suspension'" class="mb-3">
                             <p class="small text-muted mb-2">{{ t360('suspension.currentMsisdn', 'Line') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
                             <label class="form-label small fw-semibold">{{ t360('suspension.suspensionType', 'Type') }} *</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.susSuspensionType" @@change="onSusTypeChange">
+                            <select id="c360SusSuspensionType" class="form-select form-select-sm mb-2" v-model="state.wizard.susSuspensionType" data-testid="c360-sus-suspension-type" @@change="onSusTypeChange">
                                 <option value="CustomerRequest">{{ t360('suspension.typeCustomer', '') }}</option>
                                 <option value="Billing">{{ t360('suspension.typeBilling', '') }}</option>
                                 <option value="Fraud">{{ t360('suspension.typeFraud', '') }}</option>
@@ -1240,6 +1242,7 @@
                                 <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" />
                             </template>
                             <template v-if="susShowsFraud">
+                                <div data-testid="c360-sus-fraud-clearance">
                                 <label class="form-label small fw-semibold">{{ t360('bss.securityTicketId', 'Ticket') }} *</label>
                                 <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" />
                                 <div class="form-check mb-2">
@@ -1247,6 +1250,7 @@
                                     <label class="form-check-label small" for="c360SusSupervisor">{{ t360('bss.supervisorConfirmation', 'Supervisor confirmation') }} <span class="text-danger">*</span></label>
                                 </div>
                                 <p class="small text-muted mb-2">{{ t360('bss.supervisorConfirmationHint', '') }}</p>
+                                </div>
                             </template>
                             <template v-if="susShowsRegulatory">
                                 <label class="form-label small fw-semibold">{{ t360('bss.regulatoryDocumentNumber', 'Doc #') }} *</label>
@@ -1273,7 +1277,7 @@
                         <div v-if="state.wizard.kind === 'reconnect'" class="mb-3">
                             <p class="small text-muted mb-2">{{ t360('reconnect.currentMsisdn', 'Line') }}: <strong class="font-monospace" dir="ltr">{{ state.wizard.primaryLabel }}</strong></p>
                             <label class="form-label small fw-semibold">{{ t360('reconnect.clearanceType', 'Clearance') }} *</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.rcnClearanceType" @@change="onRcnClearanceChange">
+                            <select id="c360RcnClearanceType" class="form-select form-select-sm mb-2" v-model="state.wizard.rcnClearanceType" data-testid="c360-rcn-clearance-type" @@change="onRcnClearanceChange">
                                 <option value="Customer">{{ t360('reconnect.clearanceCustomer', '') }}</option>
                                 <option value="Payment">{{ t360('reconnect.clearancePayment', '') }}</option>
                                 <option value="Fraud">{{ t360('reconnect.clearanceFraud', '') }}</option>
@@ -1284,7 +1288,7 @@
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnReconnectReason" @@blur="onRcnClearanceChange" />
                             <template v-if="rcnShowsPaymentRef">
                                 <label class="form-label small fw-semibold">{{ t360('reconnect.paymentReference', 'Ref') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnPaymentReference" dir="ltr" placeholder="e.g. REC-2026-XXXX" @@blur="onRcnClearanceChange" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnPaymentReference" dir="ltr" placeholder="e.g. REC-2026-XXXX" data-testid="c360-rcn-payment-ref" @@blur="onRcnClearanceChange" />
                             </template>
                             <template v-if="rcnShowsFraudFields">
                                 <label class="form-label small fw-semibold">{{ t360('reconnect.securityTicketId', 'Security ticket') }} *</label>
@@ -1355,7 +1359,7 @@
                                 <label class="form-label small fw-semibold">{{ t360(rfdPayoutLabelKey, 'Payout') }} *</label>
                                 <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPayoutDestination" dir="ltr" />
                             </template>
-                            <div v-if="state.wizard.rfdDepositSnapshot != null" class="small text-muted mb-1">{{ t360('refund.depositSnapshot', 'Deposit') }}: <strong>{{ state.wizard.rfdDepositSnapshot }}</strong></div>
+                            <div v-if="state.wizard.rfdDepositSnapshot != null" class="small text-muted mb-1" data-testid="c360-rfd-deposit-snapshot">{{ t360('refund.depositSnapshot', 'Deposit') }}: <strong>{{ state.wizard.rfdDepositSnapshot }}</strong></div>
                             <div v-if="state.wizard.rfdWalletSnapshot != null" class="small text-muted mb-2">{{ t360('refund.walletSnapshot', 'Wallet') }}: <strong>{{ state.wizard.rfdWalletSnapshot }}</strong></div>
                             <div v-if="state.wizard.rfdRequiresBackOffice" class="alert alert-warning py-2 small mb-2">{{ t360('refund.boHint', '') }}</div>
                             <div v-if="state.wizard.rfdRequiresBackOffice">
@@ -1365,7 +1369,7 @@
                         </div>
                         <div v-if="state.wizard.kind === 'badDebt'" class="mb-3">
                             <label class="form-label small fw-semibold">{{ t360('badDebt.collectionAction', 'Action') }} *</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.bdrCollectionAction" @@change="onBdrActionChange">
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.bdrCollectionAction" data-testid="c360-bdr-collection-action" @@change="onBdrActionChange">
                                 <option value="PaymentRecorded">{{ t360('badDebt.actionPayment', '') }}</option>
                                 <option value="PaymentPlan">{{ t360('badDebt.actionPaymentPlan', '') }}</option>
                                 <option value="DunningEscalation">{{ t360('badDebt.actionDunning', '') }}</option>
@@ -1401,7 +1405,7 @@
                             </div>
                             <div v-if="state.wizard.bdrCollectionAction === 'WriteOffPartial' || state.wizard.bdrCollectionAction === 'WriteOffFull'">
                                 <label class="form-label small">{{ t360('badDebt.writeOffAmount', 'Write-off') }} *</label>
-                                <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrWriteOffAmount" @@blur="onBdrActionChange" />
+                                <input type="number" min="1" class="form-control form-control-sm mb-2" v-model="state.wizard.bdrWriteOffAmount" data-testid="c360-bdr-writeoff-amount" @@blur="onBdrActionChange" />
                             </div>
                             <div v-if="state.wizard.bdrEligibilityBusy" class="alert alert-light py-2 small mb-2">{{ t360('badDebt.matrixLoading', '') }}</div>
                             <div v-else-if="state.wizard.bdrEligibility" class="alert py-2 small mb-2" :class="(state.wizard.bdrEligibility.allowed || state.wizard.bdrEligibility.Allowed) ? 'alert-success' : 'alert-danger'">
@@ -1414,22 +1418,22 @@
                             </div>
                             <div v-if="state.wizard.bdrRequiresBackOffice" class="alert alert-warning py-2 small mb-0">{{ t360('badDebt.boHint', '') }}</div>
                         </div>
-                        <div v-if="state.wizard.kind === 'deviceSale'" class="mb-3">
+                        <div v-if="state.wizard.kind === 'deviceSale'" class="mb-3" data-testid="c360-dev-wizard">
                             <label class="form-label small fw-semibold">{{ t360('deviceSale.deviceImei', 'Device') }} *</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInventoryId" @@change="onDevicePicked">
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInventoryId" data-testid="c360-dev-inventory-select" @@change="onDevicePicked">
                                 <option value="">{{ t360('common.selectPlaceholder', '—') }} IMEI</option>
                                 <option v-for="d in state.wizard.devDevices" :key="d.id || d.Id" :value="d.id || d.Id">
                                     {{ d.imei || d.Imei }} — {{ d.model || d.Model }}
                                 </option>
                             </select>
                             <label class="form-label small fw-semibold">{{ t360('deviceSale.saleType', 'Sale') }} *</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.devSaleType">
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.devSaleType" data-testid="c360-dev-sale-type">
                                 <option value="Cash">{{ t360('deviceSale.saleCash', '') }}</option>
                                 <option value="Installment">{{ t360('deviceSale.saleInstallment', '') }}</option>
                             </select>
                             <div v-if="state.wizard.devSaleType === 'Installment'">
                                 <label class="form-label small">{{ t360('deviceSale.installmentPlan', 'Plan') }} *</label>
-                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInstallmentPlanId">
+                                <select class="form-select form-select-sm mb-2" v-model="state.wizard.devInstallmentPlanId" data-testid="c360-dev-installment-plan">
                                     <option value="">—</option>
                                     <option v-for="p in state.wizard.devPlans" :key="p.id || p.Id" :value="p.id || p.Id">{{ p.nameAr || p.NameAr }}</option>
                                 </select>
@@ -1438,7 +1442,7 @@
                         </div>
                         <div v-if="state.wizard.kind === 'simswap'" class="mb-3">
                             <label class="form-label small fw-semibold">{{ t360('simSwap.replacementReason', 'Reason') }} <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.simReplacementReason">
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.simReplacementReason" data-testid="c360-sim-replacement-reason">
                                 <option value="">{{ t360('common.selectPlaceholder', '—') }}</option>
                                 <option value="Damaged">{{ t360('simSwap.reasonDamaged', '') }}</option>
                                 <option value="Upgrade5G">{{ t360('simSwap.reasonUpgrade', '') }}</option>
@@ -1463,7 +1467,7 @@
                             <div class="mb-2">
                                 <label class="form-label small fw-semibold">{{ t360('wizard.lineType.label', 'Line type') }} <span class="text-danger">*</span></label>
                                 <p class="small text-muted mb-1">{{ t360('wizard.lineType.hint', '') }}</p>
-                                <select class="form-select form-select-sm" v-model="state.wizard.activationLineTypeId" :disabled="state.telecomLineTypesBusy" @@change="onActivationLineTypeChange">
+                                <select class="form-select form-select-sm" v-model="state.wizard.activationLineTypeId" data-testid="c360-act-line-type" :disabled="state.telecomLineTypesBusy" @@change="onActivationLineTypeChange">
                                     <option value="">{{ state.telecomLineTypesBusy ? t360('common.loading', 'Loading…') : t360('wizard.lineType.placeholder', '—') }}</option>
                                     <option v-for="lt in activationLineTypeOptions" :key="lt.id" :value="lt.id">{{ lineTypeDisplayName(lt) }}</option>
                                 </select>
@@ -1551,13 +1555,13 @@
                                 </div>
                             </div>
                         </div>
-                        <div v-if="wizardSupportsEffectiveDate(state.wizard.kind)" class="mb-3">
+                        <div v-if="wizardSupportsEffectiveDate(state.wizard.kind)" class="mb-3" data-testid="c360-effective-date-block">
                             <label class="form-label small fw-semibold">{{ t360('bss.effectiveDateLabel', 'Effective date') }}</label>
-                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.bssEffectiveMode">
+                            <select class="form-select form-select-sm mb-2" v-model="state.wizard.bssEffectiveMode" data-testid="c360-effective-mode">
                                 <option value="immediate">{{ t360('bss.effectiveImmediate', 'Immediate') }}</option>
                                 <option value="scheduled">{{ t360('bss.effectiveScheduled', 'Scheduled') }}</option>
                             </select>
-                            <input v-if="state.wizard.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm" v-model="state.wizard.bssEffectiveDateLocal" :min="bssEffectiveTodayLocal()" />
+                            <input v-if="state.wizard.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm" v-model="state.wizard.bssEffectiveDateLocal" :min="bssEffectiveTodayLocal()" data-testid="c360-effective-date" />
                         </div>
                         <div class="mb-0">
                             <label class="form-label small">{{ ui.wizardUi.notes }}</label>
@@ -1651,7 +1655,7 @@
         </div>
     </div>
 
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section Scripts {
     <script src="~/lib/indotalent/activation-channel-ui.js" asp-append-version="true"></script>

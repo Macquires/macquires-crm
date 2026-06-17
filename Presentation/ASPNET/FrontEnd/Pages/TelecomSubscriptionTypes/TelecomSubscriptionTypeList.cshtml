@@ -3,7 +3,9 @@
     ViewData["Title"] = "Telecom subscription types";
 }
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="row">
         <div class="col-12">
             <div class="grid-container">
@@ -76,7 +78,7 @@
             </div>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/TelecomSubscriptionTypes/TelecomSubscriptionTypeList.cshtml.js"></script>

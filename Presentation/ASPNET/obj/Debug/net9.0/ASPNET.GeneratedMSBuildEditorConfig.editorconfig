@@ -154,6 +154,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX0xheW91dEVtYmVkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX1BvcnRhbFBhZ2VTaGVsbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX1BvcnRhbFBhZ2VTaGVsbEVuZC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/HP/Source/Repos/macquires-crm/Presentation/ASPNET/FrontEnd/Pages/Shared/AdminTemplate/__css.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRFbmRcUGFnZXNcU2hhcmVkXEFkbWluVGVtcGxhdGVcX19jc3MuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

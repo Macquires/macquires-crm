@@ -53,17 +53,11 @@ public static class DI
 
             case "SqlServer":
             default:
-                services.AddDbContextPool<DataContext>(options =>
+                services.AddDbContext<DataContext>(options =>
                     ConfigureSqlServer(options, connectionString, isDevelopment));
-                services.AddDbContextPool<CommandContext>(options =>
+                services.AddDbContext<CommandContext>(options =>
                     ConfigureSqlServer(options, connectionString, isDevelopment));
-                services.AddDbContextPool<QueryContext>(options =>
-                    ConfigureSqlServer(options, connectionString, isDevelopment));
-                services.AddPooledDbContextFactory<DataContext>(options =>
-                    ConfigureSqlServer(options, connectionString, isDevelopment));
-                services.AddPooledDbContextFactory<CommandContext>(options =>
-                    ConfigureSqlServer(options, connectionString, isDevelopment));
-                services.AddPooledDbContextFactory<QueryContext>(options =>
+                services.AddDbContext<QueryContext>(options =>
                     ConfigureSqlServer(options, connectionString, isDevelopment));
                 break;
         }
@@ -100,7 +94,6 @@ public static class DI
         using var scope = host.Services.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
-        var dataContext = serviceProvider.GetRequiredService<DataContext>();
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DI));
 
@@ -110,18 +103,23 @@ public static class DI
                 "Database:UseEfMigrations must be true. EnsureCreated bootstrap was removed — use EF Core migrations only.");
         }
 
-        BaselineLegacyEfMigrationsIfNeeded(dataContext, logger);
-        logger.LogInformation("Applying EF Core migrations (Database:UseEfMigrations=true).");
-        dataContext.Database.Migrate();
-
-        SchemaPatches.RlsBranchIdSchemaPatches.EnsureBranchIdColumns(dataContext, logger);
-
-        if (configuration.GetValue("Database:ApplyLegacyPatchesAfterMigrations", false))
+        using (serviceProvider.GetRequiredService<Application.Common.Security.ISystemExecutionGate>().Enter())
         {
-            logger.LogWarning("Applying one-time legacy schema patches (upgrade path only).");
-            ApplyIntegrationInfrastructureSchemaPatch(dataContext, logger);
-            ApplyRowVersionColumnsSchemaPatch(dataContext, logger);
-            ApplyTelecomTechnicalTicketBranchIdPatch(dataContext, logger);
+            var dataContext = serviceProvider.GetRequiredService<DataContext>();
+
+            BaselineLegacyEfMigrationsIfNeeded(dataContext, logger);
+            logger.LogInformation("Applying EF Core migrations (Database:UseEfMigrations=true).");
+            dataContext.Database.Migrate();
+
+            SchemaPatches.RlsBranchIdSchemaPatches.EnsureBranchIdColumns(dataContext, logger);
+
+            if (configuration.GetValue("Database:ApplyLegacyPatchesAfterMigrations", false))
+            {
+                logger.LogWarning("Applying one-time legacy schema patches (upgrade path only).");
+                ApplyIntegrationInfrastructureSchemaPatch(dataContext, logger);
+                ApplyRowVersionColumnsSchemaPatch(dataContext, logger);
+                ApplyTelecomTechnicalTicketBranchIdPatch(dataContext, logger);
+            }
         }
 
         return host;

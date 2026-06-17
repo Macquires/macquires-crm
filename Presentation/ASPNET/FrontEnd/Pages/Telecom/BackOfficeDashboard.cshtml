@@ -3,7 +3,7 @@
     ViewData["Title"] = "Back-office operations center";
 }
 <style>
-    #bo-dashboard-page { min-height: 70vh; background: var(--sys-bg); }
+    #bo-dashboard-page { position: relative; }
     .bo-loading-overlay {
         position: absolute; inset: 0; z-index: 20;
         background: rgba(248, 250, 252, 0.72);
@@ -92,7 +92,8 @@
     .bo-swal-over-offcanvas .swal2-textarea { pointer-events: auto !important; }
 </style>
 
-<div id="bo-dashboard-page" class="telecom-premium-page container-fluid py-4 position-relative">
+@{ ViewData["PortalPageId"] = "bo-dashboard-page"; ViewData["PortalPageClass"] = " position-relative"; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
     <div id="boLoadingOverlay" class="bo-loading-overlay d-none" aria-live="polite">
         <div class="text-center">
             <div class="spinner-border text-danger" role="status"></div>
@@ -118,12 +119,12 @@
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <div id="boScopeFilters" class="d-none d-flex flex-wrap gap-2 align-items-center me-2">
                 <select id="boScopeRegion" class="form-select form-select-sm" style="min-width:10rem" aria-label="Region">
-                    <option value="">كل المناطق</option>
+                    <option value="" data-telecom-i18n="backOffice.dashboard.allRegions">All regions</option>
                 </select>
                 <select id="boScopeBranch" class="form-select form-select-sm" style="min-width:10rem" aria-label="Branch">
-                    <option value="">كل الفروع</option>
+                    <option value="" data-telecom-i18n="backOffice.dashboard.allBranches">All branches</option>
                 </select>
-                <button type="button" id="boScopeApply" class="btn btn-outline-danger btn-sm">تطبيق النطاق</button>
+                <button type="button" id="boScopeApply" class="btn btn-outline-danger btn-sm" data-telecom-i18n="backOffice.dashboard.scopeApply">Apply scope</button>
             </div>
             <a href="/Telecom/BackOfficeHistoricalLedger" class="btn btn-outline-telecom btn-sm">
                 <i class="bi bi-archive me-1"></i>
@@ -682,9 +683,7 @@
                 <span data-telecom-i18n="backOffice.dashboard.quickResolve">إغلاق سريع (تم الحل)</span>
             </button>
         </div>
-    </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
-@section scripts {
     <script src="~/FrontEnd/Pages/Telecom/BackOfficeDashboard.cshtml.js" asp-append-version="true"></script>
 }

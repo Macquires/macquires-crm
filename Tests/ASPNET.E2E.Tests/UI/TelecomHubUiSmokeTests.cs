@@ -18,12 +18,14 @@ public sealed class TelecomHubUiSmokeTests
         Skip.If(_fixture.DockerUnavailable, "Docker daemon not running.");
         Skip.If(string.IsNullOrWhiteSpace(_fixture.PublicBaseUrl), "Kestrel public URL not available.");
 
+        Console.WriteLine("[E2E] Installing Playwright Chromium if needed…");
         await PlaywrightUiHelper.EnsureChromiumInstalledAsync();
 
         IPlaywright? playwright = null;
         IBrowser? browser = null;
         try
         {
+            Console.WriteLine("[E2E] TelecomHub smoke — opening browser and logging in…");
             (playwright, browser, _, var page) = await PlaywrightUiHelper.LaunchPageAsync(_fixture.PublicBaseUrl);
             await PlaywrightUiHelper.LoginViaUiAsync(page, _fixture.PublicBaseUrl);
             await PlaywrightUiHelper.GotoTelecomHubAsync(page, _fixture.PublicBaseUrl);

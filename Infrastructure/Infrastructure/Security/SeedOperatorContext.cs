@@ -10,6 +10,9 @@ public sealed class SeedOperatorContext : IOperatorContext
 
     public IReadOnlyList<string> Roles { get; } = [TelecomEnterpriseRoleMatrix.RoleAdmin];
 
+    public IReadOnlyList<string> Permissions { get; } =
+        PermissionCatalog.All.Select(p => p.Key).ToList();
+
     public TelecomMenuPersona? EffectivePersona => TelecomMenuPersona.SysAdmin;
 
     public string? BranchId => null;

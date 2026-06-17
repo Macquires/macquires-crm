@@ -68,19 +68,11 @@
         paymentStatus: { 0: 'Draft', 1: 'Gateway', 2: 'Completed', 3: 'Failed', 4: 'Reversed' },
     };
 
-    const BACK_OFFICE_ROLES = ['TelecomBackOffice', 'TelecomAdmin', 'TelecomManagement'];
     const BACK_OFFICE_PERMISSIONS = [
         'bulk.import.upload',
         'bulk.import.monitor',
         'telecom.asset.manage',
-        'telecom.line.migrate',
-        'telecom.line.activate',
-        'telecom.reports.mis',
-        'telecom.ticket.forcesync',
-        'admin.users.manage',
-        'admin.roles.manage',
         'admin.settings.manage',
-        'admin.audit.view',
         'customer.view',
     ];
 
@@ -111,6 +103,50 @@
         return p;
     }
 
+    function renderScopeSelects() {
+        const regionSel = document.getElementById('boScopeRegion');
+        const branchSel = document.getElementById('boScopeBranch');
+        if (!regionSel || !branchSel || !scopeState.canFilter) return;
+
+        const savedRegion = regionSel.value || scopeState.regionId || '';
+        const savedBranch = branchSel.value || scopeState.branchId || '';
+        const allRegions = t('backOffice.dashboard.allRegions', 'All regions');
+        const allBranches = t('backOffice.dashboard.allBranches', 'All branches');
+        const isEn = (document.documentElement.lang || 'en').toLowerCase().startsWith('en');
+        const regionName = (r) => {
+            if (isEn) return r.nameEn ?? r.NameEn ?? r.nameAr ?? r.NameAr ?? r.id ?? r.Id;
+            return r.nameAr ?? r.NameAr ?? r.nameEn ?? r.NameEn ?? r.id ?? r.Id;
+        };
+        const branchName = (b) => {
+            if (isEn) return b.nameEn ?? b.NameEn ?? b.nameAr ?? b.NameAr ?? b.id ?? b.Id;
+            return b.nameAr ?? b.NameAr ?? b.nameEn ?? b.NameEn ?? b.id ?? b.Id;
+        };
+
+        regionSel.innerHTML =
+            `<option value="">${escapeHtml(allRegions)}</option>` +
+            scopeState.regions
+                .map((r) => {
+                    const id = r.id ?? r.Id;
+                    return `<option value="${id}">${escapeHtml(regionName(r))}</option>`;
+                })
+                .join('');
+        if (savedRegion) regionSel.value = savedRegion;
+
+        const rid = regionSel.value || null;
+        const list = rid
+            ? scopeState.branches.filter((b) => (b.regionId ?? b.RegionId) === rid)
+            : scopeState.branches;
+        branchSel.innerHTML =
+            `<option value="">${escapeHtml(allBranches)}</option>` +
+            list
+                .map((b) => {
+                    const id = b.id ?? b.Id;
+                    return `<option value="${id}">${escapeHtml(branchName(b))}</option>`;
+                })
+                .join('');
+        if (savedBranch) branchSel.value = savedBranch;
+    }
+
     async function initScopeFilters() {
         const wrap = document.getElementById('boScopeFilters');
         const regionSel = document.getElementById('boScopeRegion');
@@ -119,7 +155,7 @@
         if (!wrap || !regionSel || !branchSel) return;
 
         try {
-            const res = await AxiosManager.get('/Telecom/GetStrategicMetrics', {});
+            const res = await AxiosManager.get('/Telecom/GetOperationalAnalyticsScope', {});
             const m = res?.data?.content ?? res?.data?.Content ?? {};
             scopeState.canFilter = m.canUseFilters ?? m.CanUseFilters ?? false;
             scopeState.regions = m.regions ?? m.Regions ?? [];
@@ -127,41 +163,45 @@
             if (!scopeState.canFilter) return;
 
             wrap.classList.remove('d-none');
-            regionSel.innerHTML =
-                '<option value="">كل المناطق</option>' +
-                scopeState.regions
-                    .map((r) => {
-                        const id = r.id ?? r.Id;
-                        const name = r.nameAr ?? r.NameAr ?? id;
-                        return `<option value="${id}">${escapeHtml(name)}</option>`;
-                    })
-                    .join('');
+            renderScopeSelects();
 
             const fillBranches = () => {
                 const rid = regionSel.value || null;
+                const savedBranch = branchSel.value || '';
+                const allBranches = t('backOffice.dashboard.allBranches', 'All branches');
+                const isEn = (document.documentElement.lang || 'en').toLowerCase().startsWith('en');
+                const branchName = (b) => {
+                    if (isEn) return b.nameEn ?? b.NameEn ?? b.nameAr ?? b.NameAr ?? b.id ?? b.Id;
+                    return b.nameAr ?? b.NameAr ?? b.nameEn ?? b.NameEn ?? b.id ?? b.Id;
+                };
                 const list = rid
                     ? scopeState.branches.filter((b) => (b.regionId ?? b.RegionId) === rid)
                     : scopeState.branches;
                 branchSel.innerHTML =
-                    '<option value="">كل الفروع</option>' +
+                    `<option value="">${escapeHtml(allBranches)}</option>` +
                     list
                         .map((b) => {
                             const id = b.id ?? b.Id;
-                            const name = b.nameAr ?? b.NameAr ?? id;
-                            return `<option value="${id}">${escapeHtml(name)}</option>`;
+                            return `<option value="${id}">${escapeHtml(branchName(b))}</option>`;
                         })
                         .join('');
+                if (savedBranch) branchSel.value = savedBranch;
             };
-            fillBranches();
-            regionSel.addEventListener('change', () => {
-                branchSel.value = '';
-                fillBranches();
-            });
-            applyBtn?.addEventListener('click', async () => {
-                scopeState.regionId = regionSel.value || null;
-                scopeState.branchId = branchSel.value || null;
-                await loadDashboardData(true);
-            });
+            if (!regionSel.dataset.scopeBound) {
+                regionSel.dataset.scopeBound = '1';
+                regionSel.addEventListener('change', () => {
+                    branchSel.value = '';
+                    fillBranches();
+                });
+            }
+            if (!applyBtn?.dataset.scopeBound) {
+                applyBtn.dataset.scopeBound = '1';
+                applyBtn?.addEventListener('click', async () => {
+                    scopeState.regionId = regionSel.value || null;
+                    scopeState.branchId = branchSel.value || null;
+                    await loadDashboardData(true);
+                });
+            }
         } catch (e) {
             console.warn('BO scope filters unavailable', e);
         }
@@ -441,15 +481,10 @@
     }
 
     function hasBackOfficeAccess() {
-        const userRoles = getEffectiveRoles();
         const userPerms = StorageManager.getPermissions?.() || [];
-        if (BACK_OFFICE_ROLES.some((r) => userRoles.includes(r))) return true;
         if (StorageManager.hasAnyPermission(userPerms, BACK_OFFICE_PERMISSIONS)) return true;
         if (typeof SecurityManager !== 'undefined' && typeof SecurityManager.canAccessTelecom === 'function') {
-            return SecurityManager.canAccessTelecom({
-                roles: BACK_OFFICE_ROLES,
-                permissions: BACK_OFFICE_PERMISSIONS,
-            });
+            return SecurityManager.canAccessTelecom({ permissions: BACK_OFFICE_PERMISSIONS });
         }
         return false;
     }
@@ -2061,6 +2096,7 @@
             try {
                 await window.TelecomI18n?.ensureLoaded?.();
                 applyPageI18n();
+                renderScopeSelects();
                 remapTicketLabels();
                 refreshTicketsGridI18n();
                 if (catalogGrid) {

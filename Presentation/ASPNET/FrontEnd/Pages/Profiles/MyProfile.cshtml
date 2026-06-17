@@ -3,7 +3,9 @@
     ViewData["Title"] = "My Profile";
 }
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="row mb-3">
         <div class="col-12">
             <h1 class="h4 mb-1">My Profile</h1>
@@ -82,7 +84,7 @@
             </form>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Profiles/MyProfile.cshtml.js"></script>

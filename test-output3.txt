@@ -1,0 +1,19 @@
+﻿Test run for c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E.Tests\bin\Release\net9.0\ASPNET.E2E.Tests.dll (.NETCoreApp,Version=v9.0)
+A total of 1 test files matched the specified pattern.
+dotnet : [xUnit.net 00:00:29.78]     
+ASPNET.E2E.Tests.UI.LiveDemo.TelecomBssLiveExecutiveDemoTests.ExecutiveDemo_RunAllScenarios_Sequentially [FAIL]
+At C:\Users\HP\AppData\Local\Temp\ps-script-544c8542-fe77-4aac-91eb-68726b87cf99.ps1:91 char:1
++ dotnet test "c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E. ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...entially [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Failed ASPNET.E2E.Tests.UI.LiveDemo.TelecomBssLiveExecutiveDemoTests.ExecutiveDemo_RunAllScenarios_Sequentially [4 s]
+  Error Message:
+   System.InvalidOperationException : No available demo MSISDN (093555*) in pool.
+  Stack Trace:
+     at ASPNET.E2E.Tests.Infrastructure.E2ETestDataHelper.ResolveActivationSeedAsync(IServiceProvider services, CancellationToken cancellationToken) in c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E.Tests\Infrastructure\E2ETestDataHelper.cs:line 67
+   at ASPNET.E2E.Tests.UI.LiveDemo.TelecomBssLiveExecutiveDemoTests.ExecutiveDemo_RunAllScenarios_Sequentially() in c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E.Tests\UI\LiveDemo\TelecomBssLiveExecutiveDemoTests.cs:line 35
+--- End of stack trace from previous location ---
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 4 s - ASPNET.E2E.Tests.dll (net9.0)

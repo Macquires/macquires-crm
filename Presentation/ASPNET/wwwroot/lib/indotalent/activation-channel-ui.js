@@ -6,7 +6,13 @@ window.ActivationChannelUi = (function () {
     const DEALER = 1;
     const DIGITAL = 2;
 
-    const BACK_OFFICE_ROLES = ['TelecomBackOffice', 'TelecomAdmin', 'TelecomManagement'];
+    const BACK_OFFICE_PERMISSIONS = [
+        'bulk.import.upload',
+        'bulk.import.monitor',
+        'telecom.asset.manage',
+        'admin.settings.manage',
+        'telecom.reports.mis',
+    ];
     const BACK_OFFICE_PERSONAS = ['BackOffice', 'SysAdmin', 'Executive'];
 
     const FALLBACK = {
@@ -19,14 +25,14 @@ window.ActivationChannelUi = (function () {
     let loadPromise = null;
 
     function resolveMode() {
-        const roles = StorageManager.getUserRoles?.() || [];
         const persona =
             (typeof PortalNavigation !== 'undefined' && PortalNavigation.getEffectivePersona?.()) ||
             StorageManager.getPrimaryMenuPersona?.() ||
             '';
+        const perms = StorageManager.getPermissions?.() || [];
         const isAdminPortal =
             BACK_OFFICE_PERSONAS.includes(persona) ||
-            roles.some((r) => BACK_OFFICE_ROLES.includes(r));
+            StorageManager.hasAnyPermission(perms, BACK_OFFICE_PERMISSIONS);
         return isAdminPortal ? 'admin' : 'showroom';
     }
 

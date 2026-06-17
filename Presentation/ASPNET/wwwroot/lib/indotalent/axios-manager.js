@@ -10,6 +10,17 @@ const AxiosManager = (() => {
     let isRefreshing = false;
     let retryQueue = [];
 
+    function isUiEn() {
+        const lang = (document.documentElement?.lang || document.body?.lang || 'en').toLowerCase();
+        return lang.startsWith('en');
+    }
+
+    function httpMsg(key, ar, en) {
+        const hit = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t(key) : null;
+        if (hit) return hit;
+        return isUiEn() ? en : ar;
+    }
+
     axiosInstance.interceptors.request.use(
         (config) => {
             const token = StorageManager.getAccessToken(); 
@@ -70,22 +81,28 @@ const AxiosManager = (() => {
                 const errData = error.response.data;
 
                 if (status === 400 && errData?.error?.name === 'BusinessRuleViolationException') {
-                    // Global intercept for Business Logic
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'تنبيه',
-                            text: errData.message || 'لا يمكن إتمام العملية بسبب قواعد العمل.',
+                            title: httpMsg('common.httpErrors.warningTitle', 'تنبيه', 'Notice'),
+                            text: errData.message || httpMsg(
+                                'common.httpErrors.businessRuleText',
+                                'لا يمكن إتمام العملية بسبب قواعد العمل.',
+                                'This action cannot be completed due to business rules.'
+                            ),
                             confirmButtonColor: '#c8102e'
                         });
                     }
                 } else if (status === 429 || status === 500) {
-                    // Chaos Engineering / Mock Server Rate Limits & Exceptions
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'error',
-                            title: 'خطأ في الشبكة',
-                            text: 'الشبكة مشغولة حالياً أو يوجد مشكلة في المخدم الخارجي، يرجى المحاولة بعد لحظات.',
+                            title: httpMsg('common.httpErrors.networkTitle', 'خطأ في الشبكة', 'Network error'),
+                            text: httpMsg(
+                                'common.httpErrors.networkText',
+                                'الشبكة مشغولة حالياً أو يوجد مشكلة في المخدم الخارجي، يرجى المحاولة بعد لحظات.',
+                                'The network or external service is busy. Please try again shortly.'
+                            ),
                             confirmButtonColor: '#c8102e'
                         });
                     }
@@ -105,11 +122,10 @@ const AxiosManager = (() => {
                         window.location.replace(landing);
                     }
                 } else if (errData && errData.message) {
-                    // General errors without showing StackTrace (Sanitized)
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'error',
-                            title: 'حدث خطأ',
+                            title: httpMsg('common.httpErrors.errorTitle', 'حدث خطأ', 'Error'),
                             text: errData.message,
                             confirmButtonColor: '#c8102e'
                         });

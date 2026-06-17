@@ -3,7 +3,9 @@
     ViewData["Title"] = "الإدارة والنظام";
 }
 
-<div id="app" v-cloak class="telecom-premium-page container py-4">
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="telecom-bento-card mb-3">
         <div class="card-body py-3">
             <h1 class="h4 mb-1">{{ t('pageTitle') }}</h1>
@@ -20,7 +22,7 @@
             <span>{{ item.label }}</span>
         </a>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Administration/Index.cshtml.js" asp-append-version="true"></script>

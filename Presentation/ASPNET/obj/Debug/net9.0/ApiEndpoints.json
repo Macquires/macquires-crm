@@ -266,6 +266,47 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.CustomerController",
+    "Method": "GetCustomer360TimelineAsync",
+    "RelativePath": "api/Customer/GetCustomer360Timeline",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "customerId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "take",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "skip",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "kinds",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.CustomerManager.Queries.GetCustomer360TimelineResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.CustomerController",
     "Method": "GetCustomerListAsync",
     "RelativePath": "api/Customer/GetCustomerList",
     "HttpMethod": "GET",
@@ -1419,6 +1460,42 @@
   },
   {
     "ContainingType": "ASPNET.BackEnd.Controllers.ProductController",
+    "Method": "GetMigrationProrationPreviewAsync",
+    "RelativePath": "api/Product/GetMigrationProrationPreview",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "subscriberProfileId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "msisdnAssetId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "productOfferingId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.ProductManager.Queries.GetMigrationProrationPreviewResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.ProductController",
     "Method": "GetProductListAsync",
     "RelativePath": "api/Product/GetProductList",
     "HttpMethod": "GET",
@@ -1843,13 +1920,7 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [
-      {
-        "Name": "userId",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
+    "Parameters": [],
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.SecurityManager.Queries.GetMyProfileListResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -2003,8 +2074,8 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "PermissionKey",
-        "Type": "System.String",
+        "Name": "PermissionKeys",
+        "Type": "System.Collections.Generic.IReadOnlyList\u00601[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -2144,13 +2215,7 @@
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
-    "Parameters": [
-      {
-        "Name": "request",
-        "Type": "Application.Features.SecurityManager.Commands.LogoutRequest",
-        "IsRequired": false
-      }
-    ],
+    "Parameters": [],
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.SecurityManager.Commands.LogoutResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -2512,7 +2577,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDeviceSalesController",
     "Method": "ApproveDeviceInstallmentAsync",
     "RelativePath": "api/Telecom/ApproveDeviceInstallment",
     "HttpMethod": "POST",
@@ -2538,7 +2603,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "CheckHlrStatusAsync",
     "RelativePath": "api/Telecom/CheckHlrStatus",
     "HttpMethod": "GET",
@@ -2569,7 +2634,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "ConfirmPaymentTransactionAsync",
     "RelativePath": "api/Telecom/ConfirmPaymentTransaction",
     "HttpMethod": "POST",
@@ -2595,7 +2660,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "ConfirmTelecomOperationAsync",
     "RelativePath": "api/Telecom/ConfirmTelecomOperation",
     "HttpMethod": "POST",
@@ -2621,7 +2686,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDeviceSalesController",
     "Method": "CreateDeviceInventoryAsync",
     "RelativePath": "api/Telecom/CreateDeviceInventory",
     "HttpMethod": "POST",
@@ -2647,7 +2712,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "CreatePaymentTransactionAsync",
     "RelativePath": "api/Telecom/CreatePaymentTransaction",
     "HttpMethod": "POST",
@@ -2673,7 +2738,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "CreateTelecomOperationAsync",
     "RelativePath": "api/Telecom/CreateTelecomOperation",
     "HttpMethod": "POST",
@@ -2699,7 +2764,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "DownloadBulkImportTemplateAsync",
     "RelativePath": "api/Telecom/DownloadBulkImportTemplate",
     "HttpMethod": "GET",
@@ -2715,7 +2780,7 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "DownloadKycDocumentAsync",
     "RelativePath": "api/Telecom/DownloadKycDocument",
     "HttpMethod": "GET",
@@ -2731,7 +2796,7 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "DownloadTelecomOperationIdentityDocumentAsync",
     "RelativePath": "api/Telecom/DownloadTelecomOperationIdentityDocument",
     "HttpMethod": "GET",
@@ -2747,7 +2812,7 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "EnqueueInventoryBulkImportAsync",
     "RelativePath": "api/Telecom/EnqueueInventoryBulkImport",
     "HttpMethod": "POST",
@@ -2773,7 +2838,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "EnsureSubscriberProfileForCustomerAsync",
     "RelativePath": "api/Telecom/EnsureSubscriberProfileForCustomer",
     "HttpMethod": "POST",
@@ -2799,7 +2864,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "ExportInventoryBulkImportErrorsAsync",
     "RelativePath": "api/Telecom/ExportInventoryBulkImportErrors",
     "HttpMethod": "GET",
@@ -2815,7 +2880,7 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "FetchCashierPaymentAsync",
     "RelativePath": "api/Telecom/FetchCashierPayment",
     "HttpMethod": "POST",
@@ -2841,7 +2906,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetActivationChannelLabelsAsync",
     "RelativePath": "api/Telecom/GetActivationChannelLabels",
     "HttpMethod": "GET",
@@ -2861,7 +2926,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetBadDebtEligibilityAsync",
     "RelativePath": "api/Telecom/GetBadDebtEligibility",
     "HttpMethod": "GET",
@@ -2922,7 +2987,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetBadDebtKpisAsync",
     "RelativePath": "api/Telecom/GetBadDebtKpis",
     "HttpMethod": "GET",
@@ -2937,6 +3002,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -2953,7 +3028,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetBillingIntegrationLogListAsync",
     "RelativePath": "api/Telecom/GetBillingIntegrationLogList",
     "HttpMethod": "GET",
@@ -3004,7 +3079,38 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetBranchGeoHeatmapAsync",
+    "RelativePath": "api/Telecom/GetBranchGeoHeatmap",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetBranchGeoHeatmapResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetChangeGsmTypeKpisAsync",
     "RelativePath": "api/Telecom/GetChangeGsmTypeKpis",
     "HttpMethod": "GET",
@@ -3019,6 +3125,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3035,7 +3151,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetChangeNumberKpisAsync",
     "RelativePath": "api/Telecom/GetChangeNumberKpis",
     "HttpMethod": "GET",
@@ -3050,6 +3166,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3066,7 +3192,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDeviceSalesController",
     "Method": "GetDeviceInventoryListAsync",
     "RelativePath": "api/Telecom/GetDeviceInventoryList",
     "HttpMethod": "GET",
@@ -3075,11 +3201,6 @@
     "Parameters": [
       {
         "Name": "status",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "branchId",
         "Type": "System.String",
         "IsRequired": false
       },
@@ -3102,7 +3223,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDeviceSalesController",
     "Method": "GetDeviceSaleKpisAsync",
     "RelativePath": "api/Telecom/GetDeviceSaleKpis",
     "HttpMethod": "GET",
@@ -3117,6 +3238,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3133,7 +3264,187 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetEmployeePerformanceDetailAsync",
+    "RelativePath": "api/Telecom/GetEmployeePerformanceDetail",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetEmployeePerformanceDetailResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetExecutiveCommandCenterSummaryAsync",
+    "RelativePath": "api/Telecom/GetExecutiveCommandCenterSummary",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetExecutiveCommandCenterSummaryResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetExecutiveExceptionsAsync",
+    "RelativePath": "api/Telecom/GetExecutiveExceptions",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetExecutiveExceptionsResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetExecutiveOperationsSnapshotAsync",
+    "RelativePath": "api/Telecom/GetExecutiveOperationsSnapshot",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetExecutiveOperationsSnapshotResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetExecutiveWeeklyDigestAsync",
+    "RelativePath": "api/Telecom/GetExecutiveWeeklyDigest",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetExecutiveWeeklyDigestResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetHlrProvisioningLogListAsync",
     "RelativePath": "api/Telecom/GetHlrProvisioningLogList",
     "HttpMethod": "GET",
@@ -3184,7 +3495,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetInIntegrationLogListAsync",
     "RelativePath": "api/Telecom/GetInIntegrationLogList",
     "HttpMethod": "GET",
@@ -3235,7 +3546,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDeviceSalesController",
     "Method": "GetInstallmentPlanListAsync",
     "RelativePath": "api/Telecom/GetInstallmentPlanList",
     "HttpMethod": "GET",
@@ -3255,7 +3566,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetIntegrationEnvironmentContextAsync",
     "RelativePath": "api/Telecom/GetIntegrationEnvironmentContext",
     "HttpMethod": "GET",
@@ -3275,7 +3586,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetIntegrationHealthStatusAsync",
     "RelativePath": "api/Telecom/GetIntegrationHealthStatus",
     "HttpMethod": "GET",
@@ -3295,7 +3606,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetIntegrationLogListAsync",
     "RelativePath": "api/Telecom/GetIntegrationLogList",
     "HttpMethod": "GET",
@@ -3351,7 +3662,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "GetInventoryBulkImportJobErrorsAsync",
     "RelativePath": "api/Telecom/GetInventoryBulkImportJobErrors",
     "HttpMethod": "GET",
@@ -3387,7 +3698,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "GetInventoryBulkImportJobListAsync",
     "RelativePath": "api/Telecom/GetInventoryBulkImportJobList",
     "HttpMethod": "GET",
@@ -3428,7 +3739,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "GetInventoryBulkImportJobStatusAsync",
     "RelativePath": "api/Telecom/GetInventoryBulkImportJobStatus",
     "HttpMethod": "GET",
@@ -3454,7 +3765,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetMsisdnAssetPoolListAsync",
     "RelativePath": "api/Telecom/GetMsisdnAssetPoolList",
     "HttpMethod": "GET",
@@ -3490,7 +3801,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetOfferSubscriptionKpisAsync",
     "RelativePath": "api/Telecom/GetOfferSubscriptionKpis",
     "HttpMethod": "GET",
@@ -3505,6 +3816,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3521,7 +3842,38 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetOperationalAnalyticsScopeAsync",
+    "RelativePath": "api/Telecom/GetOperationalAnalyticsScope",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetOperationalAnalyticsScopeResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "GetPaymentServicesKpisAsync",
     "RelativePath": "api/Telecom/GetPaymentServicesKpis",
     "HttpMethod": "GET",
@@ -3536,6 +3888,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3552,7 +3914,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "GetPaymentTransactionDetailAsync",
     "RelativePath": "api/Telecom/GetPaymentTransactionDetail",
     "HttpMethod": "GET",
@@ -3578,7 +3940,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "GetPaymentTransactionListAsync",
     "RelativePath": "api/Telecom/GetPaymentTransactionList",
     "HttpMethod": "GET",
@@ -3604,7 +3966,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetReconnectEligibilityAsync",
     "RelativePath": "api/Telecom/GetReconnectEligibility",
     "HttpMethod": "GET",
@@ -3660,7 +4022,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetReconnectKpisAsync",
     "RelativePath": "api/Telecom/GetReconnectKpis",
     "HttpMethod": "GET",
@@ -3675,6 +4037,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3691,7 +4063,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetRefundKpisAsync",
     "RelativePath": "api/Telecom/GetRefundKpis",
     "HttpMethod": "GET",
@@ -3706,6 +4078,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3722,7 +4104,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetSellingLineActivationKpisAsync",
     "RelativePath": "api/Telecom/GetSellingLineActivationKpis",
     "HttpMethod": "GET",
@@ -3737,6 +4119,11 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
         "IsRequired": false
       },
       {
@@ -3758,7 +4145,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetSimSwapKpisAsync",
     "RelativePath": "api/Telecom/GetSimSwapKpis",
     "HttpMethod": "GET",
@@ -3773,6 +4160,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3789,7 +4186,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetStrategicMetricsAsync",
     "RelativePath": "api/Telecom/GetStrategicMetrics",
     "HttpMethod": "GET",
@@ -3820,7 +4217,48 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetSupervisorInterventionAuditAsync",
+    "RelativePath": "api/Telecom/GetSupervisorInterventionAudit",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetSupervisorInterventionAuditResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetSuspensionKpisAsync",
     "RelativePath": "api/Telecom/GetSuspensionKpis",
     "HttpMethod": "GET",
@@ -3835,6 +4273,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3851,7 +4299,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetTakeOverOwnershipKpisAsync",
     "RelativePath": "api/Telecom/GetTakeOverOwnershipKpis",
     "HttpMethod": "GET",
@@ -3866,6 +4314,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -3882,13 +4340,24 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetTelecomDashboardKpisAsync",
     "RelativePath": "api/Telecom/GetTelecomDashboardKpis",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetTelecomDashboardKpisResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -3902,7 +4371,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetTelecomOperationDetailAsync",
     "RelativePath": "api/Telecom/GetTelecomOperationDetail",
     "HttpMethod": "GET",
@@ -3928,7 +4397,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetTelecomOperationListAsync",
     "RelativePath": "api/Telecom/GetTelecomOperationList",
     "HttpMethod": "GET",
@@ -3954,7 +4423,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetTelecomSubscriberProfileDetailAsync",
     "RelativePath": "api/Telecom/GetTelecomSubscriberProfileDetail",
     "HttpMethod": "GET",
@@ -3980,7 +4449,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "GetTelecomUniversalSearchAsync",
     "RelativePath": "api/Telecom/GetTelecomUniversalSearch",
     "HttpMethod": "GET",
@@ -4016,7 +4485,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomKpisController",
     "Method": "GetTerminationKpisAsync",
     "RelativePath": "api/Telecom/GetTerminationKpis",
     "HttpMethod": "GET",
@@ -4031,6 +4500,16 @@
       {
         "Name": "toUtc",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -4047,7 +4526,53 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
+    "Method": "GetWorkforcePerformanceReportAsync",
+    "RelativePath": "api/Telecom/GetWorkforcePerformanceReport",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "regionId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "branchId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "fromUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "toUtc",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "roleFilter",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Queries.GetWorkforcePerformanceReportResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "ImportSimInventoryBatchAsync",
     "RelativePath": "api/Telecom/ImportSimInventoryBatch",
     "HttpMethod": "POST",
@@ -4073,7 +4598,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "QueryHlrLiveStatusAsync",
     "RelativePath": "api/Telecom/QueryHlrLiveStatus",
     "HttpMethod": "GET",
@@ -4104,7 +4629,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDeviceSalesController",
     "Method": "RecordDeviceDownPaymentAsync",
     "RelativePath": "api/Telecom/RecordDeviceDownPayment",
     "HttpMethod": "POST",
@@ -4130,7 +4655,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "RecordSellingLinePaymentAsync",
     "RelativePath": "api/Telecom/RecordSellingLinePayment",
     "HttpMethod": "POST",
@@ -4156,7 +4681,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "RegisterSubscriberProfileForCustomerAsync",
     "RelativePath": "api/Telecom/RegisterSubscriberProfileForCustomer",
     "HttpMethod": "POST",
@@ -4182,7 +4707,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "ReleaseMsisdnReservationAsync",
     "RelativePath": "api/Telecom/ReleaseMsisdnReservation",
     "HttpMethod": "POST",
@@ -4208,7 +4733,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "ReprovisionSubscriberToHlrAsync",
     "RelativePath": "api/Telecom/ReprovisionSubscriberToHlr",
     "HttpMethod": "POST",
@@ -4234,7 +4759,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "ReserveMsisdnForCustomerAsync",
     "RelativePath": "api/Telecom/ReserveMsisdnForCustomer",
     "HttpMethod": "POST",
@@ -4260,7 +4785,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "ResyncSubscriberFromHlrAsync",
     "RelativePath": "api/Telecom/ResyncSubscriberFromHlr",
     "HttpMethod": "POST",
@@ -4286,7 +4811,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "ReversePaymentTransactionAsync",
     "RelativePath": "api/Telecom/ReversePaymentTransaction",
     "HttpMethod": "POST",
@@ -4312,7 +4837,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDemosController",
     "Method": "SendSmsDemoAsync",
     "RelativePath": "api/Telecom/SendSmsDemo",
     "HttpMethod": "POST",
@@ -4343,7 +4868,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomQueriesController",
     "Method": "TelecomUnifiedSearchAsync",
     "RelativePath": "api/Telecom/TelecomUnifiedSearch",
     "HttpMethod": "GET",
@@ -4379,7 +4904,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomDemosController",
     "Method": "TouchChargingDemoAsync",
     "RelativePath": "api/Telecom/TouchChargingDemo",
     "HttpMethod": "POST",
@@ -4405,7 +4930,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomNetworkController",
     "Method": "UpdateCustomerPrimaryTelecomLineAsync",
     "RelativePath": "api/Telecom/UpdateCustomerPrimaryTelecomLine",
     "HttpMethod": "POST",
@@ -4431,7 +4956,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "UploadInventoryBulkImportAsync",
     "RelativePath": "api/Telecom/UploadInventoryBulkImport",
     "HttpMethod": "POST",
@@ -4462,7 +4987,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "UploadKycDocumentAsync",
     "RelativePath": "api/Telecom/UploadKycDocument",
     "HttpMethod": "POST",
@@ -4493,7 +5018,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "UploadTelecomOperationDocumentAsync",
     "RelativePath": "api/Telecom/UploadTelecomOperationDocument",
     "HttpMethod": "POST",
@@ -4519,7 +5044,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
     "Method": "UploadTelecomOperationIdentityDocumentAsync",
     "RelativePath": "api/Telecom/UploadTelecomOperationIdentityDocument",
     "HttpMethod": "POST",
@@ -4550,7 +5075,7 @@
     ]
   },
   {
-    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomController",
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomPaymentsController",
     "Method": "ValidateVoucherAsync",
     "RelativePath": "api/Telecom/ValidateVoucher",
     "HttpMethod": "POST",
@@ -4766,11 +5291,6 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "ActorUserId",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
         "Name": "SearchTerm",
         "Type": "System.String",
         "IsRequired": false
@@ -4798,6 +5318,11 @@
       {
         "Name": "Take",
         "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "PermissionKeys",
+        "Type": "System.Collections.Generic.IReadOnlyList\u00601[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       }
     ],
@@ -4867,8 +5392,8 @@
         "IsRequired": false
       },
       {
-        "Name": "PermissionKey",
-        "Type": "System.String",
+        "Name": "PermissionKeys",
+        "Type": "System.Collections.Generic.IReadOnlyList\u00601[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       }
     ],
@@ -4923,8 +5448,8 @@
         "IsRequired": false
       },
       {
-        "Name": "PermissionKey",
-        "Type": "System.String",
+        "Name": "PermissionKeys",
+        "Type": "System.Collections.Generic.IReadOnlyList\u00601[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       }
     ],

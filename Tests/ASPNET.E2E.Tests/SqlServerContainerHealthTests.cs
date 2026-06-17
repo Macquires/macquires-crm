@@ -1,6 +1,10 @@
+extern alias Simulator;
+
 using System.Net;
 using ASPNET.E2E.Tests.Infrastructure;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Hosting;
 using Testcontainers.MsSql;
 using Xunit;
 
@@ -43,16 +47,65 @@ public class SqlServerContainerHealthTests : IAsyncLifetime
     }
 }
 
-public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+[Trait("Category", "Integration")]
+public class HealthEndpointTests : IAsyncLifetime
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private MsSqlContainer? _sql;
+    private WebApplicationFactory<Simulator::Program>? _simulatorFactory;
+    private NsuiteWebApplicationFactory? _factory;
+    public bool DockerUnavailable { get; private set; }
 
-    public HealthEndpointTests(WebApplicationFactory<Program> factory) => _factory = factory;
+    public async Task InitializeAsync()
+    {
+        if (!DockerProbe.IsAvailable())
+        {
+            DockerUnavailable = true;
+            return;
+        }
 
-    [Fact]
+        _sql = E2ETestContainers.CreateSqlServer();
+        await _sql.StartAsync();
+
+        _simulatorFactory = new WebApplicationFactory<Simulator::Program>()
+            .WithWebHostBuilder(builder => builder.UseEnvironment(Environments.Development));
+
+        using var simulatorClient = _simulatorFactory.CreateClient();
+        var simulatorBase = simulatorClient.BaseAddress?.ToString().TrimEnd('/')
+            ?? throw new InvalidOperationException("Simulator base address missing.");
+
+        _factory = new NsuiteWebApplicationFactory(_sql.GetConnectionString(), simulatorBase);
+
+        using var warmup = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+            AllowAutoRedirect = false,
+        });
+        warmup.Timeout = TimeSpan.FromMinutes(10);
+        _ = await warmup.GetAsync("/health");
+    }
+
+    public async Task DisposeAsync()
+    {
+        _factory?.Dispose();
+        _simulatorFactory?.Dispose();
+        if (_sql is not null)
+        {
+            await _sql.DisposeAsync();
+        }
+    }
+
+    [SkippableFact]
     public async Task Health_endpoint_returns_success_or_degraded()
     {
-        var client = _factory.CreateClient();
+        Skip.If(DockerUnavailable, "Docker daemon not running.");
+
+        var client = _factory!.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+            AllowAutoRedirect = false,
+        });
+        client.Timeout = TimeSpan.FromMinutes(5);
+
         var response = await client.GetAsync("/health");
         Assert.True(
             response.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable,

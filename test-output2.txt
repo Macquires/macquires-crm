@@ -1,0 +1,23 @@
+﻿Test run for c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E.Tests\bin\Release\net9.0\ASPNET.E2E.Tests.dll (.NETCoreApp,Version=v9.0)
+A total of 1 test files matched the specified pattern.
+dotnet : [xUnit.net 00:00:23.73]     
+ASPNET.E2E.Tests.UI.LiveDemo.TelecomBssLiveExecutiveDemoTests.ExecutiveDemo_RunAllScenarios_Sequentially [FAIL]
+At C:\Users\HP\AppData\Local\Temp\ps-script-91865589-46a7-4828-a0cf-e29eaeafd7cd.ps1:91 char:1
++ dotnet test "c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E. ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...entially [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Failed ASPNET.E2E.Tests.UI.LiveDemo.TelecomBssLiveExecutiveDemoTests.ExecutiveDemo_RunAllScenarios_Sequentially [1 ms]
+  Error Message:
+   System.InvalidOperationException : Kestrel did not publish any listening addresses for Playwright E2E.
+  Stack Trace:
+     at ASPNET.E2E.Tests.Infrastructure.NsuiteWebApplicationFactory.CreateHost(IHostBuilder builder) in c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E.Tests\Infrastructure\NsuiteWebApplicationFactory.cs:line 41
+   at Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.ConfigureHostBuilder(IHostBuilder hostBuilder)
+   at Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.EnsureServer()
+   at Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateDefaultClient(DelegatingHandler[] handlers)
+   at Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateDefaultClient(Uri baseAddress, DelegatingHandler[] handlers)
+   at Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1.CreateClient(WebApplicationFactoryClientOptions options)
+   at ASPNET.E2E.Tests.Infrastructure.TelecomE2EFixture.InitializeAsync() in c:\Users\HP\source\repos\macquires-crm\Tests\ASPNET.E2E.Tests\Infrastructure\TelecomE2EFixture.cs:line 51
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 1 ms - ASPNET.E2E.Tests.dll (net9.0)

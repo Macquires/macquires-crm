@@ -83,6 +83,7 @@ public class GetDashboardWidgetDataHandlerTests
     {
         public string? UserId => null;
         public IReadOnlyList<string> Roles { get; } = [];
+        public IReadOnlyList<string> Permissions { get; } = [];
         public TelecomMenuPersona? EffectivePersona => TelecomMenuPersona.Executive;
         public bool IsAuthenticated => true;
         public string? BranchId => null;

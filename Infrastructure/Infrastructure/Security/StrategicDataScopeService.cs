@@ -2,7 +2,6 @@ using Application.Common.Security;
 using Domain.Enums;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Infrastructure.SecurityManager.AspNetIdentity;
-using Infrastructure.SecurityManager.Roles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,11 +11,16 @@ public class StrategicDataScopeService : IStrategicDataScopeService
 {
     private readonly DataContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IPermissionEvaluator _permissions;
 
-    public StrategicDataScopeService(DataContext context, UserManager<ApplicationUser> userManager)
+    public StrategicDataScopeService(
+        DataContext context,
+        UserManager<ApplicationUser> userManager,
+        IPermissionEvaluator permissions)
     {
         _context = context;
         _userManager = userManager;
+        _permissions = permissions;
     }
 
     public async Task<StrategicDataScope> ResolveScopeAsync(
@@ -28,7 +32,8 @@ public class StrategicDataScopeService : IStrategicDataScopeService
         var user = await _userManager.FindByIdAsync(userId)
             ?? throw new UnauthorizedAccessException("المستخدم غير موجود.");
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var permissionKeys = await _permissions.GetUserPermissionKeysAsync(userId, cancellationToken);
+        var permissions = permissionKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var orgUnits = await _context.OrgUnit.AsNoTracking()
             .Where(x => !x.IsDeleted)
             .ToListAsync(cancellationToken);
@@ -46,7 +51,7 @@ public class StrategicDataScopeService : IStrategicDataScopeService
         }
 
         var accessLevel = StrategicDataScopeResolver.DeriveAccessLevel(
-            roles.ToList(),
+            permissions,
             user.OrgUnitId,
             managedRegionId,
             managedHqId,

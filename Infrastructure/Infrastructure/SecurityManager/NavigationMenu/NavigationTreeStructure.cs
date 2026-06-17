@@ -48,14 +48,13 @@ public static partial class NavigationTreeStructure
             "Icon": "bi-command",
             "SortOrder": 1,
             "Children": [
-                { "URL": "/Executive/CommandCenter", "Name": "لوحة القيادة التنفيذية", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-speedometer2", "SortOrder": 1, "BadgeKey": "criticalExecutiveExceptions", "IsQuickAction": true },
-                { "URL": "/Telecom/StrategicAnalytics", "Name": "التحليلات الاستراتيجية", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-graph-up-arrow", "SortOrder": 2 },
-                { "URL": "/Dashboards/DefaultDashboard#strategic-analytics", "Name": "MIS — لوحة موحّدة", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-pie-chart", "SortOrder": 3 },
-                { "URL": "/Dashboards/DefaultDashboard#mis-reports", "Name": "تقارير MIS السريعة", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-speedometer", "SortOrder": 4 },
-                { "URL": "/Dashboards/DefaultDashboard#executive-exceptions", "Name": "تنبيهات الإدارة العليا", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-exclamation-triangle", "SortOrder": 5, "BadgeKey": "criticalExecutiveExceptions" },
-                { "URL": "/Telecom/ExecutiveExceptions", "Name": "مركز الاستثناءات التشغيلية", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-shield-exclamation", "SortOrder": 6, "BadgeKey": "criticalExecutiveExceptions" },
-                { "URL": "/Dashboards/DefaultDashboard#supervisor-interventions", "Name": "تدقيق تدخلات المشرف", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-person-check", "SortOrder": 7 },
-                { "URL": "/Dashboards/DefaultDashboard#branch-geo-heatmap", "Name": "خريطة حرارة الفروع", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-geo-alt", "SortOrder": 8 }
+                { "URL": "/Executive/CommandCenter?tab=scorecard", "Name": "نظرة سريعة — Scorecard", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-speedometer2", "SortOrder": 1, "IsQuickAction": true },
+                { "URL": "/Executive/CommandCenter?tab=network", "Name": "الشبكة والتكامل", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-broadcast", "SortOrder": 2 },
+                { "URL": "/Executive/CommandCenter?tab=mis", "Name": "MIS المالي والفروع", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-graph-up-arrow", "SortOrder": 3 },
+                { "URL": "/Executive/CommandCenter?tab=operations", "Name": "العمليات — مراقبة", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-heart-pulse", "SortOrder": 4 },
+                { "URL": "/Executive/CommandCenter?tab=workforce", "Name": "أداء الموظفين", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-people", "SortOrder": 5 },
+                { "URL": "/Executive/CommandCenter?tab=alerts", "Name": "التنبيهات والتدقيق", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-exclamation-triangle", "SortOrder": 6, "BadgeKey": "criticalExecutiveExceptions" },
+                { "URL": "/Dashboards/DefaultDashboard", "Name": "لوحة القيادة العامة", "IsModule": false, "Personas": ["Executive","SysAdmin"], "Icon": "bi-grid-1x2", "SortOrder": 7 }
             ]
         },
         {

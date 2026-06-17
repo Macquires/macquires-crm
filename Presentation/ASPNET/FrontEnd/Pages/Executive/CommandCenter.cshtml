@@ -5,21 +5,25 @@
 
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 
-<div class="form-card strategic-analytics-page" id="formcard">
-    <div id="commandCenterGate" class="text-center py-5 d-none">
-        <p class="text-light opacity-75" data-telecom-i18n="executiveCommandCenter.noPermission">لا صلاحية لعرض مركز القيادة التنفيذية.</p>
-        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-light" data-telecom-i18n="executiveCommandCenter.backToDashboard">العودة للوحة</a>
+@{ ViewData["PortalPageId"] = "commandCenterRoot"; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
+<div id="commandCenterGate" class="text-center py-5 d-none">
+        <p class="text-muted mb-3" data-telecom-i18n="executiveCommandCenter.noPermission">لا صلاحية لعرض مركز القيادة التنفيذية.</p>
+        <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-danger" data-telecom-i18n="executiveCommandCenter.backToDashboard">العودة للوحة</a>
     </div>
 
-    <div id="commandCenterApp" v-cloak class="strategic-exec-root strategic-exec-dark">
-        <header class="strategic-exec-hero mb-3">
-            <p class="strategic-exec-kicker mb-1" data-telecom-i18n="executiveCommandCenter.kicker">EXECUTIVE</p>
-            <h1 class="h4 fw-bold text-syriatel-red mb-0" data-telecom-i18n="executiveCommandCenter.title">مركز قيادة الإدارة العليا</h1>
+    <div id="commandCenterApp" class="container-fluid py-3 px-3 px-lg-4 executive-cc-root">
+        <header class="telecom-hero telecom-premium-hero card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <p class="small text-muted mb-1" data-telecom-i18n="executiveCommandCenter.kicker">EXECUTIVE</p>
+                <h1 class="h4 mb-0 fw-semibold text-syriatel-red" data-telecom-i18n="executiveCommandCenter.title">مركز قيادة الإدارة العليا</h1>
+            </div>
         </header>
 
         <div id="executiveScopeBarHost"></div>
 
-        <ul class="nav nav-pills executive-cc-tabs mb-4 flex-wrap gap-1" id="ccTabs" role="tablist">
+        <ul class="nav nav-pills executive-cc-tabs mb-4 flex-wrap gap-2" id="ccTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#cc-scorecard" type="button" role="tab" data-telecom-i18n="executiveCommandCenter.tabs.scorecard">نظرة سريعة</button>
             </li>
@@ -48,7 +52,7 @@
                 <div id="executiveNetworkHost"></div>
             </div>
             <div class="tab-pane fade" id="cc-mis" role="tabpanel">
-                <div id="executiveMisHost" class="strategic-exec-root">
+                <div id="executiveMisHost">
                     @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
                 </div>
                 <div id="executiveGeoHost" class="mt-4"></div>
@@ -64,53 +68,8 @@
             </div>
         </div>
     </div>
-</div>
 
-@section styles {
-    <style>
-        .strategic-analytics-page {
-            min-height: 85vh;
-            background: linear-gradient(165deg, #0f1114 0%, #1a1d22 42%, #1a1d22 100%);
-            border-radius: var(--sys-radius, 12px);
-            overflow: hidden;
-        }
-        .strategic-exec-dark {
-            --sys-bg: #14171c;
-            --sys-card-bg: #1e232b;
-            --sys-border: rgba(255, 255, 255, 0.08);
-            --sys-text-main: #f1f5f9;
-            --sys-text-muted: #94a3b8;
-            --sys-brand-red: #c8102e;
-            max-width: 100%;
-            margin-inline: auto;
-            padding: 1.5rem 1.25rem 2.5rem;
-            color: var(--sys-text-main);
-            min-height: 80vh;
-        }
-        .strategic-exec-dark .strategic-exec-hero {
-            border-bottom: 1px solid var(--sys-border);
-            padding: 1rem 1.25rem 1.25rem;
-            background: linear-gradient(90deg, rgba(200, 16, 46, 0.12) 0%, transparent 55%);
-            border-radius: 12px 12px 0 0;
-        }
-        .executive-cc-tabs .nav-link {
-            color: var(--sys-text-muted);
-            border-radius: 999px;
-            padding: 0.45rem 1rem;
-            font-size: 0.85rem;
-        }
-        .executive-cc-tabs .nav-link.active {
-            background: var(--sys-brand-red);
-            color: #fff;
-        }
-        .strategic-exec-dark .strategic-bento-card,
-        .strategic-exec-dark .strategic-panel,
-        .strategic-exec-dark .strategic-filter-bar {
-            background: var(--sys-card-bg);
-            border: 1px solid var(--sys-border);
-        }
-    </style>
-}
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>

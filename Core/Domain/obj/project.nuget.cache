@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "gXG5tgKzqEk=",
+  "dgSpecHash": "N34KLtAjjfI=",
   "success": true,
-  "projectFilePath": "c:\\Users\\HP\\source\\repos\\macquires-crm\\Core\\Domain\\Domain.csproj",
+  "projectFilePath": "C:\\Users\\HP\\Source\\Repos\\macquires-crm\\Core\\Domain\\Domain.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.14\\microsoft.netcore.app.ref.9.0.14.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.14\\microsoft.windowsdesktop.app.ref.9.0.14.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.14\\microsoft.netcore.app.ref.9.0.14.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.14\\microsoft.aspnetcore.app.ref.9.0.14.nupkg.sha512"
   ],
   "logs": []

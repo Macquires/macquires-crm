@@ -19,6 +19,35 @@ public sealed record ActivationSeedBundle(
     string ProductOfferingId,
     string KycDocumentReferenceId);
 
+public sealed record ShowcaseLineRef(
+    string CustomerId,
+    string SubscriberProfileId,
+    string MsisdnAssetId,
+    string Msisdn,
+    string LineKey);
+
+public sealed record RechargeLedgerSnapshot(
+    string PaymentId,
+    string PaymentNumber,
+    decimal Amount,
+    string GatewayReference,
+    string? ConfirmedByUserId,
+    DateTime? ConfirmedAtUtc,
+    PaymentTransactionStatus Status);
+
+public sealed record SubscriberVasSnapshot(
+    string Id,
+    SubscriberVasStatus Status,
+    DateTime? ActivatedAtUtc,
+    DateTime? DeactivatedAtUtc);
+
+public sealed record TelecomOperationSnapshot(
+    string Id,
+    string Number,
+    TelecomOperationKind Kind,
+    TelecomOperationStatus Status,
+    string? SubscriberProfileId);
+
 public static class E2ETestDataHelper
 {
     public static async Task<ActivationSeedBundle> ResolveActivationSeedAsync(
@@ -84,13 +113,57 @@ public static class E2ETestDataHelper
         IServiceProvider services,
         CancellationToken cancellationToken = default)
     {
+        return await ResolveDemoCustomerIdForMsisdnAsync(
+            services,
+            TelecomDemoMsisdn.ShowcaseHealthy,
+            cancellationToken);
+    }
+
+    public static async Task<string> ResolveDemoCustomerIdForMsisdnAsync(
+        IServiceProvider services,
+        string msisdn,
+        CancellationToken cancellationToken = default)
+    {
         using var scope = services.CreateScope();
         var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
-        return await query.SubscriberProfile.AsNoTracking()
-            .Where(p => !p.IsDeleted)
-            .OrderBy(p => p.CreatedAtUtc)
-            .Select(p => p.CustomerId)
+        var customerId = await (
+            from asset in query.MsisdnAsset.AsNoTracking()
+            join profile in query.SubscriberProfile.AsNoTracking() on asset.SubscriberProfileId equals profile.Id
+            where !asset.IsDeleted
+                  && !profile.IsDeleted
+                  && asset.Msisdn == msisdn
+                  && asset.SubscriberProfileId != null
+            select profile.CustomerId
+        ).FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(customerId))
+        {
+            throw new InvalidOperationException($"No customer found for demo MSISDN {msisdn}.");
+        }
+
+        return customerId;
+    }
+
+    public static async Task<ShowcaseLineRef> ResolveShowcaseLineAsync(
+        IServiceProvider services,
+        string msisdn,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+        var row = await query.MsisdnAsset.AsNoTracking()
+            .Where(m => !m.IsDeleted && m.Msisdn == msisdn && m.SubscriberProfileId != null)
+            .Select(m => new { m.Id, m.Msisdn, m.SubscriberProfileId })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new InvalidOperationException($"Demo line {msisdn} not found.");
+
+        var profile = await query.SubscriberProfile.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.Id == row.SubscriberProfileId)
+            .Select(p => new { p.Id, p.CustomerId })
             .FirstAsync(cancellationToken);
+
+        var lineKey = $"{profile.Id}|{row.Msisdn}|{row.Id}";
+        return new ShowcaseLineRef(profile.CustomerId, profile.Id, row.Id, row.Msisdn, lineKey);
     }
 
     public static async Task<ActivationSeedBundle> ResolveAlternateActivationSeedAsync(
@@ -326,5 +399,187 @@ public static class E2ETestDataHelper
             operationId,
             SystemOperatorContext.SystemUserId,
             cancellationToken);
+    }
+
+    public static async Task<decimal?> GetSubscriberPrepaidBalanceAsync(
+        IServiceProvider services,
+        string subscriberProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+        return await query.SubscriberProfile.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.Id == subscriberProfileId)
+            .Select(p => p.PrepaidBalance)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public static async Task<string?> GetSubscriptionOfferingCodeAsync(
+        IServiceProvider services,
+        string subscriptionId,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+        return await (
+            from s in query.TelecomSubscription.AsNoTracking()
+            join o in query.ProductOffering.AsNoTracking() on s.ProductOfferingId equals o.Id
+            where !s.IsDeleted && s.Id == subscriptionId
+            select o.Code
+        ).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public static async Task<string?> GetTechnicalTicketIdByNumberAsync(
+        IServiceProvider services,
+        string ticketNumber,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        return await db.TelecomTechnicalTicket.AsNoTracking()
+            .Where(t => !t.IsDeleted && t.TicketNumber == ticketNumber)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public static async Task<RechargeLedgerSnapshot?> GetLatestCompletedRechargeByGatewayRefAsync(
+        IServiceProvider services,
+        string customerId,
+        string gatewayReference,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        var row = await db.TelecomPaymentTransaction.AsNoTracking()
+            .Where(p => !p.IsDeleted
+                        && p.CustomerId == customerId
+                        && p.GatewayReference == gatewayReference
+                        && p.Status == PaymentTransactionStatus.Completed)
+            .OrderByDescending(p => p.ConfirmedAtUtc)
+            .Select(p => new RechargeLedgerSnapshot(
+                p.Id,
+                p.Number,
+                p.Amount,
+                p.GatewayReference ?? "",
+                p.CreatedById,
+                p.ConfirmedAtUtc,
+                p.Status))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return row;
+    }
+
+    public static async Task<SubscriberVasSnapshot?> GetSubscriberVasRowAsync(
+        IServiceProvider services,
+        string subscriptionId,
+        string serviceCode,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+        return await (
+            from row in query.SubscriberActiveService.AsNoTracking()
+            join vas in query.TelecomValueAddedService.AsNoTracking() on row.TelecomValueAddedServiceId equals vas.Id
+            where !row.IsDeleted
+                  && row.TelecomSubscriptionId == subscriptionId
+                  && vas.ServiceCode == serviceCode
+            select new SubscriberVasSnapshot(
+                row.Id,
+                row.Status,
+                row.ActivatedAtUtc,
+                row.DeactivatedAtUtc)
+        ).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public static async Task TransitionTechnicalTicketStatusAsync(
+        IServiceProvider services,
+        string ticketId,
+        TechnicalTicketStatus newStatus,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        var ticket = await db.TelecomTechnicalTicket
+            .FirstAsync(t => !t.IsDeleted && t.Id == ticketId, cancellationToken);
+
+        ticket.Status = newStatus;
+        ticket.UpdatedAtUtc = DateTime.UtcNow;
+        if (newStatus == TechnicalTicketStatus.InProgress)
+        {
+            ticket.ResolvedAtUtc = null;
+            ticket.ResolvedByUserId = null;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public static async Task<bool> HasAuditLogForEntityAsync(
+        IServiceProvider services,
+        string entityType,
+        string entityId,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        return await db.UserAuditLog.AsNoTracking()
+            .AnyAsync(
+                l => !l.IsDeleted
+                     && l.EntityType == entityType
+                     && l.EntityId == entityId,
+                cancellationToken);
+    }
+
+    public static async Task<int> CountActiveSubscriberVasRowsAsync(
+        IServiceProvider services,
+        string subscriptionId,
+        string serviceCode,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+        return await (
+            from row in query.SubscriberActiveService.AsNoTracking()
+            join vas in query.TelecomValueAddedService.AsNoTracking() on row.TelecomValueAddedServiceId equals vas.Id
+            where !row.IsDeleted
+                  && row.TelecomSubscriptionId == subscriptionId
+                  && vas.ServiceCode == serviceCode
+                  && row.Status == SubscriberVasStatus.Active
+            select row.Id
+        ).CountAsync(cancellationToken);
+    }
+
+    public static async Task<TelecomOperationSnapshot?> GetLatestTelecomOperationByKindAsync(
+        IServiceProvider services,
+        string subscriberProfileId,
+        TelecomOperationKind kind,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        return await db.TelecomOperationRequest.AsNoTracking()
+            .Where(o => !o.IsDeleted
+                        && o.SubscriberProfileId == subscriberProfileId
+                        && o.Kind == kind)
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Select(o => new TelecomOperationSnapshot(
+                o.Id,
+                o.Number,
+                o.Kind,
+                o.Status,
+                o.SubscriberProfileId))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public static async Task<SubscriberOperationalStatus?> GetSubscriberOperationalStatusAsync(
+        IServiceProvider services,
+        string subscriberProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        using var scope = services.CreateScope();
+        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
+        return await query.SubscriberProfile.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.Id == subscriberProfileId)
+            .Select(p => p.OperationalStatus)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

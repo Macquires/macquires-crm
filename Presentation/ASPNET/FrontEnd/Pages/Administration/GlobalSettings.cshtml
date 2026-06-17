@@ -3,7 +3,9 @@
     ViewData["Title"] = "الإعدادات العامة";
 }
 
-<div id="app" v-cloak class="telecom-premium-page container-fluid">
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="telecom-bento-card mb-3">
         <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-start gap-2">
             <div>
@@ -505,7 +507,7 @@
             </div>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Administration/GlobalSettings.cshtml.js" asp-append-version="true"></script>

@@ -194,10 +194,8 @@ const App = {
                 });
 
                 if (StorageManager.isApiSuccess(response)) {
-                    try {
-                        sessionStorage.removeItem('syrSessionSynced');
-                    } catch {
-                        /* ignore */
+                    if (typeof StorageManager.clearUiSessionState === 'function') {
+                        StorageManager.clearUiSessionState();
                     }
                     StorageManager.saveLoginResult(response.data);
                     const landingUrl =

@@ -3,7 +3,9 @@
     ViewData["Title"] = "إعداد لوحة القيادة — Bento";
 }
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="row">
         <div class="col-12">
             <p class="text-muted small mb-2">
@@ -125,7 +127,7 @@
             </div>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Dashboards/DashboardWidgetList.cshtml.js"></script>

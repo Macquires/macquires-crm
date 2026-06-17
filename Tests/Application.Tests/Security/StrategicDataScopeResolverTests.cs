@@ -96,13 +96,55 @@ public class StrategicDataScopeResolverTests
     [Fact]
     public void DeriveAccessLevel_branch_user_with_org_unit()
     {
+        var permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            PermissionCatalog.CustomerView,
+            PermissionCatalog.TelecomLineActivate,
+        };
+
         var level = StrategicDataScopeResolver.DeriveAccessLevel(
-            [TelecomEnterpriseRoleMatrix.RoleShowroom],
+            permissions,
             "br-tartus",
             null,
             null,
             OrgUnitKind.Branch);
 
         Assert.Equal(StrategicAccessLevel.BranchManager, level);
+    }
+
+    [Fact]
+    public void DeriveAccessLevel_mis_permission_without_org_unit_is_general_manager()
+    {
+        var permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            PermissionCatalog.TelecomReportsMis,
+        };
+
+        var level = StrategicDataScopeResolver.DeriveAccessLevel(
+            permissions,
+            null,
+            null,
+            null,
+            null);
+
+        Assert.Equal(StrategicAccessLevel.GeneralManager, level);
+    }
+
+    [Fact]
+    public void DeriveAccessLevel_admin_settings_is_general_manager()
+    {
+        var permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            PermissionCatalog.AdminSettingsManage,
+        };
+
+        var level = StrategicDataScopeResolver.DeriveAccessLevel(
+            permissions,
+            "br-tartus",
+            null,
+            null,
+            OrgUnitKind.Branch);
+
+        Assert.Equal(StrategicAccessLevel.GeneralManager, level);
     }
 }

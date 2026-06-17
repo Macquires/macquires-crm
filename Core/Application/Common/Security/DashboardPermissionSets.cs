@@ -13,6 +13,9 @@ public static class DashboardPermissionSets
         PermissionCatalog.TelecomLineActivate,
     ];
 
+    /// <summary>Subscriber registry / unified search — same surface as <c>RequireTelecomRead</c>.</summary>
+    public static readonly IReadOnlyList<string> UnifiedSearchAny = ReadAny;
+
     /// <summary>Configure widget catalog (matches <c>RequireDashboardAdmin</c>).</summary>
     public static readonly IReadOnlyList<string> AdminAny =
     [

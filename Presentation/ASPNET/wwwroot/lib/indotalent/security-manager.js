@@ -21,6 +21,7 @@
             'bulk.import.upload',
             'bulk.import.monitor',
             'telecom.asset.manage',
+            'admin.settings.manage',
         ],
         '/telecom/telecomhub': [
             'customer.view',
@@ -120,43 +121,8 @@
         }, 2000);
     },
 
-    authorizePage: async (requiredRoles) => {
-        const userRoles = StorageManager.getUserRoles() || [];
-        const roles = requiredRoles || [];
-
-        if (roles.some((role) => userRoles.includes(role))) {
-            return true;
-        }
-
-        if (
-            typeof StorageManager.isStrictSyriatelTelecomWorkspaceUser === 'function' &&
-            StorageManager.isStrictSyriatelTelecomWorkspaceUser()
-        ) {
-            if (
-                typeof StorageManager.isPathAllowedForCurrentMenu === 'function' &&
-                StorageManager.isPathAllowedForCurrentMenu()
-            ) {
-                return true;
-            }
-            if (SecurityManager.canAccessPortalPath(window.location.pathname)) {
-                return true;
-            }
-            SecurityManager.denyPageAccess();
-            return false;
-        }
-
-        if (SecurityManager.TELECOM_ROLES.some((r) => userRoles.includes(r))) {
-            if (SecurityManager.canAccessPortalPath(window.location.pathname)) {
-                return true;
-            }
-        }
-
-        const pathKeys =
-            SecurityManager.PORTAL_PATH_PERMISSIONS[
-                SecurityManager.normalizePortalPath(window.location.pathname)
-            ];
-        const perms = StorageManager.getPermissions?.() || [];
-        if (pathKeys && pathKeys.length && StorageManager.hasAnyPermission(perms, pathKeys)) {
+    authorizePage: async () => {
+        if (SecurityManager.canAccessPortalPath(window.location.pathname)) {
             return true;
         }
 
@@ -164,25 +130,19 @@
         return false;
     },
 
-    /** Synchronous RBAC check (roles OR any listed permission). Does not redirect. */
-    canAccessTelecom: ({ roles = [], permissions = [] } = {}) => {
-        const userRoles = StorageManager.getUserRoles() || [];
+    /** Synchronous RBAC check (permission keys only). Does not redirect. */
+    canAccessTelecom: ({ permissions = [] } = {}) => {
         const userPerms = StorageManager.getPermissions?.() || [];
-        const roleOk = roles.length === 0 || roles.some((r) => userRoles.includes(r));
-        const permOk =
+        return (
             permissions.length === 0 ||
             (typeof StorageManager.hasAnyPermission === 'function' &&
-                StorageManager.hasAnyPermission(userPerms, permissions));
-        return roleOk || permOk;
+                StorageManager.hasAnyPermission(userPerms, permissions))
+        );
     },
 
-    /** Authorize by Identity role and/or RBAC permission keys (permission-based access). */
-    authorizeTelecomAccess: async ({ roles = [], permissions = [] } = {}) => {
-        if (SecurityManager.canAccessTelecom({ roles, permissions })) {
-            return true;
-        }
-        return false;
-    },
+    /** Authorize by RBAC permission keys (permission-based access). */
+    authorizeTelecomAccess: async ({ permissions = [] } = {}) =>
+        SecurityManager.canAccessTelecom({ permissions }),
 
     validateToken: async () => {
         try {

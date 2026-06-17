@@ -1,19 +1,108 @@
-/* Admin shell — must load last. Overrides style.css physical LTR-only margins. */
+/* Admin shell — single source of truth for Syr-Tel portal geometry (matches dashmin 300px). */
 
-body.syr-tel-portal > .container-fluid {
-    flex-wrap: nowrap !important;
-    max-width: 100% !important;
-    overflow-x: clip;
+:root {
+    --syr-sidebar-width: 300px;
+    --syr-topbar-height: 56px;
 }
 
+body.syr-tel-portal > .syr-portal-shell {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    overflow-x: clip;
+    margin: 0;
+    padding: 0;
+}
+
+/* Neutralize dashmin style.css layout — all roles share the same shell. */
+body.syr-tel-portal .sidebar,
 body.syr-tel-portal .sidebar.syr-sidebar {
     position: fixed !important;
     inset-inline-start: 0 !important;
     inset-inline-end: auto !important;
     left: unset !important;
     right: unset !important;
-    width: 280px !important;
+    width: var(--syr-sidebar-width) !important;
+    min-width: var(--syr-sidebar-width) !important;
+    max-width: var(--syr-sidebar-width) !important;
     height: 100vh !important;
+    margin-inline-start: 0 !important;
+    z-index: 1030;
+}
+
+body.syr-tel-portal .content {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box !important;
+    min-height: 100vh;
+    margin-left: unset !important;
+    margin-right: unset !important;
+    background: var(--sys-bg, #f8fafc);
+}
+
+@media (min-width: 992px) {
+    body.syr-tel-portal .content {
+        margin-inline-start: var(--syr-sidebar-width) !important;
+        margin-inline-end: 0 !important;
+        width: calc(100% - var(--syr-sidebar-width)) !important;
+        max-width: calc(100% - var(--syr-sidebar-width)) !important;
+    }
+
+    body.syr-tel-portal .sidebar.open {
+        margin-inline-start: calc(-1 * var(--syr-sidebar-width)) !important;
+    }
+
+    body.syr-tel-portal .content.open {
+        margin-inline-start: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    body.syr-tel-portal .content {
+        margin-inline-start: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    body.syr-tel-portal .sidebar.syr-sidebar {
+        margin-inline-start: calc(-1 * var(--syr-sidebar-width)) !important;
+    }
+
+    body.syr-tel-portal .sidebar.syr-sidebar.open {
+        margin-inline-start: 0 !important;
+    }
+}
+
+/* Unified operator content area — same chrome for admin and non-admin pages. */
+body.syr-tel-portal .adminbody.syr-adminbody {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    padding: 0 0 2.75rem;
+    overflow-x: clip;
+    overflow-y: visible;
+    background: var(--sys-bg, #f8fafc);
+}
+
+body.syr-tel-portal .adminbody > .form-card,
+body.syr-tel-portal .adminbody > #formcard,
+body.syr-tel-portal .adminbody > .syr-portal-page,
+body.syr-tel-portal .adminbody > .telecom-premium-page,
+body.syr-tel-portal .adminbody > #app {
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 body.syr-tel-portal .offcanvas {
@@ -21,33 +110,208 @@ body.syr-tel-portal .offcanvas {
     z-index: 1045;
 }
 
-@media (min-width: 992px) {
-    body.syr-tel-portal .content {
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: 280px !important;
-        margin-inline-end: 0 !important;
-        width: calc(100% - 280px) !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
+/* ——— Portal chrome: top navbar + sidebar brand (all personas) ——— */
+body.syr-tel-portal .content > .syriatel-unified-header {
+    display: block !important;
+    width: 100% !important;
+    padding-inline: clamp(0.75rem, 2vw, 1.25rem) !important;
 }
 
-@media (max-width: 991.98px) {
-    body.syr-tel-portal .content {
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: 0 !important;
-        width: 100% !important;
-    }
+body.syr-tel-portal .syr-topbar-shell {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.75rem 1rem;
+    width: 100%;
+    min-height: var(--syr-topbar-height);
+}
 
-    body.syr-tel-portal .sidebar.syr-sidebar {
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: -280px !important;
-    }
+body.syr-tel-portal .syriatel-header-main {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 62%;
+    gap: 0.5rem 0.65rem;
+}
 
-    body.syr-tel-portal .sidebar.syr-sidebar.open {
-        margin-inline-start: 0 !important;
-    }
+body.syr-tel-portal .syriatel-header-brand {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex: 0 1 auto;
+    gap: 0.5rem 0.65rem;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    color: inherit;
+}
+
+body.syr-tel-portal .syriatel-header-logo {
+    display: block;
+    flex: 0 0 auto;
+    width: auto !important;
+    height: auto !important;
+    max-height: 38px !important;
+    max-width: 120px !important;
+    object-fit: contain;
+}
+
+body.syr-tel-portal .syriatel-header-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(0.8rem, 1.6vw, 1rem) !important;
+    line-height: 1.25;
+}
+
+body.syr-tel-portal .syriatel-profile-toggle img {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    object-fit: cover;
+}
+
+body.syr-tel-portal .syriatel-header-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    gap: 0.5rem 0.75rem;
+    margin-inline-start: auto;
+}
+
+body.syr-tel-portal .syriatel-header-actions > .nav-item {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+body.syr-tel-portal .content .navbar .sidebar-toggler {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+body.syr-tel-portal .content .navbar .sidebar-toggler i {
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+
+body.syr-tel-portal .content .navbar .navbar-nav .nav-link,
+body.syr-tel-portal .content .navbar .syriatel-profile-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem;
+    margin: 0 !important;
+    padding: 0.25rem 0.35rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .content .navbar .navbar-nav .nav-link i {
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+
+body.syr-tel-portal .syriatel-profile-name {
+    max-width: 11rem;
+}
+
+body.syr-tel-portal .syriatel-unified-header .dropdown-menu:not(.show) {
+    display: none !important;
+}
+
+body.syr-tel-portal .syriatel-unified-header .dropdown-menu.show {
+    display: block !important;
+}
+
+body.syr-tel-portal .sidebar.syr-sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+body.syr-tel-portal .syr-sidebar-brand-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    text-align: center;
+}
+
+body.syr-tel-portal .syr-sidebar-brand-link {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100%;
+}
+
+body.syr-tel-portal .syr-sidebar-logo {
+    display: block;
+    margin-inline: auto;
+}
+
+body.syr-tel-portal .syr-persona-chip {
+    margin-inline: auto;
+}
+
+body.syr-tel-portal .syr-sidebar-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    overflow: hidden;
+    min-width: 0;
+}
+
+body.syr-tel-portal .syr-sidebar-user-meta {
+    overflow: hidden;
+    max-width: calc(var(--syr-sidebar-width, 300px) - 4.75rem);
+}
+
+body.syr-tel-portal .syr-sidebar-user-email {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.syr-tel-portal #syrPortalNav {
+    width: 100%;
+    min-height: 2rem;
+}
+
+body.syr-tel-portal .syr-sidebar-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+body.syr-tel-portal .syr-sidebar-scroll .navbar.flex-column {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100%;
+}
+
+body.syr-tel-portal .syr-sidebar-scroll .navbar-nav {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100%;
 }

@@ -39,10 +39,9 @@ public class GetCompanyListResult
     public List<GetCompanyListDto>? Data { get; init; }
 }
 
-public class GetCompanyListRequest : IRequest<GetCompanyListResult>, IRequirePermission
+public class GetCompanyListRequest : IRequest<GetCompanyListResult>, IRequireAuthenticatedOperator
 {
     public bool IsDeleted { get; init; } = false;
-    public string PermissionKey => PermissionCatalog.AdminSettingsManage;
 }
 
 

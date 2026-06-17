@@ -12,7 +12,9 @@
 
 
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
 
     <div class="container-fluid py-4">
 
@@ -172,9 +174,7 @@
 
     </div>
 
-</div>
-
-
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script id="bulkJobStatusTemplate" type="text/x-template">

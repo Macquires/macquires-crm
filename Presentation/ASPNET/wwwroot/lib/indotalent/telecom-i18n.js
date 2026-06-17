@@ -98,7 +98,7 @@ const TelecomI18n = (function () {
         init().catch(() => {});
     }
 
-    return { t, init, refresh, getLang, ensureLoaded };
+    return { t, init, refresh, getLang, ensureLoaded, applyDomI18n, applyDom: applyDomI18n };
 })();
 
 window.TelecomI18n = TelecomI18n;

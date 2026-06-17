@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -26,7 +25,9 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
 
                 IF COL_LENGTH('dbo.SimInventory', 'BranchId') IS NULL
                     ALTER TABLE dbo.SimInventory ADD BranchId nvarchar(50) NULL;
+                """);
 
+            migrationBuilder.Sql("""
                 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SimInventory_BranchId' AND object_id = OBJECT_ID('dbo.SimInventory'))
                     CREATE INDEX IX_SimInventory_BranchId ON dbo.SimInventory(BranchId) WHERE [BranchId] IS NOT NULL;
                 """);

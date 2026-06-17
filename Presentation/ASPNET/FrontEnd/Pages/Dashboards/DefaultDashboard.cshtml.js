@@ -626,7 +626,11 @@ async function applyDefaultDashboardLocale() {
     if (slim) {
         slim.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
         slim.setAttribute('lang', document.documentElement.getAttribute('lang') || 'ar');
-        TelecomI18n.applyDomI18n(slim);
+        if (typeof TelecomI18n.applyDomI18n === 'function') {
+            TelecomI18n.applyDomI18n(slim);
+        } else if (typeof TelecomI18n.refresh === 'function') {
+            await TelecomI18n.refresh(slim);
+        }
     }
     const title = TelecomI18n.t('defaultDashboard.pageTitle');
     if (title) {

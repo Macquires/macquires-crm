@@ -70,6 +70,12 @@ public sealed class PermissionSetsTests
     }
 
     [Fact]
+    public void IntegrationMonitorPermissionSets_MonitorAny_IncludesTelecomReportsMisForExecutiveCommandCenter()
+    {
+        Assert.Contains(PermissionCatalog.TelecomReportsMis, IntegrationMonitorPermissionSets.MonitorAny);
+    }
+
+    [Fact]
     public void AdminPermissionSets_AuditView_IncludesAdminAuditView()
     {
         Assert.Contains(PermissionCatalog.AdminAuditView, AdminPermissionSets.AuditViewAny);
@@ -86,5 +92,28 @@ public sealed class PermissionSetsTests
     public void BackOfficePermissionSets_TechnicalView_IncludesNetworkTechnicalView()
     {
         Assert.Contains(PermissionCatalog.NetworkTechnicalView, BackOfficePermissionSets.TechnicalViewAny);
+    }
+
+    [Fact]
+    public void BackOfficeDashboardPermissionSets_AccessAny_MatchesNavigationRule()
+    {
+        Assert.Contains(PermissionCatalog.BulkImportMonitor, BackOfficeDashboardPermissionSets.AccessAny);
+        Assert.Contains(PermissionCatalog.TelecomAssetManage, BackOfficeDashboardPermissionSets.AccessAny);
+        Assert.Contains(PermissionCatalog.AdminSettingsManage, BackOfficeDashboardPermissionSets.AccessAny);
+    }
+
+    [Fact]
+    public void OperationalKpiPermissionSets_ReadAny_IncludesMisAndBackOfficeDashboardAccess()
+    {
+        Assert.Contains(PermissionCatalog.TelecomReportsMis, OperationalKpiPermissionSets.ReadAny);
+        Assert.Contains(PermissionCatalog.BulkImportMonitor, OperationalKpiPermissionSets.ReadAny);
+        Assert.Contains(PermissionCatalog.TelecomAssetManage, OperationalKpiPermissionSets.ReadAny);
+    }
+
+    [Fact]
+    public void PermissionScopeRules_NationalDataScope_IncludesMisAndAdmin()
+    {
+        Assert.Contains(PermissionCatalog.TelecomReportsMis, PermissionScopeRules.NationalDataScopeAny);
+        Assert.Contains(PermissionCatalog.AdminSettingsManage, PermissionScopeRules.NationalDataScopeAny);
     }
 }

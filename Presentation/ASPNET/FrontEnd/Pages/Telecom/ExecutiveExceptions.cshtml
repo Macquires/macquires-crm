@@ -3,7 +3,9 @@
     ViewData["Title"] = "Operational exception center";
 }
 
-<div class="form-card telecom-premium-page py-4" id="formcard">
+@{ ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div id="executiveExceptionsGate" class="text-center py-5 d-none">
         <p class="text-muted" data-telecom-i18n="defaultDashboard.noPermission">لا صلاحية</p>
         <a href="/Dashboards/DefaultDashboard" class="btn btn-outline-danger btn-sm">العودة للوحة</a>
@@ -13,16 +15,15 @@
             @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_ExecutiveExceptionsEmbed.cshtml")
         </div>
     </div>
-</div>
+
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
     <script src="~/lib/indotalent/executive-exceptions-panel.js" asp-append-version="true"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async function () {
-            if (typeof ExecutiveExceptionsPanel !== 'undefined') {
-                await ExecutiveExceptionsPanel.initStandalone();
-            }
+        document.addEventListener('DOMContentLoaded', function () {
+            window.location.replace('/Executive/CommandCenter?tab=alerts');
         });
     </script>
 }

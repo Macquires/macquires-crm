@@ -13,7 +13,7 @@
     <meta content="" name="keywords">
     <meta content="" name="description">
 
-    @* syncfusion *@
+    @* Syncfusion theme — before Bootstrap so grid/utilities win *@
     <link href="~/lib/syncfusion/css/bootstrap5.css" rel="stylesheet" />
     <script src="~/lib/syncfusion/js/ej2.min.js"></script>
 
@@ -33,14 +33,14 @@
 </head>
 
 <body class="syr-tel-portal" lang="@uiLang" dir="@(uiRtl ? "rtl" : "ltr")" data-persona="">
-    <div class="container-fluid position-relative bg-white d-flex p-0">
+    <div class="syr-portal-shell position-relative bg-white p-0 m-0">
         @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__sidebar.cshtml")
         <div class="content" dir="@(uiRtl ? "rtl" : "ltr")" lang="@uiLang">
             <!-- Navbar Start -->
             @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__navbar.cshtml")
             <!-- Navbar End -->
             <!-- Blank Start -->
-            <div class="container-fluid pt-0 px-0 adminbody bg-light">
+            <div class="adminbody syr-adminbody">
                 @Html.AntiForgeryToken()
                 <div id="Toast"></div>
                 <!-- Spinner Start -->

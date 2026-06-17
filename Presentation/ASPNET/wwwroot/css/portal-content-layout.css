@@ -1,0 +1,393 @@
+/* Portal content — ONE layout ruleset for all roles (no persona / page-id forks) */
+
+
+
+body.syr-tel-portal .adminbody.syr-adminbody {
+
+    flex: 1 1 auto;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    background: var(--sys-bg, #f8fafc);
+
+}
+
+
+
+body.syr-tel-portal .adminfooter {
+
+    flex-shrink: 0;
+
+    width: 100%;
+
+}
+
+
+
+/* ── Unified page shell (matches TelecomHub / Admin) ── */
+
+body.syr-tel-portal .adminbody .syr-portal-page,
+
+body.syr-tel-portal .adminbody .telecom-premium-page {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-height: 0 !important;
+
+    max-height: none !important;
+
+    margin: 0;
+
+    padding: 0 !important;
+
+    border: none !important;
+
+    background: transparent !important;
+
+    overflow: visible !important;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .syr-portal-page > .container-fluid,
+
+body.syr-tel-portal .adminbody .telecom-premium-page > .container-fluid {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    margin-inline: auto;
+
+}
+
+
+
+/* Direct page roots without inner container-fluid (legacy) */
+
+body.syr-tel-portal .adminbody > #app:not(.telecom-premium-page):not(.syr-portal-page),
+
+body.syr-tel-portal .adminbody > .form-card,
+
+body.syr-tel-portal .adminbody > #formcard {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-height: 0 !important;
+
+    overflow: visible !important;
+
+    border: none !important;
+
+    background: transparent !important;
+
+    padding: 0.75rem clamp(0.75rem, 2vw, 1.25rem) 1.5rem;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .container,
+
+body.syr-tel-portal .adminbody .container-fluid {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    margin-inline: auto;
+
+}
+
+
+
+/* Bootstrap grid */
+
+body.syr-tel-portal .adminbody .row {
+
+    display: flex !important;
+
+    flex-wrap: wrap !important;
+
+}
+
+
+
+/* Flex utilities (fallback when utilities are overridden) */
+
+body.syr-tel-portal .adminbody .d-flex { display: flex !important; }
+
+body.syr-tel-portal .adminbody .d-inline-flex { display: inline-flex !important; }
+
+body.syr-tel-portal .adminbody .d-block { display: block !important; }
+
+body.syr-tel-portal .adminbody .d-none { display: none !important; }
+
+body.syr-tel-portal .adminbody .flex-row { flex-direction: row !important; }
+
+body.syr-tel-portal .adminbody .flex-column { flex-direction: column !important; }
+
+body.syr-tel-portal .adminbody .flex-wrap { flex-wrap: wrap !important; }
+
+body.syr-tel-portal .adminbody .flex-nowrap { flex-wrap: nowrap !important; }
+
+body.syr-tel-portal .adminbody .flex-grow-1 { flex-grow: 1 !important; }
+
+body.syr-tel-portal .adminbody .flex-shrink-0 { flex-shrink: 0 !important; }
+
+body.syr-tel-portal .adminbody .align-items-center { align-items: center !important; }
+
+body.syr-tel-portal .adminbody .align-items-start { align-items: flex-start !important; }
+
+body.syr-tel-portal .adminbody .align-items-stretch { align-items: stretch !important; }
+
+body.syr-tel-portal .adminbody .justify-content-between { justify-content: space-between !important; }
+
+body.syr-tel-portal .adminbody .justify-content-end { justify-content: flex-end !important; }
+
+body.syr-tel-portal .adminbody .justify-content-center { justify-content: center !important; }
+
+body.syr-tel-portal .adminbody .gap-1 { gap: 0.25rem !important; }
+
+body.syr-tel-portal .adminbody .gap-2 { gap: 0.5rem !important; }
+
+body.syr-tel-portal .adminbody .gap-3 { gap: 1rem !important; }
+
+
+
+/* Nav / tabs */
+
+body.syr-tel-portal .adminbody .nav,
+
+body.syr-tel-portal .adminbody .nav-pills-custom {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    list-style: none;
+
+    padding-inline-start: 0;
+
+    margin-bottom: 0;
+
+    gap: 0.5rem;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .nav .nav-item {
+
+    list-style: none;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .tab-content > .tab-pane:not(.active) {
+
+    display: none !important;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .tab-content > .tab-pane.active {
+
+    display: block !important;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .list-unstyled {
+
+    list-style: none;
+
+    padding-inline-start: 0;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .btn-group {
+
+    display: inline-flex;
+
+    vertical-align: middle;
+
+}
+
+
+
+/* Bento / dashboard grids */
+
+body.syr-tel-portal .adminbody .telecom-bento-grid,
+
+body.syr-tel-portal .adminbody .syr-bento-grid {
+
+    display: grid !important;
+
+    gap: 1rem;
+
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+
+    width: 100%;
+
+    max-width: 100%;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .telecom-bento-span-12 { grid-column: span 12 !important; }
+
+body.syr-tel-portal .adminbody .telecom-bento-span-8 { grid-column: span 8 !important; }
+
+body.syr-tel-portal .adminbody .telecom-bento-span-6 { grid-column: span 6 !important; }
+
+body.syr-tel-portal .adminbody .telecom-bento-span-4 { grid-column: span 4 !important; }
+
+body.syr-tel-portal .adminbody .telecom-bento-span-3 { grid-column: span 3 !important; }
+
+
+
+body.syr-tel-portal .adminbody .syr-bento-card.span-12 { grid-column: span 12 !important; }
+
+body.syr-tel-portal .adminbody .syr-bento-card.span-8 { grid-column: span 8 !important; }
+
+body.syr-tel-portal .adminbody .syr-bento-card.span-6 { grid-column: span 6 !important; }
+
+body.syr-tel-portal .adminbody .syr-bento-card.span-4 { grid-column: span 4 !important; }
+
+
+
+@media (max-width: 991.98px) {
+
+    body.syr-tel-portal .adminbody .telecom-bento-grid,
+
+    body.syr-tel-portal .adminbody .syr-bento-grid {
+
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+
+    }
+
+
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-8,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-6,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-4,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-3 {
+
+        grid-column: span 6 !important;
+
+    }
+
+}
+
+
+
+@media (max-width: 575.98px) {
+
+    body.syr-tel-portal .adminbody .telecom-bento-grid,
+
+    body.syr-tel-portal .adminbody .syr-bento-grid {
+
+        grid-template-columns: minmax(0, 1fr) !important;
+
+    }
+
+
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-12,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-8,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-6,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-4,
+
+    body.syr-tel-portal .adminbody .telecom-bento-span-3 {
+
+        grid-column: span 1 !important;
+
+    }
+
+}
+
+
+
+body.syr-tel-portal .adminbody .syr-bento-single-row {
+
+    display: flex !important;
+
+    flex-direction: row !important;
+
+    flex-wrap: nowrap !important;
+
+    align-items: stretch !important;
+
+    gap: 0.75rem;
+
+    overflow-x: auto;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .telecom-hub-root,
+
+body.syr-tel-portal .adminbody .strategic-exec-root,
+
+body.syr-tel-portal .adminbody .executive-cc-root {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .executive-trend-row,
+
+body.syr-tel-portal .adminbody .executive-log-row {
+
+    display: flex !important;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 1rem;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .grid-container {
+
+    width: 100%;
+
+    min-height: 200px;
+
+}
+
+

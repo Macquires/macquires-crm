@@ -46,6 +46,17 @@ public static class DI
                 // Prioritizing HttpOnly cookie before checking Authorization header
                 OnMessageReceived = context =>
                 {
+                    var path = context.HttpContext.Request.Path;
+                    if (path.StartsWithSegments("/hubs"))
+                    {
+                        var hubToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(hubToken))
+                        {
+                            context.Token = hubToken;
+                            return Task.CompletedTask;
+                        }
+                    }
+
                     var accessToken = context.HttpContext.Request.Cookies["accessToken"];
                     if (!string.IsNullOrEmpty(accessToken))
                     {

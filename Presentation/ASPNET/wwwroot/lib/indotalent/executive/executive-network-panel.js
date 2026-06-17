@@ -90,10 +90,10 @@ const ExecutiveNetworkPanel = (function () {
                         <div class="col-md-8">
                             <div class="strategic-panel p-3 h-100">
                                 <p class="strategic-panel-title">{{ t('trend7d') }}</p>
-                                <ul class="list-unstyled small mb-0">
-                                    <li v-for="p in state.trend" :key="p.label" class="d-flex justify-content-between border-bottom py-1">
-                                        <span>{{ p.label }}</span>
-                                        <strong>{{ p.value }}%</strong>
+                                <ul class="list-unstyled small mb-0 executive-trend-list">
+                                    <li v-for="p in state.trend" :key="p.label" class="executive-trend-row border-bottom py-2">
+                                        <span class="executive-trend-date">{{ p.label }}</span>
+                                        <strong class="executive-trend-value">{{ p.value }}%</strong>
                                     </li>
                                     <li v-if="!state.trend.length" class="text-muted">{{ t('noData') }}</li>
                                 </ul>
@@ -102,14 +102,14 @@ const ExecutiveNetworkPanel = (function () {
                         <div class="col-12">
                             <div class="strategic-panel p-3">
                                 <p class="strategic-panel-title mb-2">{{ t('recentLogs') }}</p>
-                                <ul class="list-group list-group-flush">
+                                <ul class="list-group list-group-flush executive-log-list">
                                     <li v-for="(log, i) in state.logs" :key="i"
-                                        class="list-group-item d-flex justify-content-between bg-transparent px-0">
-                                        <span>
+                                        class="list-group-item executive-log-row bg-transparent px-0 py-2">
+                                        <span class="executive-log-main">
                                             <span class="badge me-2" :class="log.success ? 'bg-success' : 'bg-danger'">{{ log.target }}</span>
                                             {{ log.message }}
                                         </span>
-                                        <span class="text-muted small">{{ (log.createdAtUtc || '').slice(0, 16).replace('T', ' ') }}</span>
+                                        <span class="executive-log-time text-muted small">{{ (log.createdAtUtc || '').slice(0, 16).replace('T', ' ') }}</span>
                                     </li>
                                 </ul>
                             </div>

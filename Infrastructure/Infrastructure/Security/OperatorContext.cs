@@ -25,6 +25,12 @@ public class OperatorContext : IOperatorContext
             .ToList()
         ?? [];
 
+    public IReadOnlyList<string> Permissions =>
+        _http.HttpContext?.Items.TryGetValue(OperatorContextKeys.PermissionKeys, out var keys) == true
+        && keys is IReadOnlyList<string> permissionKeys
+            ? permissionKeys
+            : [];
+
     public TelecomMenuPersona? EffectivePersona =>
         _http.HttpContext?.Items.TryGetValue(OperatorContextKeys.EffectivePersona, out var p) == true && p is TelecomMenuPersona persona
             ? persona
@@ -52,6 +58,7 @@ public class OperatorContext : IOperatorContext
 public static class OperatorContextKeys
 {
     public const string EffectivePersona = "EffectivePersona";
+    public const string PermissionKeys = "PermissionKeys";
 }
 
 public class OperatorContextMiddleware
@@ -60,14 +67,27 @@ public class OperatorContextMiddleware
 
     public OperatorContextMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, DataContext db)
+    public async Task InvokeAsync(
+        HttpContext context,
+        DataContext db,
+        IPermissionEvaluator permissionEvaluator)
     {
+        IReadOnlyList<string> permissionKeys = [];
         if (context.User.Identity?.IsAuthenticated == true)
         {
+            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                permissionKeys = await permissionEvaluator.GetUserPermissionKeysAsync(
+                    userId,
+                    context.RequestAborted);
+                context.Items[OperatorContextKeys.PermissionKeys] = permissionKeys;
+            }
+
             var roles = context.User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
             TelecomMenuPersona? persona = null;
 
-            if (TryResolvePreviewPersona(context, roles, out var preview))
+            if (TryResolvePreviewPersona(context, permissionKeys, out var preview))
             {
                 persona = preview;
             }
@@ -75,18 +95,14 @@ public class OperatorContextMiddleware
             {
                 persona = fromClaim;
             }
-            else
+            else if (!string.IsNullOrEmpty(userId))
             {
-                var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    var stored = await db.Users.AsNoTracking()
-                        .Where(u => u.Id == userId)
-                        .Select(u => new { u.PrimaryMenuPersona })
-                        .FirstOrDefaultAsync(context.RequestAborted);
+                var stored = await db.Users.AsNoTracking()
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.PrimaryMenuPersona })
+                    .FirstOrDefaultAsync(context.RequestAborted);
 
-                    persona = TelecomPersonaResolver.ResolvePrimary(roles, stored?.PrimaryMenuPersona);
-                }
+                persona = TelecomPersonaResolver.ResolvePrimary(roles, stored?.PrimaryMenuPersona);
             }
 
             if (persona.HasValue)
@@ -100,11 +116,11 @@ public class OperatorContextMiddleware
 
     private static bool TryResolvePreviewPersona(
         HttpContext context,
-        IReadOnlyList<string> roles,
+        IReadOnlyList<string> permissionKeys,
         out TelecomMenuPersona persona)
     {
         persona = default;
-        if (!CanPreviewPersona(roles))
+        if (!PermissionScopeRules.CanPreviewPersona(permissionKeys))
         {
             return false;
         }
@@ -126,9 +142,4 @@ public class OperatorContextMiddleware
         return !string.IsNullOrWhiteSpace(raw)
             && Enum.TryParse<TelecomMenuPersona>(raw, true, out persona);
     }
-
-    private static bool CanPreviewPersona(IReadOnlyList<string> roles) =>
-        roles.Any(r =>
-            string.Equals(r, "TelecomAdmin", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(r, "TelecomManagement", StringComparison.OrdinalIgnoreCase));
 }

@@ -6,5 +6,6 @@ public static class IntegrationMonitorPermissionSets
     [
         PermissionCatalog.AdminIntegrationMonitor,
         PermissionCatalog.AdminSettingsManage,
+        PermissionCatalog.TelecomReportsMis,
     ];
 }

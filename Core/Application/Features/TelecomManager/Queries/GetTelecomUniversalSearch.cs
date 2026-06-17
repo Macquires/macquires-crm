@@ -6,12 +6,12 @@ using MediatR;
 
 namespace Application.Features.TelecomManager.Queries;
 
-public class GetTelecomUniversalSearchRequest : IRequest<GetTelecomUniversalSearchResult>, IRequirePermission
+public class GetTelecomUniversalSearchRequest : IRequest<GetTelecomUniversalSearchResult>, IRequireAnyPermission
 {
     public string? Term { get; init; }
     public bool AvailableOnly { get; init; }
     public bool ProfilesOnly { get; init; }
-    public string PermissionKey => PermissionCatalog.CustomerView;
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.UnifiedSearchAny;
 }
 
 public class GetTelecomUniversalSearchHandler : IRequestHandler<GetTelecomUniversalSearchRequest, GetTelecomUniversalSearchResult>

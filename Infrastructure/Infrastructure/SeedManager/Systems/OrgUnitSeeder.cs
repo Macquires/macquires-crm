@@ -289,9 +289,12 @@ public class OrgUnitSeeder
             return;
         }
 
-        var customers = await _context.Customer
-            .Where(c => !c.IsDeleted && c.OrgUnitId == null)
-            .ToListAsync();
+        var customers = (await _context.Customer
+            .IgnoreQueryFilters()
+            .Where(c => !c.IsDeleted)
+            .ToListAsync())
+            .Where(c => c.OrgUnitId == null)
+            .ToList();
 
         if (customers.Count == 0)
         {

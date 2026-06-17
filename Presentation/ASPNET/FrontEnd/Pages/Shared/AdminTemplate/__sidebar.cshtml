@@ -6,10 +6,10 @@
     var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
 }
 
-<div id="sidebar" class="sidebar syr-sidebar pb-3" dir="@(uiRtl ? "rtl" : "ltr")" lang="@uiLang">
-    <nav class="navbar pt-0 flex-column align-items-stretch w-100">
-        <div class="syr-sidebar-brand-block text-center pt-3 pb-2 px-3">
-            <a id="syrBrandHome" href="/Dashboards/DefaultDashboard" class="text-decoration-none d-inline-block">
+<div id="sidebar" class="sidebar syr-sidebar" dir="@(uiRtl ? "rtl" : "ltr")" lang="@uiLang">
+    <div class="syr-sidebar-top">
+        <div class="syr-sidebar-brand-block pt-3 pb-2 px-3">
+            <a id="syrBrandHome" href="/Dashboards/DefaultDashboard" class="syr-sidebar-brand-link text-decoration-none">
                 <img src="@Url.Content("~/brand/logo.png")"
                      alt="Syriatel"
                      class="syr-sidebar-logo"
@@ -23,26 +23,30 @@
 
         <button type="button" class="syr-omni-trigger" data-syr-omni-open="1" aria-label="Omni-Search">
             <i class="bi bi-search"></i>
-            <span>@(uiRtl ? "بحث سريع…" : "Quick search…")</span>
+            <span data-syr-omni-open-label>@(uiRtl ? "بحث سريع…" : "Quick search…")</span>
             <kbd class="syr-omni-kbd">Ctrl+K</kbd>
         </button>
 
         <div id="syrQuickActions" class="syr-quick-actions"></div>
+    </div>
 
-        <div id="navbarnav" class="navbar-nav w-100 flex-grow-1 px-0">
-            <div id="syrPortalNav" class="w-100"></div>
-        </div>
+    <div id="syrSidebarScroll" class="syr-sidebar-scroll">
+        <nav class="navbar pt-0 flex-column align-items-stretch w-100">
+            <div id="navbarnav" class="navbar-nav w-100 px-0">
+                <div id="syrPortalNav" class="w-100"></div>
+            </div>
+        </nav>
+    </div>
 
-        <div class="d-flex align-items-center mx-3 mt-3 pt-3 border-top syr-sidebar-user">
-            <div class="position-relative flex-shrink-0">
-                <img id="AvatarImageSide" class="rounded-circle" src="@avatarUrl" alt="" style="width: 40px; height: 40px;">
-                <div class="bg-success rounded-circle border border-2 position-absolute syr-sidebar-online-dot end-0 bottom-0 p-1"></div>
-            </div>
-            <div class="ms-3 min-w-0">
-                <h6 class="mb-0 small text-truncate syr-sidebar-user-email" id="userEmail">@userEmail</h6>
-            </div>
+    <div class="syr-sidebar-footer d-flex align-items-center px-3 py-3 syr-sidebar-user">
+        <div class="position-relative flex-shrink-0">
+            <img id="AvatarImageSide" class="rounded-circle" src="@avatarUrl" alt="" style="width: 40px; height: 40px;">
+            <div class="bg-success rounded-circle border border-2 position-absolute syr-sidebar-online-dot end-0 bottom-0 p-1"></div>
         </div>
-    </nav>
+        <div class="syr-sidebar-user-meta min-w-0">
+            <h6 class="mb-0 small text-truncate syr-sidebar-user-email" id="userEmail">@userEmail</h6>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -50,6 +54,13 @@
         try {
             const email = StorageManager.getEmail();
             document.getElementById('userEmail').textContent = email || '';
+            const chip = document.getElementById('syrPersonaChip');
+            if (chip && typeof StorageManager.getSyriatelOperatorConsoleDisplayName === 'function') {
+                const personaLabel = StorageManager.getSyriatelOperatorConsoleDisplayName();
+                if (personaLabel) {
+                    chip.textContent = personaLabel;
+                }
+            }
             const brand = document.getElementById('syrBrandHome');
             if (brand && typeof StorageManager.getLandingPath === 'function') {
                 const landing = StorageManager.getLandingPath();

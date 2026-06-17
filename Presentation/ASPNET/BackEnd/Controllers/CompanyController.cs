@@ -47,7 +47,7 @@ public class CompanyController : BaseApiController
         });
     }
 
-    [RequireAdminSettingsManage]
+    [RequireAuthenticatedOperator]
     [HttpGet("GetCompanyList")]
     public async Task<ActionResult<ApiSuccessResult<GetCompanyListResult>>> GetCompanyListAsync(
         CancellationToken cancellationToken,

@@ -271,7 +271,7 @@ public class TelecomQueriesController : BaseApiController
         });
     }
 
-    [RequireOperationalKpi]
+    [RequireDashboardRead]
     [HttpGet("GetTelecomDashboardKpis")]
     public async Task<ActionResult<ApiSuccessResult<GetTelecomDashboardKpisResult>>> GetTelecomDashboardKpisAsync(
         CancellationToken cancellationToken,
@@ -447,6 +447,22 @@ public class TelecomQueriesController : BaseApiController
         {
             Code = StatusCodes.Status200OK,
             Message = nameof(GetStrategicMetricsAsync),
+            Content = response
+        });
+    }
+
+    [RequireBackOfficeDashboard]
+    [HttpGet("GetOperationalAnalyticsScope")]
+    public async Task<ActionResult<ApiSuccessResult<GetOperationalAnalyticsScopeResult>>> GetOperationalAnalyticsScopeAsync(
+        CancellationToken cancellationToken,
+        [FromQuery] string? regionId = null,
+        [FromQuery] string? branchId = null)
+    {
+        var response = await _sender.Send(new GetOperationalAnalyticsScopeRequest(regionId, branchId), cancellationToken);
+        return Ok(new ApiSuccessResult<GetOperationalAnalyticsScopeResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(GetOperationalAnalyticsScopeAsync),
             Content = response
         });
     }

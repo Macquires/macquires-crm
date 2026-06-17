@@ -10,6 +10,7 @@
 <link href="~/css/syr-tel-portal.css" rel="stylesheet" asp-append-version="true">
 <link href="~/css/syr-swal.css" rel="stylesheet" asp-append-version="true">
 <link href="~/css/admin-shell-layout.css" rel="stylesheet" asp-append-version="true">
+<link href="~/css/portal-content-layout.css" rel="stylesheet" asp-append-version="true">
 
 
 <style>
@@ -285,11 +286,18 @@
     }
 
 
-    /* For FormCard */
+    /* For FormCard — legacy CRUD pages only; operator portal uses telecom-premium-page shell */
     .form-card {
         border: 1px solid var(--sys-border);
         width: 100%;
         overflow-y: auto;
+    }
+
+    body.syr-tel-portal .form-card {
+        border: none !important;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
     }
 
     .form-card-header {
@@ -374,13 +382,15 @@
     }
 
     .adminbody{
-        padding: 0px;
+        padding: 0;
+        padding-bottom: 2.5rem;
+        background: var(--sys-bg);
     }
 
     .adminfooter {
-        position: fixed;
-        bottom: 0;
+        position: relative;
         width: 100%;
+        z-index: 2;
     }
 </style>
 <style>
@@ -431,6 +441,16 @@
 
     body.syr-tel-portal .adminbody {
         background: var(--sys-bg) !important;
+        padding-bottom: 2.5rem;
+    }
+
+    body.syr-tel-portal .adminbody > .form-card,
+    body.syr-tel-portal .adminbody > #formcard {
+        border: none !important;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+        background: transparent !important;
     }
 
     .syriatel-brand-accent {
@@ -461,8 +481,10 @@
 
     .syriatel-unified-header {
         min-height: 52px;
+        max-height: 56px;
         border-color: var(--sys-border) !important;
         box-shadow: var(--sys-shadow-card) !important;
+        overflow: hidden;
     }
 
     .syriatel-header-brand:hover .syriatel-header-title {
@@ -470,17 +492,19 @@
     }
 
     .syriatel-header-logo {
+        display: block;
+        flex: 0 0 auto;
         height: auto;
         width: auto;
-        max-height: 44px;
-        max-width: 200px;
+        max-height: 38px;
+        max-width: 120px;
         object-fit: contain;
     }
 
     .syriatel-header-title {
         font-family: 'Almarai', 'Tajawal', sans-serif;
         font-weight: 800;
-        font-size: clamp(0.85rem, 2vw, 1.15rem);
+        font-size: clamp(0.8rem, 1.6vw, 1rem);
         color: var(--sys-text-main);
         letter-spacing: 0.02em;
         line-height: 1.2;
@@ -570,14 +594,15 @@
         text-align: start;
     }
 
-    html[dir="rtl"] .sidebar .navbar .navbar-nav .nav-link {
+    /* RTL sidebar pill nav — legacy dashmin only; Syr portal uses .syr-nav-link */
+    html[dir="rtl"] body:not(.syr-tel-portal) .sidebar .navbar .navbar-nav .nav-link {
         border-left: none !important;
         border-right: 3px solid var(--light);
         border-radius: 30px 0 0 30px;
     }
 
-    html[dir="rtl"] .sidebar .navbar .navbar-nav .nav-link:hover,
-    html[dir="rtl"] .sidebar .navbar .navbar-nav .nav-link.active {
+    html[dir="rtl"] body:not(.syr-tel-portal) .sidebar .navbar .navbar-nav .nav-link:hover,
+    html[dir="rtl"] body:not(.syr-tel-portal) .sidebar .navbar .navbar-nav .nav-link.active {
         border-color: var(--primary);
     }
 
@@ -594,7 +619,14 @@
 
     html[dir="rtl"] .content .navbar .navbar-nav .nav-link {
         margin-left: 0 !important;
-        margin-right: 25px;
+        margin-right: 0 !important;
+    }
+
+    body.syr-tel-portal .content .navbar .navbar-nav .nav-link {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-inline: 0 !important;
+        padding: 0.25rem 0.35rem !important;
     }
 
     html[dir="rtl"] .content .navbar .dropdown-toggle::after {

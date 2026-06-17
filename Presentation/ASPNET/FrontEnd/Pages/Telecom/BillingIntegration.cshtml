@@ -6,7 +6,9 @@
 
 <link rel="stylesheet" href="~/css/telecom-premium-theme.css" asp-append-version="true" />
 
-<div id="app" v-cloak class="telecom-premium-page">
+@{ ViewData["PortalPageVcloak"] = true; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="container-fluid py-4">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
             <div>
@@ -134,7 +136,7 @@
             </div>
         </template>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section Scripts {
     <script src="~/FrontEnd/Pages/Telecom/BillingIntegration.cshtml.js" asp-append-version="true"></script>

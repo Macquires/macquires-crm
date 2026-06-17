@@ -3,7 +3,9 @@
     ViewData["Title"] = "كتالوج الخدمات المضافة (VAS)";
 }
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="row">
         <div class="col-12">
             <div class="grid-container">
@@ -78,7 +80,7 @@
             </div>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Telecom/VasCatalogList.cshtml.js"></script>

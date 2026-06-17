@@ -8,13 +8,44 @@ const OmniSearch = (function () {
     let searchAbort = null;
     let searchSeq = 0;
 
+    function isRtl() {
+        return (document.documentElement.getAttribute('dir') || 'ltr') === 'rtl';
+    }
+
+    function omniT(key, ar, en) {
+        const hit = typeof TelecomI18n !== 'undefined' && TelecomI18n.t ? TelecomI18n.t(key) : null;
+        if (hit) return hit;
+        return isRtl() ? ar : en;
+    }
+
+    function removeModal() {
+        const el = document.getElementById('syrOmniModal');
+        if (el) {
+            try {
+                const inst = bootstrap?.Modal?.getInstance(el);
+                inst?.dispose();
+            } catch (_) { /* ignore */ }
+            el.remove();
+        }
+        modalInstance = null;
+    }
+
     function ensureModal() {
         if (document.getElementById('syrOmniModal')) return;
-        const rtl = (document.documentElement.getAttribute('dir') || 'ltr') === 'rtl';
-        const closeLabel = rtl ? 'إغلاق' : 'Close';
-        const placeholder = rtl
-            ? 'رقم الاشتراك، MSISDN، الرقم الوطني، أو السجل التجاري…'
-            : 'Subscription, MSISDN, national ID, or commercial registry…';
+        const rtl = isRtl();
+        const closeLabel = omniT('common.omniSearch.close', 'إغلاق', 'Close');
+        const placeholder = omniT(
+            'common.omniSearch.placeholder',
+            'رقم الاشتراك، MSISDN، الرقم الوطني، أو السجل التجاري…',
+            'Subscription, MSISDN, national ID, or commercial registry…'
+        );
+        const title = omniT('common.omniSearch.title', 'بحث سريع', 'Quick search');
+        const shortcutOpen = omniT('common.omniSearch.shortcutOpen', 'لفتح البحث', 'to open');
+        const hint = omniT(
+            'common.omniSearch.hint',
+            'رقم أو هوية أو سجل — حرفان على الأقل',
+            'ID or registry — 2+ characters'
+        );
         const html = `
 <div class="modal fade syr-omni-modal" id="syrOmniModal" tabindex="-1" aria-hidden="true" aria-labelledby="syrOmniTitle">
   <div class="modal-dialog modal-dialog-centered syr-omni-dialog">
@@ -30,11 +61,11 @@ const OmniSearch = (function () {
         </div>
         <button type="button" class="btn-close syr-omni-close" data-bs-dismiss="modal" aria-label="${closeLabel}"></button>
       </div>
-      <p id="syrOmniTitle" class="visually-hidden">${rtl ? 'بحث سريع' : 'Quick search'}</p>
+      <p id="syrOmniTitle" class="visually-hidden">${title}</p>
       <div class="syr-omni-results" id="syrOmniResults" role="listbox" aria-live="polite"></div>
       <div class="syr-omni-foot">
-        <span><kbd>Ctrl</kbd>+<kbd>K</kbd> ${rtl ? 'لفتح البحث' : 'to open'}</span>
-        <span>${rtl ? 'رقم أو هوية أو سجل — حرفان على الأقل' : 'ID or registry — 2+ characters'}</span>
+        <span><kbd>Ctrl</kbd>+<kbd>K</kbd> ${shortcutOpen}</span>
+        <span>${hint}</span>
       </div>
     </div>
   </div>
@@ -102,7 +133,14 @@ const OmniSearch = (function () {
         const host = document.getElementById('syrOmniResults');
         if (!host) return;
         if (!items || !items.length) {
-            setResultsMessage('empty', 'لا نتائج — جرّب رقم اشتراك أو هوية أو سجل تجاري.');
+            setResultsMessage(
+                'empty',
+                omniT(
+                    'common.omniSearch.empty',
+                    'لا نتائج — جرّب رقم اشتراك أو هوية أو سجل تجاري.',
+                    'No results — try a subscription number, ID, or commercial registry.'
+                )
+            );
             return;
         }
         host.innerHTML = items
@@ -139,7 +177,10 @@ const OmniSearch = (function () {
 
     async function runSearch(term) {
         if (!term || term.length < 2) {
-            setResultsMessage('hint', 'اكتب حرفين على الأقل للبحث.');
+            setResultsMessage(
+                'hint',
+                omniT('common.omniSearch.typeHint', 'اكتب حرفين على الأقل للبحث.', 'Type at least 2 characters to search.')
+            );
             return;
         }
         if (searchAbort) {
@@ -149,7 +190,10 @@ const OmniSearch = (function () {
         const abortSignal = searchAbort.signal;
         const seq = ++searchSeq;
 
-        setResultsMessage('loading', 'جاري البحث…');
+        setResultsMessage(
+            'loading',
+            omniT('common.omniSearch.searching', 'جاري البحث…', 'Searching…')
+        );
         const digits = term.replace(/[٠-٩۰-۹]/g, (ch) => {
             const cp = ch.codePointAt(0);
             if (cp >= 0x0660 && cp <= 0x0669) return String(cp - 0x0660);
@@ -157,7 +201,14 @@ const OmniSearch = (function () {
             return ch;
         }).replace(/\D/g, '');
         if (digits.length < 2 && /[\p{L}]/u.test(term)) {
-            setResultsMessage('blocked', 'البحث بالاسم غير مسموح — استخدم رقماً أو سجلاً تجارياً.');
+            setResultsMessage(
+                'blocked',
+                omniT(
+                    'common.omniSearch.blocked',
+                    'البحث بالاسم غير مسموح — استخدم رقماً أو سجلاً تجارياً.',
+                    'Name search is not allowed — use a number or commercial registry.'
+                )
+            );
             return;
         }
         try {
@@ -178,7 +229,14 @@ const OmniSearch = (function () {
         } catch (e) {
             if (isAbortError(e) || abortSignal.aborted) return;
             console.error('OmniSearch', e);
-            setResultsMessage('error', 'تعذّر البحث — تحقق من الاتصال وحاول مجدداً.');
+            setResultsMessage(
+                'error',
+                omniT(
+                    'common.omniSearch.error',
+                    'تعذّر البحث — تحقق من الاتصال وحاول مجدداً.',
+                    'Search failed — check connectivity and try again.'
+                )
+            );
         }
     }
 
@@ -203,6 +261,8 @@ const OmniSearch = (function () {
             });
         }
         document.querySelectorAll('[data-syr-omni-open]').forEach((btn) => {
+            if (btn.dataset.omniBound) return;
+            btn.dataset.omniBound = '1';
             btn.addEventListener('click', function (ev) {
                 ev.preventDefault();
                 open();
@@ -210,9 +270,32 @@ const OmniSearch = (function () {
         });
     }
 
+    function refreshSidebarQuickSearch() {
+        document.querySelectorAll('[data-syr-omni-open-label]').forEach((span) => {
+            span.textContent = omniT('common.sidebar.quickSearch', 'بحث سريع…', 'Quick search…');
+        });
+    }
+
+    function onLocaleChanged() {
+        const wasOpen = document.getElementById('syrOmniModal')?.classList.contains('show');
+        const inputVal = document.getElementById('syrOmniInput')?.value?.trim() || '';
+        removeModal();
+        refreshSidebarQuickSearch();
+        if (wasOpen) {
+            open();
+            const input = document.getElementById('syrOmniInput');
+            if (input && inputVal) {
+                input.value = inputVal;
+                runSearch(inputVal);
+            }
+        }
+    }
+
     function init() {
         bindKeys();
         bindUi();
+        refreshSidebarQuickSearch();
+        document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
     }
 
     return { init, open };

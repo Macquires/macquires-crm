@@ -2356,6 +2356,9 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
                     b.Property<int>("ActivationChannel")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("ActivationEffectiveDateUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("AgencyReference")
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
@@ -2370,6 +2373,9 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
 
                     b.Property<bool>("AutoReconnectEnabled")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("BadDebtEffectiveDateUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("BarStatus")
                         .HasMaxLength(64)
@@ -2484,11 +2490,17 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
                     b.Property<int?>("DeviceSaleType")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("DeviceSaleEffectiveDateUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("DeviceWarrantyStartsAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("DocumentStatus")
                         .HasColumnType("int");
+
+                    b.Property<string>("ExternalCorrelationId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DonorOperatorCode")
                         .HasColumnType("nvarchar(max)");
@@ -2653,9 +2665,15 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
                     b.Property<DateTime?>("ReactivationAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ReconnectEffectiveDateUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("ReconnectReason")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime?>("RefundEffectiveDateUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal?>("RefundAmount")
                         .HasPrecision(18, 2)

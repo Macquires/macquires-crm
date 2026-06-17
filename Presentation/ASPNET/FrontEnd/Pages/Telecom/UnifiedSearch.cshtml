@@ -14,7 +14,9 @@
     #searchResultModal .modal-header { background: linear-gradient(90deg, var(--sys-text-main), color-mix(in srgb, var(--sys-text-main) 75%, var(--sys-text-muted))); color: var(--sys-card-bg); }
 </style>
 
-<div id="app" v-cloak class="telecom-premium-page">
+@{ ViewData["PortalPageVcloak"] = true; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="container-fluid py-4 py-lg-5" id="unified-search-page">
         <div class="row justify-content-center">
             <div class="col-12 col-lg-10 col-xl-8">
@@ -111,7 +113,7 @@
             </div>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section Scripts {
     <script src="~/FrontEnd/Pages/Telecom/UnifiedSearch.cshtml.js" asp-append-version="true"></script>

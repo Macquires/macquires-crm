@@ -4,9 +4,10 @@
     ViewData["Title"] = "Product catalog";
 }
 
-<div id="app" v-cloak>
-    <div class="form-card" id="formcard" :dir="contentDir" :lang="contentLang">
-        <div class="container-fluid py-4 px-3 px-lg-4 telecom-catalog-root telecom-premium-page position-relative">
+@{ ViewData["PortalPageVcloak"] = true; ViewData["PortalPageInner"] = false; ViewData["PortalPageAttrs"] = ":dir=\"contentDir\" :lang=\"contentLang\""; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
+        <div class="container-fluid py-4 px-3 px-lg-4 telecom-catalog-root position-relative">
             <!-- Loader Skeleton -->
             <div v-if="loading" class="telecom-locale-skeleton" aria-hidden="true"></div>
 
@@ -570,8 +571,7 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section styles {
     <style>

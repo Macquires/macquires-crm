@@ -12,6 +12,8 @@ public sealed class SystemOperatorContext : IOperatorContext
 
     public IReadOnlyList<string> Roles { get; } = [TelecomEnterpriseRoleMatrix.RoleOperationsManager];
 
+    public IReadOnlyList<string> Permissions { get; } = PermissionScopeRules.NationalDataScopeAny.ToList();
+
     public TelecomMenuPersona? EffectivePersona => TelecomMenuPersona.SysAdmin;
 
     public string? BranchId => null;

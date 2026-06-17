@@ -7,6 +7,7 @@ public interface IOperatorContext
 {
     string? UserId { get; }
     IReadOnlyList<string> Roles { get; }
+    IReadOnlyList<string> Permissions { get; }
     TelecomMenuPersona? EffectivePersona { get; }
     string? BranchId { get; }
     bool IsAuthenticated { get; }

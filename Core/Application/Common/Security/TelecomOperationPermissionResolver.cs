@@ -19,6 +19,6 @@ public static class TelecomOperationPermissionResolver
         TelecomOperationKind.DepositRefundSettlement => PermissionCatalog.TelecomLineRefund,
         TelecomOperationKind.BadDebtRecovery => PermissionCatalog.TelecomLineCollection,
         TelecomOperationKind.ServiceModification => PermissionCatalog.TelecomVasToggle,
-        _ => PermissionCatalog.TelecomLineActivate,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported telecom operation kind for permission resolution."),
     };
 }

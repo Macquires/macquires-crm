@@ -28,7 +28,7 @@ const PortalNavigation = (function () {
     const LEGACY_SIDEBAR_SCROLL_KEY = 'sidebarScrollPosition';
 
     function getSidebarScrollEl() {
-        return document.getElementById('sidebar');
+        return document.getElementById('syrSidebarScroll') || document.getElementById('sidebar');
     }
 
     function saveSidebarScroll() {
@@ -128,6 +128,43 @@ const PortalNavigation = (function () {
         return withSlash.replace(/\/+$/, '') || '/';
     }
 
+    function normalizeNavQuery(url) {
+        if (!url || !String(url).includes('?')) return '';
+        return String(url)
+            .split('#')[0]
+            .split('?')[1]
+            .trim()
+            .toLowerCase();
+    }
+
+    function currentNavQuery() {
+        return (window.location.search || '').replace(/^\?/, '').trim().toLowerCase();
+    }
+
+    function isNavLinkActive(menuUrl) {
+        const path = normalizePath(menuUrl);
+        const currentPath = normalizePath(window.location.pathname);
+        if (!path || path !== currentPath) return false;
+
+        const menuQuery = normalizeNavQuery(menuUrl);
+        const pageQuery = currentNavQuery();
+
+        if (path === '/executive/commandcenter') {
+            const tab = new URLSearchParams(window.location.search).get('tab') || 'scorecard';
+            if (!menuQuery) {
+                return tab === 'scorecard';
+            }
+            const menuTab = new URLSearchParams('?' + menuQuery).get('tab');
+            return menuTab === tab;
+        }
+
+        if (!menuQuery) {
+            return !pageQuery;
+        }
+
+        return menuQuery === pageQuery;
+    }
+
     function getLang() {
         return (document.documentElement.lang || '').toLowerCase().startsWith('en') ? 'en' : 'ar';
     }
@@ -140,6 +177,36 @@ const PortalNavigation = (function () {
 
     function localizeRows(rows) {
         return (rows || []).map(localizeRow);
+    }
+
+    /** Normalize API/localStorage menu nodes (PascalCase + camelCase). */
+    function normalizeMenuRows(rows) {
+        return (rows || []).map((r) => {
+            const nav = r.navURL || r.navUrl || r.NavURL || '';
+            return Object.assign({}, r, {
+                id: String(r.id ?? r.Id ?? ''),
+                pid: r.pid ?? r.Pid ?? null,
+                name: r.name ?? r.Name ?? '',
+                nameEn: r.nameEn ?? r.NameEn ?? null,
+                navURL: nav,
+                navUrl: nav,
+                hasChild: !!(r.hasChild ?? r.HasChild),
+                expanded: !!(r.expanded ?? r.Expanded),
+                isSelected: !!(r.isSelected ?? r.IsSelected),
+                icon: r.icon ?? r.Icon ?? null,
+                sortOrder: Number(r.sortOrder ?? r.SortOrder ?? 0) || 0,
+                badgeKey: r.badgeKey ?? r.BadgeKey ?? null,
+                isQuickAction: !!(r.isQuickAction ?? r.IsQuickAction),
+                personas: r.personas ?? r.Personas ?? null,
+            });
+        });
+    }
+
+    function menuHasRenderableSections(rows) {
+        const normalized = normalizeMenuRows(rows);
+        const modules = normalized.filter((r) => r.hasChild);
+        const leaves = normalized.filter((r) => !r.hasChild && r.navURL);
+        return modules.some((mod) => leaves.some((leaf) => leaf.pid === mod.id));
     }
 
     function getSavedExpandedSet() {
@@ -165,7 +232,6 @@ const PortalNavigation = (function () {
             parentMap[item.id] = item;
         });
 
-        const currentPath = normalizePath(window.location.pathname);
         const savedExpanded = getSavedExpandedSet();
 
         rows.forEach((item) => {
@@ -181,7 +247,7 @@ const PortalNavigation = (function () {
             if (!url || url === '#') {
                 return;
             }
-            if (normalizePath(url) === currentPath) {
+            if (isNavLinkActive(url)) {
                 item.isSelected = true;
                 if (item.hasChild) {
                     item.expanded = true;
@@ -276,10 +342,9 @@ const PortalNavigation = (function () {
         return false;
     }
 
-    function renderNavLink(leaf, badges, currentPath) {
+    function renderNavLink(leaf, badges) {
         const url = leaf.navURL || leaf.navUrl || '#';
-        const path = normalizePath(url);
-        const active = path && currentPath === path;
+        const active = isNavLinkActive(url);
         const icon = leaf.icon || 'bi-circle';
         const badgeKey = leaf.badgeKey || leaf.BadgeKey;
         const raw = badgeKey && badges && Object.prototype.hasOwnProperty.call(badges, badgeKey)
@@ -298,26 +363,21 @@ const PortalNavigation = (function () {
         </a>`;
     }
 
-    function renderAccordionSection(sec, badges, currentPath) {
+    function renderAccordionSection(sec, badges) {
         const mod = sec.module;
         const children = sec.children;
         const modIcon = mod.icon || 'bi-folder2';
         const expanded = mod.expanded === true;
         const chevron = expanded ? 'bi-chevron-up' : 'bi-chevron-down';
 
-        if (children.length === 1) {
-            const leaf = Object.assign({}, children[0], { icon: children[0].icon || modIcon });
-            return `<div class="syr-nav-section syr-nav-section--flat">${renderNavLink(leaf, badges, currentPath)}</div>`;
-        }
-
         let bodyHtml = '';
         children.forEach((leaf) => {
-            bodyHtml += renderNavLink(leaf, badges, currentPath);
+            bodyHtml += renderNavLink(leaf, badges);
         });
 
         const hubUrl = mod.navURL || mod.navUrl;
         const hasHub = hubUrl && hubUrl !== '#';
-        const hubActive = hasHub && currentPath === normalizePath(hubUrl);
+        const hubActive = hasHub && isNavLinkActive(hubUrl);
 
         const headerInner = hasHub
             ? `<a class="syr-nav-accordion-hub${hubActive ? ' active' : ''}" href="${hubUrl}">
@@ -379,11 +439,10 @@ const PortalNavigation = (function () {
         }
 
         const opts = options || {};
-        let rows = StorageManager.getMenuNavigation() || [];
+        let rows = normalizeMenuRows(StorageManager.getMenuNavigation() || []);
         rows = updateSelection(rows);
 
         const badges = opts.badges || StorageManager.getMenuBadges() || {};
-        const currentPath = normalizePath(window.location.pathname);
         const persona = getEffectivePersona();
         const previewActive =
             sessionStorage.getItem(PREVIEW_KEY) &&
@@ -423,12 +482,12 @@ const PortalNavigation = (function () {
         const sections = buildSections(rows);
         let html = '';
         sections.forEach((sec) => {
-            html += renderAccordionSection(sec, badges, currentPath);
+            html += renderAccordionSection(sec, badges);
         });
 
         container.innerHTML =
             html ||
-            `<p class="small text-white-50 px-3 py-2">${getLang() === 'en' ? 'No menu items' : 'لا عناصر في القائمة'}</p>`;
+            `<p class="small text-muted px-3 py-2 mb-0">${getLang() === 'en' ? 'No menu items — refresh or sign in again.' : 'لا عناصر في القائمة — حدّث الصفحة أو سجّل الدخول مجدداً.'}</p>`;
 
         bindAccordionHandlers(container, containerId, options);
         bindSidebarScrollPersistence();
@@ -523,7 +582,9 @@ const PortalNavigation = (function () {
     }
 
     async function syncOperatorSession(force) {
-        if (!force && sessionStorage.getItem('syrSessionSynced') === '1') {
+        const cachedMenu = StorageManager.getMenuNavigation() || [];
+        const needsMenu = !menuHasRenderableSections(cachedMenu);
+        if (!force && !needsMenu && sessionStorage.getItem('syrSessionSynced') === '1') {
             return;
         }
         try {
@@ -582,6 +643,9 @@ const PortalNavigation = (function () {
     async function init() {
         bindSidebarScrollPersistence();
         await syncOperatorSession(false);
+        if (!menuHasRenderableSections(StorageManager.getMenuNavigation())) {
+            await syncOperatorSession(true);
+        }
         const savedPreview = sessionStorage.getItem(PREVIEW_KEY);
         const roles = StorageManager.getUserRoles() || [];
         const canPreview = roles.some(

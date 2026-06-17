@@ -14,6 +14,8 @@ public sealed class TestOperatorContext : IOperatorContext
 
     public string? UserId => "test-user";
     public IReadOnlyList<string> Roles { get; } = [TelecomEnterpriseRoleMatrix.RoleAdmin];
+    public IReadOnlyList<string> Permissions { get; } =
+        PermissionCatalog.All.Select(p => p.Key).ToList();
     public TelecomMenuPersona? EffectivePersona => null;
     public bool IsAuthenticated => true;
     public string? BranchId => DefaultBranchId;
@@ -24,6 +26,7 @@ public sealed class TestOperatorContext : IOperatorContext
 
         public string? UserId => "branch-user";
         public IReadOnlyList<string> Roles { get; } = [TelecomEnterpriseRoleMatrix.RoleCallCenter];
+        public IReadOnlyList<string> Permissions { get; } = [PermissionCatalog.CustomerView];
         public TelecomMenuPersona? EffectivePersona => null;
         public bool IsAuthenticated => true;
         public string? BranchId { get; }

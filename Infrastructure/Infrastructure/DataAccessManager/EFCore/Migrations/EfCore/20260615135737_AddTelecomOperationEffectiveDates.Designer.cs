@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
 {
-    [DbContext(typeof(CommandContext))]
+    [DbContext(typeof(DataContext))]
     [Migration("20260615135737_AddTelecomOperationEffectiveDates")]
     partial class AddTelecomOperationEffectiveDates
     {

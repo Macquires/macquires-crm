@@ -40,7 +40,10 @@ public record GetTelecomBranchHeatDto(
 }
 
 public record GetTelecomDashboardKpisRequest(string? RegionId, string? BranchId)
-    : IRequest<GetTelecomDashboardKpisResult>, IOperationalKpiRequest;
+    : IRequest<GetTelecomDashboardKpisResult>, IRequireAnyPermission
+{
+    public IReadOnlyList<string> PermissionKeys => DashboardPermissionSets.ReadAny;
+}
 
 public class GetTelecomDashboardKpisHandler : IRequestHandler<GetTelecomDashboardKpisRequest, GetTelecomDashboardKpisResult>
 {

@@ -9,6 +9,13 @@ public static partial class NavigationTreeStructure
         new(StringComparer.OrdinalIgnoreCase)
         {
             ["/dashboards/defaultdashboard"] = ("لوحة القيادة الرئيسية", "Executive dashboard"),
+            ["/executive/commandcenter"] = ("مركز قيادة الإدارة العليا", "Executive command center"),
+            ["/executive/commandcenter?tab=scorecard"] = ("نظرة سريعة — Scorecard", "Scorecard overview"),
+            ["/executive/commandcenter?tab=network"] = ("الشبكة والتكامل", "Network & integration"),
+            ["/executive/commandcenter?tab=mis"] = ("MIS المالي والفروع", "Financial MIS & branches"),
+            ["/executive/commandcenter?tab=operations"] = ("العمليات — مراقبة", "Operations monitoring"),
+            ["/executive/commandcenter?tab=workforce"] = ("أداء الموظفين", "Workforce performance"),
+            ["/executive/commandcenter?tab=alerts"] = ("التنبيهات والتدقيق", "Alerts & audit"),
             ["/telecom/strategicanalytics"] = ("التحليلات الاستراتيجية", "Strategic analytics"),
             ["/dashboards/defaultdashboard#strategic-analytics"] = ("MIS — لوحة موحّدة", "Unified MIS cockpit"),
             ["/dashboards/defaultdashboard#mis-reports"] = ("تقارير MIS السريعة", "Quick MIS reports"),
@@ -53,6 +60,7 @@ public static partial class NavigationTreeStructure
         new(StringComparer.Ordinal)
         {
             ["لوحات القيادة"] = ("لوحات القيادة", "Dashboards"),
+            ["مركز قيادة الإدارة العليا"] = ("مركز قيادة الإدارة العليا", "Executive command center"),
             ["العمليات التشغيلية"] = ("العمليات التشغيلية", "Operations"),
             ["إدارة المشتركين"] = ("إدارة المشتركين", "Customer management"),
             ["كتالوج المنتجات"] = ("كتالوج المنتجات", "Product catalog"),

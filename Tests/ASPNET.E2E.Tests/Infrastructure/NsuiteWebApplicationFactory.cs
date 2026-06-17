@@ -1,6 +1,6 @@
+using System.Net;
+using System.Net.Sockets;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,17 +28,19 @@ public sealed class NsuiteWebApplicationFactory : WebApplicationFactory<Program>
     {
         var testHost = base.CreateHost(builder);
 
-        builder.ConfigureWebHost(webBuilder => webBuilder.UseKestrel());
+        var port = AllocateTcpPort();
+        var publicUrl = $"http://127.0.0.1:{port}";
+
+        builder.ConfigureWebHost(webBuilder =>
+        {
+            webBuilder.UseKestrel();
+            webBuilder.UseSetting(WebHostDefaults.ServerUrlsKey, publicUrl);
+            webBuilder.PreferHostingUrls(true);
+        });
+
         _kestrelHost = builder.Build();
         _kestrelHost.Start();
-
-        var addresses = _kestrelHost.Services
-            .GetRequiredService<IServer>()
-            .Features
-            .Get<IServerAddressesFeature>()!
-            .Addresses;
-
-        PublicBaseUrl = NormalizeAddress(addresses.First());
+        PublicBaseUrl = publicUrl;
 
         return testHost;
     }
@@ -73,17 +75,25 @@ public sealed class NsuiteWebApplicationFactory : WebApplicationFactory<Program>
                 ["AspNetIdentity:DefaultAdmin:Email"] = "admin@root.com",
                 ["AspNetIdentity:DefaultAdmin:Password"] = "123456",
                 ["KycDocumentStorage:VaultRootPath"] = "wwwroot/secure_kyc_vault_e2e",
+                ["Logging:LogLevel:Default"] = "Warning",
+                ["Logging:LogLevel:Microsoft.EntityFrameworkCore"] = "Warning",
+                ["Logging:LogLevel:Microsoft.AspNetCore"] = "Warning",
             });
         });
     }
 
-    private static string NormalizeAddress(string address)
+    private static int AllocateTcpPort()
     {
-        return address
-            .Replace("[::]", "127.0.0.1", StringComparison.Ordinal)
-            .Replace("http://[::ffff:", "http://127.0.0.1:", StringComparison.Ordinal)
-            .Replace("https://[::ffff:", "https://127.0.0.1:", StringComparison.Ordinal)
-            .TrimEnd('/');
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            return ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
     }
 
     protected override void Dispose(bool disposing)

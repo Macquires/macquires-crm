@@ -8,8 +8,9 @@ body.syr-tel-portal .sidebar.syr-sidebar {
     position: fixed !important;
     top: 0;
     bottom: 0;
-    width: 280px !important;
-    min-width: 280px;
+    width: var(--syr-sidebar-width, 300px) !important;
+    min-width: var(--syr-sidebar-width, 300px);
+    max-width: var(--syr-sidebar-width, 300px);
     inset-inline-start: 0 !important;
     inset-inline-end: auto !important;
     left: unset !important;
@@ -17,16 +18,47 @@ body.syr-tel-portal .sidebar.syr-sidebar {
     background: var(--sys-card-bg) !important;
     border-inline-end: 1px solid var(--sys-border);
     box-shadow: var(--sys-shadow-card);
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0 !important;
 }
 
 body.syr-tel-portal .sidebar.syr-sidebar::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
+}
+
+body.syr-tel-portal .syr-sidebar-top {
+    flex: 0 0 auto;
+    background: var(--sys-card-bg);
+    border-bottom: 1px solid var(--sys-border);
+}
+
+body.syr-tel-portal .syr-sidebar-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+    padding: 0.35rem 0.5rem 1rem;
+}
+
+body.syr-tel-portal .syr-sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+body.syr-tel-portal .syr-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--sys-border) 80%, var(--sys-text-muted));
+    border-radius: 999px;
+}
+
+body.syr-tel-portal .syr-sidebar-footer {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--sys-border);
+    background: var(--sys-card-bg);
 }
 
 body.syr-tel-portal .sidebar.syr-sidebar::before {
@@ -41,7 +73,26 @@ body.syr-tel-portal .sidebar.syr-sidebar .navbar {
 }
 
 body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-brand-block {
-    border-bottom: 1px solid var(--sys-border);
+    border-bottom: none;
+}
+
+body.syr-tel-portal .syr-sidebar-brand-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+body.syr-tel-portal .syr-sidebar-brand-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+body.syr-tel-portal .syr-persona-chip {
+    margin-inline: auto;
 }
 
 /* Neutralize legacy admin_template pill nav inside Syr sidebar */
@@ -72,6 +123,16 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-user {
     border-color: var(--sys-border) !important;
 }
 
+body.syr-tel-portal .syr-sidebar-user {
+    gap: 0.75rem;
+}
+
+body.syr-tel-portal .syr-sidebar-user-meta {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-inline-start: 0;
+}
+
 body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-user-email {
     color: var(--sys-text-main);
     font-weight: 600;
@@ -100,6 +161,38 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
     background: var(--sys-border);
 }
 
+body.syr-tel-portal .content .syriatel-unified-header {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    background: var(--sys-card-bg);
+}
+
+/* Bootstrap nav inside content — all operator pages */
+body.syr-tel-portal .content .adminbody .nav,
+body.syr-tel-portal .content .adminbody .nav-pills-custom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    padding-inline-start: 0;
+    margin-bottom: 0;
+    gap: 0.5rem;
+}
+
+body.syr-tel-portal .content .adminbody .nav .nav-item {
+    list-style: none;
+}
+
+body.syr-tel-portal .content .adminbody .list-unstyled {
+    list-style: none;
+    padding-inline-start: 0;
+}
+
+body.syr-tel-portal .content .adminbody .list-unstyled > li {
+    list-style: none;
+}
+
 .syr-sidebar-brand-title {
     font-size: 0.95rem;
     font-weight: 600;
@@ -110,6 +203,7 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
 .syr-persona-chip {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.35rem;
     font-size: 0.7rem;
     padding: 0.2rem 0.65rem;
@@ -186,7 +280,7 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
 }
 
 .syr-nav-section {
-    padding: 0.15rem 0.65rem 0.35rem;
+    padding: 0.35rem 0.5rem 0.55rem;
 }
 
 .syr-nav-accordion-header-row {
@@ -194,7 +288,7 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
     align-items: center;
     gap: 0.15rem;
     width: 100%;
-    margin: 0.06rem 0;
+    margin: 0.15rem 0;
     border-radius: calc(var(--sys-radius) - 6px);
     transition: background 0.15s ease;
 }
@@ -347,8 +441,8 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    padding: 0.45rem 0.6rem;
-    margin-bottom: 0.08rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.2rem;
     border-radius: calc(var(--sys-radius) - 6px);
     border-inline-start: 3px solid transparent;
     color: var(--sys-text-muted);
@@ -770,7 +864,8 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
 
 .syr-nav-accordion-inner {
     overflow: hidden;
-    padding-inline-start: 0.35rem;
+    padding-inline-start: 0.5rem;
+    padding-bottom: 0.15rem;
 }
 
 .syr-bento-grid {
@@ -806,52 +901,23 @@ body.syr-tel-portal .sidebar.syr-sidebar .syr-sidebar-online-dot {
     scrollbar-width: thin;
 }
 
-/*
- * Admin shell layout — logical properties (one rule for LTR + RTL).
- * Clears style.css physical margin-left:300px that breaks Arabic layouts.
- */
-@media (min-width: 992px) {
-    body.syr-tel-portal .content {
-        box-sizing: border-box !important;
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: 280px !important;
-        margin-inline-end: 0 !important;
-        width: calc(100% - 280px) !important;
-        max-width: 100% !important;
-    }
-
-    body.syr-tel-portal .sidebar.open {
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: -280px !important;
-    }
-
-    body.syr-tel-portal .content.open {
-        margin-inline-start: 0 !important;
-        margin-inline-end: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-    }
+/* Dashmin sidebar nav pills must not compress Syr portal accordion links */
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .syr-nav-link,
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .syr-nav-accordion-hub,
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .syr-nav-accordion-header,
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .syr-nav-accordion-toggle {
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: calc(var(--sys-radius) - 6px) !important;
+    background: transparent !important;
 }
 
-@media (max-width: 991.98px) {
-    body.syr-tel-portal .content {
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: 0 !important;
-        margin-inline-end: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-
-    body.syr-tel-portal .sidebar.syr-sidebar {
-        margin-left: unset !important;
-        margin-right: unset !important;
-        margin-inline-start: -280px !important;
-    }
-
-    body.syr-tel-portal .sidebar.syr-sidebar.open {
-        margin-inline-start: 0 !important;
-    }
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .syr-nav-link i,
+body.syr-tel-portal .sidebar.syr-sidebar .navbar .navbar-nav .syr-nav-module-icon {
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border-radius: 8px !important;
 }
+
+/* Shell geometry: admin-shell-layout.css */

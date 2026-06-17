@@ -61,7 +61,7 @@ function offerDetailSummaryText(detail, lang) {
     if (lang === 'ar') {
         return (detail.shortDescription || detail.description || '').trim();
     }
-    return '';
+    return (detail.shortDescriptionEn || detail.descriptionEn || detail.shortDescription || detail.description || '').trim();
 }
 
 function formatMoneyOffer(n, lang) {
@@ -208,6 +208,17 @@ const Customer360ProfileApp = {
                     search: h('search', 'Search'),
                     crmRegistry: h('crmRegistry', 'CRM'),
                     opsHub: h('opsHub', 'Hub'),
+                },
+                tabs: {
+                    profile: telecomT('tabs.profile', 'Profile'),
+                    services: telecomT('tabs.services', 'Services'),
+                    tickets: telecomT('tabs.tickets', 'Tickets'),
+                    timeline: telecomT('tabs.timeline', 'Timeline'),
+                },
+                timeline: {
+                    noEvents: telecomT('timeline.noEvents', 'No events yet.'),
+                    open: telecomT('timeline.open', 'Open'),
+                    loadMore: telecomT('timeline.loadMore', 'Load more'),
                 },
                 sections: {
                     fullInfo: s('fullInfo'),
@@ -1151,26 +1162,30 @@ const Customer360ProfileApp = {
             return t360(`enums.operational.${key}`, s);
         };
 
-        const mappedTimeline = Vue.computed(() =>
-            (state.profile?.timeline || []).map((r) => ({
+        const mappedTimeline = Vue.computed(() => {
+            localeTick.value;
+            const ar = contentLang() === 'ar';
+            return (state.profile?.timeline || []).map((r) => ({
                 occurredAtUtc: r.occurredAtUtc ?? r.OccurredAtUtc,
                 kind: r.kind ?? r.Kind,
-                titleAr: r.titleAr ?? r.TitleAr ?? '—',
+                title: ar
+                    ? (r.titleAr ?? r.TitleAr ?? '—')
+                    : (r.titleEn ?? r.TitleEn ?? r.titleAr ?? r.TitleAr ?? '—'),
                 subtitle: r.subtitle ?? r.Subtitle,
                 status: r.status ?? r.Status,
                 referenceId: r.referenceId ?? r.ReferenceId,
                 actionUrl: r.actionUrl ?? r.ActionUrl,
                 display: formatDt(r.occurredAtUtc ?? r.OccurredAtUtc),
-            }))
-        );
+            }));
+        });
 
         const timelineFilters = Vue.computed(() => [
-            { id: '', label: telecomT('timeline.filters.all', 'الكل') },
-            { id: '0', label: telecomT('timeline.filters.operations', 'عمليات') },
-            { id: '1', label: telecomT('timeline.filters.payments', 'مدفوعات') },
-            { id: '2', label: telecomT('timeline.filters.tickets', 'تذاكر') },
-            { id: '3', label: telecomT('timeline.filters.billing', 'فوترة') },
-            { id: '4', label: telecomT('timeline.filters.audit', 'تدقيق') },
+            { id: '', label: telecomT('timeline.filters.all', 'All') },
+            { id: '0', label: telecomT('timeline.filters.operations', 'Operations') },
+            { id: '1', label: telecomT('timeline.filters.payments', 'Payments') },
+            { id: '2', label: telecomT('timeline.filters.tickets', 'Tickets') },
+            { id: '3', label: telecomT('timeline.filters.billing', 'Billing') },
+            { id: '4', label: telecomT('timeline.filters.audit', 'Audit') },
         ]);
 
         const fetchTimeline = async (reset = false) => {

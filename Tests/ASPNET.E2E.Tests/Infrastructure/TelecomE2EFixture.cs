@@ -25,6 +25,7 @@ public class TelecomE2EFixture : IAsyncLifetime
     {
         if (!DockerProbe.IsAvailable())
         {
+            Console.WriteLine("[E2E] Docker not available — UI tests will be skipped.");
             DockerUnavailable = true;
             SimulatorFactory = new WebApplicationFactory<Simulator::Program>();
             SimulatorClient = new HttpClient();
@@ -32,9 +33,11 @@ public class TelecomE2EFixture : IAsyncLifetime
             return;
         }
 
+        Console.WriteLine("[E2E] Starting SQL Server + Redis test containers…");
         _sql = E2ETestContainers.CreateSqlServer();
         _redis = E2ETestContainers.CreateRedis();
         await Task.WhenAll(_sql.StartAsync(), _redis.StartAsync());
+        Console.WriteLine("[E2E] Containers ready.");
 
         SimulatorFactory = new WebApplicationFactory<Simulator::Program>()
             .WithWebHostBuilder(builder => builder.UseEnvironment(Environments.Development));
@@ -48,6 +51,7 @@ public class TelecomE2EFixture : IAsyncLifetime
             simulatorBase,
             _redis.GetConnectionString());
 
+        Console.WriteLine("[E2E] Warming up app (EF migrations + seed) — first run may take 1–3 minutes…");
         using var warmup = AppFactory.CreateClient(new WebApplicationFactoryClientOptions
         {
             HandleCookies = false,
@@ -55,6 +59,7 @@ public class TelecomE2EFixture : IAsyncLifetime
         });
         warmup.Timeout = TimeSpan.FromMinutes(10);
         _ = await warmup.GetAsync("/health");
+        Console.WriteLine($"[E2E] App ready at {AppFactory.PublicBaseUrl}");
     }
 
     public async Task DisposeAsync()

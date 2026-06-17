@@ -61,45 +61,48 @@ public sealed class IntegrationOutboxDispatcherHostedService : BackgroundService
 
             var db = scope.ServiceProvider.GetRequiredService<DataContext>();
             var publisher = scope.ServiceProvider.GetRequiredService<IIntegrationMessagePublisher>();
-
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-            var batch = await db.IntegrationOutboxMessage
-                .FromSqlInterpolated($@"
-                    SELECT *
-                    FROM IntegrationOutboxMessage WITH (UPDLOCK, READPAST, ROWLOCK)
-                    WHERE ProcessedAtUtc IS NULL AND IsDeleted = 0
-                    ORDER BY OccurredAtUtc
-                    OFFSET 0 ROWS FETCH NEXT 25 ROWS ONLY")
-                .ToListAsync(cancellationToken);
-
-            foreach (var message in batch)
+            var strategy = db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                try
+                await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+                var batch = await db.IntegrationOutboxMessage
+                    .FromSqlInterpolated($@"
+                        SELECT *
+                        FROM IntegrationOutboxMessage WITH (UPDLOCK, READPAST, ROWLOCK)
+                        WHERE ProcessedAtUtc IS NULL AND IsDeleted = 0
+                        ORDER BY OccurredAtUtc
+                        OFFSET 0 ROWS FETCH NEXT 25 ROWS ONLY")
+                    .ToListAsync(cancellationToken);
+
+                foreach (var message in batch)
                 {
-                    await publisher.PublishAsync(
-                        message.EventType,
-                        message.PayloadJson,
-                        message.CorrelationId,
-                        cancellationToken);
+                    try
+                    {
+                        await publisher.PublishAsync(
+                            message.EventType,
+                            message.PayloadJson,
+                            message.CorrelationId,
+                            cancellationToken);
 
-                    message.ProcessedAtUtc = DateTime.UtcNow;
-                    message.AttemptCount++;
+                        message.ProcessedAtUtc = DateTime.UtcNow;
+                        message.AttemptCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        message.AttemptCount++;
+                        message.LastError = ex.Message;
+                        _logger.LogWarning(ex, "Failed to dispatch outbox message {Id}", message.Id);
+                    }
                 }
-                catch (Exception ex)
+
+                if (batch.Count > 0)
                 {
-                    message.AttemptCount++;
-                    message.LastError = ex.Message;
-                    _logger.LogWarning(ex, "Failed to dispatch outbox message {Id}", message.Id);
+                    await db.SaveChangesAsync(cancellationToken);
                 }
-            }
 
-            if (batch.Count > 0)
-            {
-                await db.SaveChangesAsync(cancellationToken);
-            }
-
-            await transaction.CommitAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            });
         }
     }
 }

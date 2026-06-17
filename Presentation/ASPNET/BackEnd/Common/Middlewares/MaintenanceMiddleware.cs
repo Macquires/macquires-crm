@@ -1,5 +1,6 @@
+using Application.Common.Security;
 using Application.Common.Settings;
-using Infrastructure.SecurityManager.Roles;
+using Infrastructure.Security;
 using System.Net;
 
 namespace ASPNET.BackEnd.Common.Middlewares;
@@ -18,7 +19,7 @@ public class MaintenanceMiddleware
 
     public MaintenanceMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, IGlobalSettingsProvider settings)
+    public async Task InvokeAsync(HttpContext context, IGlobalSettingsProvider settings, IOperatorContext operatorContext)
     {
         if (!await settings.GetBoolAsync(GlobalSettingKeys.MaintenanceMode))
         {
@@ -33,7 +34,7 @@ public class MaintenanceMiddleware
             return;
         }
 
-        if (context.User.IsInRole(TelecomRoles.Admin))
+        if (PermissionScopeRules.HasNationalAdminScope(operatorContext.Permissions))
         {
             await _next(context);
             return;

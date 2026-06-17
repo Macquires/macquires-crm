@@ -180,7 +180,15 @@ public sealed class RequireIntegrationMonitorAttribute : HasAnyPermissionAttribu
 public sealed class RequireOperationalKpiAttribute : HasAnyPermissionAttribute
 {
     public RequireOperationalKpiAttribute()
-        : base(PermissionCatalog.TelecomReportsMis, PermissionCatalog.AdminSettingsManage)
+        : base(OperationalKpiPermissionSets.ReadAny)
+    {
+    }
+}
+
+public sealed class RequireBackOfficeDashboardAttribute : HasAnyPermissionAttribute
+{
+    public RequireBackOfficeDashboardAttribute()
+        : base(BackOfficeDashboardPermissionSets.AccessAny)
     {
     }
 }
@@ -293,6 +301,14 @@ public sealed class RequireDashboardAdminAttribute : HasAnyPermissionAttribute
 {
     public RequireDashboardAdminAttribute()
         : base(DashboardPermissionSets.AdminAny)
+    {
+    }
+}
+
+public sealed class RequireDashboardReadAttribute : HasAnyPermissionAttribute
+{
+    public RequireDashboardReadAttribute()
+        : base(DashboardPermissionSets.ReadAny)
     {
     }
 }

@@ -11,31 +11,33 @@
 <nav class="navbar navbar-expand bg-white px-3 px-lg-4 py-2 adminheader syriatel-unified-header border-bottom shadow-sm"
      dir="@(uiRtl ? "rtl" : "ltr")"
      lang="@uiLang">
-    <div class="d-flex align-items-center flex-grow-1 min-w-0 syriatel-header-main">
-        <a href="#" class="sidebar-toggler flex-shrink-0 text-secondary" aria-label="@L["Nav_MenuToggle"]">
-            <i class="fa fa-bars"></i>
-        </a>
-        <a href="/Telecom/TelecomHub" class="syriatel-header-brand d-flex align-items-center gap-2 gap-md-3 text-decoration-none ms-2 ms-md-3 min-w-0">
-            <img src="@Url.Content("~/brand/logo.png")" alt="" class="syriatel-header-logo flex-shrink-0" width="180" height="48" loading="lazy" />
-            <span class="syriatel-header-title text-truncate">@L["Nav_PortalTitle"]</span>
-        </a>
-    </div>
-    <div class="navbar-nav flex-row align-items-center gap-2 gap-md-3 ms-auto flex-shrink-0 syriatel-header-actions">
-        <div class="nav-item d-none d-sm-block">
-            <span id="topbarContent" class="topbar-currency-wrap text-muted small">@currency</span>
-        </div>
-        <div class="nav-item syriatel-lang-toggle btn-group btn-group-sm" role="group" aria-label="@L["Nav_LangToggleAria"]">
-            <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="ar" id="syriatelLangAr">@L["Nav_LangArabic"]</button>
-            <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="en" id="syriatelLangEn">@L["Nav_LangEnglish"]</button>
-        </div>
-        <div class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle d-flex align-items-center gap-2 py-1 px-2" data-bs-toggle="dropdown" aria-expanded="false">
-                <img id="AvatarImageNav" class="rounded-circle flex-shrink-0" src="@avatarUrl" alt="" width="36" height="36" />
-                <span class="d-none d-lg-inline text-dark small fw-medium text-truncate" style="max-width: 11rem;" id="fullName">@fullName</span>
+    <div class="syr-topbar-shell">
+        <div class="syriatel-header-main">
+            <a href="#" class="sidebar-toggler text-secondary" aria-label="@L["Nav_MenuToggle"]">
+                <i class="fa fa-bars"></i>
             </a>
-            <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
-                <a asp-area="" asp-page="/Profiles/MyProfile" class="nav-link btn btn-link text-black dropdown-item">@L["Nav_Profile"]</a>
-                <a asp-area="" asp-page="/Accounts/Logout" class="nav-link btn btn-link text-black dropdown-item">@L["Nav_Logout"]</a>
+            <a href="/Telecom/TelecomHub" class="syriatel-header-brand text-decoration-none">
+                <img src="@Url.Content("~/brand/logo.png")" alt="" class="syriatel-header-logo" width="120" height="38" loading="lazy" />
+                <span class="syriatel-header-title text-truncate">@L["Nav_PortalTitle"]</span>
+            </a>
+        </div>
+        <div class="syriatel-header-actions">
+            <div class="nav-item d-none d-sm-block">
+                <span id="topbarContent" class="topbar-currency-wrap text-muted small">@currency</span>
+            </div>
+            <div class="nav-item syriatel-lang-toggle btn-group btn-group-sm" role="group" aria-label="@L["Nav_LangToggleAria"]">
+                <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="ar" id="syriatelLangAr">@L["Nav_LangArabic"]</button>
+                <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="en" id="syriatelLangEn">@L["Nav_LangEnglish"]</button>
+            </div>
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle syriatel-profile-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img id="AvatarImageNav" class="rounded-circle" src="@avatarUrl" alt="" width="36" height="36" />
+                    <span class="d-none d-lg-inline text-dark small fw-medium text-truncate syriatel-profile-name" id="fullName">@fullName</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
+                    <a asp-area="" asp-page="/Profiles/MyProfile" class="dropdown-item">@L["Nav_Profile"]</a>
+                    <a asp-area="" asp-page="/Accounts/Logout" class="dropdown-item">@L["Nav_Logout"]</a>
+                </div>
             </div>
         </div>
     </div>

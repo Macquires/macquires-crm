@@ -49,12 +49,15 @@ public class PermissionAuthorizationBehaviour<TRequest, TResponse> : IPipelineBe
                 throw new BusinessRuleViolationException("يجب تسجيل الدخول لتنفيذ هذه العملية.");
             }
 
-            if (!await _permissions.HasPermissionAsync(_operator.UserId, PermissionCatalog.TelecomReportsMis, cancellationToken))
+            foreach (var key in OperationalKpiPermissionSets.ReadAny)
             {
-                throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
+                if (await _permissions.HasPermissionAsync(_operator.UserId, key, cancellationToken))
+                {
+                    return await next();
+                }
             }
 
-            return await next();
+            throw new BusinessRuleViolationException("ليس لديك صلاحية لتنفيذ هذه العملية.");
         }
 
         if (request is IRequireAuthenticatedOperator)

@@ -3,8 +3,9 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<div class="form-card syr-operator-page telecom-premium-page" id="formcard">
-    <div id="telecomOperatorDashSlim">
+@{ ViewData["PortalPageId"] = "telecomOperatorDashSlim"; ViewData["PortalPageClass"] = " syr-operator-page"; ViewData["PortalPageInner"] = false; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
         <div class="container-fluid py-3 px-3 px-lg-4 syriatel-dash-slim dash-unified-layout">
             <header class="mb-3">
                 <h1 class="h4 fw-semibold text-syriatel-red mb-1" data-telecom-i18n="defaultDashboard.title">Syriatel — Executive dashboard</h1>
@@ -35,8 +36,8 @@
                 <div id="supervisorInterventionApp" v-cloak class="strategic-exec-root"></div>
             </section>
         </div>
-    </div>
-</div>
+
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section styles {
     <style>

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Application.Common.Security;
-using Application.Common.Exceptions;
 using System.Security.Claims;
 
 namespace ASPNET.BackEnd.Common.Attributes;
@@ -35,7 +34,7 @@ public class HasPermissionAttribute : Attribute, IAsyncAuthorizationFilter
         var permissionEvaluator = context.HttpContext.RequestServices.GetRequiredService<IPermissionEvaluator>();
         if (!await permissionEvaluator.HasPermissionAsync(userId, _permission))
         {
-            throw new UnauthorizedPermissionException("Security Block: Missing specific granular system permission required for this operations pipeline.");
+            throw PermissionAuthorizationFailure.Missing(context, _permission);
         }
     }
 }

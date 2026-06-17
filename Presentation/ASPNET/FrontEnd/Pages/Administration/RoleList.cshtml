@@ -3,7 +3,9 @@
     ViewData["Title"] = "الأدوار والصلاحيات";
 }
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="row mb-2">
         <div class="col-12">
             <p class="text-muted small mb-0">
@@ -49,7 +51,7 @@
             <p v-else class="text-muted">{{ t('selectRoleHint') }}</p>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/Administration/RoleList.cshtml.js" asp-append-version="true"></script>

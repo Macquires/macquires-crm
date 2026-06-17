@@ -16,6 +16,16 @@ const telecomT = (key, fallback) => {
     }
 };
 
+const uiModalT = (key, fallback) => {
+    try {
+        if (typeof MacquiresUiI18n !== 'undefined' && MacquiresUiI18n.t) {
+            const hit = MacquiresUiI18n.t(key);
+            if (hit && hit !== key) return hit;
+        }
+    } catch { /* ignore */ }
+    return fallback;
+};
+
 const showTelecomConfirmResult = (confirmRes, successTitle) => {
     if (window.TelecomUiBadges?.showConfirmToast) {
         return window.TelecomUiBadges.showConfirmToast(confirmRes, {
@@ -994,8 +1004,8 @@ const App = {
                         } else {
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Delete Successful',
-                                text: 'Form will be closed...',
+                                title: uiModalT('swal_deleteSuccessful', 'Delete Successful'),
+                                text: uiModalT('swal_formWillClose', 'Form will be closed...'),
                                 timer: 2000,
                                 showConfirmButton: false
                             });
@@ -1008,18 +1018,20 @@ const App = {
                     } else {
                         Swal.fire({
                             icon: 'error',
-                            title: state.deleteMode ? 'Delete Failed' : 'Save Failed',
-                            text: response.data.message ?? 'Please check your data.',
-                            confirmButtonText: 'Try Again'
+                            title: state.deleteMode
+                                ? uiModalT('swal_deleteFailed', 'Delete Failed')
+                                : uiModalT('swal_saveFailed', 'Save Failed'),
+                            text: response.data.message ?? uiModalT('swal_checkData', 'Please check your data.'),
+                            confirmButtonText: uiModalT('swal_tryAgain', 'Try Again')
                         });
                     }
 
                 } catch (error) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'An Error Occurred',
-                        text: error.response?.data?.message ?? 'Please try again.',
-                        confirmButtonText: 'OK'
+                        title: uiModalT('swal_errorOccurred', 'An Error Occurred'),
+                        text: error.response?.data?.message ?? uiModalT('swal_tryAgainLater', 'Please try again.'),
+                        confirmButtonText: uiModalT('swal_ok', 'OK')
                     });
                 } finally {
                     state.isSubmitting = false;
@@ -1965,7 +1977,7 @@ const App = {
                             secondaryGrid.refresh();
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Save Successful',
+                                title: uiModalT('swal_saveSuccessful', 'Save Successful'),
                                 timer: 2000,
                                 showConfirmButton: false
                             });
@@ -1978,7 +1990,7 @@ const App = {
                             secondaryGrid.refresh();
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Update Successful',
+                                title: uiModalT('swal_updateSuccessful', 'Update Successful'),
                                 timer: 2000,
                                 showConfirmButton: false
                             });
@@ -1991,7 +2003,7 @@ const App = {
                             secondaryGrid.refresh();
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Delete Successful',
+                                title: uiModalT('swal_deleteSuccessful', 'Delete Successful'),
                                 timer: 2000,
                                 showConfirmButton: false
                             });
@@ -2088,7 +2100,7 @@ const App = {
                 if (pageQs.get('action') === 'new') {
                     window.setTimeout(() => {
                         state.deleteMode = false;
-                        state.mainTitle = typeof MacquiresUiI18n !== 'undefined' ? MacquiresUiI18n.mb('customer','add') : 'إضافة مشترك';
+                        state.mainTitle = typeof MacquiresUiI18n !== 'undefined' ? MacquiresUiI18n.mb('customer','add') : uiModalT('customer.add', 'Add Customer');
                         resetFormState();
                         state.customerOnboardingActive = true;
                         state.customerOnboardingStep = 0;
@@ -2330,6 +2342,10 @@ const App = {
             supportIssueType: 0,
             supportNotes: '',
             supportBusy: false,
+            vasCatalog: [],
+            vasCatalogBusy: false,
+            selectedVasCode: '',
+            vasAction: 'Activate',
         });
 
         const isLineProcessing = (key) => !!lineProcessing[key || ''];
@@ -2361,7 +2377,8 @@ const App = {
             || gridAccess.canReconnectLine
             || gridAccess.canRefundLine
             || gridAccess.canCollectionLine
-            || gridAccess.canDeviceSaleLine;
+            || gridAccess.canDeviceSaleLine
+            || gridAccess.canToggleVas;
 
         const isLineTerminated = (sub) =>
             String(sub?.profileOperationalStatus || sub?.ProfileOperationalStatus || '')
@@ -2513,6 +2530,10 @@ const App = {
             lineActionModal.supportIssueType = 0;
             lineActionModal.supportNotes = '';
             lineActionModal.supportBusy = false;
+            lineActionModal.vasCatalog = [];
+            lineActionModal.vasCatalogBusy = false;
+            lineActionModal.selectedVasCode = '';
+            lineActionModal.vasAction = 'Activate';
             lineActionModal.takeoverSearchBusy = false;
             lineActionModal.notes = '';
             lineActionModal.devInventoryId = '';
@@ -3387,6 +3408,101 @@ const App = {
             resetLineActionModal();
             lineActionModal.sub = sub;
             showBsModal('C360SimSwapModal');
+        };
+
+        const loadListVasCatalog = async () => {
+            const sub = lineActionModal.sub;
+            if (!sub?.subscriberProfileId) {
+                lineActionModal.vasCatalog = [];
+                return;
+            }
+            lineActionModal.vasCatalogBusy = true;
+            try {
+                let url =
+                    '/Product/GetEligibleVasOfferings?subscriberProfileId=' +
+                    encodeURIComponent(sub.subscriberProfileId);
+                if (sub.msisdnAssetId) {
+                    url += '&msisdnAssetId=' + encodeURIComponent(sub.msisdnAssetId);
+                }
+                const res = await AxiosManager.get(url, {});
+                const content = res?.data?.content ?? res?.data?.Content ?? {};
+                const list = content.data || content.Data || [];
+                lineActionModal.vasCatalog = (Array.isArray(list) ? list : []).map((v) => ({
+                    serviceCode: v.serviceCode || v.ServiceCode,
+                    nameAr: v.nameAr || v.NameAr || v.catalogComponentLabel || v.CatalogComponentLabel || '',
+                    nameEn: v.nameEn || v.NameEn || '',
+                }));
+            } catch {
+                lineActionModal.vasCatalog = [];
+            } finally {
+                lineActionModal.vasCatalogBusy = false;
+            }
+        };
+
+        const openVasModal = async (sub) => {
+            if (!gridAccess.canToggleVas || !sub) return;
+            resetLineActionModal();
+            lineActionModal.sub = sub;
+            lineActionModal.vasAction = 'Activate';
+            await loadListVasCatalog();
+            showBsModal('C360VasModal');
+        };
+
+        const submitVasFromList = async () => {
+            const sub = lineActionModal.sub;
+            const msisdn = (sub?.msisdn || '').trim();
+            const code = (lineActionModal.selectedVasCode || '').trim();
+            if (!msisdn || !code) {
+                if (window.Swal) Swal.fire({ icon: 'warning', title: telecomT('wizard.vasPlaceholder', 'Pick VAS') });
+                return;
+            }
+            if (lineActionModal.busy) return;
+            lineActionModal.busy = true;
+            try {
+                const result =
+                    typeof TelecomVasToggle !== 'undefined'
+                        ? await TelecomVasToggle.toggle(AxiosManager, {
+                              msisdn,
+                              serviceCode: code,
+                              activate: (lineActionModal.vasAction || 'Activate') !== 'Deactivate',
+                          })
+                        : null;
+                if (!result?.ok) {
+                    throw new Error(telecomT('swal.genericFailed', 'Failed'));
+                }
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: telecomT('swal.activated', 'Done'),
+                        text: result.operationNumber
+                            ? `${telecomT('swal.activatedOpPrefix', 'Op')} ${result.operationNumber}`
+                            : '',
+                        timer: 2200,
+                        showConfirmButton: false,
+                    });
+                }
+                await loadVasPanelForMsisdn(msisdn);
+                hideBsModal('C360VasModal');
+                await loadCustomer360(state.id);
+            } catch (e) {
+                const isBrv =
+                    typeof TelecomVasToggle !== 'undefined'
+                        ? TelecomVasToggle.isBusinessRuleViolation(e)
+                        : e?.response?.data?.error?.name === 'BusinessRuleViolationException';
+                const msg =
+                    typeof TelecomVasToggle !== 'undefined'
+                        ? TelecomVasToggle.pickError(e)
+                        : e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? '';
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: isBrv ? 'warning' : 'error',
+                        title: isBrv ? telecomT('swal.activationFailed', 'VAL-11') : telecomT('swal.error', 'Error'),
+                        text: msg,
+                    });
+                }
+            } finally {
+                lineActionModal.busy = false;
+            }
         };
 
         const onCnChangeModeChangeList = () => {
@@ -5181,6 +5297,8 @@ const App = {
             openMigrateModal,
             openChangeGsmModal,
             openSimSwapModal,
+            openVasModal,
+            submitVasFromList,
             openChangeNumberModal,
             openTerminationModal,
             openSuspensionModal,

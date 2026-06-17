@@ -24,7 +24,7 @@ public class CustomExceptionHandler : IExceptionHandler
             };
     }
 
-    private static async Task HandleUnauthorizedPermission(HttpContext httpContext, Exception ex)
+    private async Task HandleUnauthorizedPermission(HttpContext httpContext, Exception ex)
     {
         if (httpContext.Response.HasStarted)
         {
@@ -32,13 +32,25 @@ public class CustomExceptionHandler : IExceptionHandler
         }
 
         httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+        var permissionEx = ex as UnauthorizedPermissionException;
+        var diagnostic = permissionEx?.RequiredPermissions.Count > 0
+            ? $"Endpoint: {permissionEx.Endpoint ?? "unknown"} | Required any of: {string.Join(", ", permissionEx.RequiredPermissions)}"
+            : null;
+
         var result = new ApiErrorResult
         {
             Code = StatusCodes.Status403Forbidden,
-            Message = ex.Message,
+            Message = _env.IsDevelopment() && diagnostic != null
+                ? $"{ex.Message} ({diagnostic})"
+                : ex.Message,
             MessageAr = "انتهاك أمني: ليس لديك الصلاحيات الكافية لتنفيذ هذا الإجراء.",
             MessageEn = "Security Violation: You do not possess the required compliance permissions to execute this action.",
-            Error = new Error(null, ex.Source, null, ex.GetType().Name)
+            Error = new Error(
+                _env.IsDevelopment() ? diagnostic : null,
+                ex.Source,
+                null,
+                ex.GetType().Name)
         };
 
         httpContext.Response.ContentType = "application/json";

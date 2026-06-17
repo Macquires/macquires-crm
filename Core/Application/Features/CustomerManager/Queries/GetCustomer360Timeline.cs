@@ -22,6 +22,7 @@ public sealed class Customer360TimelineItemDto
     public DateTime OccurredAtUtc { get; init; }
     public Customer360TimelineKind Kind { get; init; }
     public string TitleAr { get; init; } = null!;
+    public string TitleEn { get; init; } = null!;
     public string? Subtitle { get; init; }
     public string? Status { get; init; }
     public string? ReferenceId { get; init; }
@@ -100,6 +101,7 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
                 OccurredAtUtc = o.CreatedAtUtc ?? DateTime.MinValue,
                 Kind = Customer360TimelineKind.Operation,
                 TitleAr = $"عملية {o.Kind}",
+                TitleEn = $"Operation {o.Kind}",
                 Subtitle = o.Msisdn,
                 Status = o.Status.ToString(),
                 ReferenceId = o.Number,
@@ -128,6 +130,7 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
             OccurredAtUtc = p.CreatedAtUtc ?? DateTime.MinValue,
             Kind = Customer360TimelineKind.Payment,
             TitleAr = $"دفع {p.TransactionType}",
+            TitleEn = $"Payment {p.TransactionType}",
             Subtitle = $"{p.Amount:N0} ل.س — {p.Msisdn}",
             Status = p.Status.ToString(),
             ReferenceId = p.Number,
@@ -152,6 +155,7 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
             OccurredAtUtc = t.CreatedAtUtc ?? DateTime.MinValue,
             Kind = Customer360TimelineKind.Ticket,
             TitleAr = "تذكرة دعم فني",
+            TitleEn = "Technical support ticket",
             Subtitle = t.Priority.ToString(),
             Status = t.Status.ToString(),
             ReferenceId = t.TicketNumber,
@@ -170,6 +174,7 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
                 OccurredAtUtc = b.CreatedAtUtc ?? DateTime.MinValue,
                 Kind = Customer360TimelineKind.Billing,
                 TitleAr = "تكامل فوترة",
+                TitleEn = "Billing integration",
                 Subtitle = b.IntegrationTarget,
                 Status = b.Success ? "نجاح" : "فشل",
                 ReferenceId = b.OperationNumber ?? b.IntegrationTarget,
@@ -185,6 +190,7 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
             OccurredAtUtc = a.OccurredAtUtc,
             Kind = Customer360TimelineKind.Audit,
             TitleAr = a.SummaryAr ?? a.ActionType,
+            TitleEn = a.SummaryAr ?? a.ActionType,
             Subtitle = a.ActorDisplayName,
             ReferenceId = a.Id,
         }));

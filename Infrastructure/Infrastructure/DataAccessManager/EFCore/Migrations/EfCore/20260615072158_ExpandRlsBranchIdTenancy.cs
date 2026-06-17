@@ -10,7 +10,7 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Idempotent: RlsBranchIdSchemaPatches may have added these columns on legacy DBs before this migration ran.
+            // Batch 1: add columns only (SQL Server validates CREATE INDEX at compile time).
             migrationBuilder.Sql("""
                 IF COL_LENGTH('dbo.TelecomPaymentTransaction', 'BranchId') IS NULL
                     ALTER TABLE dbo.TelecomPaymentTransaction ADD BranchId nvarchar(50) NULL;
@@ -26,7 +26,10 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
 
                 IF COL_LENGTH('dbo.Customer', 'BranchId') IS NULL
                     ALTER TABLE dbo.Customer ADD BranchId nvarchar(50) NULL;
+                """);
 
+            // Batch 2: indexes after columns exist.
+            migrationBuilder.Sql("""
                 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TelecomPaymentTransaction_BranchId' AND object_id = OBJECT_ID('dbo.TelecomPaymentTransaction'))
                     CREATE INDEX IX_TelecomPaymentTransaction_BranchId ON dbo.TelecomPaymentTransaction(BranchId) WHERE [BranchId] IS NOT NULL;
 

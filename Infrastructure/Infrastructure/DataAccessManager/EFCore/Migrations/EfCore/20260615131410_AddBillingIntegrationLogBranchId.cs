@@ -13,7 +13,9 @@ namespace Infrastructure.DataAccessManager.EFCore.Migrations.EfCore
             migrationBuilder.Sql("""
                 IF COL_LENGTH('dbo.BillingIntegrationLog', 'BranchId') IS NULL
                     ALTER TABLE dbo.BillingIntegrationLog ADD BranchId nvarchar(50) NULL;
+                """);
 
+            migrationBuilder.Sql("""
                 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BillingIntegrationLog_BranchId' AND object_id = OBJECT_ID('dbo.BillingIntegrationLog'))
                     CREATE INDEX IX_BillingIntegrationLog_BranchId ON dbo.BillingIntegrationLog(BranchId) WHERE [BranchId] IS NOT NULL;
                 """);

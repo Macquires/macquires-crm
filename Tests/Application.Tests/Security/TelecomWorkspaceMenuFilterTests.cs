@@ -25,7 +25,16 @@ public class TelecomWorkspaceMenuFilterTests
             nodes);
 
         var urls = LeafUrls(filtered);
+        var fullUrls = filtered
+            .Where(n => !n.HasChild && !string.IsNullOrWhiteSpace(n.NavURL))
+            .Select(n => n.NavURL!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         Assert.Contains("/Dashboards/DefaultDashboard", urls);
+        Assert.Contains("/Executive/CommandCenter", urls);
+        Assert.Contains("/Executive/CommandCenter?tab=scorecard", fullUrls);
+        Assert.Contains("/Executive/CommandCenter?tab=mis", fullUrls);
+        Assert.Contains("/Executive/CommandCenter?tab=alerts", fullUrls);
         Assert.DoesNotContain("/Telecom/TelecomMisReports", urls);
         Assert.DoesNotContain("/Telecom/BackOfficeDashboard", urls);
         Assert.DoesNotContain("/Administration/AuditLogList", urls);
@@ -48,6 +57,25 @@ public class TelecomWorkspaceMenuFilterTests
         Assert.Contains("/Telecom/TechnicalTicketList", urls);
         Assert.DoesNotContain("/Telecom/BackOfficeDashboard", urls);
         Assert.DoesNotContain("/Administration/UserList", urls);
+    }
+
+    [Fact]
+    public void BackOffice_menu_includes_operations_dashboard_and_tickets()
+    {
+        var nodes = NavigationTreeStructure.GetCompleteMenuNavigationTreeNode();
+        var perms = PermissionCatalog.DefaultRoleGrants[TelecomEnterpriseRoleMatrix.RoleBackOffice]
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var filtered = NavigationTreeStructure.ApplyTelecomWorkspaceMenuFilter(
+            [TelecomEnterpriseRoleMatrix.RoleBackOffice],
+            perms,
+            nodes);
+
+        var urls = LeafUrls(filtered);
+        Assert.Contains("/Telecom/BackOfficeDashboard", urls);
+        Assert.Contains("/Telecom/TechnicalTicketList", urls);
+        Assert.Contains("/Customers/CustomerList", urls);
+        Assert.NotEmpty(filtered.Where(n => n.HasChild));
     }
 
     [Fact]

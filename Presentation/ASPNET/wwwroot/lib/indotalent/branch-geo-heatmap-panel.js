@@ -123,5 +123,5 @@ const BranchGeoHeatmapPanel = (function () {
         return mount(root);
     }
 
-    return { initFromDashboard, hasPermission };
+    return { initFromDashboard, hasPermission, mount };
 })();

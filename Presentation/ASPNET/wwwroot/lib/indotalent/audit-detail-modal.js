@@ -3,7 +3,15 @@
  * @global AuditDetailModal
  */
 const AuditDetailModal = (function () {
-    const DEFAULT_LABELS = {
+    function isEn() {
+        return (document.documentElement?.lang || '').toLowerCase().startsWith('en');
+    }
+
+    function pickBi(ar, en) {
+        return isEn() ? en : ar;
+    }
+
+    const DEFAULT_LABELS_AR = {
         UserLoggedIn: 'تسجيل دخول',
         UserLoginFailed: 'فشل دخول',
         UserLoggedOut: 'تسجيل خروج',
@@ -25,7 +33,36 @@ const AuditDetailModal = (function () {
         TicketResolved: 'إغلاق تذكرة',
     };
 
-    const PAYLOAD_FIELD_LABELS = {
+    const DEFAULT_LABELS_EN = {
+        UserLoggedIn: 'User login',
+        UserLoginFailed: 'Login failed',
+        UserLoggedOut: 'User logout',
+        UserCreated: 'User created',
+        UserUpdated: 'User updated',
+        UserRolesUpdated: 'Roles updated',
+        RolePermissionsUpdated: 'Role permissions updated',
+        RolePermissionsCloned: 'Role cloned',
+        GlobalSettingsUpdated: 'Global settings updated',
+        IntegrationCircuitBreakerChanged: 'Integration circuit breaker',
+        CustomerCreated: 'Customer created',
+        CustomerUpdated: 'Customer updated',
+        TelecomOperationConfirmed: 'BSS operation confirmed',
+        SubscriberSearched: 'Subscriber search',
+        CustomerViewed: 'Customer profile viewed',
+        NetworkCommandExecuted: 'Network / VAS command',
+        BulkImportStarted: 'Import started',
+        BulkImportExecuted: 'Import executed',
+        TicketResolved: 'Ticket closed',
+    };
+
+    function resolveDefaultLabels() {
+        const src = isEn() ? DEFAULT_LABELS_EN : DEFAULT_LABELS_AR;
+        return { ...src };
+    }
+
+    const DEFAULT_LABELS = DEFAULT_LABELS_AR;
+
+    const PAYLOAD_FIELD_LABELS_AR = {
         narrativeAr: 'الوصف',
         channel: 'الشاشة',
         channelLabelAr: 'الشاشة',
@@ -49,6 +86,37 @@ const AuditDetailModal = (function () {
         success: 'النتيجة',
     };
 
+    const PAYLOAD_FIELD_LABELS_EN = {
+        narrativeAr: 'Description',
+        channel: 'Screen',
+        channelLabelAr: 'Screen',
+        criteria: 'Search criteria',
+        matchCount: 'Match count',
+        customerId: 'Customer ID',
+        displayName: 'Customer name',
+        primaryPhoneOrMsisdn: 'Line / mobile',
+        msisdn: 'MSISDN',
+        MSISDN: 'MSISDN',
+        profileId: 'Profile ID (technical)',
+        profileDisplay: 'Subscriber profile',
+        subscriberDisplay: 'Subscriber profile',
+        technicalTicketId: 'Ticket ID (technical)',
+        nameAr: 'Name',
+        matches: 'Results',
+        actorUserId: 'Actor ID',
+        ticketNumber: 'Ticket number',
+        integrationTarget: 'Integration target',
+        command: 'Command',
+        success: 'Result',
+    };
+
+    function payloadFieldLabel(key) {
+        const map = isEn() ? PAYLOAD_FIELD_LABELS_EN : PAYLOAD_FIELD_LABELS_AR;
+        return map[key] || key;
+    }
+
+    const PAYLOAD_FIELD_LABELS = PAYLOAD_FIELD_LABELS_AR;
+
     const COPYABLE_KEYS = new Set([
         'msisdn', 'MSISDN', 'profileId', 'customerId', 'technicalTicketId',
         'ticketNumber', 'actorUserId', 'entityId', 'correlationId',
@@ -59,17 +127,20 @@ const AuditDetailModal = (function () {
         {
             displayKeys: ['profileDisplay', 'subscriberDisplay', 'subscriberName'],
             rawKey: 'profileId',
-            label: 'ملف المشترك',
+            labelAr: 'ملف المشترك',
+            labelEn: 'Subscriber profile',
         },
         {
             displayKeys: ['ticketNumber', 'ticketDisplay'],
             rawKey: 'technicalTicketId',
-            label: 'التذكرة الفنية',
+            labelAr: 'التذكرة الفنية',
+            labelEn: 'Technical ticket',
         },
         {
-            displayKeys: ['displayName', 'customerDisplayName', 'nameAr'],
+            displayKeys: ['displayName', 'customerDisplayName', 'nameAr', 'nameEn', 'NameEn'],
             rawKey: 'customerId',
-            label: 'المشترك',
+            labelAr: 'المشترك',
+            labelEn: 'Customer',
         },
     ];
 
@@ -99,7 +170,8 @@ const AuditDetailModal = (function () {
     const formatDt = (utc) => {
         if (!utc) return '—';
         try {
-            return new Date(utc).toLocaleString('ar-SY', { dateStyle: 'medium', timeStyle: 'medium' });
+            const loc = isEn() ? 'en-US' : 'ar-SY';
+            return new Date(utc).toLocaleString(loc, { dateStyle: 'medium', timeStyle: 'medium' });
         } catch {
             return String(utc);
         }
@@ -134,9 +206,10 @@ const AuditDetailModal = (function () {
 
     const kvRow = (label, value, copyable, friendly) => {
         const v = value == null || value === '' ? '—' : String(value);
+        const copyTitle = pickBi('نسخ', 'Copy');
         const copyBtn =
             copyable && v !== '—'
-                ? `<button type="button" class="audit-kv-copy" data-copy="${escapeHtml(v)}" title="نسخ"><i class="bi bi-clipboard"></i></button>`
+                ? `<button type="button" class="audit-kv-copy" data-copy="${escapeHtml(v)}" title="${copyTitle}"><i class="bi bi-clipboard"></i></button>`
                 : '<span></span>';
         const valueClass = friendly ? 'audit-kv-value audit-kv-value--friendly' : 'audit-kv-value';
         return `
@@ -153,10 +226,10 @@ const AuditDetailModal = (function () {
         if (!display && !raw) return kvRow(label, '—', false, true);
         if (!display) return kvRow(label, raw, true, false);
         const sub = raw
-            ? `<div class="audit-kv-sub" title="المعرّف التقني">${escapeHtml(raw)}</div>`
+            ? `<div class="audit-kv-sub" title="${pickBi('المعرّف التقني', 'Technical ID')}">${escapeHtml(raw)}</div>`
             : '';
         const copyBtn = raw
-            ? `<button type="button" class="audit-kv-copy" data-copy="${escapeHtml(raw)}" title="نسخ المعرّف"><i class="bi bi-clipboard"></i></button>`
+            ? `<button type="button" class="audit-kv-copy" data-copy="${escapeHtml(raw)}" title="${pickBi('نسخ المعرّف', 'Copy ID')}"><i class="bi bi-clipboard"></i></button>`
             : '<span></span>';
         return `
             <div class="audit-kv-row">
@@ -214,11 +287,12 @@ const AuditDetailModal = (function () {
         for (const rule of FRIENDLY_RESOLVERS) {
             const display = pick(payload, ...rule.displayKeys);
             const raw = payload[rule.rawKey];
+            const label = pickBi(rule.labelAr, rule.labelEn);
             if (display) {
                 hiddenRaw.add(rule.rawKey);
-                rows.push(kvRowWithTechnicalId(rule.label, display, raw));
+                rows.push(kvRowWithTechnicalId(label, display, raw));
             } else if (raw) {
-                rows.push(kvRowWithTechnicalId(rule.label, null, raw));
+                rows.push(kvRowWithTechnicalId(label, null, raw));
             }
         }
 
@@ -243,7 +317,7 @@ const AuditDetailModal = (function () {
         });
 
         for (const [k, v] of remaining) {
-            const label = PAYLOAD_FIELD_LABELS[k] || k;
+            const label = payloadFieldLabel(k);
             const friendly = !/id$/i.test(k) && k !== 'msisdn' && k !== 'MSISDN';
             const copyable = COPYABLE_KEYS.has(k) || /id$/i.test(k) || k === 'msisdn';
             rows.push(kvRow(label, v, copyable, friendly));
@@ -255,7 +329,7 @@ const AuditDetailModal = (function () {
     const formatMatchLine = (m) => {
         const display = pick(m, 'displayLine', 'DisplayLine');
         if (display) return String(display);
-        const name = pick(m, 'nameAr', 'NameAr', 'name', 'Name');
+        const name = pick(m, isEn() ? 'nameEn' : 'nameAr', 'NameEn', 'NameAr', 'name', 'Name');
         const phone = pick(m, 'msisdn', 'Msisdn', 'phoneOrMsisdn', 'PhoneOrMsisdn');
         if (name && phone) return `${name} — ${phone}`;
         if (name) return String(name);
@@ -265,10 +339,23 @@ const AuditDetailModal = (function () {
     };
 
     const buildEventDetails = (payload, row) => {
-        const narrative = pick(payload, 'narrativeAr', 'NarrativeAr');
+        const narrative = pick(
+            payload,
+            isEn() ? 'narrativeEn' : 'narrativeAr',
+            'narrativeAr',
+            'NarrativeAr',
+            'NarrativeEn'
+        );
         const matches = payload?.matches ?? payload?.Matches;
         const criteria = pick(payload, 'criteria', 'Criteria');
-        const channelLabel = pick(payload, 'channelLabelAr', 'ChannelLabelAr', 'channel', 'Channel');
+        const channelLabel = pick(
+            payload,
+            isEn() ? 'channelLabelEn' : 'channelLabelAr',
+            'channelLabelAr',
+            'ChannelLabelAr',
+            'channel',
+            'Channel'
+        );
         const matchCount = payload?.matchCount ?? payload?.MatchCount;
 
         if (narrative) {
@@ -303,11 +390,11 @@ const AuditDetailModal = (function () {
                 const pretty = JSON.stringify(JSON.parse(row.payloadJson), null, 2);
                 return `<pre class="audit-json-fallback mb-0">${escapeHtml(pretty)}</pre>`;
             } catch {
-                return '<p class="audit-empty-hint">لا توجد تفاصيل قابلة للعرض.</p>';
+                return `<p class="audit-empty-hint">${pickBi('لا توجد تفاصيل قابلة للعرض.', 'No displayable details.')}</p>`;
             }
         }
 
-        return '<p class="audit-empty-hint">لا توجد تفاصيل إضافية لهذا السجل.</p>';
+        return `<p class="audit-empty-hint">${pickBi('لا توجد تفاصيل إضافية لهذا السجل.', 'No additional details for this record.')}</p>`;
     };
 
     const buildHtml = (row, labels, payloadOverride) => {
@@ -315,16 +402,17 @@ const AuditDetailModal = (function () {
 
         const actionLabel = labels[row.actionType] || row.actionType || '—';
         const { icon, cls } = actionIconClass(row.actionType);
-        const summary = row.summaryAr || actionLabel;
+        const summary = (isEn() ? row.summaryEn : row.summaryAr) || row.summaryAr || actionLabel;
         const timeStr = formatDt(row.occurredAtUtc);
+        const dir = isEn() ? 'ltr' : 'rtl';
 
         const metaCards = [
-            { icon: 'bi-person-badge', label: 'المنفّذ', value: row.actorDisplayName || '—' },
-            { icon: 'bi-diagram-3', label: 'العملية', value: actionLabel },
-            { icon: 'bi-box', label: 'الكيان', value: row.entityType || '—' },
-            { icon: 'bi-bullseye', label: 'الهدف', value: row.targetDisplayName || '—' },
-            { icon: 'bi-globe2', label: 'عنوان IP', value: row.ipAddress || '—', mono: true },
-            { icon: 'bi-clock-history', label: 'الوقت', value: timeStr, mono: true },
+            { icon: 'bi-person-badge', label: pickBi('المنفّذ', 'Actor'), value: row.actorDisplayName || '—' },
+            { icon: 'bi-diagram-3', label: pickBi('العملية', 'Action'), value: actionLabel },
+            { icon: 'bi-box', label: pickBi('الكيان', 'Entity'), value: row.entityType || '—' },
+            { icon: 'bi-bullseye', label: pickBi('الهدف', 'Target'), value: row.targetDisplayName || '—' },
+            { icon: 'bi-globe2', label: pickBi('عنوان IP', 'IP address'), value: row.ipAddress || '—', mono: true },
+            { icon: 'bi-clock-history', label: pickBi('الوقت', 'Time'), value: timeStr, mono: true },
         ];
 
         const metaHtml = metaCards
@@ -340,7 +428,7 @@ const AuditDetailModal = (function () {
         const eventHtml = buildEventDetails(payload, row);
 
         return `
-            <div class="audit-detail-premium" dir="rtl">
+            <div class="audit-detail-premium" dir="${dir}">
                 <header class="audit-detail-hero">
                     <div class="audit-detail-hero-top">
                         <div>
@@ -354,7 +442,7 @@ const AuditDetailModal = (function () {
                 <div class="audit-detail-body">
                     <div class="audit-meta-grid">${metaHtml}</div>
                     <section class="audit-event-section">
-                        <div class="audit-event-section-title"><i class="bi bi-braces"></i> تفاصيل الحدث</div>
+                        <div class="audit-event-section-title"><i class="bi bi-braces"></i> ${pickBi('تفاصيل الحدث', 'Event details')}</div>
                         ${eventHtml}
                     </section>
                 </div>
@@ -363,11 +451,11 @@ const AuditDetailModal = (function () {
 
     async function show(row, options) {
         if (!row || typeof Swal === 'undefined') return;
-        const labels = { ...DEFAULT_LABELS, ...(options?.actionLabels || {}) };
+        const labels = { ...resolveDefaultLabels(), ...(options?.actionLabels || {}) };
 
         Swal.fire({
-            title: 'تفاصيل السجل',
-            html: '<div class="text-center py-4"><span class="spinner-border text-danger"></span><p class="small text-muted mt-2 mb-0">جاري تحميل التفاصيل…</p></div>',
+            title: pickBi('تفاصيل السجل', 'Audit record details'),
+            html: `<div class="text-center py-4"><span class="spinner-border text-danger"></span><p class="small text-muted mt-2 mb-0">${pickBi('جاري تحميل التفاصيل…', 'Loading details…')}</p></div>`,
             width: 720,
             padding: 0,
             showConfirmButton: false,
@@ -383,7 +471,7 @@ const AuditDetailModal = (function () {
         Swal.update({
             html,
             showConfirmButton: true,
-            confirmButtonText: 'إغلاق',
+            confirmButtonText: pickBi('إغلاق', 'Close'),
             customClass: {
                 popup: 'audit-swal-popup',
                 htmlContainer: 'audit-swal-html',

@@ -829,6 +829,33 @@
       }
     },
     "refreshFail": "Some data could not load. Check connectivity or your session and try again.",
+    "common": {
+      "country": {
+        "syria": "Syria"
+      },
+      "httpErrors": {
+        "warningTitle": "Notice",
+        "businessRuleText": "This action cannot be completed due to business rules.",
+        "networkTitle": "Network error",
+        "networkText": "The network or external service is busy. Please try again shortly.",
+        "errorTitle": "Error"
+      },
+      "omniSearch": {
+        "close": "Close",
+        "placeholder": "Subscription, MSISDN, national ID, or commercial registry…",
+        "title": "Quick search",
+        "shortcutOpen": "to open",
+        "hint": "ID or registry — 2+ characters",
+        "typeHint": "Type at least 2 characters to search.",
+        "searching": "Searching…",
+        "empty": "No results — try a subscription number, ID, or commercial registry.",
+        "blocked": "Name search is not allowed — use a number or commercial registry.",
+        "error": "Search failed — check connectivity and try again."
+      },
+      "sidebar": {
+        "quickSearch": "Quick search…"
+      }
+    },
     "bulkImport": {
       "title": "Bulk Import Monitor",
       "subtitle": "Legacy CRM data migration (customers · packages) — inventory syncs exclusively from Oracle Fusion SCM.",
@@ -974,6 +1001,9 @@
         "catalogAdvanced": "Product catalog",
         "catalogHint": "Enable or disable offers in catalog",
         "refresh": "Refresh",
+        "allRegions": "All regions",
+        "allBranches": "All branches",
+        "scopeApply": "Apply scope",
         "telecomQueue": {
           "request": "Request",
           "kind": "Kind",
@@ -1723,6 +1753,19 @@
         "services": "Plans & services",
         "tickets": "Complaints & support",
         "timeline": "Unified timeline"
+      },
+      "timeline": {
+        "noEvents": "No events recorded yet.",
+        "open": "Open",
+        "loadMore": "Load more",
+        "filters": {
+          "all": "All",
+          "operations": "Operations",
+          "payments": "Payments",
+          "tickets": "Tickets",
+          "billing": "Billing",
+          "audit": "Audit"
+        }
       },
       "sections": {
         "fullInfo": "Full subscriber information",

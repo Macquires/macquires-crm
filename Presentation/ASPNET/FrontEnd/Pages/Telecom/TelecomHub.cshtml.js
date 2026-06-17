@@ -138,6 +138,13 @@ function offerDefaultMonthlyPrice(detail) {
     return Number.isFinite(price) && price > 0 ? price : null;
 }
 
+function defaultCountryLabel() {
+    const hit = window.TelecomI18n?.t?.('common.country.syria');
+    if (hit) return hit;
+    const lang = (document.documentElement.lang || 'en').toLowerCase();
+    return lang.startsWith('en') ? 'Syria' : 'سوريا';
+}
+
 function offerComponentByType(detail, type) {
     return (detail?.components || []).find((c) => (c.componentType ?? c.ComponentType) === type);
 }
@@ -168,7 +175,7 @@ function offerDetailSummaryText(detail, lang) {
     if (lang === 'ar') {
         return (detail.shortDescription || detail.description || '').trim();
     }
-    return '';
+    return (detail.shortDescriptionEn || detail.descriptionEn || detail.shortDescription || detail.description || '').trim();
 }
 
 /** Mirrors server rule: name-only queries are rejected (national ID / registry / MSISDN only). */
@@ -403,7 +410,7 @@ function createTelecomApp() {
                     city: '',
                     addressState: '',
                     zipCode: '',
-                    country: 'سوريا',
+                    country: defaultCountryLabel(),
                     phoneNumber: '',
                     emailAddress: '',
                     nationality: '',
@@ -1399,7 +1406,6 @@ function createTelecomApp() {
             };
 
             const onCgtTargetTypeChanged = async () => {
-                onCgtPathChange();
                 state.wizard.cgtProductOfferingId = '';
                 const sid = (state.wizard.primarySubscriberProfileId || '').trim();
                 const targetId = (state.wizard.cgtTargetTypeId || '').trim();
@@ -1560,9 +1566,8 @@ function createTelecomApp() {
                 state.loadError = null;
                 try {
                     const results = await Promise.all([loadKpis(), loadOperations()]);
-                    const okK = results[0];
                     const okO = results[1];
-                    if (!okK || !okO) {
+                    if (!okO) {
                         state.loadError = t('telecom.refreshFail');
                     }
                 } finally {
@@ -2675,7 +2680,7 @@ function createTelecomApp() {
                 state.customerWizard.city = '';
                 state.customerWizard.addressState = '';
                 state.customerWizard.zipCode = '';
-                state.customerWizard.country = 'سوريا';
+                state.customerWizard.country = defaultCountryLabel();
                 state.customerWizard.phoneNumber = '';
                 state.customerWizard.emailAddress = '';
                 state.customerWizard.nationality = '';
@@ -4012,7 +4017,7 @@ function createTelecomApp() {
                             state.wizard.kind === 'badDebt'
                                 ? (state.wizard.bdrPaymentReference || '').trim() || null
                                 : state.wizard.kind === 'reconnect'
-                                    ? (rcnApiFields?.paymentReference ?? (state.wizard.rcnPaymentReference || '').trim() || null)
+                                    ? (rcnApiFields?.paymentReference ?? ((state.wizard.rcnPaymentReference || '').trim() || null))
                                     : state.wizard.kind === 'termination'
                                         ? (trmApi.paymentReference ?? null)
                                         : state.wizard.kind === 'suspension'

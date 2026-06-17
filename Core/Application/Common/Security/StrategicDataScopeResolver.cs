@@ -35,18 +35,18 @@ public static class StrategicDataScopeResolver
     }
 
     public static StrategicAccessLevel DeriveAccessLevel(
-        IReadOnlyList<string> roles,
+        IReadOnlySet<string> permissions,
         string? userOrgUnitId,
         string? managedRegionId,
         string? managedHqId,
         OrgUnitKind? userOrgUnitKind)
     {
-        if (roles.Contains(TelecomEnterpriseRoleMatrix.RoleAdmin, StringComparer.OrdinalIgnoreCase))
+        if (PermissionScopeRules.HasNationalAdminScope(permissions))
         {
             return StrategicAccessLevel.GeneralManager;
         }
 
-        if (managedHqId != null && roles.Contains(TelecomEnterpriseRoleMatrix.RoleManagement, StringComparer.OrdinalIgnoreCase))
+        if (managedHqId != null && PermissionScopeRules.HasExecutiveMisScope(permissions))
         {
             return StrategicAccessLevel.GeneralManager;
         }
@@ -61,8 +61,7 @@ public static class StrategicDataScopeResolver
             return StrategicAccessLevel.BranchManager;
         }
 
-        if (roles.Contains(TelecomEnterpriseRoleMatrix.RoleManagement, StringComparer.OrdinalIgnoreCase)
-            && string.IsNullOrEmpty(userOrgUnitId))
+        if (PermissionScopeRules.HasExecutiveMisScope(permissions) && string.IsNullOrEmpty(userOrgUnitId))
         {
             return StrategicAccessLevel.GeneralManager;
         }

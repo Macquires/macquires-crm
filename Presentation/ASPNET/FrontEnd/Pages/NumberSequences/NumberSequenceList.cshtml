@@ -3,7 +3,9 @@
     ViewData["Title"] = "Number sequences";
 }
 
-<div id="app" v-cloak>
+@{ ViewData["PortalPageVcloak"] = true; }
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShell.cshtml")
+
     <div class="row mb-3">
         <div class="col-12">
             <h1 class="h4 mb-1">Number sequences</h1>
@@ -17,7 +19,7 @@
             </div>
         </div>
     </div>
-</div>
+@await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
 
 @section scripts {
     <script src="~/FrontEnd/Pages/NumberSequences/NumberSequenceList.cshtml.js"></script>

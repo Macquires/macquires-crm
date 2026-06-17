@@ -17,6 +17,7 @@ public class StrictPersonaPathMiddleware
         new("/Accounts"),
         new("/culture"),
         new("/swagger"),
+        new("/hubs"),
     ];
 
     private readonly RequestDelegate _next;

@@ -11,9 +11,7 @@ public static class NavigationPermissionRules
                 DashboardPermissionSets.AdminAny,
                 [PermissionCatalog.AdminRolesManage]),
             ["/Dashboards/DashboardWidgetList"] = Keys(DashboardPermissionSets.AdminAny),
-            ["/Telecom/BackOfficeDashboard"] = Merge(
-                BulkImportPermissionSets.MonitorAny,
-                [PermissionCatalog.TelecomAssetManage]),
+            ["/Telecom/BackOfficeDashboard"] = Keys(BackOfficeDashboardPermissionSets.AccessAny),
             ["/Telecom/TelecomHub"] = Keys(TelecomOperationPermissionSets.CreateAny),
             ["/Telecom/BillingIntegration"] = Merge(
                 DashboardPermissionSets.ReadAny,
@@ -30,7 +28,7 @@ public static class NavigationPermissionRules
             ["/Telecom/DeviceInventory"] = [PermissionCatalog.TelecomDeviceInventoryManage],
             ["/Telecom/TechnicalTicketList"] = Keys(BackOfficePermissionSets.TechnicalTicketListAny),
             ["/Telecom/BackOfficeAuditList"] = Keys(BackOfficePermissionSets.OperationsAny),
-            ["/Telecom/UnifiedSearch"] = [PermissionCatalog.TelecomReportsMis],
+            ["/Telecom/UnifiedSearch"] = Keys(DashboardPermissionSets.UnifiedSearchAny),
             ["/Telecom/Customer360Profile"] = Keys(CustomerPermissionSets.ViewAny),
             ["/Customers/CustomerList"] = Keys(CustomerPermissionSets.ViewAny),
             ["/CustomerGroups/CustomerGroupList"] = Keys(ReferenceDataPermissionSets.ReadAny),

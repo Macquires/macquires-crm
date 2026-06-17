@@ -81,4 +81,32 @@ public sealed class NavigationPermissionRulesTests
 
         Assert.True(allowed);
     }
+
+    [Fact]
+    public void UnifiedSearch_AllowsCustomerView_ForCallCenterNav()
+    {
+        var allowed = NavigationPermissionRules.IsNavUrlAllowed(
+            "/Telecom/UnifiedSearch",
+            new HashSet<string> { PermissionCatalog.CustomerView });
+
+        Assert.True(allowed);
+    }
+
+    [Fact]
+    public void UnifiedSearch_MatchesUnifiedSearchPermissionSet()
+    {
+        foreach (var key in DashboardPermissionSets.UnifiedSearchAny)
+        {
+            Assert.True(
+                NavigationPermissionRules.IsNavUrlAllowed(
+                    "/Telecom/UnifiedSearch",
+                    new HashSet<string> { key }),
+                $"Expected nav allow for {key}");
+        }
+
+        Assert.False(
+            NavigationPermissionRules.IsNavUrlAllowed(
+                "/Telecom/UnifiedSearch",
+                new HashSet<string> { PermissionCatalog.AdminRolesManage }));
+    }
 }
