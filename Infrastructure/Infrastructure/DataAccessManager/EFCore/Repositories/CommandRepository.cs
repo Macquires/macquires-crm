@@ -60,6 +60,14 @@ public class CommandRepository<T> : ICommandRepository<T> where T : BaseEntity
         return entity;
     }
 
+    public virtual async Task<T?> GetBypassingBranchScopeAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<T>()
+            .IgnoreQueryFilters()
+            .IsDeletedEqualTo()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public virtual T? Get(string id)
     {
         var entity = _context.Set<T>()

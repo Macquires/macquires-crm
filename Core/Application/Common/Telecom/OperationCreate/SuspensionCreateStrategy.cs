@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.Suspension;
 using Domain.Enums;
 
@@ -91,7 +92,7 @@ public sealed class SuspensionCreateStrategy : IOperationCreateStrategy
 
         if (eligibility.RequiresBackOfficeApproval)
         {
-            entity.ApprovalLevelRequired = "BackOffice";
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
         }
 
         if (string.Equals(request.SuspensionType, SuspensionWellKnown.Fraud, StringComparison.OrdinalIgnoreCase))

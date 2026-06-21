@@ -61,14 +61,70 @@
         </div>
     </div>
 
-    <div class="telecom-bento-card telecom-grid-panel tt-grid-panel mb-0">
+    <div class="telecom-bento-card tt-grid-panel mb-3">
         <div class="card-body pb-2">
-            <p class="small text-muted mb-2">{{ ui.gridHint }}</p>
-            <div class="grid-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <p class="small text-muted mb-0">{{ ui.gridHint }}</p>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted mb-0" for="ttPageSize">{{ ui.pageSizeLabel }}</label>
+                    <select id="ttPageSize" class="form-select form-select-sm" style="width:auto;min-width:5rem" v-model.number="state.pageSize" v-on:change="handler.changePageSize">
+                        <option :value="10">10</option>
+                        <option :value="25">25</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                    </select>
+                </div>
+            </div>
+            <div class="tt-grid-shell">
                 <div ref="gridRef"></div>
             </div>
         </div>
     </div>
+
+<style>
+    /* Avoid global .telecom-grid-panel overflow:hidden — dedicated ticket list shell */
+    body.syr-tel-portal #app .tt-grid-panel .tt-grid-shell {
+        width: 100%;
+        min-height: 320px;
+        overflow: visible;
+    }
+    body.syr-tel-portal #app .tt-grid-panel .tt-grid-shell .e-grid {
+        width: 100% !important;
+        border: 1px solid var(--sys-border);
+        border-radius: var(--sys-radius);
+    }
+    body.syr-tel-portal #app .tt-grid-panel .e-gridheader {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    body.syr-tel-portal #app .tt-grid-panel .e-gridcontent {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+    }
+    body.syr-tel-portal #app .tt-grid-panel .e-gridpager {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-height: 48px !important;
+        align-items: center;
+        position: relative;
+        z-index: 3;
+        pointer-events: auto !important;
+        border-top: 1px solid var(--sys-border);
+        background: var(--sys-card-bg);
+        padding: 0.35rem 0.5rem;
+    }
+    body.syr-tel-portal #app .tt-grid-panel .e-grid .e-rowcell {
+        white-space: normal;
+        word-break: break-word;
+        vertical-align: top;
+        line-height: 1.35;
+    }
+    body.syr-tel-portal #app .tt-grid-panel .e-grid .e-headercelldiv {
+        white-space: nowrap;
+    }
+</style>
 
     <div class="offcanvas offcanvas-start" tabindex="-1" id="ticketStatusDrawer" style="width:min(440px,100vw);">
     <div class="offcanvas-header border-bottom">

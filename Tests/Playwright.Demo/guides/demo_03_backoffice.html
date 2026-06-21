@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo 03 — Back Office Cue Card</title>
+  <style>
+    :root { --bg: #0f1419; --fg: #f8fafc; --accent: #a78bfa; --muted: #94a3b8; --step: #1e293b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 1.25rem; background: var(--bg); color: var(--fg); font-family: "Segoe UI", Tahoma, sans-serif; line-height: 1.55; }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; color: var(--accent); }
+    .sub { color: var(--muted); font-size: 1.1rem; margin-bottom: 1.5rem; }
+    ol { padding: 0; margin: 0; list-style: none; }
+    li { background: var(--step); border-radius: 12px; padding: 1rem 1.15rem; margin-bottom: 1rem; font-size: 1.35rem; font-weight: 600; }
+    .marker { display: block; margin-top: 0.65rem; font-size: 1rem; font-weight: 700; color: #fbbf24; letter-spacing: 0.02em; }
+    .speak { color: #34d399; }
+    code { background: #334155; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.95rem; }
+    .tiles { font-size: 1.15rem; color: #cbd5e1; margin-top: 0.35rem; }
+  </style>
+</head>
+<body>
+  <h1>🕵️ Demo 03 — Back Office Single Source of Truth</h1>
+  <p class="sub">المستخدم: <code>st-backoffice@syriatelecom-demo.local</code> · المسار: <code>/Telecom/TelecomHub</code></p>
+  <ol>
+    <li>
+      سجّلي دخول وكيل الباك أوفيس — نفس الـ Hub يتحول لواجهة الامتثال والطابور.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      البلاطات الخمسة للامتثال فقط:
+      <div class="tiles">SUS · CGT · BDR · TKO · TRM</div>
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+    <li>
+      بلاطات الخط الأمامي (ACT/SIM/CNR/MGR/PAY) غير موجودة في الـ DOM — morph كامل حسب الدور.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      جدول العمليات على الـ Hub <strong>قراءة فقط</strong> — لا أزرار Approve/Reject هنا.
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+    <li>
+      انتقلي لـ Approval Console (<code>#boTelecomQueuePanel</code>) — أزرار <code>.bo-approve-op</code> و <code>.bo-reject-op</code> في مكانها الوحيد.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      مصدر واحد للحقيقة: الإنشاء في الفرع، الاعتماد في الباك أوفيس — فصل صارم للمسؤوليات.
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+  </ol>
+</body>
+</html>

@@ -91,6 +91,8 @@ public static class DependencyInjection
         services.AddScoped<IBadDebtEligibilityChecker, BadDebtEligibilityChecker>();
         services.AddScoped<IBadDebtCompletionService, BadDebtCompletionService>();
         services.AddScoped<IBackOfficePaymentReferenceValidator, BackOfficePaymentReferenceValidator>();
+        services.AddScoped<IBackOfficeBdrLedgerResolver, BackOfficeBdrLedgerResolver>();
+        services.AddScoped<IBackOfficeRcnBdrSettlementService, BackOfficeRcnBdrSettlementService>();
         services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
         services.AddSingleton<VasMsisdnLock>();
         services.AddScoped<ISubscriberAccessAuditService, SubscriberAccessAuditService>();

@@ -4375,6 +4375,13 @@
             }
           },
           {
+            "name": "OpenedByCurrentUserOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "PermissionKeys",
             "in": "query",
             "schema": {
@@ -7689,6 +7696,54 @@
         }
       }
     },
+    "/api/Telecom/ExecutePayAndReconnect": {
+      "post": {
+        "tags": [
+          "TelecomOperations"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutePayAndReconnectRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutePayAndReconnectRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutePayAndReconnectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutePayAndReconnectResultApiSuccessResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutePayAndReconnectResultApiSuccessResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutePayAndReconnectResultApiSuccessResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Telecom/ValidateVoucher": {
       "post": {
         "tags": [
@@ -9815,6 +9870,10 @@
             "$ref": "#/components/schemas/ConfirmTelecomOperationRequestResult"
           },
           "pipelineState": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageAr": {
             "type": "string",
             "nullable": true
           }
@@ -14257,6 +14316,72 @@
           },
           "content": {
             "$ref": "#/components/schemas/ExecuteCustomer360TechnicalActionResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExecutePayAndReconnectRequest": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "subscriberProfileId": {
+            "type": "string",
+            "nullable": true
+          },
+          "msisdn": {
+            "type": "string",
+            "nullable": true
+          },
+          "permissionKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExecutePayAndReconnectResult": {
+        "type": "object",
+        "properties": {
+          "paymentReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "reconnectReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageEn": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExecutePayAndReconnectResultApiSuccessResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "$ref": "#/components/schemas/ExecutePayAndReconnectResult"
           }
         },
         "additionalProperties": false
@@ -22561,6 +22686,14 @@
             "type": "string",
             "nullable": true
           },
+          "bdrLedgerMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "bdrLedgerNoteAr": {
+            "type": "string",
+            "nullable": true
+          },
           "slaExpirationTimeUtc": {
             "type": "string",
             "format": "date-time",
@@ -22575,6 +22708,10 @@
             "nullable": true
           },
           "auditorDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReasonAr": {
             "type": "string",
             "nullable": true
           },
@@ -23690,6 +23827,10 @@
           "pipelineState": {
             "type": "string",
             "nullable": true
+          },
+          "messageAr": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -24023,6 +24164,9 @@
           "msisdn": {
             "type": "string",
             "nullable": true
+          },
+          "bypassBranchScope": {
+            "type": "boolean"
           },
           "permissionKeys": {
             "type": "array",
@@ -24899,6 +25043,10 @@
             "type": "string",
             "nullable": true
           },
+          "customerId": {
+            "type": "string",
+            "nullable": true
+          },
           "msisdn": {
             "type": "string",
             "nullable": true
@@ -24928,6 +25076,11 @@
             "nullable": true
           },
           "createdAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedAtUtc": {
             "type": "string",
             "format": "date-time",
             "nullable": true

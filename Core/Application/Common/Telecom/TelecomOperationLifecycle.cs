@@ -46,7 +46,12 @@ public static class TelecomOperationLifecycle
             TelecomOperationStatus.Provisioning,
             TelecomOperationStatus.Failed,
             TelecomOperationStatus.Completed
-        ]
+        ],
+        [TelecomOperationStatus.Paid_Pending_BackOffice_Clearance] =
+        [
+            TelecomOperationStatus.Confirmed,
+            TelecomOperationStatus.Failed,
+        ],
     };
 
     public static bool CanTransition(TelecomOperationStatus from, TelecomOperationStatus to)

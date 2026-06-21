@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.Refund;
 using Domain.Enums;
 
@@ -80,8 +81,7 @@ public sealed class RefundCreateStrategy : IOperationCreateStrategy
         entity.ProvisioningResult = "Pending";
         if (eligibility.RequiresBackOfficeApproval)
         {
-            entity.ApprovalLevelRequired = "BackOffice";
-            entity.Status = TelecomOperationStatus.PendingDocuments;
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
         }
 
         entity.Notes = OperationCreateAuditHelpers.AppendRefundAudit(entity.Notes, eligibility);

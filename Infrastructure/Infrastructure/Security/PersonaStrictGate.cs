@@ -137,7 +137,6 @@ public class PersonaStrictGate : IPersonaStrictGate
 
             map[persona].Add("/Accounts");
             map[persona].Add("/Dashboards/DefaultDashboard");
-            map[persona].Add(TelecomPersonaLanding.TelecomHub);
         }
 
         return map;

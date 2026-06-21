@@ -2,10 +2,13 @@ const TEL_SUB_DEFAULT_PREPAID_ID = 'a0e0e0e0-0000-4000-8000-000000000001';
 
 const telecomT = (key, fallback) => {
     try {
+        if (window.TelecomI18n?.resolve) {
+            return window.TelecomI18n.resolve(key, fallback, ['customerList']);
+        }
         const raw = String(key);
         const paths = raw.includes('.') && !raw.startsWith('customerList.')
-            ? [raw, `customerList.${raw}`]
-            : [`customerList.${raw}`, raw];
+            ? [raw, `customerList.${raw}`, `customer360Profile.${raw}`]
+            : [`customerList.${raw}`, raw, `customer360Profile.${raw}`];
         for (const k of paths) {
             const hit = window.TelecomI18n?.t?.(k);
             if (hit) return hit;
@@ -2296,6 +2299,7 @@ const App = {
             rcnKycDocumentReferenceId: '',
             rcnFraudClearanceConfirmed: false,
             rcnRequiresBackOffice: false,
+            rcnIdentityFile: null,
             rcnEligibility: null,
             rcnEligibilityBusy: false,
             rfdRefundType: 'Deposit',
@@ -2478,6 +2482,7 @@ const App = {
             lineActionModal.rcnKycDocumentReferenceId = '';
             lineActionModal.rcnFraudClearanceConfirmed = false;
             lineActionModal.rcnRequiresBackOffice = false;
+            lineActionModal.rcnIdentityFile = null;
             lineActionModal.rcnEligibility = null;
             lineActionModal.rfdRefundType = 'Deposit';
             lineActionModal.rfdRefundMethod = 'CreditNote';
@@ -2834,9 +2839,17 @@ const App = {
                 ? TelecomBssWizardClearance.suspension.showsSimple(lineActionModal.susSuspensionType)
                 : ['CustomerRequest', 'Operational'].includes(lineActionModal.susSuspensionType));
 
+        const isCorporateListCustomer = () => {
+            const core = state.customer360?.core;
+            return typeof TelecomWizardConfirm !== 'undefined'
+                ? TelecomWizardConfirm.isCorporateCustomerKind(core?.customerKind ?? core?.CustomerKind)
+                : String(core?.customerKind ?? core?.CustomerKind ?? '').toLowerCase() === 'corporate';
+        };
+
         const onSusTypeChangeList = () => {
             const ty = (lineActionModal.susSuspensionType || '').trim();
-            lineActionModal.susRequiresBackOffice = ty === 'Fraud' || ty === 'Regulatory';
+            lineActionModal.susRequiresBackOffice =
+                ty === 'Fraud' || ty === 'Regulatory' || isCorporateListCustomer();
             if (typeof TelecomBssWizardClearance !== 'undefined') {
                 TelecomBssWizardClearance.suspension.reset(lineActionModal, ty);
             }
@@ -3153,7 +3166,7 @@ const App = {
         const onTerminationTypeChangeList = () => {
             const ty = (lineActionModal.trmTerminationType || '').trim();
             lineActionModal.trmRequiresBackOffice =
-                ty === 'Fraud' || ty === 'Regulatory' || ty === 'Collections';
+                ty === 'Fraud' || ty === 'Regulatory' || ty === 'Collections' || isCorporateListCustomer();
             if (typeof TelecomBssWizardClearance !== 'undefined') {
                 TelecomBssWizardClearance.termination.reset(lineActionModal, ty);
             }
@@ -3193,10 +3206,14 @@ const App = {
         };
 
         const onChangeNumberTargetPickedList = () => {
-            const id = (lineActionModal.cnTargetMsisdnAssetId || '').trim();
-            const row = (lineActionModal.cnPoolNumbers || []).find((r) => String(r.id ?? r.Id) === id);
-            const cat = row?.category ?? row?.Category;
-            lineActionModal.cnRequiresBackOffice = isPremiumMsisdnCategory(cat);
+            lineActionModal.cnRequiresBackOffice =
+                typeof TelecomWizardConfirm !== 'undefined'
+                    ? TelecomWizardConfirm.resolveChangeNumberRequiresBackOffice(lineActionModal)
+                    : isPremiumMsisdnCategory(
+                        (lineActionModal.cnPoolNumbers || []).find(
+                            (r) => String(r.id ?? r.Id) === (lineActionModal.cnTargetMsisdnAssetId || '').trim()
+                        )?.category
+                    );
             if (typeof TelecomBssWizardClearance !== 'undefined') {
                 TelecomBssWizardClearance.changeNumber.reset(lineActionModal, lineActionModal.cnRequiresBackOffice);
             } else if (!lineActionModal.cnRequiresBackOffice) {
@@ -3222,7 +3239,83 @@ const App = {
             ) || 0;
         };
 
-        const runTelecomPipeline = async ({ processingKey, kindLabel, msisdn, buildBody, beforeConfirm }) => {
+        const confirmListOperationIfAllowed = async (opId, requiresBackOffice = false) => {
+            if (!opId || requiresBackOffice) {
+                return null;
+            }
+            if (typeof TelecomWizardConfirm !== 'undefined') {
+                return TelecomWizardConfirm.confirmOperationIfAllowed(opId, { requiresBackOffice: false });
+            }
+            return AxiosManager.post('/Telecom/ConfirmTelecomOperation', { id: opId });
+        };
+
+        const onListRcnIdentityFileChange = (ev) => {
+            lineActionModal.rcnIdentityFile = ev?.target?.files?.[0] || null;
+        };
+
+        const finalizeListOpWithConfirm = async (opId, successMessage, identityFile) => {
+            const file = identityFile || null;
+            if (!file) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: telecomT('suspension.kycRequired', 'Upload document'),
+                        text: telecomT('suspension.kycDocumentHint', ''),
+                    });
+                }
+                return false;
+            }
+            if (typeof TelecomWizardConfirm !== 'undefined') {
+                await TelecomWizardConfirm.uploadOperationIdentityDocument(opId, file);
+            } else {
+                const form = new FormData();
+                form.append('id', opId);
+                form.append('file', file);
+                await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            }
+            const confirmRes = await confirmListOperationIfAllowed(opId, false);
+            if (!confirmRes) {
+                notifyListConfirmSkipped();
+                return false;
+            }
+            if (confirmRes?.data?.code !== 200) {
+                throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
+                    response: confirmRes,
+                });
+            }
+            showTelecomConfirmResult(confirmRes, successMessage);
+            return true;
+        };
+
+        const notifyListBackOfficeQueued = (hintKey = 'swal.pendingRcnHint') => {
+            if (!window.Swal) {
+                return;
+            }
+            Swal.fire({
+                icon: 'success',
+                title: telecomT('swal.sentToBackOffice'),
+                text: telecomT(hintKey),
+                timer: 2800,
+                showConfirmButton: false,
+            });
+        };
+
+        const notifyListConfirmSkipped = () => {
+            if (!window.Swal) {
+                return;
+            }
+            Swal.fire({
+                icon: 'info',
+                title: telecomT('swal.sentToBackOffice'),
+                text: telecomT('wizardUi.awaitBo', 'Awaiting back office'),
+                timer: 2800,
+                showConfirmButton: false,
+            });
+        };
+
+        const runTelecomPipeline = async ({ processingKey, kindLabel, msisdn, buildBody, beforeConfirm, requiresBackOffice = false }) => {
             const key = processingKey || '__line__';
             if (lineProcessing[key]) return false;
             lineProcessing[key] = true;
@@ -3244,9 +3337,17 @@ const App = {
                     const paymentOk = await beforeConfirm(opId);
                     if (!paymentOk) return false;
                 }
-                const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                    id: opId,
-                });
+                if (requiresBackOffice) {
+                    notifyListBackOfficeQueued();
+                    await loadCustomer360(state.id);
+                    return true;
+                }
+                const confirmRes = await confirmListOperationIfAllowed(opId, false);
+                if (!confirmRes) {
+                    notifyListConfirmSkipped();
+                    await loadCustomer360(state.id);
+                    return true;
+                }
                 if (confirmRes?.data?.code !== 200) {
                     throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                         response: confirmRes,
@@ -3692,14 +3793,7 @@ const App = {
                         });
                     }
                 }
-                await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', { id: opId });
-                if (confirmRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                        response: confirmRes,
-                    });
-                }
-                showTelecomConfirmResult(confirmRes);
+                await finalizeListOpWithConfirm(opId, null, lineActionModal.bssIdentityFile);
                 await loadCustomer360(state.id);
                 hideBsModal('C360DeviceSaleModal');
             } catch (e) {
@@ -4023,16 +4117,7 @@ const App = {
                 }
                 const opId = createRes?.data?.content?.data?.id;
                 if (!opId) throw new Error(telecomT('swal.noOpId'));
-                await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                    id: opId,
-                });
-                if (confirmRes?.data?.code !== 200) {
-                    throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                        response: confirmRes,
-                    });
-                }
-                showTelecomConfirmResult(confirmRes);
+                await finalizeListOpWithConfirm(opId, null, lineActionModal.bssIdentityFile);
                 await loadCustomer360(state.id);
                 hideBsModal('C360ChangeGsmModal');
             } catch (e) {
@@ -4235,16 +4320,7 @@ const App = {
                         });
                     }
                 } else {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                        id: opId,
-                    });
-                    if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                            response: confirmRes,
-                        });
-                    }
-                    showTelecomConfirmResult(confirmRes, telecomT('swal.lineTerminated'));
+                    await finalizeListOpWithConfirm(opId, telecomT('swal.lineTerminated'), lineActionModal.trmIdentityFile);
                 }
                 await loadCustomer360(state.id);
                 hideBsModal('C360TerminationModal');
@@ -4357,16 +4433,7 @@ const App = {
                         });
                     }
                 } else {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                        id: opId,
-                    });
-                    if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                            response: confirmRes,
-                        });
-                    }
-                    showTelecomConfirmResult(confirmRes, telecomT('swal.lineSuspended'));
+                    await finalizeListOpWithConfirm(opId, telecomT('swal.lineSuspended'), lineActionModal.bssIdentityFile);
                 }
                 await loadCustomer360(state.id);
                 hideBsModal('C360SuspensionModal');
@@ -4418,6 +4485,16 @@ const App = {
                 if (window.Swal) Swal.fire({ icon: 'error', title: telecomT('swal.notAllowed'), text: msg });
                 return;
             }
+            if (!lineActionModal.rcnIdentityFile) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: telecomT('suspension.kycRequired', 'Upload document'),
+                        text: telecomT('suspension.kycDocumentHint', ''),
+                    });
+                }
+                return;
+            }
             const key = sub.id || '__line__';
             if (lineProcessing[key]) return;
             lineProcessing[key] = true;
@@ -4464,7 +4541,19 @@ const App = {
                     String(entity?.approvalLevelRequired || '').toLowerCase() === 'backoffice'
                     || lineActionModal.rcnRequiresBackOffice;
                 if (lineActionModal.rcnRequiresBackOffice) {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
+                    if (typeof TelecomWizardConfirm !== 'undefined') {
+                        await TelecomWizardConfirm.uploadOperationIdentityDocument(
+                            opId,
+                            lineActionModal.rcnIdentityFile
+                        );
+                    } else {
+                        const form = new FormData();
+                        form.append('id', opId);
+                        form.append('file', lineActionModal.rcnIdentityFile);
+                        await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+                    }
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'success',
@@ -4475,41 +4564,54 @@ const App = {
                         });
                     }
                 } else {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                        id: opId,
-                    });
-                    if (confirmRes?.data?.code !== 200) {
+                    if (typeof TelecomWizardConfirm !== 'undefined') {
+                        await TelecomWizardConfirm.uploadOperationIdentityDocument(
+                            opId,
+                            lineActionModal.rcnIdentityFile
+                        );
+                    } else {
+                        const form = new FormData();
+                        form.append('id', opId);
+                        form.append('file', lineActionModal.rcnIdentityFile);
+                        await AxiosManager.post('/Telecom/UploadTelecomOperationIdentityDocument', form, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+                    }
+                    const confirmRes = await confirmListOperationIfAllowed(opId, false);
+                    if (!confirmRes) {
+                        notifyListConfirmSkipped();
+                    } else if (confirmRes?.data?.code !== 200) {
                         throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
                             response: confirmRes,
                         });
-                    }
-                    const confirmContent = confirmRes?.data?.content ?? confirmRes?.data?.Content ?? {};
-                    const scheduled =
-                        window.TelecomUiBadges?.isScheduledOperationStatus?.(
-                            window.TelecomUiBadges?.operationStatusFromConfirm?.(confirmContent)
-                        ) ?? false;
-                    if (
-                        !scheduled
-                        && (confirmContent.hlrCompletesAsynchronously ?? confirmContent.HlrCompletesAsynchronously)
-                    ) {
-                        const terminal = new Set([3, 4, 'Completed', 'Failed']);
-                        for (let i = 0; i < 15; i++) {
-                            await new Promise((r) => setTimeout(r, 2000));
-                            try {
-                                const detailRes = await AxiosManager.get(
-                                    '/Telecom/GetTelecomOperationDetail?id=' + encodeURIComponent(opId),
-                                    {}
-                                );
-                                const detail = detailRes?.data?.content?.data ?? detailRes?.data?.content?.Data;
-                                const st = detail?.status ?? detail?.Status;
-                                if (terminal.has(st)) break;
-                            } catch {
-                                /* retry */
+                    } else {
+                        const confirmContent = confirmRes?.data?.content ?? confirmRes?.data?.Content ?? {};
+                        const scheduled =
+                            window.TelecomUiBadges?.isScheduledOperationStatus?.(
+                                window.TelecomUiBadges?.operationStatusFromConfirm?.(confirmContent)
+                            ) ?? false;
+                        if (
+                            !scheduled
+                            && (confirmContent.hlrCompletesAsynchronously ?? confirmContent.HlrCompletesAsynchronously)
+                        ) {
+                            const terminal = new Set([3, 4, 'Completed', 'Failed']);
+                            for (let i = 0; i < 15; i++) {
+                                await new Promise((r) => setTimeout(r, 2000));
+                                try {
+                                    const detailRes = await AxiosManager.get(
+                                        '/Telecom/GetTelecomOperationDetail?id=' + encodeURIComponent(opId),
+                                        {}
+                                    );
+                                    const detail = detailRes?.data?.content?.data ?? detailRes?.data?.content?.Data;
+                                    const st = detail?.status ?? detail?.Status;
+                                    if (terminal.has(st)) break;
+                                } catch {
+                                    /* retry */
+                                }
                             }
                         }
+                        showTelecomConfirmResult(confirmRes, telecomT('swal.reconnected'));
                     }
-                    showTelecomConfirmResult(confirmRes, telecomT('swal.reconnected'));
                 }
                 await loadCustomer360(state.id);
                 await checkHlrForSubscription(sub);
@@ -4607,16 +4709,7 @@ const App = {
                         });
                     }
                 } else {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                        id: opId,
-                    });
-                    if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                            response: confirmRes,
-                        });
-                    }
-                    showTelecomConfirmResult(confirmRes, telecomT('swal.refundDone'));
+                    await finalizeListOpWithConfirm(opId, telecomT('swal.refundDone'), lineActionModal.rfdIdentityFile);
                 }
                 await loadCustomer360(state.id);
                 hideBsModal('C360RefundModal');
@@ -4721,16 +4814,7 @@ const App = {
                         });
                     }
                 } else {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                        id: opId,
-                    });
-                    if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                            response: confirmRes,
-                        });
-                    }
-                    showTelecomConfirmResult(confirmRes, telecomT('swal.collectionDone'));
+                    await finalizeListOpWithConfirm(opId, telecomT('swal.collectionDone'), lineActionModal.bssIdentityFile);
                 }
                 await loadCustomer360(state.id);
                 hideBsModal('C360BadDebtModal');
@@ -4830,16 +4914,11 @@ const App = {
                         });
                     }
                 } else {
-                    await AxiosManager.post('/Telecom/UploadTelecomOperationDocument', { id: opId });
-                    const confirmRes = await AxiosManager.post('/Telecom/ConfirmTelecomOperation', {
-                        id: opId,
-                    });
-                    if (confirmRes?.data?.code !== 200) {
-                        throw Object.assign(new Error(confirmRes?.data?.message || telecomT('swal.confirmFailed')), {
-                            response: confirmRes,
-                        });
-                    }
-                    showTelecomConfirmResult(confirmRes, telecomT('swal.changeNumberDone'));
+                    await finalizeListOpWithConfirm(
+                        opId,
+                        telecomT('swal.changeNumberDone'),
+                        lineActionModal.cnPaymentFile || lineActionModal.bssIdentityFile
+                    );
                 }
                 await loadCustomer360(state.id);
                 hideBsModal('C360ChangeNumberModal');
@@ -5057,16 +5136,27 @@ const App = {
 
         const listRechargeFlowLabels = () => ({
             methodTitle: telecomT('swal.rechargeMethod'),
+            methodHint: telecomT('swal.rechargeMethodHint', 'Wallet/cash: amount + receipt. Voucher: prepaid card code.'),
             wallet: telecomT('swal.rechargeWallet'),
             voucher: telecomT('swal.rechargeVoucher'),
             continueBtn: telecomT('swal.continueBtn'),
             cancelBtn: telecomT('common.cancel', 'Cancel'),
             amountTitle: telecomT('swal.rechargeAmount'),
+            amountPlaceholder: '15000',
+            amountHint: telecomT('swal.rechargeAmountHint', 'Cash amount in SYP received from the customer.'),
+            amountFooter: telecomT('swal.rechargeAmountFooter', 'Tip: typical demo amounts are 15,000 or 30,000 SYP.'),
+            amountEmpty: telecomT('swal.rechargeAmountEmpty', 'Please enter the cash amount.'),
+            amountInvalid: telecomT('swal.rechargeAmountInvalid', 'Use numbers only (greater than zero).'),
             invalidAmount: telecomT('swal.invalidAmount'),
+            amountTooHigh: telecomT('swal.rechargeAmountTooHigh', 'Maximum recharge amount is {max} SYP.'),
+            amountMax: String(TelecomRechargeFlow?.DEFAULT_AMOUNT_MAX || 1000000),
             paymentRefTitle: telecomT('swal.paymentRefTitle'),
+            refHint: telecomT('swal.rechargeRefHint', 'Receipt or cashier reference — required for audit.'),
+            refEmpty: telecomT('swal.rechargeRefEmpty', 'Payment reference is required.'),
             confirmBtn: telecomT('swal.confirm'),
             refRequired: telecomT('swal.refRequired'),
             voucherCodeTitle: telecomT('swal.voucherCodeTitle'),
+            voucherHint: telecomT('swal.rechargeVoucherHint', 'Enter the prepaid voucher code.'),
             validateBtn: telecomT('swal.validate', 'Validate'),
             voucherRequired: telecomT('swal.enterVoucherCode'),
             voucherInvalid: telecomT('swal.invalidVoucher'),
@@ -5310,6 +5400,7 @@ const App = {
             submitReconnect,
             onListRcnClearanceChange,
             onListRcnRegulatoryFileChange,
+            onListRcnIdentityFileChange,
             listRcnShowsPaymentRef,
             listRcnBdrApproved,
             listRcnShowsFraudFields,

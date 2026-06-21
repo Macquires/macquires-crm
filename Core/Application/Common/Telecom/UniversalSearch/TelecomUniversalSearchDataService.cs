@@ -85,24 +85,32 @@ public sealed class TelecomUniversalSearchDataService : ITelecomUniversalSearchD
         CancellationToken cancellationToken)
     {
         var normalizedRegistry = registryTerm.Trim();
-        var profiles = await LoadSubscriberProfilesAsync(
-            p => p.Customer != null
-                 && EF.Property<CustomerKind>(p.Customer, nameof(Customer.CustomerKind)) == CustomerKind.Corporate
-                 && EF.Property<string>(p.Customer, nameof(CorporateCustomer.CommercialRegistryNumber)) != null
-                 && EF.Property<string>(p.Customer, nameof(CorporateCustomer.CommercialRegistryNumber)) == normalizedRegistry,
-            maxRows,
-            cancellationToken);
+        var customers = await _context.Customer
+            .AsNoTracking()
+            .IsDeletedEqualTo()
+            .OfType<CorporateCustomer>()
+            .Where(c => c.CommercialRegistryNumber == normalizedRegistry)
+            .Select(c => new { c.Id, c.DisplayName, c.Status })
+            .Take(maxRows)
+            .ToListAsync(cancellationToken);
 
-        foreach (var group in profiles.GroupBy(p => p.CustomerId))
+        if (customers.Count == 0)
         {
-            var anchor = group.First();
-            var customer = anchor.Customer;
+            return;
+        }
+
+        var customerIds = customers.Select(c => c.Id).ToList();
+        var profiles = await LoadSubscriberProfilesForCustomersAsync(customerIds, cancellationToken);
+
+        foreach (var customer in customers)
+        {
+            var customerProfiles = profiles.Where(p => p.CustomerId == customer.Id).ToList();
             TelecomUniversalSearchRowComposer.AppendCustomerConsolidatedRow(
                 results,
-                group.Key,
-                customer?.DisplayName,
-                customer?.Status ?? CustomerStatus.Active,
-                group.ToList(),
+                customer.Id,
+                customer.DisplayName,
+                customer.Status,
+                customerProfiles,
                 commercialRegistry: normalizedRegistry);
         }
     }
@@ -148,6 +156,11 @@ public sealed class TelecomUniversalSearchDataService : ITelecomUniversalSearchD
 
             if (m.SubscriberProfile != null)
             {
+                if (m.SubscriberProfile.Customer == null)
+                {
+                    continue;
+                }
+
                 TelecomUniversalSearchRowComposer.AppendProfileRows(results, [m.SubscriberProfile], null, null, m.Msisdn);
                 continue;
             }
@@ -161,25 +174,6 @@ public sealed class TelecomUniversalSearchDataService : ITelecomUniversalSearchD
                 Subtitle = m.PoolStatus.ToString(),
             });
         }
-    }
-
-    private async Task<List<SubscriberProfile>> LoadSubscriberProfilesAsync(
-        System.Linq.Expressions.Expression<Func<SubscriberProfile, bool>> predicate,
-        int maxRows,
-        CancellationToken cancellationToken)
-    {
-        return await _context.SubscriberProfile
-            .AsNoTracking()
-            .Include(x => x.Customer)
-            .Include(x => x.Subscriptions)
-                .ThenInclude(s => s.MsisdnAsset)
-            .Include(x => x.Subscriptions)
-                .ThenInclude(s => s.SubscriptionTypeLookup)
-            .AsSplitQuery()
-            .Where(x => !x.IsDeleted)
-            .Where(predicate)
-            .Take(maxRows)
-            .ToListAsync(cancellationToken);
     }
 
     private async Task<List<SubscriberProfile>> LoadSubscriberProfilesForCustomersAsync(

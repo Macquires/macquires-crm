@@ -95,6 +95,7 @@ public static class DependencyInjection
         services.AddScoped<IntegrationEnablement>();
         services.AddScoped<IUserAuditService, UserAuditService>();
         services.AddScoped<IUserAuditReadService, UserAuditReadService>();
+        services.AddScoped<IAuditActorDisplayNameResolver, AuditActorDisplayNameResolver>();
 
         services.RegisterDashboardEngine();
 

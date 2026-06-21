@@ -1,5 +1,6 @@
 using Application.Common.Repositories;
 using Application.Common.Security;
+using Application.Common.Telecom;
 using Application.Features.NumberSequenceManager;
 using Domain.Entities;
 using Domain.Enums;
@@ -76,6 +77,11 @@ public sealed class StrategicMisDemoSeeder
         foreach (var customer in customers)
         {
             if (!string.IsNullOrEmpty(customer.OrgUnitId))
+            {
+                continue;
+            }
+
+            if (TelecomDemoMsisdn.IsNationalDemoAnchor(customer.PrimaryPhone, customer.DisplayName))
             {
                 continue;
             }
@@ -193,6 +199,7 @@ public sealed class StrategicMisDemoSeeder
 
             entity.SyncNationalIdSearchHash(_encryption);
             entity.SetOrgUnitId(branch.Id);
+            DemoSeedScope.StampCustomer(entity);
             await _customerRepository.CreateAsync(entity);
             await _unitOfWork.SaveAsync();
         }
@@ -298,6 +305,11 @@ public sealed class StrategicMisDemoSeeder
         for (var i = 0; i < tickets.Count; i++)
         {
             var t = tickets[i];
+            if (TelecomDemoMsisdn.IsPreservedBackOfficeDemoTicket(t.Msisdn, t.Notes))
+            {
+                continue;
+            }
+
             if (t.Status == TechnicalTicketStatus.Resolved && t.ResolvedAtUtc.HasValue)
             {
                 continue;

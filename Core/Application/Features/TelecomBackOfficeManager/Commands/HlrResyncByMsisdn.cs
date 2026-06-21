@@ -67,45 +67,62 @@ public class HlrResyncByMsisdnHandler : IRequestHandler<HlrResyncByMsisdnRequest
     {
         var actorUserId = OperatorActor.RequireUserId(_operator);
 
-        var msisdn = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(request.Msisdn)
-            ?? throw new InvalidOperationException("Invalid MSISDN.");
+        TechnicalTicketLineContext line;
+        string? ticketNumber = null;
 
-        var profileId = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => s.MsisdnAsset != null && s.MsisdnAsset.Msisdn == msisdn)
-            .Select(s => s.SubscriberProfileId)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new InvalidOperationException("No subscriber profile for MSISDN.");
+        if (!string.IsNullOrWhiteSpace(request.TechnicalTicketId))
+        {
+            var ticket = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
+                .Where(t => t.Id == request.TechnicalTicketId)
+                .Select(t => new { t.Id, t.TicketNumber, t.SubscriberProfileId, t.Msisdn })
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? throw new InvalidOperationException("التذكرة غير موجودة.");
+
+            ticketNumber = ticket.TicketNumber;
+            line = await TechnicalTicketLineResolver.ResolveForBackOfficeTicketAsync(
+                _query,
+                ticket.SubscriberProfileId,
+                ticket.Msisdn,
+                cancellationToken);
+        }
+        else
+        {
+            var msisdnOnly = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(request.Msisdn)
+                ?? throw new InvalidOperationException("Invalid MSISDN.");
+            line = await TechnicalTicketLineResolver.ResolveForBackOfficeTicketAsync(
+                _query,
+                null,
+                msisdnOnly,
+                cancellationToken);
+        }
+
+        var msisdn = line.Msisdn;
+        var profileId = line.SubscriberProfileId;
 
         var customerName = await _query.SubscriberProfile.AsNoTracking().IsDeletedEqualTo()
             .Where(p => p.Id == profileId)
             .Select(p => p.Customer != null ? p.Customer.DisplayName : null)
             .FirstOrDefaultAsync(cancellationToken);
 
-        var profileDisplay = string.IsNullOrWhiteSpace(customerName)
-            ? msisdn
-            : $"{customerName.Trim()} — {msisdn}";
-
-        string? ticketNumber = null;
-        if (!string.IsNullOrWhiteSpace(request.TechnicalTicketId))
+        if (string.IsNullOrWhiteSpace(customerName) && _query is IBranchScopeBypassQuery bypassProfiles)
         {
-            ticketNumber = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
-                .Where(t => t.Id == request.TechnicalTicketId)
-                .Select(t => t.TicketNumber)
+            customerName = await bypassProfiles.SubscriberProfilesIgnoringBranchScope.AsNoTracking()
+                .Where(p => p.Id == profileId)
+                .Select(p => p.Customer != null ? p.Customer.DisplayName : null)
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
-        var msisdnAssetId = await _query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
-            .Where(s => s.SubscriberProfileId == profileId && s.MsisdnAsset != null && s.MsisdnAsset.Msisdn == msisdn)
-            .OrderByDescending(s => s.IsPrimaryLine)
-            .Select(s => s.MsisdnAssetId)
-            .FirstOrDefaultAsync(cancellationToken);
+        var profileDisplay = string.IsNullOrWhiteSpace(customerName)
+            ? msisdn
+            : $"{customerName.Trim()} — {msisdn}";
 
         var result = await _mediator.Send(
             new ResyncSubscriberFromHlrRequest
             {
                 SubscriberProfileId = profileId,
-                MsisdnAssetId = msisdnAssetId,
+                MsisdnAssetId = line.MsisdnAssetId,
                 Msisdn = msisdn,
+                BypassBranchScope = true,
             },
             cancellationToken);
 

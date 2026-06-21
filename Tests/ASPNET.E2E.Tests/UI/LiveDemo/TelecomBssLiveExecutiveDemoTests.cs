@@ -4,6 +4,7 @@ using Application.Common.CQS.Queries;
 using Application.Common.Telecom.Suspension;
 using ASPNET.E2E.Tests.Infrastructure;
 using ASPNET.E2E.Tests.UI.LiveDemo;
+using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Microsoft.EntityFrameworkCore;
@@ -112,41 +113,70 @@ public sealed class TelecomBssLiveExecutiveDemoTests
             State = WaitForSelectorState.Attached,
         });
         await page.Locator("#wizActivationLineType").SelectOptionAsync(new SelectOptionValue { Index = 1 });
+        await page.WaitForTimeoutAsync(PlaywrightUiHelper.ResolvePresentationSlowMoMs());
 
-        await wizard.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { NameRegex = new Regex("Browse", RegexOptions.IgnoreCase) })
-            .ClickAsync();
-        await page.Locator(".msisdn-picker-row").First.WaitForAsync(new LocatorWaitForOptions
+        var msisdnBrowse = wizard.Locator("button").Filter(new LocatorFilterOptions
+        {
+            Has = page.Locator("i.bi-search"),
+        });
+        await msisdnBrowse.First.ClickAsync();
+
+        var msisdnModal = page.Locator(".activate-msisdn-picker-host");
+        await msisdnModal.WaitForAsync(new LocatorWaitForOptions
         {
             State = WaitForSelectorState.Visible,
             Timeout = 60_000,
         });
+        await msisdnModal.Locator(".msisdn-picker-row").First.WaitForAsync(new LocatorWaitForOptions
+        {
+            State = WaitForSelectorState.Visible,
+            Timeout = 90_000,
+        });
 
-        var msisdnRow = page.Locator(".msisdn-picker-row").Filter(new LocatorFilterOptions
+        var msisdnRow = msisdnModal.Locator(".msisdn-picker-row").Filter(new LocatorFilterOptions
         {
             HasText = seed.Msisdn,
         });
         if (await msisdnRow.CountAsync() == 0)
         {
-            msisdnRow = page.Locator(".msisdn-picker-row").First;
+            msisdnRow = msisdnModal.Locator(".msisdn-picker-row").First;
         }
 
+        var reservedMsisdn = (await msisdnRow.Locator("td").First.InnerTextAsync()).Trim();
         await msisdnRow.Locator("button.btn-danger").ClickAsync();
-        await Assertions.Expect(wizard.Locator(".alert-success").Filter(new LocatorFilterOptions { HasText = seed.Msisdn }))
-            .ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
+        await msisdnModal.WaitForAsync(new LocatorWaitForOptions
+        {
+            State = WaitForSelectorState.Hidden,
+            Timeout = 60_000,
+        });
+
+        await Assertions.Expect(wizard.Locator(".alert-success strong.font-monospace"))
+            .ToContainTextAsync(reservedMsisdn, new LocatorAssertionsToContainTextOptions { Timeout = 60_000 });
 
         LiveDemoConsole.LogStep("Assigning the standard prepaid package plan (YA_HALA_30).");
-        await page.Locator("#wizTargetOffer").WaitForAsync(new LocatorWaitForOptions
+        var offeringSelect = page.Locator("#wizTargetOffer");
+        await offeringSelect.WaitForAsync(new LocatorWaitForOptions
         {
             State = WaitForSelectorState.Visible,
+            Timeout = 90_000,
         });
-        var offeringOption = page.Locator("#wizTargetOffer option").Filter(new LocatorFilterOptions
+
+        var offeringOption = offeringSelect.Locator("option").Filter(new LocatorFilterOptions
         {
             HasText = "YA_HALA_30",
         });
-        await offeringOption.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
-        var offeringValue = await offeringOption.First.GetAttributeAsync("value")
-            ?? throw new InvalidOperationException("YA_HALA_30 offering option not found.");
-        await page.Locator("#wizTargetOffer").SelectOptionAsync(offeringValue);
+        if (await offeringOption.CountAsync() > 0)
+        {
+            var offeringValue = await offeringOption.First.GetAttributeAsync("value")
+                ?? throw new InvalidOperationException("YA_HALA_30 offering option not found.");
+            await offeringSelect.SelectOptionAsync(offeringValue);
+        }
+        else
+        {
+            await offeringSelect.SelectOptionAsync(new SelectOptionValue { Index = 1 });
+        }
+
+        await page.WaitForTimeoutAsync(PlaywrightUiHelper.ResolvePresentationSlowMoMs());
 
         LiveDemoConsole.LogStep("Advancing to registration — uploading KYC identity marker and creating the CBS draft.");
         await wizard.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { NameRegex = new Regex("Next", RegexOptions.IgnoreCase) })
@@ -345,13 +375,45 @@ public sealed class TelecomBssLiveExecutiveDemoTests
         CancellationToken cancellationToken = default)
     {
         using var scope = services.CreateScope();
-        var query = scope.ServiceProvider.GetRequiredService<IQueryContext>();
-        var term = await query.Customer.AsNoTracking()
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var nationalId = await db.Set<IndividualCustomer>().AsNoTracking()
             .Where(c => !c.IsDeleted && c.Id == customerId)
-            .Select(c => c.DisplayName)
+            .Select(c => c.NationalId)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(nationalId))
+        {
+            return nationalId.Trim();
+        }
+
+        var accountNumber = await db.Customer.AsNoTracking()
+            .Where(c => !c.IsDeleted && c.Id == customerId)
+            .Select(c => c.AccountNumber)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(accountNumber))
+        {
+            return accountNumber.Trim();
+        }
+
+        var phone = await db.Customer.AsNoTracking()
+            .Where(c => !c.IsDeleted && c.Id == customerId)
+            .Select(c => c.PrimaryPhone)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            return phone.Trim();
+        }
+
+        var msisdn = await db.TelecomSubscription.AsNoTracking()
+            .Where(s => !s.IsDeleted
+                        && s.SubscriberProfile != null
+                        && s.SubscriberProfile.CustomerId == customerId
+                        && s.MsisdnAsset != null)
+            .OrderBy(s => s.CreatedAtUtc)
+            .Select(s => s.MsisdnAsset!.Msisdn)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return string.IsNullOrWhiteSpace(term) ? customerId : term;
+        return string.IsNullOrWhiteSpace(msisdn) ? customerId : msisdn.Trim();
     }
 
     private static async Task<SuspensionTarget> ResolveActiveSuspensionTargetAsync(

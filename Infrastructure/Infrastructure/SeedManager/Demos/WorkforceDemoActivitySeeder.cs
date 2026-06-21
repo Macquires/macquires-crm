@@ -1,4 +1,5 @@
 using Application.Common.Audit;
+using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
@@ -110,7 +111,19 @@ public sealed class WorkforceDemoActivitySeeder
 
         foreach (var (ticket, index) in tickets.Select((t, i) => (t, i)))
         {
-            if (callCenter != null)
+            if (callCenter == null)
+            {
+                continue;
+            }
+
+            var isAgentFacing =
+                string.Equals(ticket.CreatedByChannel, TechnicalTicketCreatedByChannel.CallCenterAgent, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ticket.CreatedByChannel, TechnicalTicketCreatedByChannel.CustomerCareVoiceAi, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ticket.CreatedByChannel, TechnicalTicketCreatedByChannel.ShowroomAgent, StringComparison.OrdinalIgnoreCase);
+
+            if (isAgentFacing
+                && !string.IsNullOrWhiteSpace(ticket.CustomerId)
+                && index < 12)
             {
                 ticket.OpenedByUserId = callCenter.Id;
             }

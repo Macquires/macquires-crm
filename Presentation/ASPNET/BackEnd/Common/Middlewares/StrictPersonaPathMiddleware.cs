@@ -95,6 +95,7 @@ public class StrictPersonaPathMiddleware
             || path.StartsWith("/js", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/FrontEnd", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/brand", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/noimage", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/auth_template", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/locales", StringComparison.OrdinalIgnoreCase);
     }

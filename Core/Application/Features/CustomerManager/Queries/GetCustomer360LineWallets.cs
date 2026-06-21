@@ -113,12 +113,6 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
                     c.SortOrder))
                 .ToList();
 
-            var built = Customer360WalletBuilder.Build(
-                sub.MsisdnAsset?.Msisdn,
-                profile?.PrepaidBalance,
-                components,
-                simulateDemoUsage);
-
             decimal? outstanding = null;
             var msisdn = Customer360WalletBuilder.NormalizeMsisdn(sub.MsisdnAsset?.Msisdn);
             if (!string.IsNullOrEmpty(msisdn))
@@ -132,6 +126,14 @@ public class GetCustomer360LineWalletsHandler : IRequestHandler<GetCustomer360Li
                     outstanding = null;
                 }
             }
+
+            var built = Customer360WalletBuilder.Build(
+                sub.MsisdnAsset?.Msisdn,
+                profile?.PrepaidBalance,
+                components,
+                simulateDemoUsage,
+                profile?.PostpaidCreditLimit,
+                outstanding);
 
             return KeyValuePair.Create(sub.Id, built with { OutstandingBalance = outstanding });
         }));

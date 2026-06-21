@@ -110,7 +110,7 @@ public sealed class TelecomBssFullSystemMasterTests
 
     [SkippableTheory]
     [MemberData(nameof(HubScenarioMemberData))]
-    public async Task FullSystem_HubWizard_MatrixSmoke(string hubTile, string anchorTestId)
+    public async Task FullSystem_HubWizard_MatrixSmoke(string hubTile, string anchorTestId, string personaEmail)
     {
         Skip.If(_fixture.DockerUnavailable, "Docker daemon not running.");
         Skip.If(string.IsNullOrWhiteSpace(_fixture.PublicBaseUrl), "Kestrel public URL not available.");
@@ -122,7 +122,7 @@ public sealed class TelecomBssFullSystemMasterTests
         {
             (playwright, browser, _, var page) =
                 await PlaywrightUiHelper.LaunchPageAsync(_fixture.PublicBaseUrl);
-            await PlaywrightUiHelper.LoginViaUiAsync(page, _fixture.PublicBaseUrl);
+            await PlaywrightUiHelper.LoginViaUiAsync(page, _fixture.PublicBaseUrl, personaEmail, PlaywrightUiHelper.DemoPassword);
             await PlaywrightUiHelper.GotoTelecomHubAsync(page, _fixture.PublicBaseUrl);
             await PlaywrightBssWizardHelper.SmokeHubWizardAsync(page, hubTile, anchorTestId);
         }
@@ -133,12 +133,39 @@ public sealed class TelecomBssFullSystemMasterTests
     }
 
     public static IEnumerable<object[]> HubScenarioMemberData() =>
-        TelecomBssWizardScenarioCatalog.All.Select(s => new object[] { s.HubTile, s.HubAnchorTestId });
+        TelecomBssWizardScenarioCatalog.All.Select(s =>
+            new object[] { s.HubTile, s.HubAnchorTestId, HubPersonaEmailForCode(s.Code) });
+
+    // Hub PBAC surface buckets — each wizard renders only for the persona holding its hub permission token.
+    private static readonly string[] HubFrontlineCodes = ["ACT", "MGR", "SIM", "CNR"];
+    private static readonly string[] HubBackOfficeCodes = ["CGT", "TKO", "TRM", "SUS", "BDR"];
+    private static readonly string[] HubSupervisorCodes = ["RCN", "RFD", "DEV", "VAS", "SUP"];
+
+    private static string HubPersonaEmailForCode(string code) =>
+        HubBackOfficeCodes.Contains(code) ? PlaywrightUiHelper.BackOfficeEmail
+        : HubSupervisorCodes.Contains(code) ? PlaywrightUiHelper.SupervisorEmail
+        : PlaywrightUiHelper.ShowroomEmail;
 
     private async Task RunHubWizardMatrixAsync(IPage page)
     {
+        // Hub morphs by PBAC bucket — exercise each wizard with the persona that holds its surface permission.
+        await RunHubWizardSubsetAsync(page, PlaywrightUiHelper.ShowroomEmail, HubFrontlineCodes);
+        await RunHubWizardSubsetAsync(page, PlaywrightUiHelper.BackOfficeEmail, HubBackOfficeCodes);
+        await RunHubWizardSubsetAsync(page, PlaywrightUiHelper.SupervisorEmail, HubSupervisorCodes);
+
+        // Restore the front-line session for the remaining (List / C360) front-desk flows.
+        await PlaywrightUiHelper.LogoutViaUiAsync(page, _fixture.PublicBaseUrl);
+        await PlaywrightUiHelper.LoginViaUiAsync(
+            page, _fixture.PublicBaseUrl, PlaywrightUiHelper.ShowroomEmail, PlaywrightUiHelper.DemoPassword);
+    }
+
+    private async Task RunHubWizardSubsetAsync(IPage page, string email, IReadOnlyList<string> codes)
+    {
+        await PlaywrightUiHelper.LogoutViaUiAsync(page, _fixture.PublicBaseUrl);
+        await PlaywrightUiHelper.LoginViaUiAsync(page, _fixture.PublicBaseUrl, email, PlaywrightUiHelper.DemoPassword);
         await PlaywrightUiHelper.GotoTelecomHubAsync(page, _fixture.PublicBaseUrl);
-        foreach (var scenario in TelecomBssWizardScenarioCatalog.All)
+
+        foreach (var scenario in TelecomBssWizardScenarioCatalog.All.Where(s => codes.Contains(s.Code)))
         {
             await PlaywrightBssWizardHelper.SmokeHubWizardAsync(page, scenario.HubTile, scenario.HubAnchorTestId);
         }
@@ -464,8 +491,17 @@ public sealed class TelecomBssFullSystemMasterTests
 
     private async Task RunHubSupportAndActHeaderAsync(IPage page, string customerId)
     {
+        // Support (SUP) lives on the supervisor surface; activation (ACT) on the front-line surface.
+        await PlaywrightUiHelper.LogoutViaUiAsync(page, _fixture.PublicBaseUrl);
+        await PlaywrightUiHelper.LoginViaUiAsync(
+            page, _fixture.PublicBaseUrl, PlaywrightUiHelper.SupervisorEmail, PlaywrightUiHelper.DemoPassword);
         await PlaywrightUiHelper.GotoTelecomHubAsync(page, _fixture.PublicBaseUrl);
         await PlaywrightBssWizardHelper.SmokeHubWizardAsync(page, "support", "hub-support-issue-type");
+
+        await PlaywrightUiHelper.LogoutViaUiAsync(page, _fixture.PublicBaseUrl);
+        await PlaywrightUiHelper.LoginViaUiAsync(
+            page, _fixture.PublicBaseUrl, PlaywrightUiHelper.ShowroomEmail, PlaywrightUiHelper.DemoPassword);
+        await PlaywrightUiHelper.GotoTelecomHubAsync(page, _fixture.PublicBaseUrl);
         await PlaywrightBssWizardHelper.SmokeHubWizardAsync(page, "activate", "hub-act-line-type");
     }
 

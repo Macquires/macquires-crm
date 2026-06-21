@@ -391,3 +391,173 @@ body.syr-tel-portal .adminbody .grid-container {
 }
 
 
+
+/* Bootstrap gutter utilities — restore vertical gap (g-2/g-3/g-4 on rows) */
+
+body.syr-tel-portal .adminbody .row.g-2 {
+
+    --bs-gutter-x: 0.5rem;
+
+    --bs-gutter-y: 0.5rem;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .row.g-3 {
+
+    --bs-gutter-x: 1rem;
+
+    --bs-gutter-y: 1rem;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .row.g-4 {
+
+    --bs-gutter-x: 1.5rem;
+
+    --bs-gutter-y: 1.5rem;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .row.g-2 > *,
+
+body.syr-tel-portal .adminbody .row.g-3 > *,
+
+body.syr-tel-portal .adminbody .row.g-4 > * {
+
+    margin-top: var(--bs-gutter-y);
+
+}
+
+
+
+/* ── Bootstrap grid reinforcement (legacy dashmin / Syncfusion safe) ── */
+
+body.syr-tel-portal .adminbody .row {
+
+    --bs-gutter-x: 1.5rem;
+
+    --bs-gutter-y: 0;
+
+    margin-inline: calc(var(--bs-gutter-x) * -0.5);
+
+}
+
+
+
+body.syr-tel-portal .adminbody .row > * {
+
+    box-sizing: border-box;
+
+    flex-shrink: 0 !important;
+
+    padding-inline: calc(var(--bs-gutter-x) * 0.5);
+
+    margin-top: var(--bs-gutter-y);
+
+}
+
+
+
+body.syr-tel-portal .adminbody .row > [class*="col-"] {
+
+    flex: 0 0 auto !important;
+
+}
+
+
+
+body.syr-tel-portal .adminbody [class*="col-12"] {
+
+    width: 100% !important;
+
+}
+
+
+
+body.syr-tel-portal .adminbody .col-6 { width: 50% !important; }
+
+body.syr-tel-portal .adminbody .col-4 { width: 33.33333333% !important; }
+
+body.syr-tel-portal .adminbody .col-3 { width: 25% !important; }
+
+
+
+@media (min-width: 576px) {
+
+    body.syr-tel-portal .adminbody .col-sm-4 { width: 33.33333333% !important; }
+
+    body.syr-tel-portal .adminbody .col-sm-6 { width: 50% !important; }
+
+    body.syr-tel-portal .adminbody .col-sm-12 { width: 100% !important; }
+
+}
+
+
+
+@media (min-width: 768px) {
+
+    body.syr-tel-portal .adminbody .col-md-2 { width: 16.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-3 { width: 25% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-4 { width: 33.33333333% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-5 { width: 41.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-6 { width: 50% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-7 { width: 58.33333333% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-8 { width: 66.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-9 { width: 75% !important; }
+
+    body.syr-tel-portal .adminbody .col-md-12 { width: 100% !important; }
+
+}
+
+
+
+@media (min-width: 992px) {
+
+    body.syr-tel-portal .adminbody .col-lg-2 { width: 16.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-lg-3 { width: 25% !important; }
+
+    body.syr-tel-portal .adminbody .col-lg-4 { width: 33.33333333% !important; }
+
+    body.syr-tel-portal .adminbody .col-lg-6 { width: 50% !important; }
+
+    body.syr-tel-portal .adminbody .col-lg-8 { width: 66.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-lg-9 { width: 75% !important; }
+
+    body.syr-tel-portal .adminbody .col-lg-12 { width: 100% !important; }
+
+}
+
+
+
+@media (min-width: 1200px) {
+
+    body.syr-tel-portal .adminbody .col-xl-2 { width: 16.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-xl-4 { width: 33.33333333% !important; }
+
+    body.syr-tel-portal .adminbody .col-xl-5 { width: 41.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-xl-7 { width: 58.33333333% !important; }
+
+    body.syr-tel-portal .adminbody .col-xl-8 { width: 66.66666667% !important; }
+
+    body.syr-tel-portal .adminbody .col-xl-12 { width: 100% !important; }
+
+}
+
+

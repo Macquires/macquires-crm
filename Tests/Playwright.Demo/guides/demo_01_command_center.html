@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo 01 — Command Center Cue Card</title>
+  <style>
+    :root { --bg: #0f1419; --fg: #f8fafc; --accent: #f87171; --muted: #94a3b8; --step: #1e293b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 1.25rem; background: var(--bg); color: var(--fg); font-family: "Segoe UI", Tahoma, sans-serif; line-height: 1.55; }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; color: var(--accent); }
+    .sub { color: var(--muted); font-size: 1.1rem; margin-bottom: 1.5rem; }
+    ol { padding: 0; margin: 0; list-style: none; }
+    li { background: var(--step); border-radius: 12px; padding: 1rem 1.15rem; margin-bottom: 1rem; font-size: 1.35rem; font-weight: 600; }
+    .marker { display: block; margin-top: 0.65rem; font-size: 1rem; font-weight: 700; color: #fbbf24; letter-spacing: 0.02em; }
+    .speak { color: #34d399; }
+    code { background: #334155; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>🎭 Demo 01 — Sovereign Command Center</h1>
+  <p class="sub">المستخدم: <code>st-mis@syriatelecom-demo.local</code> · المسار: <code>/Executive/CommandCenter</code></p>
+  <ol>
+    <li>
+      افتحي مركز القيادة التنفيذية — لوحة MIS السيادية للإدارة العليا.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      تأكدي أن <code>#commandCenterApp</code> ظاهر و<code>#commandCenterGate</code> مخفي — صلاحية MIS فقط.
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+    <li>
+      انزلي لشريط النطاق اللاصق <code>.executive-scope-bar</code> — فلترة المنطقة والفرع والتاريخ مع blur.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      في تبويب Scorecard: أبرزي بطاقات الـ Hero الأربع <code>.scorecard-hero-card</code> (إيراد · ARPU · Churn · Online).
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+    <li>
+      غيّري المنطقة من القائمة واضغطي Apply — البيانات تتحدث بدون إعادة تحميل الصفحة.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      كرري منطقة ثانية للجنة — نفس الـ URL، تحديث لحظي عبر API.
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+  </ol>
+</body>
+</html>

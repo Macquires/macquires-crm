@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.Reconnect;
 using Domain.Enums;
 
@@ -91,13 +92,14 @@ public sealed class ReconnectCreateStrategy : IOperationCreateStrategy
         entity.NotificationSuppressed = false;
         if (eligibility.RequiresBackOfficeApproval)
         {
-            entity.ApprovalLevelRequired = "BackOffice";
+            var paymentSettlement = string.Equals(entity.ClearanceType, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(entity.PaymentReference);
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity, paymentSettlement);
         }
 
         if (request.Notes?.Contains("BypassToAdvance:true") == true)
         {
-            entity.Status = TelecomOperationStatus.Paid_Pending_BackOffice_Clearance;
-            entity.ApprovalLevelRequired = "BackOffice";
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity, paidSettlement: true);
         }
 
         entity.Notes = OperationCreateAuditHelpers.AppendReconnectAudit(entity.Notes, eligibility);

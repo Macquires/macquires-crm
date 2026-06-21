@@ -20,11 +20,52 @@ public static class Customer360WalletBuilder
         return hash % 45001 + 5000;
     }
 
+    /// <summary>
+    /// Wallet balance for Customer 360 — postpaid debt (negative CBS/CRM) must never fall back to hash-based demo credit.
+    /// </summary>
+    public static decimal ResolveDisplayBalance(
+        string? msisdn,
+        decimal? crmPrepaidBalance,
+        decimal? postpaidCreditLimit,
+        decimal? cbsOutstanding,
+        bool simulateDemoUsage)
+    {
+        if (cbsOutstanding is < 0)
+        {
+            return cbsOutstanding.Value;
+        }
+
+        if (postpaidCreditLimit is < 0)
+        {
+            return postpaidCreditLimit.Value;
+        }
+
+        if (crmPrepaidBalance.HasValue)
+        {
+            return crmPrepaidBalance.Value;
+        }
+
+        var normalized = NormalizeMsisdn(msisdn);
+        if (string.IsNullOrEmpty(normalized))
+        {
+            return 0m;
+        }
+
+        if (string.Equals(normalized, TelecomDemoMsisdn.DebtSubscriber, StringComparison.Ordinal))
+        {
+            return TelecomDemoBaselines.DebtOutstandingSyp;
+        }
+
+        return simulateDemoUsage ? SimulateBalance(normalized) : 0m;
+    }
+
     public static Customer360LineWalletDto Build(
         string? msisdn,
         decimal? crmPrepaidBalance,
         IReadOnlyList<Customer360PackageComponentDto> packageComponents,
-        bool simulateDemoUsage = true)
+        bool simulateDemoUsage = true,
+        decimal? postpaidCreditLimit = null,
+        decimal? cbsOutstanding = null)
     {
         var normalized = NormalizeMsisdn(msisdn);
         if (string.IsNullOrEmpty(normalized))
@@ -38,8 +79,12 @@ public static class Customer360WalletBuilder
                 []);
         }
 
-        var balance = crmPrepaidBalance
-            ?? (simulateDemoUsage ? SimulateBalance(normalized) : 0m);
+        var balance = ResolveDisplayBalance(
+            normalized,
+            crmPrepaidBalance,
+            postpaidCreditLimit,
+            cbsOutstanding,
+            simulateDemoUsage);
         var components = packageComponents.Count > 0
             ? packageComponents
             : DefaultPackageComponents(normalized);

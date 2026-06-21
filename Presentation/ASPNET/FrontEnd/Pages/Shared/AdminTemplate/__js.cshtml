@@ -2,6 +2,7 @@
 <script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
 <script src="~/lib/axios/axios.min.js"></script>
 <script src="~/lib/sweetalert/sweetalert2v11.js"></script>
+<script src="~/lib/indotalent/telecom-i18n.js" asp-append-version="true"></script>
 <script src="~/lib/indotalent/syr-swal.js" asp-append-version="true"></script>
 <script src="~/lib/dropzone/dropzone.min.js"></script>
 <script src="~/lib/indotalent/storage-manager.js"></script>
@@ -14,7 +15,6 @@
 <script src="~/lib/indotalent/date-format-manager.js"></script>
 <script src="~/lib/indotalent/syncfusion-grid-i18n.js"></script>
 <script src="~/lib/indotalent/telecom-ui-badges.js" asp-append-version="true"></script>
-<script src="~/lib/indotalent/telecom-i18n.js" asp-append-version="true"></script>
 <script src="~/lib/indotalent/telecom-integration-demo-banner.js" asp-append-version="true"></script>
 <script src="~/lib/jspdf/html2canvas.min.js"></script>
 <script src="~/lib/jspdf/jspdf.umd.min.js"></script>
@@ -37,7 +37,8 @@
     var hideSpinnerAndShowContent = () => {
         const spinner = document.getElementById('spinner');
         if (spinner) {
-            spinner.classList.remove('show');
+            spinner.classList.remove('show', 'd-flex');
+            spinner.classList.add('d-none');
         }
     }
 

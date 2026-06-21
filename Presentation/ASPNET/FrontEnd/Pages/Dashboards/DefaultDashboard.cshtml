@@ -14,27 +14,6 @@
             <section class="dash-unified-cards" data-telecom-i18n-title="defaultDashboard.kpisAria" aria-label="Operational KPIs">
                 <div id="syrBentoCockpit" class="syr-bento-grid syr-bento-single-row" data-persona=""></div>
             </section>
-            <section id="executive-exceptions" class="dash-unified-exceptions d-none mt-4" data-telecom-i18n-title="defaultDashboard.exceptionsAria" aria-label="Executive exceptions">
-                <div id="executiveExceptionsApp" v-cloak class="strategic-exec-root">
-                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_ExecutiveExceptionsEmbed.cshtml")
-                </div>
-            </section>
-            <section id="mis-reports" class="dash-unified-mis d-none mt-4" data-telecom-i18n-title="defaultDashboard.misAria" aria-label="MIS reports">
-                <div id="misReportsApp" v-cloak class="strategic-exec-root">
-                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_MisReportsEmbed.cshtml")
-                </div>
-            </section>
-            <section id="strategic-analytics" class="dash-unified-strategic d-none mt-4" data-telecom-i18n-title="defaultDashboard.strategicAria" aria-label="Strategic analytics">
-                <div id="strategicAnalyticsApp" v-cloak class="strategic-exec-root">
-                    @await Html.PartialAsync("~/FrontEnd/Pages/Dashboards/_StrategicAnalyticsEmbed.cshtml")
-                </div>
-            </section>
-            <section id="branch-geo-heatmap" class="dash-unified-geo d-none mt-4" aria-label="Branch geo heatmap">
-                <div id="branchGeoHeatmapApp" v-cloak class="strategic-exec-root"></div>
-            </section>
-            <section id="supervisor-interventions" class="dash-unified-supervisor d-none mt-4" aria-label="Supervisor interventions">
-                <div id="supervisorInterventionApp" v-cloak class="strategic-exec-root"></div>
-            </section>
         </div>
 
 @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/_PortalPageShellEnd.cshtml")
@@ -180,12 +159,6 @@
 }
 
 @section scripts {
-    <script src="~/lib/indotalent/executive-exceptions-panel.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/syr-bento-cockpit.js" asp-append-version="true"></script>
-    <script src="~/lib/indotalent/mis-reports-panel.js" asp-append-version="true"></script>
-    <script src="~/lib/indotalent/strategic-analytics-panel.js" asp-append-version="true"></script>
-    <script src="~/lib/indotalent/supervisor-intervention-panel.js" asp-append-version="true"></script>
-    <script src="~/lib/indotalent/branch-geo-heatmap-panel.js" asp-append-version="true"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
     <script src="~/FrontEnd/Pages/Dashboards/DefaultDashboard.cshtml.js" asp-append-version="true"></script>
 }

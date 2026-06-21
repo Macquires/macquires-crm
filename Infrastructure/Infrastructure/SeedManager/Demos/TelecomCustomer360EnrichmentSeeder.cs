@@ -21,7 +21,7 @@ namespace Infrastructure.SeedManager.Demos;
 /// </summary>
 public sealed class TelecomCustomer360EnrichmentSeeder
 {
-    private const string SystemActor = "system-seed";
+    private const string SystemActor = DemoSeedScope.SystemActor;
 
     private readonly DataContext _context;
     private readonly IQueryContext _query;
@@ -112,7 +112,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         for (var i = 0; i < customers.Count; i++)
         {
             var customer = customers[i];
-            if (IsOperatorCreatedCustomer(customer))
+            if (IsOperatorCreatedCustomer(customer) || IsDemoAnchorCustomer(customer))
             {
                 continue;
             }
@@ -126,6 +126,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             }
 
             EnrichPartyFields(customer, i, rnd);
+            DemoSeedScope.StampCustomer(customer);
             await EnsureContactsAsync(customer, rnd);
             
             // Save every 20 customers to avoid huge transactions but keep it fast
@@ -187,6 +188,10 @@ public sealed class TelecomCustomer360EnrichmentSeeder
 
         return !string.Equals(createdBy, SystemActor, StringComparison.OrdinalIgnoreCase);
     }
+
+    /// <summary>National showcase anchors — baseline is owned by <see cref="DemoAnchorBaselineReconciler"/>.</summary>
+    private static bool IsDemoAnchorCustomer(Customer customer) =>
+        TelecomDemoMsisdn.IsNationalDemoAnchor(customer.PrimaryPhone, customer.DisplayName);
 
     private static int StableHash(string id)
     {
@@ -306,7 +311,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         var i = 0;
         foreach (var customer in customers)
         {
-            if (IsOperatorCreatedCustomer(customer))
+            if (IsOperatorCreatedCustomer(customer) || IsDemoAnchorCustomer(customer))
             {
                 continue;
             }
@@ -358,7 +363,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             if (isPostpaid)
             {
                 profile.PrepaidBalance = null;
-                profile.PostpaidCreditLimit = -15000m; // GLOBAL HARDENING: Postpaid debt
+                profile.PostpaidCreditLimit = TelecomDemoBaselines.DebtOutstandingSyp;
             }
             else
             {
@@ -406,6 +411,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             ChurnRiskScore = rnd.Next(8, 35),
             LanguagePreference = LanguagePreference.Arabic,
         };
+        DemoSeedScope.ApplyProfileScope(profile, customer);
         await _profileRepository.CreateAsync(profile);
         await _unitOfWork.SaveAsync();
 
@@ -417,6 +423,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             SubscriberProfileId = profile.Id,
             ProductId = productId,
         };
+        DemoSeedScope.ApplyMsisdnScope(asset, customer);
         await _msisdnRepository.CreateAsync(asset);
 
         var sub = new TelecomSubscription
@@ -435,6 +442,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         {
             var imsi = MsisdnAssetKitResolver.DeriveImsiFromMsisdn(msisdn);
             var sim = SimInventory.Create(iccid, imsi: imsi);
+            DemoSeedScope.ApplySimScope(sim, customer.BranchId);
             sim.AssignToProfile(profile.Id);
             sim.TransitionTo(SimStatus.Active);
             await _simRepository.CreateAsync(sim);
@@ -547,6 +555,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
             .ToHashSetAsync();
 
         var subs = await _subscriptionRepository.GetQuery()
+            .Include(s => s.MsisdnAsset)
             .Include(s => s.SubscriberProfile)
             .Where(s => !s.IsDeleted && s.MsisdnAssetId != null)
             .ToListAsync();
@@ -554,6 +563,11 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         foreach (var sub in subs)
         {
             if (sub.SubscriberProfile != null && operatorCustomerIds.Contains(sub.SubscriberProfile.CustomerId))
+            {
+                continue;
+            }
+
+            if (sub.MsisdnAsset != null && TelecomDemoMsisdn.IsWellKnown(sub.MsisdnAsset.Msisdn))
             {
                 continue;
             }
@@ -597,7 +611,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
 
         foreach (var customer in customers)
         {
-            if (IsOperatorCreatedCustomer(customer))
+            if (IsOperatorCreatedCustomer(customer) || IsDemoAnchorCustomer(customer))
             {
                 continue;
             }
@@ -642,6 +656,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 PayloadJson = $"{{\"summary\":\"{pick.Item1}\",\"msisdnAssetId\":\"{line.MsisdnAssetId}\"}}",
                 OpenedByUserId = SystemActor,
                 CreatedByChannel = TechnicalTicketCreatedByChannel.CallCenterAgent,
+                BranchId = customer.BranchId,
             });
         }
 
@@ -652,7 +667,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
     {
         foreach (var customer in customers)
         {
-            if (IsOperatorCreatedCustomer(customer))
+            if (IsOperatorCreatedCustomer(customer) || IsDemoAnchorCustomer(customer))
             {
                 continue;
             }
@@ -702,6 +717,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
                 NotificationSuppressed = false,
                 RequiresDualApproval = false,
             };
+            DemoSeedScope.ApplyOperationScope(op, customer.BranchId);
             await _operationRepository.CreateAsync(op);
             await _unitOfWork.SaveAsync();
 
@@ -732,7 +748,7 @@ public sealed class TelecomCustomer360EnrichmentSeeder
         var i = 0;
         foreach (var customer in customers)
         {
-            if (IsOperatorCreatedCustomer(customer))
+            if (IsOperatorCreatedCustomer(customer) || IsDemoAnchorCustomer(customer))
             {
                 continue;
             }

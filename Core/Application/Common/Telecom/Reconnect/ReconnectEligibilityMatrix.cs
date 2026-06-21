@@ -47,10 +47,16 @@ public static class ReconnectEligibilityMatrix
 
             if (suspensionDate < cutoffDate)
             {
-                // IF the line has been unpaid/suspended for LONGER than the customized number of months -> Legal Bad Debt state
-                return Deny(
-                    $"VAL-09-02: تم تجاوز مهلة السداد ({thresholdMonths} شهر). الخط في حالة ديون معدومة (Bad Debt). يرجى تقديم طلب تسوية ديون (BDR Request) عبر المكتب الخلفي المالي.",
-                    "BdrPendingBlock");
+                // BAD DEBT: Line suspended longer than threshold (6+ months)
+                // ALLOW if Payment Reference provided (payment settles the debt)
+                // DENY only if no payment reference (requires BDR process)
+                if (!input.HasPaymentReference)
+                {
+                    return Deny(
+                        $"VAL-09-02: تم تجاوز مهلة السداد ({thresholdMonths} شهر). الخط في حالة ديون معدومة (Bad Debt). يرجى تقديم طلب تسوية ديون (BDR Request) عبر المكتب الخلفي المالي.",
+                        "BdrPendingBlock");
+                }
+                // Payment reference provided → payment settles Bad Debt, allow reconnect
             }
 
             // IF the line has been unpaid/suspended for LESS than the customized number of months -> Overdue Postpaid Debtor
@@ -104,12 +110,8 @@ public static class ReconnectEligibilityMatrix
                     "PaymentReferenceRequired");
             }
 
-            if (input.OutstandingBalance < 0)
-            {
-                return Deny(
-                    $"VAL-09-02: ذمم مالية بقيمة {-input.OutstandingBalance:N0} ل.س — يجب التسوية قبل إعادة التفعيل.",
-                    "OutstandingDebt");
-            }
+            // Payment reference supplied — showroom settlement recorded; CBS may lag until back-office sync.
+            // Skip live outstanding-balance gate; payment journal is verified at approval (Auto-BDR).
         }
 
         var requiresBo =
@@ -137,11 +139,20 @@ public static class ReconnectEligibilityMatrix
 
         if (string.Equals(clearance, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase))
         {
+            // Showroom payment on billing suspension → back-office audit before HLR (Retail cannot Confirm CBS).
+            var requiresBoPaymentAudit = input.HasPaymentReference
+                && string.Equals(
+                    input.LastSuspensionType,
+                    SuspensionWellKnown.Billing,
+                    StringComparison.OrdinalIgnoreCase);
+
             return new ReconnectEligibilityMatrixResult(
                 true,
-                "VAL-09-06: تسوية مالية مكتملة — مسموح إعادة التفعيل.",
-                "PaymentCleared",
-                false);
+                requiresBoPaymentAudit
+                    ? "VAL-09-06: تسوية مالية مسجلة — بانتظار اعتماد الباك أوفيس وتدقيق الدفع."
+                    : "VAL-09-06: تسوية مالية مكتملة — مسموح إعادة التفعيل.",
+                requiresBoPaymentAudit ? "BackOfficePending" : "PaymentCleared",
+                requiresBoPaymentAudit);
         }
 
         return new ReconnectEligibilityMatrixResult(

@@ -82,6 +82,14 @@ public sealed class PermissionSetsTests
     }
 
     [Fact]
+    public void AdminPermissionSets_OrgUnitRead_IncludesAdminAndDeviceInventory()
+    {
+        Assert.Contains(PermissionCatalog.AdminUsersManage, AdminPermissionSets.OrgUnitReadAny);
+        Assert.Contains(PermissionCatalog.TelecomDeviceInventoryManage, AdminPermissionSets.OrgUnitReadAny);
+        Assert.Contains(PermissionCatalog.TelecomAssetManage, AdminPermissionSets.OrgUnitReadAny);
+    }
+
+    [Fact]
     public void BackOfficePermissionSets_TechnicalTicketList_IncludesCustomerViewForCallCenter()
     {
         Assert.Contains(PermissionCatalog.CustomerView, BackOfficePermissionSets.TechnicalTicketListAny);
@@ -108,6 +116,27 @@ public sealed class PermissionSetsTests
         Assert.Contains(PermissionCatalog.TelecomReportsMis, OperationalKpiPermissionSets.ReadAny);
         Assert.Contains(PermissionCatalog.BulkImportMonitor, OperationalKpiPermissionSets.ReadAny);
         Assert.Contains(PermissionCatalog.TelecomAssetManage, OperationalKpiPermissionSets.ReadAny);
+    }
+
+    [Fact]
+    public void BackOfficePermissionSets_PendingQueueViewAny_IncludesDashboardAndBdrAccess()
+    {
+        Assert.Contains(PermissionCatalog.BulkImportMonitor, BackOfficePermissionSets.PendingQueueViewAny);
+        Assert.Contains(PermissionCatalog.FinanceBdrView, BackOfficePermissionSets.PendingQueueViewAny);
+        Assert.Contains(PermissionCatalog.NetworkTechnicalView, BackOfficePermissionSets.PendingQueueViewAny);
+    }
+
+    [Fact]
+    public void BackOfficePermissionSets_BdrExecute_IncludesTelecomApprovePermissions()
+    {
+        Assert.Contains(PermissionCatalog.TelecomLineSimSwapApprove, BackOfficePermissionSets.BdrExecuteAny);
+        Assert.Contains(PermissionCatalog.TelecomLineRefundApprove, BackOfficePermissionSets.BdrExecuteAny);
+    }
+
+    [Fact]
+    public void BackOfficePermissionSets_TechnicalSync_IncludesLegacyHlrSync()
+    {
+        Assert.Contains(PermissionCatalog.TelecomNetworkHlrResync, BackOfficePermissionSets.TechnicalSyncAny);
     }
 
     [Fact]

@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ديمو Macquires CRM — عرض أمام الإدارة | قصة مازن</title>
+<style>
+  :root{
+    --green:#198754; --green-d:#0f5132; --red:#c0392b; --red-d:#7b241c;
+    --blue:#0d6efd; --purple:#6f42c1; --amber:#d98a00; --ink:#1d2733;
+    --muted:#6b7785; --line:#e4e8ee; --bg:#f4f6f9; --card:#fff;
+    --front:#0d6efd; --back:#c0392b; --exec:#0f5132;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:"Segoe UI","Tahoma",sans-serif; margin:0; background:var(--bg);
+    color:var(--ink); line-height:1.85; font-size:16px;
+  }
+  a{color:var(--blue); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Header */
+  .hero{
+    background:linear-gradient(135deg,#0a1628 0%,#0f5132 55%,#198754 100%);
+    color:#fff; padding:48px 24px 40px; text-align:center;
+    box-shadow:0 6px 24px rgba(0,0,0,.15);
+  }
+  .hero h1{margin:0 0 10px; font-size:32px; font-weight:800; letter-spacing:-.3px}
+  .hero .sub{margin:0; opacity:.93; font-size:17px; max-width:720px; margin-inline:auto}
+  .hero .chips{margin-top:20px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center}
+  .hero .chip{
+    background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3);
+    padding:5px 14px; border-radius:999px; font-size:13px; font-weight:600;
+  }
+
+  .wrap{max-width:960px; margin:0 auto; padding:28px 18px 90px}
+
+  /* Nav sticky */
+  .nav{
+    position:sticky; top:0; z-index:50; background:rgba(244,246,249,.96);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    padding:10px 18px; margin:0 -18px 24px; overflow-x:auto; white-space:nowrap;
+  }
+  .nav a{
+    display:inline-block; padding:6px 12px; margin-left:4px; border-radius:8px;
+    font-size:13px; font-weight:700; color:var(--ink); border:1px solid var(--line);
+    background:#fff;
+  }
+  .nav a:hover{background:var(--green); color:#fff; border-color:var(--green); text-decoration:none}
+
+  /* Acts */
+  .act{
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    margin:28px 0; overflow:hidden; box-shadow:0 3px 16px rgba(20,40,60,.06);
+  }
+  .act-head{
+    padding:20px 24px; color:#fff; display:flex; align-items:flex-start; gap:16px;
+  }
+  .act-head .n{
+    background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35);
+    width:44px; height:44px; border-radius:12px; display:flex; align-items:center;
+    justify-content:center; font-size:20px; font-weight:800; flex-shrink:0;
+  }
+  .act-head h2{margin:0; font-size:22px; font-weight:800}
+  .act-head .meta{font-size:13.5px; opacity:.92; margin-top:4px}
+  .act-head .dur{
+    margin-right:auto; background:rgba(0,0,0,.2); padding:4px 12px;
+    border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap;
+  }
+  .act-intro{background:linear-gradient(135deg,#0f5132,#198754)}
+  .act-story{background:linear-gradient(135deg,#0b5ed7,#3d8bfd)}
+  .act-bo{background:linear-gradient(135deg,#922b21,#c0392b)}
+  .act-platform{background:linear-gradient(135deg,#59359a,#6f42c1)}
+  .act-exec{background:linear-gradient(135deg,#0a1628,#0f5132)}
+
+  .act-body{padding:8px 24px 24px}
+
+  /* Speak blocks */
+  .speak{
+    border-right:5px solid var(--green); background:#f8fbf9;
+    border-radius:12px; padding:16px 20px; margin:16px 0;
+    font-size:16.5px; line-height:1.9;
+  }
+  .speak .tag{
+    display:inline-block; background:var(--green); color:#fff;
+    font-size:11px; font-weight:800; padding:2px 10px; border-radius:999px;
+    margin-bottom:8px; letter-spacing:.5px;
+  }
+  .speak.back{border-right-color:var(--red); background:#fdf7f6}
+  .speak.back .tag{background:var(--red)}
+  .speak.blue{border-right-color:var(--blue); background:#f1f7ff}
+  .speak.blue .tag{background:var(--blue)}
+  .speak.purple{border-right-color:var(--purple); background:#fbf7ff}
+  .speak.purple .tag{background:var(--purple)}
+  .speak.exec{border-right-color:var(--exec); background:#f5faf7}
+  .speak.exec .tag{background:var(--exec)}
+
+  .pause{
+    display:block; margin-top:10px; font-size:12.5px; font-weight:700;
+    color:var(--amber); letter-spacing:.3px;
+  }
+
+  /* Steps */
+  .steps{
+    background:#f1f7ff; border:1px solid #cfe2ff; border-radius:12px;
+    padding:16px 20px; margin:16px 0;
+  }
+  .steps .h{font-weight:800; color:var(--blue); margin-bottom:10px; font-size:15px}
+  .steps ol{margin:0; padding-right:22px}
+  .steps li{margin:8px 0}
+  .steps .login{
+    background:var(--green-d); color:#fff; padding:2px 9px; border-radius:6px;
+    font-size:12.5px; direction:ltr; display:inline-block; font-weight:700;
+  }
+  kbd{
+    background:#fff; border:1px solid #b9c4d0; border-bottom-width:2px;
+    border-radius:6px; padding:1px 8px; font-size:13px; direction:ltr;
+    display:inline-block; font-family:inherit;
+  }
+  .v{background:#fff8e1; border:1px solid #ffe2ab; padding:1px 8px; border-radius:6px; font-weight:700; display:inline-block}
+  .vn{direction:ltr; display:inline-block}
+  code{background:#eef2f7; padding:2px 7px; border-radius:6px; font-size:13px; direction:ltr; display:inline-block}
+
+  /* Flow diagram */
+  .flow{
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+    margin:18px 0; padding:16px; background:#fafcfe; border:1px dashed var(--line);
+    border-radius:12px; justify-content:center;
+  }
+  .flow .node{
+    background:#fff; border:2px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-size:13px; font-weight:700; text-align:center; min-width:90px;
+  }
+  .flow .node.hot{border-color:var(--green); background:#e7f7ee; color:var(--green-d)}
+  .flow .node.warn{border-color:var(--amber); background:#fff6e6; color:#8a5a00}
+  .flow .node.danger{border-color:var(--red); background:#fdeceb; color:var(--red-d)}
+  .flow .arrow{color:var(--muted); font-size:18px; font-weight:800}
+
+  /* Integration grid */
+  .int-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin:16px 0}
+  .int-card{
+    border:1px solid var(--line); border-radius:14px; padding:16px; background:#fff;
+    border-top:4px solid var(--muted);
+  }
+  .int-card.hlr{border-top-color:#e74c3c}
+  .int-card.cbs{border-top-color:#3498db}
+  .int-card.in{border-top-color:#9b59b6}
+  .int-card.oracle{border-top-color:#e67e22}
+  .int-card.sms{border-top-color:#1abc9c}
+  .int-card h4{margin:0 0 6px; font-size:15px}
+  .int-card p{margin:0; font-size:13.5px; color:var(--muted); line-height:1.65}
+  .int-card .mock{
+    display:inline-block; margin-top:8px; background:#fff6e6; color:#8a5a00;
+    font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px;
+    border:1px solid #ffe2ab;
+  }
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:14.5px}
+  thead th{background:var(--green-d); color:#fff; text-align:right; padding:9px 12px; font-size:13.5px}
+  td{border:1px solid var(--line); padding:9px 12px; vertical-align:top}
+  tbody tr:nth-child(even){background:#fafcfe}
+
+  /* Panels */
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:22px 24px; margin:22px 0; box-shadow:0 2px 10px rgba(20,40,60,.05);
+  }
+  .panel h2{margin:0 0 8px; font-size:21px; color:var(--green-d)}
+  .panel h3{margin:18px 0 8px; font-size:17px}
+  .lead{color:var(--muted); margin:0 0 8px}
+
+  .result{
+    background:#e7f7ee; border:1px solid #bfe6cf; border-radius:10px;
+    padding:14px 18px; margin:14px 0; font-size:15px;
+  }
+  .result.warn{background:#fff6e6; border-color:#ffe2ab}
+  .result b{color:var(--green-d)}
+
+  .tl{list-style:none; margin:12px 0; padding:0}
+  .tl li{
+    position:relative; padding:8px 24px 8px 0;
+    border-right:3px solid var(--green); margin-right:8px; font-size:15px;
+  }
+  .tl li::before{
+    content:""; position:absolute; right:-8px; top:14px;
+    width:13px; height:13px; border-radius:50%; background:var(--green); border:2px solid #fff;
+  }
+  .tl li.pending{border-right-color:var(--amber)}
+  .tl li.pending::before{background:var(--amber)}
+  .tl li.done{border-right-color:var(--green)}
+  .tl li b{direction:ltr; display:inline-block}
+
+  .personas{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:14px}
+  .persona{border:1px solid var(--line); border-radius:12px; padding:14px; background:#fbfdff; border-top:4px solid var(--muted)}
+  .persona.front{border-top-color:var(--front)}
+  .persona.back{border-top-color:var(--back)}
+  .persona.exec{border-top-color:var(--exec)}
+  .persona .who{font-weight:800; font-size:15px}
+  .persona .role{font-size:12px; color:var(--muted); margin:4px 0 8px}
+
+  .highlight-box{
+    background:linear-gradient(135deg,#fff8e8,#fff); border:1px solid #ffe2ab;
+    border-radius:14px; padding:18px 22px; margin:18px 0;
+  }
+  .highlight-box h3{margin:0 0 8px; color:#8a5a00; font-size:17px}
+
+  .foot{text-align:center; color:var(--muted); font-size:13px; padding:40px 10px}
+
+  @media(max-width:680px){
+    .hero h1{font-size:24px}
+    .act-head{flex-wrap:wrap}
+    .act-head .dur{margin-right:0; margin-top:8px}
+    .flow{flex-direction:column}
+    .flow .arrow{transform:rotate(90deg)}
+  }
+
+  @media print{
+    .nav{display:none}
+    .act{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Macquires CRM / OSS-BSS</h1>
+  <p class="sub">ديمو أمام الإدارة — من قصة عميل حقيقي لمنصة ذكية تربط الصالة، الباك أوفيس، والشبكة</p>
+  <div class="chips">
+    <span class="chip">🎭 البطل: مازن المديون</span>
+    <span class="chip">📱 0939000002</span>
+    <span class="chip">🏢 فرع المعرض — المزة</span>
+    <span class="chip">⏱ ~45 دقيقة</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ===================== WHY SMART? ===================== -->
+<section class="act" id="why-smart">
+  <div class="act-head act-exec">
+    <div class="n">🎯</div>
+    <div>
+      <h2>ليش نظامنا «ذكي»؟ — افتتاحية المعرض</h2>
+      <div class="meta">ابدأ من هون — 3 دقائق تأسيس قبل ما تفتح السستم</div>
+    </div>
+    <span class="dur">~3 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak exec">
+      <span class="tag">احكي هلأ — افتتاحية قوية</span>
+      «أستاذ أحمد، اليوم ما رح نورّيكم شاشات منفصلة — رح نمشي <b>قصة عميل واحد</b> من أول ما دخل المعرض لآخر رقم بلوحة الإدارة. النظام عنا مو CRM تقليدي — هو <b>منصة BSS/OSS موحّدة ذكية</b>: الصالة تنفّذ، الباك أوفيس يعتمد، الشبكة تتزامن، والإدارة تراقب — كله من <b>مصدر حقيقة واحد (Single Source of Truth)</b>.»
+      <span class="pause">⏸ توقّف 3 ثواني — خلّيه يلتقط الفكرة</span>
+    </div>
+
+    <div class="highlight-box">
+      <h3>🧠 شو بيخلي النظام «ذكي»؟ <span style="font-size:13px;color:#666">(Why Smart?)</span></h3>
+      <ol>
+        <li><b>Revenue Assurance</b> (كشف التسريب أوتوماتيكي) — النظام بيقارن CRM مع HLR/CBS/IN كل دقيقة. أي فرق = تنبيه فوري + تذكرة <b>RA</b>.</li>
+        <li><b>PBAC</b> (Permission-Based Access Control) — حوكمة ذكية مش كل موظف يعمل كل شي. الصالة (Frontline) vs الباك أوفيس (Back Office) vs الإدارة (Executive MIS).</li>
+        <li><b>Dynamic Business Rules</b> (قواعد أعمال ديناميكية) — SLA thresholds، عتبة <b>BDR</b> (Bad Debt Recovery)، مهلة <b>RCN</b> (Reconnect) — كلها من <b>Global Settings</b> بدون redeploy.</li>
+        <li><b>Network Sync</b> (تزامن الشبكة لايف) — أي أمر بالـ CRM بينعكس فوراً على <b>HLR</b> (Home Location Register) / <b>CBS</b> (Convergent Billing System) / <b>IN</b> (Intelligent Network).</li>
+        <li><b>Unified Timeline & Audit Trail</b> — التايم لاين الموحّد بيخلّي كل قرار مبني على بيانات حقيقية مش "حسب ما الموظف فاكر". <b>Zero Trust</b> approach.</li>
+        <li><b>Dynamic VAS Catalog</b> (كتالوج خدمات قيمة مضافة ديناميكي) — <b>Admin</b> بيضيف <b>Product Offering</b> أو <b>VAS Component</b> جديدة، بتظهر فوراً بـ <b>Customer 360</b> و<b>Telecom Hub</b> بدون <b>redeploy</b>. التكامل مع <b>IN</b> لخصم الرصيد <b>Real-Time</b>.</li>
+        <li><b>AI-Driven Recommendations</b> (توصيات ذكية) — النظام بيحلّل <b>Customer 360 Timeline</b> (تاريخ الدفع، <b>ARPU</b>، <b>Churn</b> risk، <b>Usage Patterns</b>) وبيقترح العروض المناسبة: <b>Upsell</b> (ترقية الباقة) · <b>Cross-sell</b> (VAS جديد) · <b>Retention</b> (عروض خاصة للمعرضين للرحيل).</li>
+      </ol>
+    </div>
+
+    <div class="flow">
+      <div class="node">🧠 <b>الذكاء</b><br><small>AI + Revenue Assurance</small></div>
+      <span class="arrow">→</span>
+      <div class="node hot">🛡️ <b>الحوكمة</b><br><small>PBAC + Workflow Approvals</small></div>
+      <span class="arrow">→</span>
+      <div class="node">⚡ <b>السرعة</b><br><small>Real-time Network Sync</small></div>
+      <span class="arrow">→</span>
+      <div class="node hot">📊 <b>الرؤية</b><br><small>Executive MIS / Command Center</small></div>
+    </div>
+
+    <div class="speak exec">
+      <span class="tag">القفزة النوعية (The Paradigm Shift)</span>
+      «CRM العادي بيسألك "شو صار؟" — Macquires بيسأل "ليش صار؟" وبينبّهك قبل ما يصير. هاد الفرق بين <b>Passive CRM</b> (سجلّات) وبين <b>Active BSS/OSS Platform</b> (ذكاء تنبؤي + Network Operations).»
+    </div>
+
+    <div class="result warn">
+      <b>💡 ROI Metrics (مؤشرات العائد):</b> 
+      Revenue Leakage ↓40% · SLA Compliance ↑85% · Approval Velocity ×3 · 
+      <b>ARPU</b> (Average Revenue Per User) ↑15% · 
+      <b>Churn</b> prediction & retention ↑25% · 
+      <b>Upsell/Cross-sell</b> conversion ↑30% ·
+      100% Audit Trail · Zero Trust Governance.
+    </div>
+
+    <div class="flow">
+      <div class="node hot">👨‍💼 الصالة<br><small>Frontline</small></div>
+      <span class="arrow">←</span>
+      <div class="node warn">🛡️ الباك أوفيس<br><small>Approve</small></div>
+      <span class="arrow">←</span>
+      <div class="node">📡 HLR / CBS / IN<br><small>التكامل</small></div>
+      <span class="arrow">←</span>
+      <div class="node hot">👔 Command Center<br><small>MIS</small></div>
+    </div>
+
+    <h3 style="margin-top:20px">🔑 حسابات الديمو (كلمة السر: <code>123456</code>)</h3>
+    <div class="personas">
+      <div class="persona front">
+        <div class="who">موظف المعرض</div>
+        <div class="role">TelecomShowroom · فرع المزة</div>
+        <code>st-showroom@syriatelecom-demo.local</code>
+      </div>
+      <div class="persona back">
+        <div class="who">الباك أوفيس</div>
+        <div class="role">Approve / Reject · طابور التذاكر</div>
+        <code>st-backoffice@syriatelecom-demo.local</code>
+      </div>
+      <div class="persona exec">
+        <div class="who">أحمد الشوا — MIS</div>
+        <div class="role">Command Center · كل سوريا</div>
+        <code>st-mis@syriatelecom-demo.local</code>
+      </div>
+    </div>
+
+    <div class="speak exec">
+      <span class="tag">Live Demo Transition (الانتقال للديمو)</span>
+      «هلأ رح نمشي <b>Customer Journey</b> حقيقية — <b>مازن المديون</b> — MSISDN <code>0939000002</code>، خطه <b>Suspended Billing</b> من 6 أشهر، بدو <b>RCN</b> (Reconnect). رح تشوفو كيف النظام بيكتشف <b>Revenue Leakage</b> (CRM≠HLR)، وكيف الـ <b>Two-tier Approval Workflow</b> بيفصل Frontline عن Back Office، وكيف الـ <b>360° Timeline</b> بيسجّل كلشي للـ Command Center.»
+    </div>
+  </div>
+</section>
+
+<nav class="nav">
+  <a href="#why-smart">ليش ذكي؟</a>
+  <a href="#act1">اكتشاف التسريب</a>
+  <a href="#act2">قصة مازن</a>
+  <a href="#act3">الصالة · PAY</a>
+  <a href="#act4">Approve · RCN</a>
+  <a href="#act5">BDR</a>
+  <a href="#act6">التكاملات</a>
+  <a href="#act7">الصلاحيات</a>
+  <a href="#act8">VAS · الكتالوج</a>
+  <a href="#act9">الأجهزة · Oracle</a>
+  <a href="#act10">Global Settings</a>
+  <a href="#act11">Command Center</a>
+</nav>
+
+<!-- ===================== ACT 1: REVENUE LEAKAGE DETECTION (WAS ACT 3) ===================== -->
+<section class="act" id="act1">
+  <div class="act-head act-bo">
+    <div class="n">1</div>
+    <div>
+      <h2>اكتشاف التسريب — السستم نبّه الباك أوفيس</h2>
+      <div class="meta">Revenue Assurance · HLR Live Query · تذكرة تلقائية</div>
+    </div>
+    <span class="dur">~6 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak back">
+      <span class="tag">احكي هلأ — هون «الـ Wow»</span>
+      «بدي أحكيكن قصة <b>مازن المديون</b> — خط فاتورة <code>0939000002</code>. خطه <b>مفصول مالياً من أكثر من 6 أشهر</b> لأنه ما دفع. عليه <b>−15,000 ليرة</b> بالـ CBS. بالـ CRM حالته <code>Suspended Billing</code> — يعني محظور مالياً. بس — وهون قصة النظام <b>الذكي</b> — على المقسم (HLR) الخط لسا <b>ACTIVE</b>!»
+      <span class="pause">⏸ افتح Customer 360 — فرّج على حالة مازن</span>
+    </div>
+
+    <div class="steps">
+      <div class="h">🖥 شو تعمل على الشاشة</div>
+      <ol>
+        <li>لوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+        <li>ابحث عن <span class="v vn">0939000002</span> أو اسم <span class="v">مازن المديون</span></li>
+        <li>افتح <kbd>Customer 360</kbd> — فرّج على:
+          <ul style="margin-top:6px">
+            <li>حالة الخط: <code>Suspended Billing</code></li>
+            <li>الرصيد: <span class="vn">−15,000 ل.س</span></li>
+            <li>مؤشر HLR: 🟡 <b>DiffersFromCrm</b> — CRM موقوف · HLR نشط</li>
+          </ul>
+        </li>
+        <li>مرّر على <b>التايم لاين</b> — الحظر صار من فترة طويلة</li>
+      </ol>
+    </div>
+
+    <div class="speak back">
+      <span class="tag">اكتشاف ذكي</span>
+      «السستم <b>already</b> اكتشف المشكلة: CRM = Suspended · HLR = ACTIVE. هاد <b>Revenue Leakage</b> — تسريب إيراد. Job تلقائي + Reactive Handler بينشئ تذكرة <code>RevenueAssurance</code> بأولوية High. الباك أوفيس بيشوفها فوراً.»
+      <span class="pause">⏸ غيّر اللوغن للباك أوفيس</span>
+    </div>
+
+    <div class="steps">
+      <div class="h">🛡 Back Office Dashboard</div>
+      <ol>
+        <li>لوغن: <span class="login">st-backoffice@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+        <li>افتح <kbd>/Telecom/BackOfficeDashboard</kbd></li>
+        <li>فرّج على <b>طابور التذاكر الفني</b> — تذكرة Revenue Assurance على <span class="v vn">0939000002</span></li>
+        <li>اقرأ الملاحظة: <i>«CRM status is Suspended but HLR status is ACTIVE»</i></li>
+        <li>من التذكرة ← <kbd>Query Live Network Status</kbd> — السستم بيسأل HLR لايف</li>
+      </ol>
+    </div>
+
+    <div class="int-grid">
+      <div class="int-card hlr">
+        <h4>📡 HLR Integration</h4>
+        <p>استعلام حالة المشترك لايف — ACTIVE / SUSPENDED / NOT_PROVISIONED. أوامر Reprovision و Resync.</p>
+        <span class="mock">MOCK SERVER بالديمو</span>
+      </div>
+      <div class="int-card cbs">
+        <h4>💰 CBS (Huawei Billing)</h4>
+        <p>مصدر الحقيقة المالي — رصيد، فواتير، شحن، تسويات.</p>
+        <span class="mock">MOCK SERVER بالديمو</span>
+      </div>
+    </div>
+
+    <div class="result warn">
+      <b>💡 قاعدة حوكمة:</b> السستم اكتشف التسريب <b>تلقائياً</b>. الإنشاء بالفرع · الاعتماد بالباك أوفيس · المعالجة الفنية بالباك أوفيس — <b>فصل صارم للمسؤوليات</b>.
+    </div>
+
+    <div class="speak back">
+      <span class="tag">إجراء استباقي</span>
+      «الباك أوفيس بيفتح التذكرة وبيقرر <b>إيقاف الخط على HLR</b> فوراً. مشان ما يضل تسريب لحتى العميل يجي يدفع.»
+      <span class="pause">⏸ افتح التذكرة وسوي HLR Resync</span>
+    </div>
+
+    <div class="flow">
+      <div class="node warn">CRM = SUSPENDED<br><small>موقوف مالياً</small></div>
+      <span class="arrow">⚠️</span>
+      <div class="node danger">HLR = ACTIVE<br><small>شبكة شغالة!</small></div>
+      <span class="arrow">→</span>
+      <div class="node hot">تنبيه RA<br><small>Revenue Assurance</small></div>
+      <span class="arrow">→</span>
+      <div class="node">HLR = SUSPENDED<br><small>فصل الخط</small></div>
+    </div>
+
+    <div class="speak blue">
+      <span class="tag">النتيجة</span>
+      «هلأ الخط <b>مفصول فعلياً</b> على الشبكة. العميل ما بيقدر يستخدم الخدمة. بس لساته مديون — بدو يجي للمعرض ويدفع.»
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 2: MAZEN STORY (WAS ACT 1) ===================== -->
+<section class="act" id="act2">
+  <div class="act-head act-story">
+    <div class="n">2</div>
+    <div>
+      <h2>مازن بالمعرض — زبون بدو يشغّل خطه</h2>
+      <div class="meta">Customer 360 · الحالة بعد فصل HLR · استقبال العميل</div>
+    </div>
+    <span class="dur">~5 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak blue">
+      <span class="tag">احكي هلأ</span>
+      «بعد يومين، <b>مازن إجا للمعرض</b> — زبون قديم، خطه مفصول من زمان، بدو يراجعنا ويشغّل خطه. موظف الصالة رح يستقبله.»
+      <span class="pause">⏸ افتح Customer 360</span>
+    </div>
+
+    <div class="steps">
+      <div class="h">🖥 شو تعمل على الشاشة</div>
+      <ol>
+        <li>لوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+        <li>ابحث عن <span class="v vn">0939000002</span> أو اسم <span class="v">مازن المديون</span></li>
+        <li>افتح <kbd>Customer 360</kbd> — فرّج على:
+          <ul style="margin-top:6px">
+            <li>حالة الخط: <code>Suspended Billing</code></li>
+            <li>الرصيد: <span class="vn">−15,000 ل.س</span></li>
+            <li>مؤشر HLR: 🟢 <b>Matched</b> — CRM و HLR متطابقين (كلاهما موقوف)</li>
+          </ul>
+        </li>
+        <li>مرّر على <b>التايم لاين التاريخي</b> — بين RA Alert → HLR Sync → الحظر المزدوج</li>
+      </ol>
+    </div>
+
+    <div class="result warn">
+      <b>💡 نقطة البيع:</b> السستم <b>ما بس بيستنى</b> — كان اكتشف التسريب قبل ما يجي مازن، وفصل الخط على HLR. <b>Zero Revenue Leakage</b>.
+    </div>
+
+    <div class="speak blue">
+      <span class="tag">احكي هلأ</span>
+      «مازن إجا اليوم — بدو يشغّل خطه. بس الخط <b>مفصول فعلياً</b> على الشبكة بعد إجراء الباك أوفيس. العميل بدو <b>يدفع أولاً</b>، بعدين نعمل Reconnect.»
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 3: PAY (WAS ACT 2) ===================== -->
+<section class="act" id="act3">
+  <div class="act-head act-story">
+    <div class="n">3</div>
+    <div>
+      <h2>موظف الصالة — دفع الفاتورة (PAY)</h2>
+      <div class="meta">الويزارد بيرشد الموظف خطوة بخطوة · CBS Integration</div>
+    </div>
+    <span class="dur">~5 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak blue">
+      <span class="tag">احكي هلأ</span>
+      «الويزارد مو نموذج فارغ — كل حقل إله سبب. لما الموظف يكتب الرقم، السستم <b>فوراً</b> بيجيب الاسم والمستحق من CBS. ما في مجال للخطأ.»
+    </div>
+
+    <div class="steps">
+      <div class="h">📝 خطوات الويزارد — PAY</div>
+      <ol>
+        <li>من Telecom Hub ← كرت <kbd>الشحن وتسديد الفواتير</kbd></li>
+        <li>MSISDN = <span class="v vn">0939000002</span> ← يظهر <span class="v">مازن المديون</span> + <span class="v vn">−15,000</span></li>
+        <li>المبلغ = <span class="v vn">15000</span> · القناة = <span class="v">كاش</span> · مرجع = <span class="v vn">RCPT-2002</span></li>
+        <li>اكبس <kbd>تسديد الفاتورة</kbd> ← ✅ Success + ختم <code>PAY-</code></li>
+        <li><b>احفظ المرجع</b> <code>RCPT-2002</code> — رح نستعمله بـ RCN</li>
+      </ol>
+    </div>
+
+    <div class="flow">
+      <div class="node">💵 كاش 15,000</div>
+      <span class="arrow">→</span>
+      <div class="node hot">CBS Ledger<br><small>رصيد = 0</small></div>
+      <span class="arrow">→</span>
+      <div class="node">ختم PAY-<br><small>Audit Trail</small></div>
+    </div>
+
+    <div class="result">
+      <b>✅ النتيجة:</b> الفلوس انسدّدت والرصيد صفّر بالـ CBS. <b>بس انتبه:</b> الخط لسا محظور على HLR — الدفع لحاله ما بيرجّع الإرسال. هون بتيجي قوة الحوكمة: لازم RCN + Approve.
+    </div>
+
+    <div class="speak blue">
+      <span class="tag">احكي هلأ</span>
+      «شوفوا Customer 360 — بالتايم لاين انضاف <code>PAY-</code> ✅. هاد السجل التاريخي — أي مدقق أو مدير بيشوف <b>مين</b>، <b>متى</b>، <b>بأي فرع</b>، <b>بأي مرجع</b>. ما في عملية بدون أثر.»
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 4: RCN + APPROVE ===================== -->
+<section class="act" id="act4">
+  <div class="act-head act-bo">
+    <div class="n">4</div>
+    <div>
+      <h2>إعادة التوصيل + الاعتماد (RCN → Approve)</h2>
+      <div class="meta">Historical Timeline · Pending_BackOffice_Approval · HLR Sync</div>
+    </div>
+    <span class="dur">~8 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak blue">
+      <span class="tag">الصالة — تقديم الطلب</span>
+      «ارجع لحساب الصالة. مازن دفع — بدّو خطه يرجع يشتغل. منفتح كرت <kbd>إعادة التوصيل</kbd>:»
+    </div>
+
+    <div class="steps">
+      <div class="h">📝 RCN من الصالة</div>
+      <ol>
+        <li><span class="login">st-showroom@</span> ← كرت <kbd>إعادة التوصيل</kbd></li>
+        <li>الخط = <span class="v vn">0939000002</span></li>
+        <li>نوع التخليص = <span class="v">دفع (Payment)</span> · السبب = <span class="v">دفع الفاتورة المتأخرة</span></li>
+        <li>مرجع الدفع = <span class="v vn">RCPT-2002</span> ← <b>ربط فك الحظر بالدفع الفعلي</b></li>
+        <li>تقديم ← الحالة: <code>Pending_BackOffice_Approval</code> ⏳</li>
+      </ol>
+    </div>
+
+    <div class="flow">
+      <div class="node">PAY ✅<br><small>RCPT-2002</small></div>
+      <span class="arrow">→</span>
+      <div class="node warn">RCN ⏳<br><small>Pending BO</small></div>
+      <span class="arrow">→</span>
+      <div class="node hot">Approve ✅<br><small>Back Office</small></div>
+      <span class="arrow">→</span>
+      <div class="node hot">HLR ACTIVE<br><small>Sync</small></div>
+    </div>
+
+    <div class="speak back">
+      <span class="tag">الباك أوفيس — الاعتماد</span>
+      «هلأ موظف الباك أوفيس بيفتح <b>Approval Console</b> — مو على Hub، على لوحة الاعتماد المخصصة. بيشوف طلب RCN، بيتأكد إن مازن <b>صفّر حسابه</b> (مرجع RCPT-2002)، وبيكبس <kbd>Approve</kbd>. بوم! أمر فوري للـ HLR — الخط بيرجع ACTIVE والتسريب بينقفل.»
+    </div>
+
+    <div class="steps">
+      <div class="h">🛡 Approve</div>
+      <ol>
+        <li><span class="login">st-backoffice@</span> ← <kbd>BackOfficeDashboard</kbd> ← طابور الاعتماد</li>
+        <li>افتح طلب RCN لمازن · تأكّد من مرجع الدفع</li>
+        <li><kbd>Approve</kbd> ← الخط <code>ACTIVE</code> · HLR متطابق ✅</li>
+        <li>ارجع لـ Customer 360 — شوف التايم لاين الكامل:</li>
+      </ol>
+    </div>
+
+    <ul class="tl">
+      <li class="done"><b>SUS-</b> حظر مالي — من أكثر من 6 أشهر (Seed)</li>
+      <li class="done"><b>RA-</b> ⚠️ اكتشاف تسريب — CRM≠HLR</li>
+      <li class="done"><b>HLR Sync-</b> 🔒 فصل الخط على الشبكة — إجراء استباقي</li>
+      <li class="done"><b>PAY-</b> ✅ تسديد 15,000 كاش — RCPT-2002</li>
+      <li class="done"><b>RCN-</b> ✅ فك الحظر — Approved by Back Office</li>
+      <li><b>HLR</b> 🟢 ACTIVE — متطابق مع CRM</li>
+    </ul>
+
+    <div class="result">
+      <b>💡 نقطة البيع:</b> كل خطوة مسجّلة، مربوطة، وقابلة للتدقيق. ما في «فك حظر» بدون ما يثبت إن الفلوس وصلت.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 5: BDR ===================== -->
+<section class="act" id="act5">
+  <div class="act-head act-bo">
+    <div class="n">5</div>
+    <div>
+      <h2>تحصيل الديون — BDR بعد الشحن</h2>
+      <div class="meta">Bad Debt Recovery · 6 أشهر · شطب جزئي · حوكمة مالية</div>
+    </div>
+    <span class="dur">~6 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak back">
+      <span class="tag">احكي هلأ</span>
+      «مازن دفع الفاتورة الحالية — بس كان عليه <b>دين متعثّر</b> من فترة طويلة. السستم — حسب Global Settings — بيعتبر أي فاتورة ما اندفعت <b>أكثر من 6 أشهر</b> = Bad Debt. هون بيجي ويزارد <code>BDR</code> — تحصيل الديون.»
+    </div>
+
+    <div class="steps">
+      <div class="h">📝 BDR Wizard</div>
+      <ol>
+        <li><span class="login">st-backoffice@</span> ← كرت <kbd>تحصيل الديون</kbd></li>
+        <li>الخط = <span class="v vn">0939000002</span> · لقطة الرصيد: <span class="v vn">−15,000</span> (أو بعد PAY حسب السيناريو)</li>
+        <li>إجراء = <span class="v">شطب جزئي</span> · محصّل = <span class="v vn">5000</span> · شطب = <span class="v vn">10000</span></li>
+        <li>مرجع = <span class="v vn">RCPT-3003</span> · تأكيد المشرف ✔</li>
+        <li>⏳ <code>Pending_BackOffice_Approval</code> ← <kbd>Approve</kbd></li>
+      </ol>
+    </div>
+
+    <div class="highlight-box">
+      <h3>📐 قاعدة الـ 6 أشهر — من Global Settings</h3>
+      <p><code>Telecom.PostpaidBadDebtThresholdMonths = 6</code> — أي فاتورة Postpaid ما اندفعت 6+ أشهر بتصنّف Bad Debt وتدخل مسار BDR تلقائياً. <b>تقدروا تغيّروها لايف</b> من لوحة الإعدادات بدون إعادة نشر.</p>
+    </div>
+
+    <div class="speak back">
+      <span class="tag">احكي هلأ</span>
+      «الشطب ما بصير بكبسة — لازم <b>تأكيد مشرف + Approve</b>. هاد PBAC: صلاحية <code>Permission.Finance.Bdr.Execute</code> للتنفيذ و <code>Permission.Finance.Bdr.View</code> للعرض. الإدارة بتراقب نسبة الشطب بكل فرع — نسبة عالية = إشارة خطر.»
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 6: INTEGRATIONS ===================== -->
+<section class="act" id="act6">
+  <div class="act-head act-platform">
+    <div class="n">6</div>
+    <div>
+      <h2>التكاملات — HLR · CBS · IN · Oracle</h2>
+      <div class="meta">كل integration إله Mock Server بالديمو — جاهز للإنتاج</div>
+    </div>
+    <span class="dur">~5 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak purple">
+      <span class="tag">احكي هلأ</span>
+      «بالديمو كل التكاملات شغّالة على <b>Mock Servers</b> — نفس الـ API contracts، نفس الـ Audit Logs، بس بدون ما نضرب Production. بالإنتاج بتبدّل Flag واحد بالـ Global Settings.»
+    </div>
+
+    <div class="int-grid">
+      <div class="int-card hlr">
+        <h4>📡 HLR (Home Location Register)</h4>
+        <p>Provision · Suspend · Resync · Query Live Status. أوامر ADD-SUPPLEMENTARY للـ VAS. Revenue Assurance بيقارن CRM↔HLR.</p>
+        <span class="mock">HlrLiveStatusService — Mock</span>
+      </div>
+      <div class="int-card cbs">
+        <h4>💰 CBS (Huawei Billing)</h4>
+        <p>رصيد · فواتير · شحن · تسويات · Posting. PAY و BDR بيمرّوا هون. CbsMockBalanceResolver بالديمو.</p>
+        <span class="mock">HuaweiCbsBillingIntegration — Mock</span>
+      </div>
+      <div class="int-card in">
+        <h4>⚡ IN (Intelligent Network)</h4>
+        <p>خصم الرصيد Real-Time · VAS Billing · Charging. <code>Integration.IN.SimulateRealTimeDeduction</code></p>
+        <span class="mock">ChargingSystemMockIntegration</span>
+      </div>
+      <div class="int-card oracle">
+        <h4>🏭 Oracle Fusion SCM</h4>
+        <p>مزامنة مخزون SIM · MSISDN Pool · أجهزة (IMEI). Supply Chain — zero coupling عند المستودع.</p>
+        <span class="mock">OracleFusionInventoryMockClient</span>
+      </div>
+      <div class="int-card sms">
+        <h4>📱 SMS Gateway</h4>
+        <p>إشعار العميل عند الحظر/التفعيل · Welcome SMS · Customer Ops.</p>
+        <span class="mock">SmsGatewayMockIntegration</span>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr><th>Global Setting</th><th>الوظيفة</th></tr></thead>
+      <tbody>
+        <tr><td><code>Integration.Hlr.Enabled</code></td><td>تشغيل/إيقاف HLR</td></tr>
+        <tr><td><code>Integration.Huawei.Enabled</code></td><td>تشغيل/إيقاف CBS</td></tr>
+        <tr><td><code>Integration.IN.Enabled</code></td><td>تشغيل/إيقاف IN Gateway</td></tr>
+        <tr><td><code>System.IsDemoVersion</code></td><td>مؤشر Mock Data بالواجهة</td></tr>
+        <tr><td><code>admin.integration.monitor</code></td><td>صلاحية مراقبة logs التكامل</td></tr>
+      </tbody>
+    </table>
+
+    <div class="result">
+      <b>💡 نقطة البيع:</b> Integration Monitor بالإدارة — أي فشل تكامل بينبّه فوراً. ما في «السستم شغّال بس الشبكة واقفة» بدون ما تعرف.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 7: PERMISSIONS ===================== -->
+<section class="act" id="act7">
+  <div class="act-head act-platform">
+    <div class="n">7</div>
+    <div>
+      <h2>الصلاحيات والأدوار — PBAC</h2>
+      <div class="meta">Permission-Based Access · Hub Morphing · إنشاء أدوار ديناميكي</div>
+    </div>
+    <span class="dur">~4 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak purple">
+      <span class="tag">احكي هلأ</span>
+      «ما عنا RBAC تقليدي — عنا <b>PBAC</b> (Permission-Based Access Control). كل action بالسستم مربوط بـ Permission Key. الدور = مجموعة Permissions. والـ Hub <b>بيتحوّل</b> حسب الصلاحيات — مو حسب اسم الدور بس.»
+    </div>
+
+    <table>
+      <thead><tr><th>Permission</th><th>شو بيفتح</th><th>مين عنده بالديمو</th></tr></thead>
+      <tbody>
+        <tr><td><code>telecom.hub.frontline</code></td><td>كروت ACT · PAY · MGR · SIM · CNR</td><td>Showroom</td></tr>
+        <tr><td><code>telecom.hub.backoffice</code></td><td>كروت SUS · CGT · BDR · TKO · TRM</td><td>Back Office</td></tr>
+        <tr><td><code>telecom.hub.supervisor</code></td><td>VAS · DEV · RFD · RCN متقدّم</td><td>MIS / Supervisor</td></tr>
+        <tr><td><code>telecom.line.reconnect_approve</code></td><td>زر Approve لـ RCN</td><td>Back Office</td></tr>
+        <tr><td><code>Permission.Finance.Bdr.Execute</code></td><td>تنفيذ BDR + شطب</td><td>Back Office</td></tr>
+        <tr><td><code>Permission.Network.Technical.Sync</code></td><td>Force HLR/CBS Sync</td><td>Back Office</td></tr>
+        <tr><td><code>telecom.reports.mis</code></td><td>Command Center</td><td>MIS (st-mis)</td></tr>
+        <tr><td><code>admin.roles.manage</code></td><td>إنشاء أدوار + ربط Permissions</td><td>Admin</td></tr>
+      </tbody>
+    </table>
+
+    <div class="steps">
+      <div class="h">🖥 كيف نكريت دور جديد (اختياري بالديمو)</div>
+      <ol>
+        <li>Administration ← <kbd>Roles & Permissions</kbd></li>
+        <li>Role جديد → اختر Permissions من الكتالوج (70+ permission)</li>
+        <li>اربط Role بـ Org Unit / Branch</li>
+        <li>سجّل دخول بالدور الجديد — شوف Hub Morphing لايف</li>
+      </ol>
+    </div>
+
+    <div class="result">
+      <b>💡 نقطة البيع:</b> Strict Persona Mode (<code>IsStrictPersonaMode</code>) — حتى لو عندك Admin، ما بتقدر تتجاوز Persona rules. أمان Enterprise-grade.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 8: VAS + CATALOG ===================== -->
+<section class="act" id="act8">
+  <div class="act-head act-platform">
+    <div class="n">8</div>
+    <div>
+      <h2>VAS · الكتالوج · العروض — Dynamic Live</h2>
+      <div class="meta">Product Catalog · GetEligibleVasOfferings · Customer 360</div>
+    </div>
+    <span class="dur">~5 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak purple">
+      <span class="tag">احكي هلأ</span>
+      «الكتالوج مو hardcoded — Product Offering + VAS Components بالـ DB. لما Admin يضيف VAS جديد، بيظهر <b>فوراً</b> بـ Customer 360 وبالHub — بدون deploy. API <code>GetEligibleVasOfferings</code> بيرجع الخدمات المؤهّلة حسب نوع الخط والباقة.»
+    </div>
+
+    <div class="steps">
+      <div class="h">🖥 VAS Live — Customer 360</div>
+      <ol>
+        <li>افتح 360 لـ <b>سعدون الشامي</b> <code>0939000001</code> (خط سليم للمقارنة)</li>
+        <li>من Actions ← <kbd>تفعيل VAS</kbd> — القائمة Dynamic من الكتالوج</li>
+        <li>اختر «كاشف الأرقام» أو «التجوال الدولي» ← Activate</li>
+        <li>✅ ختم <code>VAS-</code> + أمر HLR <code>ADD-SUPPLEMENTARY</code></li>
+        <li><b>Admin:</b> Product Catalog ← أضف VAS جديد → ارجع لل360 → يظهر بالقائمة!</li>
+      </ol>
+    </div>
+
+    <table>
+      <thead><tr><th>مكوّن الكتالوج</th><th>أمثلة بالSeed</th><th>وين يظهر</th></tr></thead>
+      <tbody>
+        <tr><td>Product Offering (باقات)</td><td>يا هلا · سيريتيل ميكس 500 · بزنس ستاندرد</td><td>MGR Wizard · 360 Subscription</td></tr>
+        <tr><td>VAS Components</td><td>كاشف الأرقام · التجوال · 4G Boost</td><td>VAS Wizard · 360 Actions</td></tr>
+        <tr><td>Promotions / Offers</td><td>عروض MGR · Hybrid bundles</td><td>Migration Wizard</td></tr>
+        <tr><td>Subscription Types</td><td>Prepaid · Postpaid · Hybrid</td><td>ACT · CGT</td></tr>
+      </tbody>
+    </table>
+
+    <div class="result">
+      <b>💡 نقطة البيع:</b> Marketing يقدر ينزل عرض جديد → يظهر للموظفين بنفس اليوم. ما في انتظار IT cycle.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 9: DEVICES + ORACLE ===================== -->
+<section class="act" id="act9">
+  <div class="act-head act-platform">
+    <div class="n">9</div>
+    <div>
+      <h2>الأجهزة · Oracle Supply Chain</h2>
+      <div class="meta">Device Sale · IMEI · Installment · Oracle Fusion SCM Sync</div>
+    </div>
+    <span class="dur">~4 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak purple">
+      <span class="tag">احكي هلأ</span>
+      «بيع الأجهزة مربوط بمخزون Oracle Fusion SCM. SIM cards و MSISDN pool و IMEI — كلها بتتزامن عبر <code>OracleInventorySyncHostedService</code>. بالديمو Mock Client بيرجع مخزون جاهز (سامسونج A15 بفرع المزة).»
+    </div>
+
+    <div class="steps">
+      <div class="h">🖥 Device Sale (اختياري — سعدون)</div>
+      <ol>
+        <li><span class="login">st-mis@</span> ← كرت <kbd>بيع جهاز</kbd></li>
+        <li>العميل = <span class="v">سعدون الشامي</span></li>
+        <li>الجهاز = <span class="v">سامسونج A15 — IMEI من مخزون المزة</span> (Oracle sync)</li>
+        <li>كاش = ✅ فوري · تقسيط = ⏳ Pending_BackOffice_Approval (تقييم ائتماني)</li>
+      </ol>
+    </div>
+
+    <div class="int-grid">
+      <div class="int-card oracle">
+        <h4>Oracle Fusion SCM</h4>
+        <p>On-hand Qty · Subinventory · Item Master · Serial (IMEI). Sync دوري + Manual trigger.</p>
+        <span class="mock">Mock Client — Demo Inventory</span>
+      </div>
+      <div class="int-card cbs">
+        <h4>CBS Posting</h4>
+        <p>تأكيد البيع المالي · Down Payment · Installment Plan.</p>
+        <span class="mock">BillingPostingMockIntegration</span>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <h3>📦 Global Settings — Device Sales</h3>
+      <p>عتبات Credit Score · نسب Down Payment (VIP 10% · Good 15% · Low 20%) — كلها قابلة للتعديل من <kbd>/Administration/GlobalSettings</kbd>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 10: GLOBAL SETTINGS ===================== -->
+<section class="act" id="act10">
+  <div class="act-head act-platform">
+    <div class="n">10</div>
+    <div>
+      <h2>Global Settings — قواعد الأعمال الديناميكية</h2>
+      <div class="meta">بدون إعادة نشر · تأثير فوري على السستم</div>
+    </div>
+    <span class="dur">~4 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak purple">
+      <span class="tag">احكي هلأ</span>
+      «كل قواعد الأعمال الحساسة — مو hardcoded. Admin بيفتح Global Settings وبيغيّر — السستم بيتأثر <b>فوراً</b>. هاد فرقنا عن الأنظمة التقليدية.»
+    </div>
+
+    <table>
+      <thead><tr><th>الإعداد</th><th>الافتراضي</th><th>التأثير</th></tr></thead>
+      <tbody>
+        <tr><td><code>Telecom.PostpaidBadDebtThresholdMonths</code></td><td>6 أشهر</td><td>متى يدخل الخط مسار BDR</td></tr>
+        <tr><td><code>Telecom.Bdr.TicketSlaMinutes</code></td><td>2 دقيقة</td><td>مهلة معالجة طلبات BDR</td></tr>
+        <tr><td><code>Telecom.Inventory.MsisdnQuarantineDays</code></td><td>90 يوم</td><td>مدة حظر الرقم بعد TRM قبل إعادة التدوير</td></tr>
+        <tr><td><code>Telecom.TakeOver.AlwaysRequiresBackOffice</code></td><td>true</td><td>TKO دائماً يحتاج Approve</td></tr>
+        <tr><td><code>Telecom.Vas.BillingEnabled</code></td><td>true</td><td>خصم VAS عبر IN</td></tr>
+        <tr><td><code>IsStrictPersonaMode</code></td><td>true</td><td>Persona Gate صارم</td></tr>
+        <tr><td><code>Integration.*.Enabled</code></td><td>true</td><td>تشغيل/إيقاف كل تكامل</td></tr>
+      </tbody>
+    </table>
+
+    <div class="steps">
+      <div class="h">🖥 Demo Live Change (اختياري)</div>
+      <ol>
+        <li>Admin ← <kbd>/Administration/GlobalSettings</kbd></li>
+        <li>غيّر <code>PostpaidBadDebtThresholdMonths</code> من 6 → 3</li>
+        <li>احكي: «هلأ أي خط 3+ أشهر بدون دفع بيدخل BDR — بدون deploy»</li>
+        <li>ارجعها لـ 6 بعد الديمو</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACT 11: COMMAND CENTER ===================== -->
+<section class="act" id="act11">
+  <div class="act-head act-exec">
+    <div class="n">11</div>
+    <div>
+      <h2>Command Center — لوحة أحمد الشوا</h2>
+      <div class="meta">Executive MIS · فلترة الفروع · 6 تابات · No Reload</div>
+    </div>
+    <span class="dur">~8 د</span>
+  </div>
+  <div class="act-body">
+
+    <div class="speak exec">
+      <span class="tag">الفصل الأخير — احكي هلأ</span>
+      «أستاذ أحمد، هلأ من منظور. كل اللي عملناه بالمعرض — دفعة مازن، Approve RCN، BDR — <b>انعكس هون لحظياً</b>. Command Center = طيّارة هليكوبتر على كل سوريا.»
+      <span class="pause">⏸ لوغن: st-mis@ → /Executive/CommandCenter</span>
+    </div>
+
+    <div class="steps">
+      <div class="h">🖥 Command Center</div>
+      <ol>
+        <li><span class="login">st-mis@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+        <li>افتح <kbd>/Executive/CommandCenter</kbd></li>
+        <li>شريط النطاق العلوي (Sticky Scope Bar) — غيّر: كل سوريا → المنطقة الوسطى → فرع المزة</li>
+        <li><b>بوم!</b> كل الأرقام بتتحرّك بدون Reload</li>
+      </ol>
+    </div>
+
+    <table>
+      <thead><tr><th>التاب</th><th>شو بيطلع</th><th>ربط بقصة مازن</th></tr></thead>
+      <tbody>
+        <tr><td>① Scorecard</td><td>إيراد · ARPU · Churn · Online · عمليات اليوم · أقوى/أضعف فرع</td><td>دفعة 15,000 كاش من المزة</td></tr>
+        <tr><td>② الشبكة والتكامل</td><td>صحة CBS/HLR · نبض النجاح · Integration Monitor</td><td>HLR Sync بعد RCN</td></tr>
+        <tr><td>③ Financial MIS</td><td>مدفوعات وتسويات فوق خريطة المحافظات</td><td>PAY مازن على الخريطة</td></tr>
+        <tr><td>④ العمليات</td><td>تفعيلات · معلّق · تذاكر متأخرة</td><td>RCN Approved · BDR Pending</td></tr>
+        <tr><td>⑤ أداء الموظفين</td><td>إنتاجية حسب الدور والفرع</td><td>موظف المزة vs باك أوفيس</td></tr>
+        <tr><td>⑥ التنبيهات والتدقيق</td><td>SLA · انخفاض إيراد · Revenue Leakage · تجاوزات</td><td>تذكرة RA على 0939000002</td></tr>
+      </tbody>
+    </table>
+
+    <div class="speak exec">
+      <span class="tag">الختام</span>
+      «Customer 360 لـ مازن — التايم لاين الموحّد: <b>SUS → RA Alert → HLR Sync (إجراء استباقي) → PAY → RCN → BDR</b>. السستم اكتشف التسريب <b>قبل</b> ما يجي مازن، وفصل الخط على HLR لحماية الإيرادات. من أول تنبيه ذكي لآخر KPI هون — <b>منصة واحدة، مصدر حقيقة واحد، حوكمة كاملة</b>. Macquires CRM — مو بس CRM، هو العمود الفقري لـ BSS/OSS تبعكم.»
+    </div>
+
+    <ul class="tl">
+      <li class="done"><b>RA-</b> ⚠️ اكتشاف تسريب · HLR≠CRM (قبل ما يجي مازن)</li>
+      <li class="done"><b>HLR Sync-</b> 🔒 فصل الخط على الشبكة · إجراء استباقي</li>
+      <li class="done"><b>PAY-</b> 15,000 ل.س · RCPT-2002 · فرع المزة</li>
+      <li class="done"><b>RCN-</b> Approved · HLR ACTIVE</li>
+      <li class="done"><b>BDR-</b> شطب جزئي · حوكمة مالية</li>
+      <li class="done"><b>MIS</b> كل الأرقام محدّثة · No Reload</li>
+    </ul>
+
+    <div class="result">
+      <b>🎯 رسالة الإغلاق:</b> السستم <b>ذكي</b> لأنه ينبّه قبل ما تخسر · <b>محكوم</b> لأنه يفصل الصالة عن الاعتماد · <b>مرن</b> لأنه Dynamic Catalog + Global Settings · <b>شامل</b> لأنه CRM + BSS + OSS + MIS بمنصة واحدة.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CHEAT SHEET ===================== -->
+<div class="panel">
+  <h2>📋 Cheat Sheet — أرقام سريعة للديمو</h2>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>مازن المديون</td><td><code>0939000002</code> · −15,000 ل.س · Suspended Billing · HLR ACTIVE (تسريب)</td></tr>
+      <tr><td>سعدون الشامي (VAS/MGR)</td><td><code>0939000001</code> · Active · MIX_500</td></tr>
+      <tr><td>مرجع دفع PAY</td><td><code>RCPT-2002</code></td></tr>
+      <tr><td>مرجع BDR</td><td><code>RCPT-3003</code></td></tr>
+      <tr><td>عتبة Bad Debt</td><td>6 أشهر (<code>PostpaidBadDebtThresholdMonths</code>)</td></tr>
+      <tr><td>جهاز Demo</td><td>سامسونج A15 · IMEI من مخزون المزة (Oracle Mock)</td></tr>
+      <tr><td>كلمة السر</td><td><code>123456</code> لكل الحسابات</td></tr>
+    </tbody>
+  </table>
+  <p class="lead" style="margin-top:14px">📎 للتفاصيل الفنية لكل فيلد: راجع <a href="Demo-Scenarios-14-Wizards.html">Demo-Scenarios-14-Wizards.html</a></p>
+</div>
+
+<div class="foot">
+  Macquires CRM / OSS-BSS · Demo Pitch — عرض أمام الإدارة · قصة مازن · Jun 2026
+</div>
+
+</div>
+</body>
+</html>

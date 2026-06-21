@@ -3,7 +3,10 @@ using Application.Common.CQS.Queries;
 using Application.Common.Exceptions;
 using Application.Common.Repositories;
 using Application.Common.Security;
+using Application.Common.Telecom;
 using Application.Common.Telecom.BackOffice;
+using Application.Common.Telecom.Confirm;
+using Application.Common.Telecom.SellingLine;
 using Application.Features.TelecomManager.Commands;
 using Domain.Entities;
 using Domain.Enums;
@@ -17,6 +20,7 @@ public sealed class ApproveBackOfficeTelecomOperationResult
 {
     public ConfirmTelecomOperationRequestResult? ConfirmResult { get; init; }
     public string? PipelineState { get; init; }
+    public string? MessageAr { get; init; }
 }
 
 public sealed class ApproveBackOfficeTelecomOperationRequest : IRequest<ApproveBackOfficeTelecomOperationResult>, IRequireAnyPermission
@@ -38,30 +42,39 @@ public sealed class ApproveBackOfficeTelecomOperationValidator : AbstractValidat
 public sealed class ApproveBackOfficeTelecomOperationHandler
     : IRequestHandler<ApproveBackOfficeTelecomOperationRequest, ApproveBackOfficeTelecomOperationResult>
 {
-    private readonly IMediator _mediator;
     private readonly IQueryContext _query;
     private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserAuditService _audit;
     private readonly IBackOfficePaymentReferenceValidator _paymentValidator;
     private readonly IOperatorContext _operatorContext;
+    private readonly ITelecomActivationWorkflow _workflow;
+    private readonly IConfirmTelecomOperationPermissionGate _confirmPermissionGate;
+    private readonly ISellingLineEligibilityChecker _sellingLineEligibility;
+    private readonly IBackOfficeRcnBdrSettlementService _rcnBdrSettlement;
 
     public ApproveBackOfficeTelecomOperationHandler(
-        IMediator mediator,
         IQueryContext query,
         ICommandRepository<TelecomOperationRequest> operationRepository,
         IUnitOfWork unitOfWork,
         IUserAuditService audit,
         IBackOfficePaymentReferenceValidator paymentValidator,
-        IOperatorContext operatorContext)
+        IOperatorContext operatorContext,
+        ITelecomActivationWorkflow workflow,
+        IConfirmTelecomOperationPermissionGate confirmPermissionGate,
+        ISellingLineEligibilityChecker sellingLineEligibility,
+        IBackOfficeRcnBdrSettlementService rcnBdrSettlement)
     {
-        _mediator = mediator;
         _query = query;
         _operationRepository = operationRepository;
         _unitOfWork = unitOfWork;
         _audit = audit;
         _paymentValidator = paymentValidator;
         _operatorContext = operatorContext;
+        _workflow = workflow;
+        _confirmPermissionGate = confirmPermissionGate;
+        _sellingLineEligibility = sellingLineEligibility;
+        _rcnBdrSettlement = rcnBdrSettlement;
     }
 
     public async Task<ApproveBackOfficeTelecomOperationResult> Handle(
@@ -75,13 +88,15 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
             .FirstOrDefaultAsync(o => !o.IsDeleted && o.Id == request.OperationId, cancellationToken)
             ?? throw new InvalidOperationException("Telecom operation not found.");
 
-        // Multi-Tenancy / RLS Check
-        if (!string.IsNullOrEmpty(operation.BranchId) && !string.IsNullOrEmpty(_operatorContext.BranchId))
+        // Multi-Tenancy / RLS Check — national demo anchors stay visible across branches.
+        var msisdn = operation.MsisdnAsset?.Msisdn;
+        var isNationalAnchor = !string.IsNullOrWhiteSpace(msisdn) && TelecomDemoMsisdn.IsWellKnown(msisdn.Trim());
+        if (!isNationalAnchor
+            && !string.IsNullOrEmpty(operation.BranchId)
+            && !string.IsNullOrEmpty(_operatorContext.BranchId)
+            && operation.BranchId != _operatorContext.BranchId)
         {
-            if (operation.BranchId != _operatorContext.BranchId)
-            {
-                throw new UnauthorizedPermissionException("Security Violation: Regional boundary mismatch. You are not authorized to approve operations from a different branch.");
-            }
+            throw new UnauthorizedPermissionException("Security Violation: Regional boundary mismatch. You are not authorized to approve operations from a different branch.");
         }
 
         if (!BackOfficeTelecomPipelineState.IsBackOfficeQueueCandidate(operation))
@@ -104,6 +119,12 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
             {
                 throw new BusinessRuleViolationException(paymentCheck.MessageAr);
             }
+
+            await _rcnBdrSettlement.EnsureAutoSettlementForPaidReconnectAsync(
+                operation,
+                actorUserId,
+                cancellationToken);
+            await _unitOfWork.SaveAsync(cancellationToken);
         }
 
         if (operation.Kind == TelecomOperationKind.BadDebtRecovery)
@@ -119,7 +140,6 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
             tracked.UpdatedById = actorUserId;
 
             _operationRepository.Update(tracked);
-            // We don't call ConfirmTelecomOperationRequest for BDR yet, as it needs cash collection first
             await _unitOfWork.SaveAsync(cancellationToken);
 
             var msisdnBdr = operation.MsisdnAsset?.Msisdn ?? "—";
@@ -134,39 +154,19 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
                     Payload = new { request.OperationId, operation.Number, operation.Kind, msisdn = msisdnBdr, status = "Approved_Pending_Cash" }
                 }, cancellationToken);
 
+            const string bdrMessage = "تم اعتماد طلب تسوية الديون. بانتظار التحصيل المالي في المعرض.";
             return new ApproveBackOfficeTelecomOperationResult
             {
-                ConfirmResult = new ConfirmTelecomOperationRequestResult { Data = tracked, UserMessageAr = "تم اعتماد طلب تسوية الديون. بانتظار التحصيل المالي في المعرض." },
+                ConfirmResult = new ConfirmTelecomOperationRequestResult { Data = tracked, UserMessageAr = bdrMessage },
                 PipelineState = BackOfficeTelecomPipelineState.ApprovedPendingCash,
+                MessageAr = bdrMessage,
             };
         }
 
-        // GLOBAL HARDENING: Route B Bypass to Advance - Back-Office Audit
-        if (operation.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance)
-        {
-            var confirmBypass = await _mediator.Send(
-                new ConfirmTelecomOperationRequest
-                {
-                    Id = request.OperationId,
-                },
-                cancellationToken);
+        var confirm = await ExecuteBackOfficeConfirmAsync(operation, request.OperationId, actorUserId, cancellationToken);
 
-            return new ApproveBackOfficeTelecomOperationResult
-            {
-                ConfirmResult = confirmBypass,
-                PipelineState = "Completed"
-            };
-        }
-
-        var confirm = await _mediator.Send(
-            new ConfirmTelecomOperationRequest
-            {
-                Id = request.OperationId,
-            },
-            cancellationToken);
-
-        var msisdn = operation.MsisdnAsset?.Msisdn ?? "—";
-        var summary = BuildApprovalSummary(operation, msisdn, request.Comments);
+        var msisdnLabel = operation.MsisdnAsset?.Msisdn ?? "—";
+        var summary = BuildApprovalSummary(operation, msisdnLabel, request.Comments);
 
         await _audit.LogAsync(
             new UserAuditLogRequest
@@ -183,7 +183,7 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
                     operation.Kind,
                     operation.SuspensionType,
                     operation.ClearanceType,
-                    msisdn,
+                    msisdn = msisdnLabel,
                     request.Comments,
                     confirm.HlrCompletesAsynchronously,
                 },
@@ -198,7 +198,54 @@ public sealed class ApproveBackOfficeTelecomOperationHandler
         {
             ConfirmResult = confirm,
             PipelineState = pipelineState,
+            MessageAr = confirm.UserMessageAr ?? confirm.StatusHintAr,
         };
+    }
+
+    private async Task<ConfirmTelecomOperationRequestResult> ExecuteBackOfficeConfirmAsync(
+        TelecomOperationRequest operation,
+        string operationId,
+        string actorUserId,
+        CancellationToken cancellationToken)
+    {
+        await _confirmPermissionGate.EnsureCanConfirmAsync(operation, cancellationToken);
+        await _sellingLineEligibility.ValidateForConfirmAsync(operation, cancellationToken);
+
+        var workflowResult = await _workflow.ConfirmActivationAsync(operationId, actorUserId, cancellationToken);
+        EnsureBackOfficeApprovalPersisted(workflowResult);
+
+        var status = workflowResult.Operation?.Status ?? TelecomOperationStatus.Failed;
+        var (hintAr, hintEn) = ConfirmTelecomOperationStatusHints.Map(workflowResult, status);
+
+        return new ConfirmTelecomOperationRequestResult
+        {
+            Data = workflowResult.Operation,
+            BillingResult = workflowResult.BillingResult,
+            NetworkResult = workflowResult.NetworkResult,
+            IdempotentReplay = workflowResult.IdempotentReplay,
+            StatusHintAr = hintAr,
+            StatusHintEn = hintEn,
+            UserMessageAr = workflowResult.MessageAr ?? workflowResult.Message ?? hintAr,
+            UserMessageEn = workflowResult.MessageEn ?? workflowResult.Message ?? hintEn,
+            HlrCompletesAsynchronously = status is TelecomOperationStatus.Provisioning
+                or TelecomOperationStatus.PendingExternal,
+        };
+    }
+
+    private static void EnsureBackOfficeApprovalPersisted(TelecomActivationWorkflowResult result)
+    {
+        if (result.BillingResult is { Success: false })
+        {
+            throw new BusinessRuleViolationException(
+                result.MessageAr ?? result.Message ?? "فشل اعتماد الطلب — لم يكتمل التزامن مع CBS/HLR.");
+        }
+
+        if (result.Operation?.Status is not { } status
+            || BackOfficeTelecomPipelineState.IsActiveBackOfficeQueueStatus(status))
+        {
+            throw new BusinessRuleViolationException(
+                result.MessageAr ?? result.Message ?? "فشل اعتماد الطلب — الحالة لم تتغير.");
+        }
     }
 
     private static string BuildApprovalSummary(

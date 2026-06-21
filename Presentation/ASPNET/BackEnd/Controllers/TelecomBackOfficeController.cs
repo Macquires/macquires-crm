@@ -274,7 +274,7 @@ public class TelecomBackOfficeController : BaseApiController
         });
     }
 
-    [RequireFinanceBdrView]
+    [RequireBackOfficePendingQueueView]
     [HttpGet("GetPendingRequests")]
     public async Task<ActionResult<ApiSuccessResult<GetPendingBackOfficeOperationsResult>>> GetPendingRequestsAsync(
         [FromQuery] GetPendingBackOfficeOperationsRequest request,

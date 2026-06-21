@@ -119,6 +119,11 @@ public static class TelecomUniversalSearchRowComposer
     {
         foreach (var p in profiles)
         {
+            if (p.Customer == null)
+            {
+                continue;
+            }
+
             if (results.Any(r => r.SubscriberProfileId == p.Id))
             {
                 continue;

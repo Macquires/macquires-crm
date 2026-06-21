@@ -68,6 +68,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     ExecutiveWorkforcePanel.mount(document.getElementById('executiveWorkforceHost'));
     ExecutiveAlertsPanel.mount(document.getElementById('executiveAlertsHost'));
 
+    const paymentsHost = document.getElementById('executivePaymentsHost');
+    if (paymentsHost && typeof ExecutivePaymentsPanel !== 'undefined') {
+        ExecutivePaymentsPanel.mount(paymentsHost);
+    }
+
     const misHost = document.getElementById('executiveMisHost');
     if (misHost && typeof StrategicAnalyticsPanel !== 'undefined') {
         StrategicAnalyticsPanel.mount(misHost, { hideFilters: true, externalScope: true });

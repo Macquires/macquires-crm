@@ -656,10 +656,12 @@
         incompleteSwal(Swal, translate, key, fallback) {
             if (!Swal || !key) return;
             const t = typeof translate === 'function' ? translate : (k, fb) => fb || k;
+            const labels = global.TelecomI18n?.swalLabels?.() || {};
             Swal.fire({
                 icon: 'warning',
-                title: t('swal.incompleteTitle', 'Incomplete'),
+                title: t('swal.incompleteTitle', labels.incompleteTitle || 'Missing details'),
                 text: t(key, fallback || key),
+                confirmButtonText: labels.ok || 'OK',
             });
         },
     };

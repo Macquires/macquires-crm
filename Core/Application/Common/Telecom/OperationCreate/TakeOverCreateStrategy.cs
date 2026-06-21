@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.TakeOver;
 using Domain.Enums;
 
@@ -77,7 +78,7 @@ public sealed class TakeOverCreateStrategy : IOperationCreateStrategy
         entity.PaymentReference = string.IsNullOrWhiteSpace(request.PaymentReference)
             ? null
             : request.PaymentReference.Trim();
-        entity.ApprovalLevelRequired = "BackOffice";
+        BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
         entity.OldCustomerId = eligibility.OldCustomerId;
         entity.NewCustomerId = eligibility.NewCustomerId;
         entity.PriorSubscriberProfileId = request.SubscriberProfileId;

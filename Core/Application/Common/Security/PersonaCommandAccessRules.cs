@@ -30,12 +30,14 @@ public static class PersonaCommandAccessRules
                    || t.Name.Contains("SimulateVoiceAiIncomingCall", StringComparison.Ordinal)),
             [TelecomMenuPersona.CallCenter, TelecomMenuPersona.SysAdmin]),
         (t => t.Namespace?.Contains("TelecomBackOfficeManager", StringComparison.Ordinal) == true
+               && t.Name.Contains("EscalateTechnicalTicket", StringComparison.Ordinal),
+            [TelecomMenuPersona.CallCenter, TelecomMenuPersona.BackOffice, TelecomMenuPersona.SysAdmin]),
+        (t => t.Namespace?.Contains("TelecomBackOfficeManager", StringComparison.Ordinal) == true
                && (t.Name.Contains("ResolveTechnicalTicket", StringComparison.Ordinal)
                    || t.Name.Contains("UpdateTechnicalTicketStatus", StringComparison.Ordinal)
                    || t.Name.Contains("HlrResync", StringComparison.Ordinal)
                    || t.Name.Contains("ForceCbsSync", StringComparison.Ordinal)
                    || t.Name.Contains("QueryLiveNetworkStatus", StringComparison.Ordinal)
-                   || t.Name.Contains("EscalateTechnicalTicket", StringComparison.Ordinal)
                    || t.Name.Contains("ToggleProductOffering", StringComparison.Ordinal)),
             [TelecomMenuPersona.BackOffice, TelecomMenuPersona.SysAdmin]),
         (t => t.Name.Contains("ExecuteCustomer360TechnicalAction", StringComparison.Ordinal),

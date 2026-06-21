@@ -1157,11 +1157,14 @@
                         <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
                         <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
                     </select>
-                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-rcn-effective-date" />
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-rcn-effective-date" />
+                    <label class="form-label small fw-semibold mt-2">{{ telecomT('suspension.kycDocument', 'Subscriber ID') }} *</label>
+                    <input type="file" class="form-control form-control-sm mb-0" accept=".pdf,.jpg,.jpeg,.png,.webp" data-testid="list-rcn-identity-upload" v-on:change="onListRcnIdentityFileChange" :disabled="lineActionModal.busy" />
+                    <p v-if="!lineActionModal.rcnIdentityFile" class="small text-danger mb-0 mt-1">{{ telecomT('suspension.kycRequired', 'Upload document') }}</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
-                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy" v-on:click="submitReconnect"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.rcnRequiresBackOffice ? telecomT('common.sendBackOffice', 'Back office') : telecomT('c360.confirmReconnect', 'Confirm') }}</button>
+                    <button type="button" class="btn btn-danger" :disabled="lineActionModal.busy || !lineActionModal.rcnIdentityFile" v-on:click="submitReconnect"><span v-if="lineActionModal.busy" class="spinner-border spinner-border-sm me-1"></span>{{ lineActionModal.rcnRequiresBackOffice ? telecomT('common.sendBackOffice', 'Back office') : telecomT('c360.confirmReconnect', 'Confirm') }}</button>
                 </div>
             </div>
         </div>
@@ -1315,7 +1318,9 @@
                         <option value="immediate">{{ telecomT('bss.effectiveImmediate', 'Immediate') }}</option>
                         <option value="scheduled">{{ telecomT('bss.effectiveScheduled', 'Scheduled') }}</option>
                     </select>
-                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-0" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-dev-effective-date" />
+                    <input v-if="lineActionModal.bssEffectiveMode === 'scheduled'" type="date" class="form-control form-control-sm mb-2" v-model="lineActionModal.bssEffectiveDateLocal" :min="listBssEffectiveToday()" :disabled="lineActionModal.busy" data-testid="list-dev-effective-date" />
+                    <label class="form-label small fw-semibold mt-2">{{ telecomT('suspension.kycDocument', 'Subscriber ID') }} *</label>
+                    <input type="file" class="form-control form-control-sm mb-0" accept=".pdf,.jpg,.jpeg,.png,.webp" v-on:change="onListSusIdentityFileChange" :disabled="lineActionModal.busy" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="lineActionModal.busy">{{ telecomT('common.cancel', 'Cancel') }}</button>
@@ -1408,6 +1413,7 @@
     <script src="~/lib/indotalent/telecom-reconnect-clearance.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-offer-detail.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-bss-wizard-clearance.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-wizard-confirm.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-vas-toggle.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-recharge-flow.js" asp-append-version="true"></script>
     <script src="~/FrontEnd/Pages/Customers/CustomerList.cshtml.js"></script>

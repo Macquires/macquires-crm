@@ -43,3 +43,11 @@ public sealed class RequireAdminAuditViewAttribute : HasAnyPermissionAttribute
     {
     }
 }
+
+public sealed class RequireOrgUnitReadAttribute : HasAnyPermissionAttribute
+{
+    public RequireOrgUnitReadAttribute()
+        : base(AdminPermissionSets.OrgUnitReadAny)
+    {
+    }
+}

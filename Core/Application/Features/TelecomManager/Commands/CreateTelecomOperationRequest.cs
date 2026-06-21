@@ -605,6 +605,19 @@ public class CreateTelecomOperationRequestHandler : IRequestHandler<CreateTeleco
         await createStrategy.ApplyToEntityAsync(buildContext, cancellationToken);
         entity.SimInventoryId = string.IsNullOrEmpty(buildContext.SimInventoryId) ? null : buildContext.SimInventoryId;
 
+        if (!string.IsNullOrWhiteSpace(entity.MsisdnAssetId))
+        {
+            var msisdn = await _queryContext.MsisdnAsset.AsNoTracking()
+                .Where(m => !m.IsDeleted && m.Id == entity.MsisdnAssetId)
+                .Select(m => m.Msisdn)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (TelecomDemoMsisdn.IsWellKnown(msisdn ?? string.Empty))
+            {
+                // National showcase anchors must stay visible in every branch back-office queue.
+                entity.BranchId = null;
+            }
+        }
+
         await _repository.CreateAsync(entity, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
 

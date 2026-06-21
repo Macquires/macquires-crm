@@ -11,6 +11,7 @@ body.syr-tel-portal > .syr-portal-shell {
     max-width: 100%;
     min-height: 100vh;
     overflow-x: clip;
+    overflow-y: visible;
     margin: 0;
     padding: 0;
 }
@@ -36,6 +37,8 @@ body.syr-tel-portal .content {
     flex-direction: column;
     box-sizing: border-box !important;
     min-height: 100vh;
+    overflow-x: clip;
+    overflow-y: visible;
     margin-left: unset !important;
     margin-right: unset !important;
     background: var(--sys-bg, #f8fafc);
@@ -241,6 +244,47 @@ body.syr-tel-portal .syriatel-unified-header .dropdown-menu:not(.show) {
 
 body.syr-tel-portal .syriatel-unified-header .dropdown-menu.show {
     display: block !important;
+}
+
+body.syr-tel-portal .syriatel-unified-header {
+    overflow: visible !important;
+    z-index: 1035;
+}
+
+body.syr-tel-portal .syriatel-unified-header .dropdown-menu {
+    z-index: 1060;
+    min-width: 11rem;
+    border: 1px solid var(--sys-border);
+    box-shadow: var(--sys-shadow-card-hover, 0 8px 24px rgba(15, 23, 42, 0.12));
+}
+
+body.syr-tel-portal .syriatel-unified-header .dropdown-item {
+    color: var(--sys-text-main) !important;
+    padding: 0.5rem 1rem;
+}
+
+body.syr-tel-portal .syriatel-unified-header .dropdown-item:hover,
+body.syr-tel-portal .syriatel-unified-header .dropdown-item:focus {
+    background-color: var(--sys-bg) !important;
+    color: var(--sys-brand-red) !important;
+}
+
+body.syr-tel-portal .syriatel-header-actions .syr-logout-btn {
+    white-space: nowrap;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.65rem;
+    border-color: var(--sys-border);
+    color: var(--sys-text-main) !important;
+}
+
+body.syr-tel-portal .syriatel-header-actions .syr-logout-btn:hover {
+    border-color: var(--sys-brand-red);
+    color: var(--sys-brand-red) !important;
+    background: var(--sys-brand-red-ring, rgba(200, 16, 46, 0.08)) !important;
+}
+
+body.syr-tel-portal .syriatel-header-actions .nav-item.dropdown {
+    position: relative;
 }
 
 body.syr-tel-portal .sidebar.syr-sidebar {

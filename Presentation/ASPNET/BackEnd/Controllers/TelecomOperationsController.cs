@@ -245,6 +245,22 @@ public class TelecomOperationsController : BaseApiController
             Content = response
         });
     }
+
+    [RequireTelecomCreate]
+    [EnableRateLimiting("telecom-financial")]
+    [HttpPost("ExecutePayAndReconnect")]
+    public async Task<ActionResult<ApiSuccessResult<ExecutePayAndReconnectResult>>> ExecutePayAndReconnectAsync(
+        ExecutePayAndReconnectRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _sender.Send(request, cancellationToken);
+        return Ok(new ApiSuccessResult<ExecutePayAndReconnectResult>
+        {
+            Code = StatusCodes.Status200OK,
+            Message = nameof(ExecutePayAndReconnectAsync),
+            Content = response
+        });
+    }
 }
 
 public sealed class UploadKycDocumentResponse

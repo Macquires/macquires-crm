@@ -107,6 +107,14 @@ public class CreateTechnicalTicketHandler : IRequestHandler<CreateTechnicalTicke
                 : request.CreatedByChannel.Trim(),
         };
 
+        if (!string.IsNullOrEmpty(customerId))
+        {
+            entity.BranchId = await _query.Customer.AsNoTracking().IsDeletedEqualTo()
+                .Where(c => c.Id == customerId)
+                .Select(c => c.BranchId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         await _repository.CreateAsync(entity, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
 

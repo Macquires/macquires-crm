@@ -576,27 +576,6 @@ function initTelecomOperatorSlimDashboard() {
             if (typeof SyrBentoCockpit !== 'undefined' && host) {
                 await SyrBentoCockpit.mount(host);
             }
-            if (typeof ExecutiveExceptionsPanel !== 'undefined') {
-                await ExecutiveExceptionsPanel.initFromDashboard();
-            }
-            if (typeof MisReportsPanel !== 'undefined') {
-                await MisReportsPanel.initFromDashboard();
-            }
-            if (typeof StrategicAnalyticsPanel !== 'undefined') {
-                await StrategicAnalyticsPanel.initFromDashboard();
-                document.querySelectorAll('.syr-bento-single-row .syr-bento-card').forEach((card) => {
-                    const cta = card.querySelector('a.syr-bento-cta[href*="#strategic-analytics"]');
-                    if (cta) {
-                        card.style.display = 'none';
-                    }
-                });
-            }
-            if (typeof SupervisorInterventionPanel !== 'undefined') {
-                await SupervisorInterventionPanel.initFromDashboard();
-            }
-            if (typeof BranchGeoHeatmapPanel !== 'undefined') {
-                await BranchGeoHeatmapPanel.initFromDashboard();
-            }
         } catch (e) {
             console.error('slim dash', e);
             if (host) {

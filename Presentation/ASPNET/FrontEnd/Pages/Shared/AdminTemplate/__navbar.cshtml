@@ -2,7 +2,7 @@
 @inject IHtmlLocalizer<SharedResources> L
 @{
     var fullName = "Loading...";
-    var avatarUrl = "/noimage.png";
+    var avatarUrl = Url.Content("~/noimage.png");
     var currency = "Loading...";
     var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
@@ -28,6 +28,14 @@
             <div class="nav-item syriatel-lang-toggle btn-group btn-group-sm" role="group" aria-label="@L["Nav_LangToggleAria"]">
                 <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="ar" id="syriatelLangAr">@L["Nav_LangArabic"]</button>
                 <button type="button" class="btn btn-outline-secondary syriatel-lang-btn px-2" data-syriatel-lang="en" id="syriatelLangEn">@L["Nav_LangEnglish"]</button>
+            </div>
+            <div class="nav-item">
+                <a asp-area="" asp-page="/Accounts/Logout"
+                   class="btn btn-outline-secondary btn-sm syr-logout-btn d-inline-flex align-items-center gap-1"
+                   title="@L["Nav_Logout"]">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span class="d-none d-md-inline">@L["Nav_Logout"]</span>
+                </a>
             </div>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle syriatel-profile-toggle" data-bs-toggle="dropdown" aria-expanded="false">

@@ -65,6 +65,11 @@ public static class PermissionCatalog
     public const string NetworkTechnicalView = "Permission.Network.Technical.View";
     public const string NetworkTechnicalSync = "Permission.Network.Technical.Sync";
 
+    // Hub surface morphing (PBAC buckets) — drive role-independent Hub tile rendering.
+    public const string TelecomHubFrontline = "telecom.hub.frontline";
+    public const string TelecomHubBackOffice = "telecom.hub.backoffice";
+    public const string TelecomHubSupervisor = "telecom.hub.supervisor";
+
     // Bulk engine
     public const string BulkImportUpload = "bulk.import.upload";
     public const string BulkImportMonitor = "bulk.import.monitor";
@@ -127,6 +132,10 @@ public static class PermissionCatalog
         new(NetworkTechnicalView, "BackOffice.Security", "رؤية تبويب العمليات الفنية والشبكة", "View Technical Operations Tabs"),
         new(NetworkTechnicalSync, "BackOffice.Security", "تنفيذ أوامر المزامنة والشبكة الصلبة", "Invoke Force Sync and HLR Reprovisioning"),
 
+        new(TelecomHubFrontline, "Telecom.Hub", "سطح الـ Hub: تنفيذ الخط الأمامي (نقطة البيع)", "Hub surface: front-line POS execution tiles"),
+        new(TelecomHubBackOffice, "Telecom.Hub", "سطح الـ Hub: طوابير العمليات الخلفية والامتثال", "Hub surface: back-office / compliance queue tiles"),
+        new(TelecomHubSupervisor, "Telecom.Hub", "سطح الـ Hub: عمليات الإشراف والبنية التقنية", "Hub surface: supervisor / technical operations tiles"),
+
         new(BulkImportUpload, "BulkImport", "رفع ملفات الاستيراد الضخم", "Upload bulk import files"),
         new(BulkImportMonitor, "BulkImport", "مراقبة الاستيراد الضخم", "Monitor bulk import jobs and counters"),
     ];
@@ -155,16 +164,22 @@ public static class PermissionCatalog
             [TelecomEnterpriseRoleMatrix.RoleManagement] =
             [
                 CustomerView,
+                TelecomCustomerProvisioning,
                 TelecomReportsMis,
                 TelecomLineRecharge,
                 BulkImportMonitor,
                 AdminAuditView,
+                TelecomHubSupervisor,
             ],
             [TelecomEnterpriseRoleMatrix.RoleBackOffice] =
             [
                 BulkImportUpload,
                 BulkImportMonitor,
                 TelecomAssetManage,
+                FinanceBdrView,
+                FinanceBdrExecute,
+                NetworkTechnicalView,
+                NetworkTechnicalSync,
                 TelecomLineMigrate,
                 TelecomLineChangeGsm,
                 TelecomLineTransferOwnership,
@@ -196,6 +211,7 @@ public static class PermissionCatalog
                 TelecomLineCollectionManage,
                 TelecomLineRecharge,
                 CustomerView,
+                TelecomHubBackOffice,
             ],
             [TelecomEnterpriseRoleMatrix.RoleShowroom] =
             [
@@ -223,12 +239,14 @@ public static class PermissionCatalog
                 TelecomLineCollectionRequest,
                 TelecomLineRecharge,
                 BulkImportMonitor,
+                TelecomHubFrontline,
             ],
             [TelecomEnterpriseRoleMatrix.RoleCallCenter] =
             [
                 CustomerView,
                 TelecomVasToggle,
                 TelecomCustomerProvisioning,
+                TelecomTicketEscalate,
             ],
         };
 

@@ -31,7 +31,7 @@ public sealed class TelecomHubUiSmokeTests
             await PlaywrightUiHelper.GotoTelecomHubAsync(page, _fixture.PublicBaseUrl);
 
             await Assertions.Expect(page.Locator("#telecomSearchInput")).ToBeVisibleAsync();
-            await Assertions.Expect(page.Locator("#formcard")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator(".telecom-hub-tiles-section")).ToBeVisibleAsync();
         }
         finally
         {

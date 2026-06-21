@@ -327,7 +327,7 @@ public sealed class Customer360SubscriptionAssembler : ICustomer360SubscriptionA
                 profile?.LoyaltyPoints ?? 0,
                 profile?.LoyaltyTier,
                 simulateDemoWallet ? profile?.PrepaidBalance : profile?.PrepaidBalance ?? 0m,
-                simulateDemoWallet ? profile?.PostpaidCreditLimit : null,
+                profile?.PostpaidCreditLimit is < 0 ? profile.PostpaidCreditLimit : simulateDemoWallet ? profile?.PostpaidCreditLimit : null,
                 profile?.ChurnRiskScore,
                 simStatusLabel,
                 imsi,

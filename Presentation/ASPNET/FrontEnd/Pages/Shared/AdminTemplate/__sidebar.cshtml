@@ -1,7 +1,7 @@
 @using System.Globalization
 @{
     var userEmail = "Loading...";
-    var avatarUrl = "/noimage.png";
+    var avatarUrl = Url.Content("~/noimage.png");
     var uiLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var uiRtl = string.Equals(uiLang, "ar", StringComparison.OrdinalIgnoreCase);
 }

@@ -1410,3 +1410,58 @@ body.syr-tel-portal .sidebar.syr-sidebar::-webkit-scrollbar {
 .telecom-premium-page .geo-heatmap-canvas {
     border-color: var(--sys-border) !important;
 }
+
+/* ── Executive visual governance: status color parity ───────────────────
+   Active/Success = Emerald, Warning/Pending = Amber, Critical/Drift = Crimson */
+:root {
+    --sys-status-emerald: #047857;
+    --sys-status-emerald-bg: #ecfdf5;
+    --sys-status-amber: #b45309;
+    --sys-status-amber-bg: #fffbeb;
+    --sys-status-crimson: #be123c;
+    --sys-status-crimson-bg: #fff1f2;
+}
+
+.telecom-premium-page .status-emerald { color: var(--sys-status-emerald) !important; }
+.telecom-premium-page .status-amber { color: var(--sys-status-amber) !important; }
+.telecom-premium-page .status-crimson { color: var(--sys-status-crimson) !important; }
+
+.telecom-premium-page .badge.status-emerald,
+.telecom-premium-page .badge-status-emerald {
+    color: var(--sys-status-emerald) !important;
+    background: var(--sys-status-emerald-bg) !important;
+    border: 1px solid color-mix(in srgb, var(--sys-status-emerald) 30%, transparent);
+}
+
+.telecom-premium-page .badge.status-amber,
+.telecom-premium-page .badge-status-amber {
+    color: var(--sys-status-amber) !important;
+    background: var(--sys-status-amber-bg) !important;
+    border: 1px solid color-mix(in srgb, var(--sys-status-amber) 30%, transparent);
+}
+
+.telecom-premium-page .badge.status-crimson,
+.telecom-premium-page .badge-status-crimson {
+    color: var(--sys-status-crimson) !important;
+    background: var(--sys-status-crimson-bg) !important;
+    border: 1px solid color-mix(in srgb, var(--sys-status-crimson) 30%, transparent);
+}
+
+/* Scorecard hero cards — the 4 "3-second pulse" strategic KPIs get visual primacy */
+.telecom-premium-page .scorecard-hero-card {
+    border-top: 3px solid var(--sys-brand-red);
+    box-shadow: var(--sys-shadow-card-hover);
+}
+
+.telecom-premium-page .scorecard-hero-card .strategic-metric-xl {
+    font-size: 2.35rem;
+    font-weight: 700;
+}
+
+/* Sticky unified scope bar — keeps the GM's geographic context pinned while scrolling */
+.telecom-premium-page .executive-scope-bar {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 20;
+    backdrop-filter: blur(6px);
+}

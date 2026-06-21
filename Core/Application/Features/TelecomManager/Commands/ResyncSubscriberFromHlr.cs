@@ -17,6 +17,9 @@ public class ResyncSubscriberFromHlrRequest : IRequest<HlrResyncResult>, IRequir
     public string? MsisdnAssetId { get; init; }
     public string? Msisdn { get; init; }
 
+    /// <summary>When true, loads profile/asset across branch RLS (back-office ticket sync).</summary>
+    public bool BypassBranchScope { get; init; }
+
     public IReadOnlyList<string> PermissionKeys => TelecomOperationPermissionSets.NetworkHlrAny;
 }
 
@@ -30,6 +33,7 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
     private readonly IQueryContext _query;
     private readonly ICommandRepository<Domain.Entities.SubscriberProfile> _profileRepository;
     private readonly IHLRLiveStatusService _hlr;
+    private readonly IBillingSystemIntegration _billing;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOperatorContext _operator;
 
@@ -37,12 +41,14 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
         IQueryContext query,
         ICommandRepository<Domain.Entities.SubscriberProfile> profileRepository,
         IHLRLiveStatusService hlr,
+        IBillingSystemIntegration billing,
         IUnitOfWork unitOfWork,
         IOperatorContext operatorContext)
     {
         _query = query;
         _profileRepository = profileRepository;
         _hlr = hlr;
+        _billing = billing;
         _unitOfWork = unitOfWork;
         _operator = operatorContext;
     }
@@ -51,22 +57,38 @@ public class ResyncSubscriberFromHlrHandler : IRequestHandler<ResyncSubscriberFr
     {
         var actorUserId = OperatorActor.RequireUserId(_operator);
 
-        var profile = await _profileRepository.GetAsync(request.SubscriberProfileId, cancellationToken)
-            ?? throw new InvalidOperationException("Subscriber profile not found.");
+        var profile = request.BypassBranchScope
+            ? await _profileRepository.GetBypassingBranchScopeAsync(request.SubscriberProfileId, cancellationToken)
+            : await _profileRepository.GetAsync(request.SubscriberProfileId, cancellationToken);
+        if (profile == null)
+        {
+            throw new InvalidOperationException("Subscriber profile not found.");
+        }
 
         var asset = await SubscriberLineResolver.ResolveAssetAsync(
             _query,
             profile.Id,
             request.MsisdnAssetId,
             request.Msisdn,
+            request.BypassBranchScope,
             cancellationToken);
         var msisdn = asset.Msisdn;
 
         var live = await _hlr.QueryLiveStatusAsync(msisdn, profile.OperationalStatus.ToString(), cancellationToken);
+        var outstanding = await _billing.GetOutstandingBalanceAsync(msisdn, cancellationToken);
 
         if (live.HlrSubscriberState == "ACTIVE" && profile.OperationalStatus != SubscriberOperationalStatus.Active)
         {
-            profile.Activate();
+            if (outstanding < 0)
+            {
+                // Billing block: do not lift CRM to Active while CBS shows overdue debt.
+                await _hlr.MarkMockSubscriberSuspendedAsync(msisdn, cancellationToken);
+                profile.Suspend(msisdn);
+            }
+            else
+            {
+                profile.Activate();
+            }
         }
         else if (live.HlrSubscriberState == "SUSPENDED")
         {

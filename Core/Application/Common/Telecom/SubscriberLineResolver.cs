@@ -54,16 +54,30 @@ public static class SubscriberLineResolver
             asset);
     }
 
-    public static async Task<MsisdnAsset> ResolveAssetAsync(
+    public static Task<MsisdnAsset> ResolveAssetAsync(
         IQueryContext query,
         string subscriberProfileId,
         string? msisdnAssetId = null,
         string? msisdn = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ResolveAssetAsync(query, subscriberProfileId, msisdnAssetId, msisdn, bypassBranchScope: false, cancellationToken);
+
+    public static async Task<MsisdnAsset> ResolveAssetAsync(
+        IQueryContext query,
+        string subscriberProfileId,
+        string? msisdnAssetId,
+        string? msisdn,
+        bool bypassBranchScope,
+        CancellationToken cancellationToken)
     {
         var canonicalMsisdn = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(msisdn);
+        var bypass = bypassBranchScope ? query as IBranchScopeBypassQuery : null;
 
-        var subscriptions = query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo()
+        var subscriptions = bypass != null
+            ? bypass.TelecomSubscriptionsIgnoringBranchScope
+            : query.TelecomSubscription.AsNoTracking().IsDeletedEqualTo();
+
+        subscriptions = subscriptions.AsNoTracking()
             .Where(s => s.SubscriberProfileId == subscriberProfileId);
 
         if (!string.IsNullOrWhiteSpace(msisdnAssetId))
@@ -82,12 +96,21 @@ public static class SubscriberLineResolver
             .Select(s => s.MsisdnAssetId)
             .FirstOrDefaultAsync(cancellationToken);
 
+        var msisdnAssets = bypass != null
+            ? bypass.MsisdnAssetsIgnoringBranchScope
+            : query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo();
+
         if (string.IsNullOrEmpty(assetId) && !string.IsNullOrEmpty(canonicalMsisdn))
         {
-            assetId = await query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            assetId = await msisdnAssets.AsNoTracking()
                 .Where(m => m.Msisdn == canonicalMsisdn && m.SubscriberProfileId == subscriberProfileId)
                 .Select(m => m.Id)
                 .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (string.IsNullOrEmpty(assetId) && !string.IsNullOrWhiteSpace(msisdnAssetId))
+        {
+            assetId = msisdnAssetId;
         }
 
         if (string.IsNullOrEmpty(assetId))
@@ -95,7 +118,7 @@ public static class SubscriberLineResolver
             throw new InvalidOperationException("No active MSISDN for profile.");
         }
 
-        return await query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+        return await msisdnAssets.AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == assetId, cancellationToken)
             ?? throw new InvalidOperationException("MSISDN asset not found.");
     }

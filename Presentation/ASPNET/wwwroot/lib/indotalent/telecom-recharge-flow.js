@@ -6,6 +6,88 @@
     'use strict';
 
     const PaymentType = { Wallet: 0, Voucher: 1 };
+    const DEFAULT_AMOUNT_MAX = 1000000;
+
+    function escapeHtml(value) {
+        if (value == null) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /** Arabic/Persian digits → Latin; strip spaces and grouping separators. */
+    function normalizeDigits(value) {
+        return String(value ?? '')
+            .replace(/[٠-٩]/g, (ch) => String(ch.charCodeAt(0) - 0x0660))
+            .replace(/[۰-۹]/g, (ch) => String(ch.charCodeAt(0) - 0x06f0))
+            .replace(/[\s,٬،]/g, '')
+            .trim();
+    }
+
+    function parsePositiveAmount(value) {
+        const raw = normalizeDigits(value);
+        if (!raw) return { ok: false, code: 'empty' };
+        if (!/^\d+(\.\d+)?$/.test(raw)) return { ok: false, code: 'invalid' };
+        const n = Number(raw);
+        if (!Number.isFinite(n) || n <= 0) return { ok: false, code: 'invalid' };
+        return { ok: true, value: n, raw };
+    }
+
+    function swalDefaults(labels) {
+        const i18n = global.TelecomI18n?.swalLabels?.() || {};
+        return {
+            cancelButtonText: labels.cancelBtn || i18n.cancel || 'Cancel',
+            confirmButtonColor: '#c8102e',
+            customClass: {
+                validationMessage: 'text-start fw-semibold text-danger',
+                input: 'text-center fs-5',
+            },
+        };
+    }
+
+    function amountValidationMessage(result, labels, maxAmount) {
+        const max = maxAmount || DEFAULT_AMOUNT_MAX;
+        if (result.code === 'empty') {
+            return labels.amountEmpty || labels.invalidAmount || 'Please enter the amount.';
+        }
+        if (result.code === 'invalid') {
+            return labels.amountInvalid || labels.invalidAmount || 'Enter a valid amount greater than zero.';
+        }
+        if (result.code === 'max') {
+            const tpl = labels.amountTooHigh || labels.invalidAmount || 'Maximum is {max} SYP.';
+            return tpl.replace(/\{max\}/g, String(max));
+        }
+        return labels.invalidAmount || 'Invalid amount';
+    }
+
+    function validateAmountInput(value, labels) {
+        const parsed = parsePositiveAmount(value);
+        if (!parsed.ok) {
+            return amountValidationMessage(parsed, labels, labels.amountMax || DEFAULT_AMOUNT_MAX);
+        }
+        const max = Number(labels.amountMax || DEFAULT_AMOUNT_MAX);
+        if (parsed.value > max) {
+            return amountValidationMessage({ code: 'max' }, labels, max);
+        }
+        return undefined;
+    }
+
+    function validateMsisdnInput(value, labels) {
+        const digits = normalizeDigits(value).replace(/\D/g, '');
+        if (digits.length < 8) {
+            return labels.msisdnInvalid || labels.invalidMsisdn || 'Enter a valid line number (8+ digits).';
+        }
+        return undefined;
+    }
+
+    function validateRequiredText(value, labels) {
+        if (!String(value ?? '').trim()) {
+            return labels.refEmpty || labels.refRequired || labels.required || 'This field is required.';
+        }
+        return undefined;
+    }
 
     async function pollPaymentDetail(axiosManager, paymentId, maxAttempts = 12) {
         for (let i = 0; i < maxAttempts; i++) {
@@ -31,8 +113,13 @@
      */
     async function promptMethod(swal, labels) {
         if (!swal) return null;
+        const hint = labels.methodHint
+            ? `<p class="small text-muted text-start mb-0">${escapeHtml(labels.methodHint)}</p>`
+            : '';
         const { value } = await swal.fire({
+            ...swalDefaults(labels),
             title: labels.methodTitle,
+            html: hint || undefined,
             input: 'radio',
             inputOptions: {
                 wallet: labels.wallet,
@@ -41,37 +128,56 @@
             inputValue: 'wallet',
             showCancelButton: true,
             confirmButtonText: labels.continueBtn,
-            cancelButtonText: labels.cancelBtn,
         });
         return value || null;
     }
 
     async function promptWallet(swal, labels) {
         const amountRes = await swal.fire({
+            ...swalDefaults(labels),
             title: labels.amountTitle,
-            input: 'number',
-            inputPlaceholder: labels.amountPlaceholder || '15000',
+            input: 'text',
+            inputValue: '',
+            inputAttributes: {
+                inputmode: 'decimal',
+                autocapitalize: 'off',
+                autocorrect: 'off',
+                placeholder: labels.amountPlaceholder || '15000',
+                'aria-label': labels.amountTitle,
+            },
+            inputLabel: labels.amountHint || '',
+            footer: labels.amountFooter
+                ? `<span class="small text-muted">${escapeHtml(labels.amountFooter)}</span>`
+                : undefined,
             showCancelButton: true,
             confirmButtonText: labels.continueBtn,
-            inputValidator: (v) => {
-                const n = parseFloat(v);
-                if (!v || Number.isNaN(n) || n <= 0) return labels.invalidAmount;
-            },
+            inputValidator: (v) => validateAmountInput(v, labels),
         });
-        if (!amountRes.value) return null;
+        if (!amountRes.value && amountRes.value !== 0) return null;
+
+        const parsed = parsePositiveAmount(amountRes.value);
+        if (!parsed.ok) return null;
+
         const refRes = await swal.fire({
+            ...swalDefaults(labels),
             title: labels.paymentRefTitle,
             input: 'text',
-            inputPlaceholder: labels.paymentRefPlaceholder || '',
+            inputAttributes: {
+                autocapitalize: 'off',
+                placeholder: labels.paymentRefPlaceholder || 'RCPT-2026-XXXX',
+                'aria-label': labels.paymentRefTitle,
+            },
+            inputLabel: labels.refHint || '',
             showCancelButton: true,
             confirmButtonText: labels.confirmBtn,
-            inputValidator: (v) => (!v || !String(v).trim() ? labels.refRequired : undefined),
+            inputValidator: (v) => validateRequiredText(v, labels),
         });
         if (!refRes.value) return null;
+
         return {
             createBody: {
                 type: PaymentType.Wallet,
-                amount: parseFloat(amountRes.value),
+                amount: parsed.value,
                 paymentChannel: 1,
                 serviceChannel: 0,
             },
@@ -81,12 +187,21 @@
 
     async function promptVoucher(axiosManager, swal, labels) {
         const codeRes = await swal.fire({
+            ...swalDefaults(labels),
             title: labels.voucherCodeTitle,
             input: 'text',
-            inputPlaceholder: labels.voucherPlaceholder || '',
+            inputAttributes: {
+                autocapitalize: 'off',
+                placeholder: labels.voucherPlaceholder || '',
+            },
+            inputLabel: labels.voucherHint || '',
             showCancelButton: true,
             confirmButtonText: labels.validateBtn,
-            inputValidator: (v) => (!v || !String(v).trim() ? labels.voucherRequired : undefined),
+            inputValidator: (v) => validateRequiredText(v, {
+                ...labels,
+                refEmpty: labels.voucherRequired,
+                refRequired: labels.voucherRequired,
+            }),
         });
         if (!codeRes.value) return null;
         const voucherCode = String(codeRes.value).trim();
@@ -95,7 +210,9 @@
         if (!(val?.valid ?? val?.Valid)) {
             await swal.fire({
                 icon: 'error',
-                title: val?.messageAr || val?.MessageAr || labels.voucherInvalid,
+                title: labels.voucherInvalidTitle || labels.voucherInvalid,
+                text: val?.messageAr || val?.MessageAr || labels.voucherInvalid,
+                confirmButtonColor: '#c8102e',
             });
             return null;
         }
@@ -105,7 +222,9 @@
                 title: labels.voucherConfirmTitle,
                 text: val?.messageAr || val?.MessageAr || '',
                 showCancelButton: true,
+                cancelButtonText: labels.cancelBtn || 'Cancel',
                 confirmButtonText: labels.voucherConfirmBtn,
+                confirmButtonColor: '#c8102e',
             });
             if (!ok.isConfirmed) return null;
         }
@@ -171,6 +290,12 @@
 
     global.TelecomRechargeFlow = {
         PaymentType,
+        DEFAULT_AMOUNT_MAX,
+        normalizeDigits,
+        parsePositiveAmount,
+        validateAmountInput,
+        validateMsisdnInput,
+        validateRequiredText,
         pollPaymentDetail,
         runFlow,
     };

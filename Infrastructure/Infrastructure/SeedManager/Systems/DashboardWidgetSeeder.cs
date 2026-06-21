@@ -40,9 +40,9 @@ public class DashboardWidgetSeeder
         var patches = new[]
         {
             W("exec_branch_heat", "حرارة الفروع", "Branch heat", "bi-geo-alt", "branch_heat_top", "Executive", DashboardWidgetGridSize.Large, 13, 120, kind: DashboardWidgetKind.StatusList),
-            W("exec_exceptions", "تنبيهات الإدارة", "Executive alerts", "bi-exclamation-triangle", null, "Executive", DashboardWidgetGridSize.Medium, 21, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#executive-exceptions", ctaAr: "عرض التنبيهات"),
-            W("exec_geo_map", "خريطة الفروع", "Branch map", "bi-map", null, "Executive", DashboardWidgetGridSize.Medium, 22, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#branch-geo-heatmap", ctaAr: "الخريطة"),
-            W("exec_supervisor", "تدقيق المشرف", "Supervisor audit", "bi-person-check", null, "Executive", DashboardWidgetGridSize.Medium, 23, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#supervisor-interventions", ctaAr: "التدقيق"),
+            W("exec_exceptions", "تنبيهات الإدارة", "Executive alerts", "bi-exclamation-triangle", null, "Executive", DashboardWidgetGridSize.Medium, 21, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=alerts", ctaAr: "عرض التنبيهات"),
+            W("exec_geo_map", "خريطة الفروع", "Branch map", "bi-map", null, "Executive", DashboardWidgetGridSize.Medium, 22, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=mis", ctaAr: "الخريطة"),
+            W("exec_supervisor", "تدقيق المشرف", "Supervisor audit", "bi-person-check", null, "Executive", DashboardWidgetGridSize.Medium, 23, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=alerts", ctaAr: "التدقيق"),
         };
 
         var added = false;
@@ -70,16 +70,13 @@ public class DashboardWidgetSeeder
         W("exec_subscriptions", "خطوط نشطة", "Active lines", "bi-sim", "active_subscriptions", "Executive", DashboardWidgetGridSize.Medium, 11, 60),
         W("exec_network", "نبض الشبكة", "Network pulse", "bi-activity", "network_pulse", "Executive", DashboardWidgetGridSize.Large, 12, 30),
         W("exec_branch_heat", "حرارة الفروع", "Branch heat", "bi-geo-alt", "branch_heat_top", "Executive", DashboardWidgetGridSize.Large, 13, 120, kind: DashboardWidgetKind.StatusList),
-        W("exec_mis", "التحليلات الاستراتيجية", "Strategic analytics", "bi-graph-up-arrow", null, "Executive", DashboardWidgetGridSize.Medium, 20, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#strategic-analytics", ctaAr: "عرض التحليلات"),
-        W("exec_exceptions", "تنبيهات الإدارة", "Executive alerts", "bi-exclamation-triangle", null, "Executive", DashboardWidgetGridSize.Medium, 21, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#executive-exceptions", ctaAr: "عرض التنبيهات"),
-        W("exec_geo_map", "خريطة الفروع", "Branch map", "bi-map", null, "Executive", DashboardWidgetGridSize.Medium, 22, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#branch-geo-heatmap", ctaAr: "الخريطة"),
-        W("exec_supervisor", "تدقيق المشرف", "Supervisor audit", "bi-person-check", null, "Executive", DashboardWidgetGridSize.Medium, 23, kind: DashboardWidgetKind.Cta, ctaUrl: "/Dashboards/DefaultDashboard#supervisor-interventions", ctaAr: "التدقيق"),
+        W("exec_mis", "التحليلات الاستراتيجية", "Strategic analytics", "bi-graph-up-arrow", null, "Executive", DashboardWidgetGridSize.Medium, 20, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=mis", ctaAr: "عرض التحليلات"),
+        W("exec_exceptions", "تنبيهات الإدارة", "Executive alerts", "bi-exclamation-triangle", null, "Executive", DashboardWidgetGridSize.Medium, 21, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=alerts", ctaAr: "عرض التنبيهات"),
+        W("exec_geo_map", "خريطة الفروع", "Branch map", "bi-map", null, "Executive", DashboardWidgetGridSize.Medium, 22, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=mis", ctaAr: "الخريطة"),
+        W("exec_supervisor", "تدقيق المشرف", "Supervisor audit", "bi-person-check", null, "Executive", DashboardWidgetGridSize.Medium, 23, kind: DashboardWidgetKind.Cta, ctaUrl: "/Executive/CommandCenter?tab=alerts", ctaAr: "التدقيق"),
 
-        // CallCenter
+        // CallCenter — search-first; no NOC / network KPI tiles
         W("cc_search", "بحث عالمي", "Omni search", "bi-search", null, "CallCenter", DashboardWidgetGridSize.Full, 1, kind: DashboardWidgetKind.OmniSearch),
-        W("cc_pending", "عمليات معلقة", "Pending ops", "bi-hourglass-split", "pending_operations", "CallCenter", DashboardWidgetGridSize.Medium, 10, 30),
-        W("cc_network", "حالة التكامل", "Integration", "bi-broadcast", "network_pulse", "CallCenter", DashboardWidgetGridSize.Medium, 11, 60),
-        W("cc_subscribers", "سجل المشتركين", "Registry", "bi-person-lines-fill", "subscriber_count", "CallCenter", DashboardWidgetGridSize.Medium, 12, 120),
 
         // Retail
         W("retail_ops_today", "عمليات اليوم", "Ops today", "bi-lightning-charge", "operations_today", "Retail", DashboardWidgetGridSize.Medium, 10, 60),

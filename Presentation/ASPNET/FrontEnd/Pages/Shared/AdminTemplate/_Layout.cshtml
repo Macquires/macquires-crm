@@ -18,7 +18,8 @@
     <script src="~/lib/syncfusion/js/ej2.min.js"></script>
 
     <style>
-        [v-cloak] {
+        [v-cloak],
+        .v-cloak {
             display: none !important;
         }
     </style>
@@ -51,7 +52,10 @@
                     (function () {
                         function hideSpinner() {
                             var s = document.getElementById('spinner');
-                            if (s) s.classList.remove('show');
+                            if (s) {
+                                s.classList.remove('show', 'd-flex');
+                                s.classList.add('d-none');
+                            }
                         }
                         if (document.readyState === 'loading') {
                             document.addEventListener('DOMContentLoaded', hideSpinner);
@@ -73,6 +77,16 @@
 
     @await Html.PartialAsync("~/FrontEnd/Pages/Shared/AdminTemplate/__js.cshtml")
     @await RenderSectionAsync("scripts", required: false)
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('syr-tel-portal');
+            document.body.classList.remove('syriatel-operator-console');
+            if (typeof setFormCardHeight === 'function') {
+                setFormCardHeight();
+            }
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', async function () {

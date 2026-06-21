@@ -2,6 +2,7 @@ using Application.Common.Audit;
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
 using Application.Common.Security;
+using Application.Common.Telecom.Customer360;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -96,17 +97,13 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
                 })
                 .ToListAsync(cancellationToken);
 
-            items.AddRange(ops.Select(o => new Customer360TimelineItemDto
-            {
-                OccurredAtUtc = o.CreatedAtUtc ?? DateTime.MinValue,
-                Kind = Customer360TimelineKind.Operation,
-                TitleAr = $"عملية {o.Kind}",
-                TitleEn = $"Operation {o.Kind}",
-                Subtitle = o.Msisdn,
-                Status = o.Status.ToString(),
-                ReferenceId = o.Number,
-                ActionUrl = $"/Telecom/TelecomHub?operationId={o.Id}",
-            }));
+            items.AddRange(ops.Select(o => Customer360TimelineComposer.MapOperation(
+                o.Kind,
+                o.Status,
+                o.Number,
+                o.Msisdn,
+                o.CreatedAtUtc,
+                o.Id)));
         }
 
         var payments = await _query.TelecomPaymentTransaction.AsNoTracking().IsDeletedEqualTo()
@@ -115,7 +112,6 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
             .Take(fetchCap)
             .Select(p => new
             {
-                p.Id,
                 p.Number,
                 p.Amount,
                 p.Status,
@@ -125,16 +121,13 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
             })
             .ToListAsync(cancellationToken);
 
-        items.AddRange(payments.Select(p => new Customer360TimelineItemDto
-        {
-            OccurredAtUtc = p.CreatedAtUtc ?? DateTime.MinValue,
-            Kind = Customer360TimelineKind.Payment,
-            TitleAr = $"دفع {p.TransactionType}",
-            TitleEn = $"Payment {p.TransactionType}",
-            Subtitle = $"{p.Amount:N0} ل.س — {p.Msisdn}",
-            Status = p.Status.ToString(),
-            ReferenceId = p.Number,
-        }));
+        items.AddRange(payments.Select(p => Customer360TimelineComposer.MapPayment(
+            p.TransactionType,
+            p.Status,
+            p.Amount,
+            p.Msisdn,
+            p.Number,
+            p.CreatedAtUtc)));
 
         var tickets = await _query.TelecomTechnicalTicket.AsNoTracking().IsDeletedEqualTo()
             .Where(t => t.CustomerId == customerId)
@@ -142,25 +135,24 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
             .Take(fetchCap)
             .Select(t => new
             {
-                t.Id,
                 t.TicketNumber,
                 t.Status,
                 t.Priority,
+                t.IssueType,
+                t.Msisdn,
+                t.Notes,
                 t.CreatedAtUtc,
             })
             .ToListAsync(cancellationToken);
 
-        items.AddRange(tickets.Select(t => new Customer360TimelineItemDto
-        {
-            OccurredAtUtc = t.CreatedAtUtc ?? DateTime.MinValue,
-            Kind = Customer360TimelineKind.Ticket,
-            TitleAr = "تذكرة دعم فني",
-            TitleEn = "Technical support ticket",
-            Subtitle = t.Priority.ToString(),
-            Status = t.Status.ToString(),
-            ReferenceId = t.TicketNumber,
-            ActionUrl = "/Telecom/TechnicalTicketList",
-        }));
+        items.AddRange(tickets.Select(t => Customer360TimelineComposer.MapTicket(
+            t.TicketNumber,
+            t.Status,
+            t.Priority,
+            t.IssueType,
+            t.Msisdn,
+            t.Notes,
+            t.CreatedAtUtc)));
 
         if (profileIds.Count > 0)
         {
@@ -169,31 +161,16 @@ public class GetCustomer360TimelineHandler : IRequestHandler<GetCustomer360Timel
                 cancellationToken,
                 _query);
 
-            items.AddRange(billing.Select(b => new Customer360TimelineItemDto
-            {
-                OccurredAtUtc = b.CreatedAtUtc ?? DateTime.MinValue,
-                Kind = Customer360TimelineKind.Billing,
-                TitleAr = "تكامل فوترة",
-                TitleEn = "Billing integration",
-                Subtitle = b.IntegrationTarget,
-                Status = b.Success ? "نجاح" : "فشل",
-                ReferenceId = b.OperationNumber ?? b.IntegrationTarget,
-            }));
+            items.AddRange(billing.Select(Customer360TimelineComposer.MapBilling));
         }
 
         var audit = await _auditRead.QueryAsync(
             new UserAuditLogQuery { CustomerId = customerId, Skip = 0, Take = fetchCap },
             cancellationToken);
 
-        items.AddRange(audit.Items.Select(a => new Customer360TimelineItemDto
-        {
-            OccurredAtUtc = a.OccurredAtUtc,
-            Kind = Customer360TimelineKind.Audit,
-            TitleAr = a.SummaryAr ?? a.ActionType,
-            TitleEn = a.SummaryAr ?? a.ActionType,
-            Subtitle = a.ActorDisplayName,
-            ReferenceId = a.Id,
-        }));
+        items.AddRange(audit.Items
+            .Where(a => Customer360TimelineComposer.ShouldIncludeAudit(a.ActionType))
+            .Select(Customer360TimelineComposer.MapAudit));
 
         var merged = items
             .Where(i => i.OccurredAtUtc != DateTime.MinValue)

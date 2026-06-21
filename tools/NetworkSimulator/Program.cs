@@ -20,10 +20,33 @@ app.MapPost("/admin/chaos", (ChaosSettings settings) =>
     return Results.Ok(chaos);
 });
 
+const string DebtDemoMsisdn = "0939000002";
+
+app.MapPost("/admin/demo/reset-debt-anchor", () =>
+{
+    subscribers.AddOrUpdate(
+        DebtDemoMsisdn,
+        _ => new SubscriberState { Msisdn = DebtDemoMsisdn, Balance = -15_000m, Status = "ACTIVE" },
+        (_, state) =>
+        {
+            state.Balance = -15_000m;
+            state.Status = "ACTIVE";
+            return state;
+        });
+    return Results.Ok(new { success = true, msisdn = DebtDemoMsisdn, balance = -15_000m, hlrState = "ACTIVE" });
+});
+
 app.MapGet("/cbs/subscribers/{msisdn}/balance", (string msisdn) =>
 {
     if (ShouldFail(chaos, out var fail)) return fail;
-    var state = subscribers.GetOrAdd(msisdn, _ => new SubscriberState { Msisdn = msisdn, Balance = 1000m });
+    var state = subscribers.GetOrAdd(
+        msisdn,
+        _ => new SubscriberState
+        {
+            Msisdn = msisdn,
+            Balance = msisdn == DebtDemoMsisdn ? -15_000m : 1000m,
+            Status = msisdn == DebtDemoMsisdn ? "SUSPENDED" : "ACTIVE",
+        });
     return Results.Ok(new { msisdn, balance = state.Balance, currency = "SYP" });
 });
 
@@ -57,7 +80,14 @@ app.MapPost("/cbs/subscribers/{msisdn}/adjust-balance", (string msisdn, AdjustBa
 app.MapPost("/cbs/subscribers/{msisdn}/recharge", (string msisdn, RechargeRequest request) =>
 {
     if (ShouldFail(chaos, out var fail)) return fail;
-    var state = subscribers.GetOrAdd(msisdn, _ => new SubscriberState { Msisdn = msisdn, Balance = 1000m });
+    var state = subscribers.GetOrAdd(
+        msisdn,
+        _ => new SubscriberState
+        {
+            Msisdn = msisdn,
+            Balance = msisdn == DebtDemoMsisdn ? -15_000m : 1000m,
+            Status = msisdn == DebtDemoMsisdn ? "SUSPENDED" : "ACTIVE",
+        });
     state.Balance += request.Amount;
     return Results.Ok(new { success = true, balance = state.Balance, msisdn });
 });
@@ -108,7 +138,13 @@ app.Run();
 
 static string ResolveHlrState(string msisdn, string crmStatus)
 {
-    if (msisdn == "0939000002") return "ACTIVE";
+    if (msisdn == DebtDemoMsisdn)
+    {
+        var state = subscribers.GetOrAdd(
+            msisdn,
+            _ => new SubscriberState { Msisdn = msisdn, Status = "ACTIVE", Balance = -15_000m });
+        return string.Equals(state.Status, "SUSPENDED", StringComparison.OrdinalIgnoreCase) ? "SUSPENDED" : "ACTIVE";
+    }
     if (msisdn.EndsWith('3')) return "NOT_PROVISIONED";
     if (msisdn.EndsWith('5')) return "SUSPENDED";
     return crmStatus switch

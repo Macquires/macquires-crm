@@ -1,7 +1,9 @@
+using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
 using Infrastructure.SecurityManager.AspNetIdentity;
+using Infrastructure.SeedManager.Demos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -311,10 +313,18 @@ public class OrgUnitSeeder
             ["اللاذقية"] = branches.FirstOrDefault(b => b.NameAr.Contains("اللاذقية", StringComparison.Ordinal)) ?? defaultBranch,
             ["طرطوس"] = branches.FirstOrDefault(b => b.NameAr.Contains("طرطوس", StringComparison.Ordinal)) ?? defaultBranch,
             ["إدلب"] = branches.FirstOrDefault(b => b.NameAr.Contains("إدلب", StringComparison.Ordinal)) ?? defaultBranch,
+            ["حمص"] = branches.FirstOrDefault(b => b.NameAr.Contains("المزة", StringComparison.Ordinal)) ?? defaultBranch,
+            ["درعا"] = branches.FirstOrDefault(b => b.NameAr.Contains("المزة", StringComparison.Ordinal)) ?? defaultBranch,
+            ["السويداء"] = branches.FirstOrDefault(b => b.NameAr.Contains("المزة", StringComparison.Ordinal)) ?? defaultBranch,
         };
 
         foreach (var customer in customers)
         {
+            if (TelecomDemoMsisdn.IsNationalDemoAnchor(customer.PrimaryPhone, customer.DisplayName))
+            {
+                continue;
+            }
+
             var city = customer.Address.City;
             if (!string.IsNullOrEmpty(city) && cityBranch.TryGetValue(city, out var branch))
             {
@@ -327,5 +337,6 @@ public class OrgUnitSeeder
         }
 
         await _context.SaveChangesAsync();
+        await DemoSeedScope.ReconcileTelecomBranchScopeAsync(_context);
     }
 }

@@ -28,7 +28,8 @@ public class TelecomTechnicalTicketSeeder
         TechnicalTicketPriority Priority,
         string Title,
         string Summary,
-        bool PreferHero);
+        bool PreferHero,
+        string? PreferMsisdn = null);
 
     private static readonly TicketBlueprint[] Blueprints =
     [
@@ -41,7 +42,8 @@ public class TelecomTechnicalTicketSeeder
         new(TechnicalTicketIssueType.Provisioning, TechnicalTicketCategory.PackageMigration, TechnicalTicketPriority.Medium,
             "ترحيل باقة MGR — معلّق", "ترحيل باقة من Customer 360 بانتظار تسوية CBS.", PreferHero: false),
         new(TechnicalTicketIssueType.Provisioning, TechnicalTicketCategory.LineActivation, TechnicalTicketPriority.High,
-            "تفعيل خط معلّق", "تفعيل خط جديد بانتظار مزامنة الشبكة.", PreferHero: false),
+            "إعادة تهيئة HLR — NOT_PROVISIONED", "خط Active على CRM لكن HLR NOT_PROVISIONED — reprovision مطلوب.", PreferHero: false,
+            PreferMsisdn: TelecomDemoMsisdn.ShowcaseNotProvisioned),
     ];
 
     private readonly IQueryContext _query;
@@ -72,7 +74,7 @@ public class TelecomTechnicalTicketSeeder
             return;
         }
 
-        var systemUserId = "system-seed";
+        var systemUserId = DemoSeedScope.SystemActor;
         var existing = await _repository.GetQuery().Where(t => !t.IsDeleted).OrderBy(t => t.CreatedAtUtc).ToListAsync();
         var usedLineKeys = new HashSet<string>(StringComparer.Ordinal);
 
@@ -114,6 +116,17 @@ public class TelecomTechnicalTicketSeeder
             if (hero != null)
             {
                 return hero;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(blueprint.PreferMsisdn))
+        {
+            var preferred = lines.FirstOrDefault(l =>
+                !usedMsisdns.Contains(l.Msisdn)
+                && l.Msisdn == blueprint.PreferMsisdn);
+            if (preferred != null)
+            {
+                return preferred;
             }
         }
 
@@ -161,7 +174,23 @@ public class TelecomTechnicalTicketSeeder
             PayloadJson = $"{{\"summary\":\"{summary}\",\"msisdnAssetId\":\"{line.MsisdnAssetId}\"}}",
             OpenedByUserId = systemUserId,
             CreatedByChannel = TechnicalTicketCreatedByChannel.CallCenterAgent,
+            BranchId = await ResolveTicketBranchIdAsync(line.CustomerId),
         };
+    }
+
+    private async Task<string?> ResolveTicketBranchIdAsync(string? customerId)
+    {
+        if (string.IsNullOrEmpty(customerId))
+        {
+            return null;
+        }
+
+        return await _query.Customer
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(c => !c.IsDeleted && c.Id == customerId)
+            .Select(c => c.BranchId)
+            .FirstOrDefaultAsync();
     }
 
     private async Task ApplyLineToTicketAsync(
@@ -171,25 +200,20 @@ public class TelecomTechnicalTicketSeeder
         string systemUserId)
     {
         var canonical = TelecomPhoneNormalizer.TryCanonicalSyrianMsisdn(line.Msisdn) ?? line.Msisdn;
-        var needsLink =
-            string.IsNullOrEmpty(ticket.SubscriberProfileId)
-            || string.IsNullOrEmpty(ticket.CustomerId)
-            || ticket.Msisdn != canonical;
-
-        if (!needsLink && ticket.IssueType == blueprint.IssueType)
-        {
-            return;
-        }
+        var branchId = await ResolveTicketBranchIdAsync(line.CustomerId);
 
         ticket.Msisdn = canonical;
         ticket.SubscriberProfileId = line.SubscriberProfileId;
         ticket.CustomerId = line.CustomerId;
         ticket.IssueType = blueprint.IssueType;
+        ticket.TicketCategory = blueprint.TicketCategory;
         ticket.Priority = blueprint.Priority;
         ticket.Notes = blueprint.Title;
         ticket.PayloadJson =
             $"{{\"summary\":\"{blueprint.Summary.Replace("\"", "'", StringComparison.Ordinal)}\",\"msisdnAssetId\":\"{line.MsisdnAssetId}\"}}";
         ticket.UpdatedById = systemUserId;
+        DemoSeedScope.ApplyTicketScope(ticket, branchId);
+
         if (ticket.Status == TechnicalTicketStatus.Resolved)
         {
             ticket.Status = TechnicalTicketStatus.Open;
@@ -198,7 +222,6 @@ public class TelecomTechnicalTicketSeeder
         }
 
         _repository.Update(ticket);
-        await Task.CompletedTask;
     }
 }
 

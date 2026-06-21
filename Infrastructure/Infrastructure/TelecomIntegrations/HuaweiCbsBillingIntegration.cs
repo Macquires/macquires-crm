@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Application.Common.CQS.Queries;
 using Application.Common.Integrations;
 using Application.Common.Repositories;
+using Application.Common.Telecom;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Settings;
@@ -17,6 +19,7 @@ namespace Infrastructure.TelecomIntegrations;
 public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
 {
     private readonly ICommandRepository<BillingIntegrationLog> _logRepository;
+    private readonly IQueryContext _query;
     private readonly ITelecomIntegrationLogWriter _integrationLog;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOptions<TelecomBillingOptions> _options;
@@ -28,6 +31,7 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
 
     public HuaweiCbsBillingIntegration(
         ICommandRepository<BillingIntegrationLog> logRepository,
+        IQueryContext query,
         ITelecomIntegrationLogWriter integrationLog,
         IUnitOfWork unitOfWork,
         IOptions<TelecomBillingOptions> options,
@@ -38,6 +42,7 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         SimulatorCbsHttpClient cbsHttp)
     {
         _logRepository = logRepository;
+        _query = query;
         _integrationLog = integrationLog;
         _unitOfWork = unitOfWork;
         _options = options;
@@ -55,7 +60,7 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             return await ReverseProvisionAsync(request, cancellationToken);
         }
 
-        if (await HasSuccessfulProvisionAsync(request.OperationId, cancellationToken))
+        if (await HasSuccessfulProvisionAsync(request, cancellationToken))
         {
             return new BillingProvisionResult(
                 true,
@@ -350,12 +355,38 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
                     ex,
                     "Network Simulator unreachable for CBS balance on {Msisdn}; using in-process demo fallback.",
                     msisdn);
+                if (await IsDemoDebtClearedByReceiptAsync(msisdn, cancellationToken))
+                {
+                    return 0m;
+                }
+
                 return CbsMockBalanceResolver.ResolveOutstandingBalance(msisdn);
             }
         }
 
         await Task.Delay(80, cancellationToken);
+
+        if (await IsDemoDebtClearedByReceiptAsync(msisdn, cancellationToken))
+        {
+            return 0m;
+        }
+
         return CbsMockBalanceResolver.ResolveOutstandingBalance(msisdn);
+    }
+
+    private async Task<bool> IsDemoDebtClearedByReceiptAsync(string msisdn, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(msisdn.Trim(), TelecomDemoMsisdn.DebtSubscriber, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return await _logRepository.GetQuery().AsNoTracking()
+            .AnyAsync(
+                l => !l.IsDeleted
+                     && l.Success
+                     && l.CorrelationId == TelecomDemoBaselines.DebtFullPaymentReceipt,
+                cancellationToken);
     }
 
     private static bool IsSimulatorUnreachable(Exception ex)
@@ -458,16 +489,36 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         }
     }
 
-    private async Task<bool> HasSuccessfulProvisionAsync(string operationId, CancellationToken cancellationToken)
+    private async Task<bool> HasSuccessfulProvisionAsync(
+        BillingProvisionRequest request,
+        CancellationToken cancellationToken)
     {
+        var reverseToken = TelecomBssOperations.CbsReverseAccount;
+
+        if (await _logRepository.GetQuery()
+                .AnyAsync(
+                    l => !l.IsDeleted
+                        && l.TelecomOperationRequestId == request.OperationId
+                        && l.Success
+                        && l.Message != null
+                        && !l.Message.Contains(reverseToken),
+                    cancellationToken))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CorrelationId))
+        {
+            return false;
+        }
+
         return await _logRepository.GetQuery()
             .AnyAsync(
                 l => !l.IsDeleted
-                    && l.TelecomOperationRequestId == operationId
                     && l.Success
+                    && l.CorrelationId == request.CorrelationId
                     && l.Message != null
-                    // EF Core: Contains(string) only — StringComparison overload is not translatable to SQL.
-                    && !l.Message.Contains(TelecomBssOperations.CbsReverseAccount),
+                    && !l.Message.Contains(reverseToken),
                 cancellationToken);
     }
 
@@ -596,14 +647,32 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         string message,
         CancellationToken cancellationToken)
     {
+        var correlationId = BuildRechargeLogCorrelationId(request.CorrelationId, attemptNumber);
+
+        if (!string.IsNullOrWhiteSpace(correlationId)
+            && await _logRepository.GetQuery().AnyAsync(
+                l => !l.IsDeleted && l.CorrelationId == correlationId,
+                cancellationToken))
+        {
+            _logger.LogInformation(
+                "Skipping duplicate CBS recharge log for CorrelationId {CorrelationId} (PAY {PaymentNumber}).",
+                correlationId,
+                request.PaymentNumber);
+            return;
+        }
+
+        var paymentTxnId = await ResolvePaymentTransactionIdForLogAsync(
+            request.PaymentTransactionId,
+            cancellationToken);
+
         var row = new BillingIntegrationLog
         {
-            TelecomPaymentTransactionId = request.PaymentTransactionId,
+            TelecomPaymentTransactionId = paymentTxnId,
             AttemptNumber = attemptNumber,
             Success = success,
             Message = message,
             IntegrationTarget = _options.Value.IntegrationTarget,
-            CorrelationId = request.CorrelationId,
+            CorrelationId = correlationId,
             RequestPayload = request.ToString(),
             ResponsePayload = success ? "OK" : message,
             BranchId = request.BranchId
@@ -625,6 +694,34 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
             cancellationToken);
     }
 
+    private static string? BuildRechargeLogCorrelationId(string? baseCorrelationId, int attemptNumber)
+    {
+        if (string.IsNullOrWhiteSpace(baseCorrelationId))
+        {
+            return null;
+        }
+
+        return attemptNumber <= 1
+            ? $"{baseCorrelationId.Trim()}:R"
+            : $"{baseCorrelationId.Trim()}:R{attemptNumber}";
+    }
+
+    private async Task<string?> ResolvePaymentTransactionIdForLogAsync(
+        string? paymentTransactionId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(paymentTransactionId))
+        {
+            return null;
+        }
+
+        var id = paymentTransactionId.Trim();
+        var exists = await _query.TelecomPaymentTransaction.AsNoTracking()
+            .AnyAsync(t => !t.IsDeleted && t.Id == id, cancellationToken);
+
+        return exists ? id : null;
+    }
+
     private async Task WriteLogAsync(
         BillingProvisionRequest request,
         int attemptNumber,
@@ -633,6 +730,19 @@ public sealed class HuaweiCbsBillingIntegration : IBillingSystemIntegration
         string? integrationTarget,
         CancellationToken cancellationToken)
     {
+        if (success
+            && !string.IsNullOrWhiteSpace(request.CorrelationId)
+            && await _logRepository.GetQuery().AnyAsync(
+                l => !l.IsDeleted && l.Success && l.CorrelationId == request.CorrelationId,
+                cancellationToken))
+        {
+            _logger.LogInformation(
+                "Skipping duplicate CBS success log for CorrelationId {CorrelationId} (operation {OperationId}).",
+                request.CorrelationId,
+                request.OperationId);
+            return;
+        }
+
         var row = new BillingIntegrationLog
         {
             TelecomOperationRequestId = request.OperationId,

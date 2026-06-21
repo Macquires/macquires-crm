@@ -8,7 +8,8 @@ public class PermissionLandingResolverTests
     [InlineData(new[] { PermissionCatalog.AdminUsersManage }, PermissionLandingResolver.AdministrationUsers)]
     [InlineData(new[] { PermissionCatalog.BulkImportUpload }, PermissionLandingResolver.BackOfficeDashboard)]
     [InlineData(new[] { PermissionCatalog.TelecomAssetManage }, PermissionLandingResolver.BackOfficeDashboard)]
-    [InlineData(new[] { PermissionCatalog.CustomerView }, PermissionLandingResolver.DefaultCrmDashboard)]
+    [InlineData(new[] { PermissionCatalog.CustomerView }, PermissionLandingResolver.UnifiedSearch)]
+    [InlineData(new[] { PermissionCatalog.CustomerView, PermissionCatalog.TelecomHubFrontline }, PermissionLandingResolver.DefaultCrmDashboard)]
     [InlineData(new[] { PermissionCatalog.BulkImportUpload, PermissionCatalog.CustomerView }, PermissionLandingResolver.BackOfficeDashboard)]
     public void Resolve_uses_priority_matrix(string[] keys, string expected) =>
         Assert.Equal(expected, PermissionLandingResolver.Resolve(keys));

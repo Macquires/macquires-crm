@@ -1,3 +1,4 @@
+using Application.Common.Audit;
 using Application.Common.CQS.Queries;
 using Application.Common.Security;
 using Application.Common.Telecom;
@@ -41,11 +42,15 @@ public sealed record PendingBackOfficeOperationDto
     public string? DunningStage { get; init; }
     public string? AccountType { get; init; }
 
+    public string? BdrLedgerMode { get; init; }
+    public string? BdrLedgerNoteAr { get; init; }
+
     // GLOBAL HARDENING: SLA & Queue Management
     public DateTime? SlaExpirationTimeUtc { get; set; }
     public string? ClaimedByUserId { get; set; }
     public string? UpdatedById { get; init; }
     public string? AuditorDisplayName { get; init; }
+    public string? RejectionReasonAr { get; init; }
     public DateTime? UpdatedAtUtc { get; init; }
     public bool SlaBreached { get; init; }
 }
@@ -68,7 +73,7 @@ public sealed class GetPendingBackOfficeOperationsRequest : IRequest<GetPendingB
     public int Skip { get; init; }
     public int Take { get; init; } = 50;
 
-    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.BdrViewAny;
+    public IReadOnlyList<string> PermissionKeys => BackOfficePermissionSets.PendingQueueViewAny;
 }
 
 public sealed class GetPendingBackOfficeOperationsHandler
@@ -77,15 +82,21 @@ public sealed class GetPendingBackOfficeOperationsHandler
     private readonly IQueryContext _query;
     private readonly IBackOfficePaymentReferenceValidator _paymentValidator;
     private readonly IOperatorContext _operator;
+    private readonly IAuditActorDisplayNameResolver _auditorNames;
+    private readonly IBackOfficeBdrLedgerResolver _bdrLedger;
 
     public GetPendingBackOfficeOperationsHandler(
         IQueryContext query,
         IBackOfficePaymentReferenceValidator paymentValidator,
-        IOperatorContext operatorContext)
+        IOperatorContext operatorContext,
+        IAuditActorDisplayNameResolver auditorNames,
+        IBackOfficeBdrLedgerResolver bdrLedger)
     {
         _query = query;
         _paymentValidator = paymentValidator;
         _operator = operatorContext;
+        _auditorNames = auditorNames;
+        _bdrLedger = bdrLedger;
     }
 
     public async Task<GetPendingBackOfficeOperationsResult> Handle(
@@ -103,26 +114,30 @@ public sealed class GetPendingBackOfficeOperationsHandler
 
         if (!string.IsNullOrEmpty(_operator.BranchId))
         {
-            baseQuery = baseQuery.Where(o => o.BranchId == _operator.BranchId);
+            var operatorBranchId = _operator.BranchId;
+            var nationalMsisdns = TelecomDemoMsisdn.WellKnownNationalMsisdns;
+            // National demo anchors (BranchId NULL or showcase MSISDN) stay visible to every branch queue.
+            baseQuery = baseQuery.Where(o =>
+                o.BranchId == null
+                || o.BranchId == operatorBranchId
+                || (o.MsisdnAsset != null && nationalMsisdns.Contains(o.MsisdnAsset.Msisdn)));
         }
 
         if (!request.IncludeResolved)
         {
-            baseQuery = baseQuery.Where(o => 
-                o.Status == TelecomOperationStatus.PendingDocuments 
+            baseQuery = baseQuery.Where(o =>
+                o.Status == TelecomOperationStatus.PendingDocuments
                 || o.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance
-                || o.Status == TelecomOperationStatus.In_Progress);
+                || o.Status == TelecomOperationStatus.In_Progress
+                || (o.Status == TelecomOperationStatus.Draft
+                    && o.ApprovalLevelRequired == "BackOffice"));
         }
         else
         {
-            // For historical ledger, we might want to show everything that was once in the BO queue
-            baseQuery = baseQuery.Where(o => 
-                o.Status == TelecomOperationStatus.Completed 
-                || o.Status == TelecomOperationStatus.Failed 
-                || o.Status == TelecomOperationStatus.Approved_Pending_Cash
-                || o.Status == TelecomOperationStatus.PendingDocuments 
-                || o.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance
-                || o.Status == TelecomOperationStatus.In_Progress);
+            // Historical ledger: only decided back-office outcomes (approved / rejected).
+            // Inline status list — EF cannot translate static helper methods in SQL.
+            baseQuery = baseQuery.Where(o =>
+                BackOfficeTelecomPipelineState.HistoricalLedgerStatuses.Contains(o.Status));
         }
 
         if (request.Kind.HasValue)
@@ -168,20 +183,29 @@ public sealed class GetPendingBackOfficeOperationsHandler
             baseQuery = baseQuery.Where(o => o.CreatedAtUtc <= request.ToUtc.Value);
         }
 
-        var total = await baseQuery.CountAsync(cancellationToken);
         var rows = await baseQuery
             .OrderByDescending(o => o.CreatedAtUtc)
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
+        var auditorNameMap = await _auditorNames.ResolveAsync(
+            rows.Select(o => o.UpdatedById).Where(id => !string.IsNullOrWhiteSpace(id))!,
+            cancellationToken);
+
         var data = new List<PendingBackOfficeOperationDto>(rows.Count);
         foreach (var op in rows)
         {
-            data.Add(await MapAsync(op, cancellationToken));
+            if (op.Kind == TelecomOperationKind.BadDebtRecovery
+                && await _bdrLedger.ShouldSuppressManualBdrInQueueAsync(op, cancellationToken))
+            {
+                continue;
+            }
+
+            data.Add(await MapAsync(op, auditorNameMap, cancellationToken));
         }
 
-        return new GetPendingBackOfficeOperationsResult { Data = data, Total = total };
+        return new GetPendingBackOfficeOperationsResult { Data = data, Total = data.Count };
     }
 
     private static List<TelecomOperationKind> GetKindsForDomain(BackOfficeDomain domain)
@@ -216,6 +240,7 @@ public sealed class GetPendingBackOfficeOperationsHandler
 
     private async Task<PendingBackOfficeOperationDto> MapAsync(
         TelecomOperationRequest op,
+        IReadOnlyDictionary<string, string> auditorNameMap,
         CancellationToken cancellationToken)
     {
         var paymentValidation = op.Kind == TelecomOperationKind.Reconnect
@@ -249,6 +274,17 @@ public sealed class GetPendingBackOfficeOperationsHandler
             ? "Postpaid Corporate Account"
             : "Postpaid Individual Account";
 
+        var auditorDisplayName = null as string;
+        if (!string.IsNullOrWhiteSpace(op.UpdatedById)
+            && auditorNameMap.TryGetValue(op.UpdatedById, out var resolvedName))
+        {
+            auditorDisplayName = resolvedName;
+        }
+
+        var bdrLedger = op.Kind == TelecomOperationKind.BadDebtRecovery
+            ? await _bdrLedger.ResolveAsync(op, cancellationToken)
+            : null;
+
         return new PendingBackOfficeOperationDto
         {
             Id = op.Id,
@@ -272,16 +308,21 @@ public sealed class GetPendingBackOfficeOperationsHandler
             BlockReasonEn = blockReasonEn,
             BlockReasonCode = blockReasonCode,
             CreatedAtUtc = op.CreatedAtUtc,
-            OutstandingBalanceSnapshot = op.OutstandingBalanceSnapshot,
-            WriteOffAmount = op.WriteOffAmount,
-            CollectedAmount = op.CollectedAmount,
+            OutstandingBalanceSnapshot = bdrLedger?.OutstandingDebt ?? op.OutstandingBalanceSnapshot,
+            WriteOffAmount = bdrLedger?.WriteOffWaiver ?? op.WriteOffAmount,
+            CollectedAmount = bdrLedger?.CashCollection ?? op.CollectedAmount,
             CollectionAction = op.CollectionAction,
             DunningStage = op.DunningStage,
             AccountType = accountType,
+            BdrLedgerMode = bdrLedger?.LedgerMode,
+            BdrLedgerNoteAr = bdrLedger?.NoteAr,
             SlaExpirationTimeUtc = op.SlaExpirationTimeUtc,
             ClaimedByUserId = op.ClaimedByUserId,
             UpdatedById = op.UpdatedById,
-            AuditorDisplayName = null,
+            AuditorDisplayName = auditorDisplayName,
+            RejectionReasonAr = op.Status == TelecomOperationStatus.Failed
+                ? BackOfficeTelecomPipelineState.TryExtractBackOfficeRejectionReason(op.Notes)
+                : null,
             UpdatedAtUtc = op.UpdatedAtUtc,
             SlaBreached = slaBreached
         };

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-
 using Application.Common.Audit;
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
@@ -34,6 +33,7 @@ public sealed class ReprovisionSubscriberToHlrHandler : IRequestHandler<Reprovis
 {
     private readonly IQueryContext _query;
     private readonly IHLRLiveStatusService _hlr;
+    private readonly IBillingSystemIntegration _billing;
     private readonly ITelecomIntegrationLogWriter _integrationLog;
     private readonly IUserAuditService _audit;
     private readonly IOperatorContext _operator;
@@ -41,12 +41,14 @@ public sealed class ReprovisionSubscriberToHlrHandler : IRequestHandler<Reprovis
     public ReprovisionSubscriberToHlrHandler(
         IQueryContext query,
         IHLRLiveStatusService hlr,
+        IBillingSystemIntegration billing,
         ITelecomIntegrationLogWriter integrationLog,
         IUserAuditService audit,
         IOperatorContext operatorContext)
     {
         _query = query;
         _hlr = hlr;
+        _billing = billing;
         _integrationLog = integrationLog;
         _audit = audit;
         _operator = operatorContext;
@@ -76,9 +78,23 @@ public sealed class ReprovisionSubscriberToHlrHandler : IRequestHandler<Reprovis
             $"{TelecomBssOperations.HlrReprovisionSubscriber} MSISDN={line.Msisdn} IMSI={line.Imsi} ICCID={line.Iccid}";
         var sw = Stopwatch.StartNew();
 
-        var result = await _hlr.ReprovisionSubscriberAsync(
-            new HlrReprovisionRequest(line.SubscriberProfileId, line.Msisdn, line.Imsi, line.Iccid, actorUserId),
-            cancellationToken);
+        var outstanding = await _billing.GetOutstandingBalanceAsync(line.Msisdn, cancellationToken);
+        HlrReprovisionResult result;
+        if (outstanding < 0)
+        {
+            await _hlr.MarkMockSubscriberSuspendedAsync(line.Msisdn, cancellationToken);
+            result = new HlrReprovisionResult(
+                true,
+                "تم تطبيق حظر HLR — الخط عليه ذمة مالية متأخرة (Billing Suspended).",
+                $"HlrReprovisionSubscriber MSISDN={line.Msisdn} -> SUSPENDED (outstanding={outstanding:0})",
+                "SUSPENDED");
+        }
+        else
+        {
+            result = await _hlr.ReprovisionSubscriberAsync(
+                new HlrReprovisionRequest(line.SubscriberProfileId, line.Msisdn, line.Imsi, line.Iccid, actorUserId),
+                cancellationToken);
+        }
 
         if (!result.Success)
         {

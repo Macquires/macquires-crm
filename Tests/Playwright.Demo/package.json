@@ -1,0 +1,18 @@
+{
+  "name": "macquires-crm-playwright-demo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Synchronized live-demo Playwright scenarios with presenter HTML cue cards",
+  "scripts": {
+    "test": "playwright test",
+    "test:demo": "playwright test --grep \"@demo\"",
+    "test:demo:headed": "cross-env E2E_HEADLESS=false DEMO_SLOW_MO=500 playwright test --grep \"@demo\"",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.10.0",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.7.2"
+  }
+}

@@ -4,7 +4,7 @@
 
     var extraClass = ViewData["PortalPageClass"] as string ?? "";
 
-    var vcloak = ViewData["PortalPageVcloak"] as bool? == true ? " v-cloak" : "";
+    var useVcloak = ViewData["PortalPageVcloak"] as bool? == true;
 
     var extraAttrs = ViewData["PortalPageAttrs"] as string ?? "";
 
@@ -12,7 +12,7 @@
 
 }
 
-<div id="@pageId" class="telecom-premium-page syr-portal-page@extraClass@vcloak"@Html.Raw(string.IsNullOrWhiteSpace(extraAttrs) ? "" : " " + extraAttrs)>
+<div id="@pageId" class="telecom-premium-page syr-portal-page@extraClass" @(useVcloak ? "v-cloak" : null)@Html.Raw(string.IsNullOrWhiteSpace(extraAttrs) ? "" : " " + extraAttrs)>
 
 @if (useInner)
 

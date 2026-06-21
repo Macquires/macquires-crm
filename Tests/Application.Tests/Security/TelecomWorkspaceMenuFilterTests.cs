@@ -53,8 +53,12 @@ public class TelecomWorkspaceMenuFilterTests
             nodes);
 
         var urls = LeafUrls(filtered);
-        Assert.Contains("/Customers/CustomerList", urls);
-        Assert.Contains("/Telecom/TechnicalTicketList", urls);
+        Assert.Contains("/Telecom/UnifiedSearch", urls);
+        Assert.Contains("/Telecom/ProductCatalog", urls);
+        Assert.DoesNotContain("/Telecom/TechnicalTicketList", urls);
+        Assert.DoesNotContain("/Customers/CustomerList", urls);
+        Assert.DoesNotContain("/Telecom/TelecomHub", urls);
+        Assert.DoesNotContain("/Telecom/MsisdnInventory", urls);
         Assert.DoesNotContain("/Telecom/BackOfficeDashboard", urls);
         Assert.DoesNotContain("/Administration/UserList", urls);
     }

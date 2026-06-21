@@ -72,7 +72,7 @@ public class ForceHlrSyncByTicketHandler : IRequestHandler<ForceHlrSyncByTicketR
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException("التذكرة غير موجودة.");
 
-        var line = await TechnicalTicketLineResolver.ResolveAsync(
+        var line = await TechnicalTicketLineResolver.ResolveForBackOfficeTicketAsync(
             _query,
             ticket.SubscriberProfileId,
             ticket.Msisdn,

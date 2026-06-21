@@ -1,8 +1,10 @@
 using Application.Common.CQS.Queries;
 using Application.Common.Extensions;
+using Application.Common.Integrations;
 using Application.Common.Repositories;
 using Application.Common.Security;
 using Application.Common.Telecom;
+using Application.Common.Telecom.Reconnect;
 using Application.Common.Telecom.Suspension;
 using Application.Features.NumberSequenceManager;
 using Application.Features.TelecomManager.Commands;
@@ -27,9 +29,13 @@ public class TelecomSyriatelSeeder
     private readonly ICommandRepository<SimInventory> _simRepository;
     private readonly ICommandRepository<TelecomOperationRequest> _operationRepository;
     private readonly ICommandRepository<BillingIntegrationLog> _logRepository;
+    private readonly ICommandRepository<TelecomPaymentTransaction> _paymentRepository;
+    private readonly ICommandRepository<TelecomTechnicalTicket> _ticketRepository;
     private readonly NumberSequenceService _numberSequenceService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IFieldEncryptionService _encryption;
+    private readonly IBillingSystemIntegration _billing;
+    private readonly IHLRLiveStatusService _hlr;
 
     public TelecomSyriatelSeeder(
         IQueryContext query,
@@ -40,9 +46,13 @@ public class TelecomSyriatelSeeder
         ICommandRepository<SimInventory> simRepository,
         ICommandRepository<TelecomOperationRequest> operationRepository,
         ICommandRepository<BillingIntegrationLog> logRepository,
+        ICommandRepository<TelecomPaymentTransaction> paymentRepository,
+        ICommandRepository<TelecomTechnicalTicket> ticketRepository,
         NumberSequenceService numberSequenceService,
         IUnitOfWork unitOfWork,
-        IFieldEncryptionService encryption)
+        IFieldEncryptionService encryption,
+        IBillingSystemIntegration billing,
+        IHLRLiveStatusService hlr)
     {
         _query = query;
         _customerRepository = customerRepository;
@@ -52,9 +62,13 @@ public class TelecomSyriatelSeeder
         _simRepository = simRepository;
         _operationRepository = operationRepository;
         _logRepository = logRepository;
+        _paymentRepository = paymentRepository;
+        _ticketRepository = ticketRepository;
         _numberSequenceService = numberSequenceService;
         _unitOfWork = unitOfWork;
         _encryption = encryption;
+        _billing = billing;
+        _hlr = hlr;
     }
 
     private static string AdjustMsisdnForHlrAlignment(string msisdn, SubscriberOperationalStatus status, Random rnd)
@@ -85,6 +99,7 @@ public class TelecomSyriatelSeeder
 
     private async Task CreateIndividualAsync(IndividualCustomer customer)
     {
+        DemoSeedScope.StampCustomer(customer);
         customer.SyncNationalIdSearchHash(_encryption);
         await _customerRepository.CreateAsync(customer);
     }
@@ -591,7 +606,7 @@ public class TelecomSyriatelSeeder
             TelecomDemoMsisdn.DebtSubscriber,
             groups[rnd.Next(groups.Count)],
             categories[rnd.Next(categories.Count)]);
-        debtCustomer.SetDescription("مشترك عليه ديون — سيناريو TakeOver (خط منفصل عن عرض الاستكشاف).");
+        debtCustomer.SetDescription("مشترك مديون — خط موقوف Billing منذ أكثر من 6 أشهر (−15,000 ل.س) — سيناريو الدفع بالمعرض.");
         if (TryReserveNationalId(reservedNationalIdHashes, debtNationalId))
         {
             await CreateIndividualAsync(debtCustomer);
@@ -615,6 +630,7 @@ public class TelecomSyriatelSeeder
                 party.Phone,
                 groups[rnd.Next(groups.Count)],
                 categories[rnd.Next(categories.Count)]);
+            DemoSeedScope.StampCustomer(c);
             await _customerRepository.CreateAsync(c);
         }
 
@@ -627,6 +643,7 @@ public class TelecomSyriatelSeeder
             "0939000100",
             groups[rnd.Next(groups.Count)],
             categories[rnd.Next(categories.Count)]);
+        DemoSeedScope.StampCustomer(demoDealer);
         await _customerRepository.CreateAsync(demoDealer);
 
         for (var i = 0; i < 20; i++)
@@ -669,6 +686,11 @@ public class TelecomSyriatelSeeder
 
         var yaHalaOffering = await _query.ProductOffering.AsNoTracking()
             .Where(o => !o.IsDeleted && o.Code == "YA_HALA_30")
+            .Select(o => new { o.Id, o.ProductId })
+            .FirstOrDefaultAsync();
+
+        var debtPostpaidOffering = await _query.ProductOffering.AsNoTracking()
+            .Where(o => !o.IsDeleted && o.Code == TelecomDemoBaselines.DebtPostpaidOfferingCode)
             .Select(o => new { o.Id, o.ProductId })
             .FirstOrDefaultAsync();
 
@@ -725,19 +747,31 @@ public class TelecomSyriatelSeeder
                 var isPostpaid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Postpaid;
                 var isHybrid = subscriptionTypeId == TelecomSubscriptionTypeWellKnownIds.Hybrid;
 
+                var isDebtShowcase = msisdn == TelecomDemoMsisdn.DebtSubscriber;
+
                 // GLOBAL HARDENING: Introduce some suspended lines in bulk for diversity
                 var operationalStatus = SubscriberOperationalStatus.Active;
-                if (!isHero && profileCount == 1 && rnd.Next(10) == 0)
+                if (isDebtShowcase)
+                {
+                    operationalStatus = SubscriberOperationalStatus.Suspended;
+                }
+                else if (!isHero && profileCount == 1 && rnd.Next(10) == 0)
                 {
                     operationalStatus = SubscriberOperationalStatus.Suspended;
                 }
 
                 // GLOBAL HLR MOCK DETERMINISTIC ALIGNMENT: Adjust MSISDN last digit based on status
-                msisdn = AdjustMsisdnForHlrAlignment(msisdn, operationalStatus, rnd);
+                // EXCEPTION: Debt subscriber (0939000002) keeps original digit (2 = ACTIVE) for Revenue Leakage demo
+                // where CRM is Suspended but HLR is ACTIVE - creating the mismatch detection scenario
+                if (!isDebtShowcase)
+                {
+                    msisdn = AdjustMsisdnForHlrAlignment(msisdn, operationalStatus, rnd);
+                }
 
                 var profile = new SubscriberProfile
                 {
                     CustomerId = cust.Id,
+                    BranchId = cust.BranchId,
                     ServiceLineType = ServiceLineType.Mobile,
                     OperationalStatus = operationalStatus,
                     ActivationDateUtc = DateTime.UtcNow.AddDays(-rnd.Next(30, 800)),
@@ -748,14 +782,14 @@ public class TelecomSyriatelSeeder
 
                 if (operationalStatus is SubscriberOperationalStatus.Suspended or SubscriberOperationalStatus.SuspendedInbound or SubscriberOperationalStatus.SuspendedOutbound)
                 {
-                    if (isPostpaid)
+                    if (isPostpaid || isDebtShowcase)
                     {
                         profile.PrepaidBalance = null;
-                        profile.PostpaidCreditLimit = -15000m; // GLOBAL HARDENING: Postpaid debt
+                        profile.PostpaidCreditLimit = TelecomDemoBaselines.DebtOutstandingSyp;
                     }
                     else
                     {
-                        profile.PrepaidBalance = 1500; // GLOBAL HARDENING: Prepaid positive balance
+                        profile.PrepaidBalance = 1500;
                         profile.PostpaidCreditLimit = null;
                     }
                 }
@@ -765,7 +799,16 @@ public class TelecomSyriatelSeeder
                     profile.PostpaidCreditLimit = (isPostpaid || isHybrid) ? rnd.Next(50000, 300000) : null;
                 }
 
-                if (isHero)
+                if (isDebtShowcase)
+                {
+                    profile.PrepaidBalance = null;
+                    profile.PostpaidCreditLimit = TelecomDemoBaselines.DebtOutstandingSyp;
+                    profile.ActivationDateUtc = TelecomDemoBaselines.DebtLineActivatedUtc();
+                    profile.ChurnRiskScore = 68;
+                    profile.LoyaltyTier = "Silver";
+                    profile.LoyaltyPoints = 1800;
+                }
+                else if (isHero)
                 {
                     profile.OperationalStatus = SubscriberOperationalStatus.Active;
                     profile.LoyaltyPoints = 45000;
@@ -791,7 +834,9 @@ public class TelecomSyriatelSeeder
 
                 var assetProductId = isHero && mixOffering?.ProductId != null
                     ? mixOffering.ProductId
-                    : poolCatalog.PickProductForType(subscriptionTypeId, rnd);
+                    : isDebtShowcase && debtPostpaidOffering?.ProductId != null
+                        ? debtPostpaidOffering.ProductId
+                        : poolCatalog.PickProductForType(subscriptionTypeId, rnd);
 
                 var asset = await _msisdnRepository.GetQuery()
                     .FirstOrDefaultAsync(m => !m.IsDeleted && m.Msisdn == msisdn);
@@ -800,6 +845,7 @@ public class TelecomSyriatelSeeder
                     asset = new MsisdnAsset
                     {
                         Msisdn = msisdn,
+                        BranchId = cust.BranchId,
                         PoolStatus = operationalStatus == SubscriberOperationalStatus.Active ? MsisdnPoolStatus.Active : MsisdnPoolStatus.Suspended,
                         SubscriberProfileId = profile.Id,
                         IntendedSubscriptionTypeId = subscriptionTypeId,
@@ -810,13 +856,20 @@ public class TelecomSyriatelSeeder
                 else
                 {
                     asset.SubscriberProfileId = profile.Id;
+                    asset.BranchId = cust.BranchId ?? asset.BranchId;
                     asset.IntendedSubscriptionTypeId = subscriptionTypeId;
                     asset.ProductId = assetProductId;
-                    var targetPoolStatus = operationalStatus == SubscriberOperationalStatus.Active ? MsisdnPoolStatus.Active : MsisdnPoolStatus.Suspended;
-                    if (asset.PoolStatus != targetPoolStatus)
+                var targetPoolStatus = operationalStatus == SubscriberOperationalStatus.Active ? MsisdnPoolStatus.Active : MsisdnPoolStatus.Suspended;
+                if (asset.PoolStatus != targetPoolStatus)
+                {
+                    // Hardening: Available/Reserved must pass through Active before Suspended (state machine enforcement)
+                    if (targetPoolStatus == MsisdnPoolStatus.Suspended
+                        && asset.PoolStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Reserved)
                     {
-                        asset.TransitionTo(targetPoolStatus);
+                        asset.TransitionTo(MsisdnPoolStatus.Active);
                     }
+                    asset.TransitionTo(targetPoolStatus);
+                }
                 }
 
                 if (demoTakeoverNewOwnerProfile == null
@@ -832,7 +885,11 @@ public class TelecomSyriatelSeeder
                     SubscriberProfileId = profile.Id,
                     MsisdnAssetId = asset.Id,
                     ProductId = asset.ProductId,
-                    ProductOfferingId = isHero && profileIndex == 0 ? mixOffering?.Id : null,
+                    ProductOfferingId = isHero && profileIndex == 0
+                        ? mixOffering?.Id
+                        : isDebtShowcase
+                            ? debtPostpaidOffering?.Id
+                            : null,
                     SubscriptionTypeId = subscriptionTypeId,
                     DocumentStatus = TelecomDocumentStatus.Verified,
                     IsPrimaryLine = primaryForParty
@@ -853,7 +910,12 @@ public class TelecomSyriatelSeeder
                     if (sim == null)
                     {
                         sim = SimInventory.Create(kitIccid, imsi: kitImsi);
+                        DemoSeedScope.ApplySimScope(sim, cust.BranchId);
                         await _simRepository.CreateAsync(sim);
+                    }
+                    else
+                    {
+                        DemoSeedScope.ApplySimScope(sim, cust.BranchId);
                     }
 
                     sim.AssignToProfile(profile.Id);
@@ -891,6 +953,7 @@ public class TelecomSyriatelSeeder
                 CreatedAtUtc = demoNow.AddMinutes(-12),
                 Notes = "ديمو MGR مكتمل: يا هلا → سيريتل ميكس 500 — KPIs وعرض 360."
             };
+            DemoSeedScope.ApplyOperationScope(op, null);
             await _operationRepository.CreateAsync(op);
             await _unitOfWork.SaveAsync();
 
@@ -918,6 +981,7 @@ public class TelecomSyriatelSeeder
                 CreatedAtUtc = demoNow.AddMinutes(-5),
                 Notes = "Activate VAS VAS_CALLER_ID — ديمو كاشف الأرقام.",
             };
+            DemoSeedScope.ApplyOperationScope(vasOp, null);
             await _operationRepository.CreateAsync(vasOp);
             await _unitOfWork.SaveAsync();
         }
@@ -935,11 +999,14 @@ public class TelecomSyriatelSeeder
                 CorrelationId = Guid.CreateVersion7().ToString(),
                 Status = TelecomOperationStatus.PendingDocuments,
                 DocumentStatus = TelecomDocumentStatus.Uploaded,
+                IdentityDocumentStorageKey = "demo-tko-identity-key",
+                ApprovalLevelRequired = "BackOffice",
                 SubscriberProfileId = heroProfile.Id,
                 SecondarySubscriberProfileId = demoTakeoverNewOwnerProfile.Id,
                 MsisdnAssetId = heroMsisdnAssetId,
                 Notes = "ديمو TKO: نقل ملكية خط سعدون الشامي → أحمد الخطيب — بانتظار اعتماد الباك أوفيس (CBS + HLR)."
             };
+            DemoSeedScope.ApplyOperationScope(tko, null);
             await _operationRepository.CreateAsync(tko);
             await _unitOfWork.SaveAsync();
         }
@@ -964,6 +1031,8 @@ public class TelecomSyriatelSeeder
             TelecomDemoMsisdn.ShowcaseOperationalSuspended,
             SuspensionWellKnown.Operational,
             "ديمو RCN: خط موقوف تشغيلي — مسار Operational بدون دفع (VAL-09-04).");
+
+        await EnsurePendingReconnectDemoOperationsAsync();
     }
 
     /// <summary>
@@ -980,7 +1049,9 @@ public class TelecomSyriatelSeeder
         string suspensionType,
         string susNotes)
     {
-        var customerId = await ResolveShowcaseCustomerIdAsync();
+        var customerId = msisdn == TelecomDemoMsisdn.DebtSubscriber
+            ? await ResolveDebtShowcaseCustomerIdAsync() ?? await ResolveShowcaseCustomerIdAsync()
+            : await ResolveShowcaseCustomerIdAsync();
         if (customerId == null)
         {
             return;
@@ -1019,7 +1090,7 @@ public class TelecomSyriatelSeeder
 
         var demoNow = DateTime.UtcNow;
         var susDate = msisdn == TelecomDemoMsisdn.DebtSubscriber
-            ? demoNow.AddMonths(-7) // Exceeds default 6-month BDR threshold
+            ? TelecomDemoBaselines.DebtBillingSuspensionStartUtc(demoNow)
             : demoNow.AddDays(-14);
 
         var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.TemporarySuspension);
@@ -1051,6 +1122,9 @@ public class TelecomSyriatelSeeder
             sus.ApprovalLevelRequired = "BackOffice";
         }
 
+        var branchId = await DemoSeedScope.ResolveCustomerBranchIdAsync(_query, customerId);
+        DemoSeedScope.ApplyOperationScope(sus, branchId);
+
         await _operationRepository.CreateAsync(sus);
         await _unitOfWork.SaveAsync();
     }
@@ -1065,6 +1139,7 @@ public class TelecomSyriatelSeeder
         string? existingProfileId)
     {
         var rnd = new Random();
+        var branchId = await DemoSeedScope.ResolveCustomerBranchIdAsync(_query, customerId);
         if (!string.IsNullOrEmpty(existingAssetId) && !string.IsNullOrEmpty(existingProfileId))
         {
             await EnsureDemoLineKitPairedAsync(existingAssetId, msisdn);
@@ -1085,7 +1160,7 @@ public class TelecomSyriatelSeeder
                 if (msisdn == TelecomDemoMsisdn.DebtSubscriber)
                 {
                     tracked.PrepaidBalance = null;
-                    tracked.PostpaidCreditLimit = -15000m;
+                    tracked.PostpaidCreditLimit = TelecomDemoBaselines.DebtOutstandingSyp;
                 }
                 else if (msisdn == TelecomDemoMsisdn.ReconnectFraudDemo)
                 {
@@ -1111,8 +1186,9 @@ public class TelecomSyriatelSeeder
                 ActivationDateUtc = DateTime.UtcNow.AddDays(-400),
                 // GLOBAL LINE TYPE & COMMERCIAL INTEGRITY: Deterministic layout based on MSISDN
                 PrepaidBalance = (msisdn == TelecomDemoMsisdn.DebtSubscriber || msisdn == TelecomDemoMsisdn.ReconnectFraudDemo) ? 0 : 1500,
-                PostpaidCreditLimit = msisdn == TelecomDemoMsisdn.DebtSubscriber ? -15000m : null
+                PostpaidCreditLimit = msisdn == TelecomDemoMsisdn.DebtSubscriber ? TelecomDemoBaselines.DebtOutstandingSyp : null
             };
+            DemoSeedScope.ApplyProfileScope(profile, branchId);
             profile.Suspend(msisdn);
             await _profileRepository.CreateAsync(profile);
             await _unitOfWork.SaveAsync();
@@ -1120,7 +1196,12 @@ public class TelecomSyriatelSeeder
         }
 
         // GLOBAL HLR MOCK DETERMINISTIC ALIGNMENT: Adjust MSISDN for suspended state
-        msisdn = AdjustMsisdnForHlrAlignment(msisdn, SubscriberOperationalStatus.Suspended, rnd);
+        // EXCEPTION: Debt subscriber (0939000002) keeps original digit (2 = ACTIVE) for Revenue Leakage demo
+        // where CRM is Suspended but HLR is ACTIVE - creating the mismatch detection scenario
+        if (msisdn != TelecomDemoMsisdn.DebtSubscriber)
+        {
+            msisdn = AdjustMsisdnForHlrAlignment(msisdn, SubscriberOperationalStatus.Suspended, rnd);
+        }
 
         string assetId;
         if (!string.IsNullOrEmpty(existingAssetId))
@@ -1134,8 +1215,8 @@ public class TelecomSyriatelSeeder
                 {
                     tracked.IntendedSubscriptionTypeId = TelecomSubscriptionTypeWellKnownIds.Postpaid;
                 }
-                if (tracked.PoolStatus == MsisdnPoolStatus.Available
-                    || tracked.PoolStatus == MsisdnPoolStatus.Reserved)
+                // Hardening: Available/Reserved must pass through Active before Suspended (state machine enforcement)
+                if (tracked.PoolStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Reserved)
                 {
                     tracked.TransitionTo(MsisdnPoolStatus.Active);
                 }
@@ -1164,6 +1245,7 @@ public class TelecomSyriatelSeeder
                 Category = MsisdnCategory.Normal,
                 IntendedSubscriptionTypeId = msisdn == TelecomDemoMsisdn.DebtSubscriber ? TelecomSubscriptionTypeWellKnownIds.Postpaid : TelecomSubscriptionTypeWellKnownIds.Prepaid
             };
+            DemoSeedScope.ApplyMsisdnScope(asset, branchId);
             asset.TransitionTo(MsisdnPoolStatus.Active);
             asset.TransitionTo(MsisdnPoolStatus.Suspended);
             await _msisdnRepository.CreateAsync(asset);
@@ -1219,9 +1301,17 @@ public class TelecomSyriatelSeeder
             _profileRepository.Update(profile);
         }
 
-        if (asset != null && asset.PoolStatus == MsisdnPoolStatus.Active)
+        if (asset != null)
         {
-            asset.TransitionTo(MsisdnPoolStatus.Suspended);
+            // Hardening: Available/Reserved must pass through Active before Suspended (state machine enforcement)
+            if (asset.PoolStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Reserved)
+            {
+                asset.TransitionTo(MsisdnPoolStatus.Active);
+            }
+            if (asset.PoolStatus == MsisdnPoolStatus.Active)
+            {
+                asset.TransitionTo(MsisdnPoolStatus.Suspended);
+            }
         }
 
         await _unitOfWork.SaveAsync();
@@ -1249,6 +1339,14 @@ public class TelecomSyriatelSeeder
             .FirstOrDefaultAsync();
     }
 
+    private async Task<string?> ResolveDebtShowcaseCustomerIdAsync()
+    {
+        return await _query.Customer.AsNoTracking().IsDeletedEqualTo()
+            .Where(c => c.DisplayName.Contains(TelecomDemoMsisdn.DebtShowcaseCustomerName))
+            .Select(c => c.Id)
+            .FirstOrDefaultAsync();
+    }
+
     private async Task<string> EnsureDemoLineOwnedByCustomerAsync(string profileId, string assetId, string customerId)
     {
         var profile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
@@ -1257,6 +1355,8 @@ public class TelecomSyriatelSeeder
             return profileId;
         }
 
+        var branchId = await DemoSeedScope.ResolveCustomerBranchIdAsync(_query, customerId);
+
         var newProfile = new SubscriberProfile
         {
             CustomerId = customerId,
@@ -1264,6 +1364,7 @@ public class TelecomSyriatelSeeder
             OperationalStatus = profile.OperationalStatus,
             ActivationDateUtc = profile.ActivationDateUtc ?? DateTime.UtcNow.AddDays(-365),
         };
+        DemoSeedScope.ApplyProfileScope(newProfile, branchId);
 
         var asset = await _msisdnRepository.GetAsync(assetId, CancellationToken.None);
         var msisdn = asset?.Msisdn ?? "";
@@ -1281,6 +1382,7 @@ public class TelecomSyriatelSeeder
         if (asset != null)
         {
             asset.SubscriberProfileId = newProfile.Id;
+            DemoSeedScope.ApplyMsisdnScope(asset, branchId);
         }
 
         var subscriptions = await _query.TelecomSubscription.IsDeletedEqualTo()
@@ -1323,6 +1425,7 @@ public class TelecomSyriatelSeeder
             return;
         }
 
+        var branchId = await DemoSeedScope.ResolveCustomerBranchIdAsync(_query, customerId);
         var assetRow = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
             .Where(m => m.Msisdn == msisdn)
             .Select(m => new { m.Id, m.SubscriberProfileId })
@@ -1363,15 +1466,21 @@ public class TelecomSyriatelSeeder
                     PrepaidBalance = 5000,
                     PostpaidCreditLimit = null
                 };
+                DemoSeedScope.ApplyProfileScope(profile, branchId);
                 await _profileRepository.CreateAsync(profile);
                 await _unitOfWork.SaveAsync();
                 profileId = profile.Id;
             }
 
             var trackedProfile = await _profileRepository.GetAsync(profileId, CancellationToken.None);
-            if (trackedProfile != null && trackedProfile.OperationalStatus != SubscriberOperationalStatus.Active)
+            if (trackedProfile != null)
             {
-                trackedProfile.Activate();
+                DemoSeedScope.ApplyProfileScope(trackedProfile, branchId);
+                if (trackedProfile.OperationalStatus != SubscriberOperationalStatus.Active)
+                {
+                    trackedProfile.Activate();
+                }
+
                 _profileRepository.Update(trackedProfile);
             }
 
@@ -1379,6 +1488,7 @@ public class TelecomSyriatelSeeder
             if (asset != null)
             {
                 asset.SubscriberProfileId = profileId;
+                DemoSeedScope.ApplyMsisdnScope(asset, branchId);
                 if (asset.PoolStatus is MsisdnPoolStatus.Available or MsisdnPoolStatus.Reserved
                     or MsisdnPoolStatus.Suspended)
                 {
@@ -1403,10 +1513,10 @@ public class TelecomSyriatelSeeder
                 ServiceLineType = ServiceLineType.Mobile,
                 OperationalStatus = SubscriberOperationalStatus.Active,
                 ActivationDateUtc = DateTime.UtcNow.AddDays(-200),
-                // GLOBAL HARDENING: Prepaid active line
                 PrepaidBalance = 5000,
                 PostpaidCreditLimit = null
             };
+            DemoSeedScope.ApplyProfileScope(profile, branchId);
             await _profileRepository.CreateAsync(profile);
             await _unitOfWork.SaveAsync();
             profileId = profile.Id;
@@ -1418,6 +1528,7 @@ public class TelecomSyriatelSeeder
                 ProductId = productId,
                 Category = MsisdnCategory.Normal,
             };
+            DemoSeedScope.ApplyMsisdnScope(asset, branchId);
             asset.TransitionTo(MsisdnPoolStatus.Active);
             await _msisdnRepository.CreateAsync(asset);
             await _unitOfWork.SaveAsync();
@@ -1445,8 +1556,7 @@ public class TelecomSyriatelSeeder
     }
 
     /// <summary>
-    /// Idempotent §16 demo: pending write-off BDR on debt showcase line (0939000002 / سعدون الشامي).
-    /// Runs after <see cref="EnsureHeroReconnectDemoAsync"/> so billing suspension exists.
+    /// Idempotent national-anchor reconciliation — debt line baseline + clean back-office slate.
     /// </summary>
     public async Task EnsureHeroBadDebtDemoAsync()
     {
@@ -1455,7 +1565,8 @@ public class TelecomSyriatelSeeder
             .Select(m => new { m.Id, m.SubscriberProfileId })
             .FirstOrDefaultAsync();
 
-        var debtCustomerId = await ResolveShowcaseCustomerIdAsync();
+        var debtCustomerId = await ResolveDebtShowcaseCustomerIdAsync()
+            ?? await ResolveShowcaseCustomerIdAsync();
 
         if (debtCustomerId == null)
         {
@@ -1478,80 +1589,131 @@ public class TelecomSyriatelSeeder
             return;
         }
 
-        // Seed runs without HTTP/branch context — RLS hides branch-scoped rows; bypass filters for idempotency.
-        var seedOps = _operationRepository.GetQuery().IgnoreQueryFilters();
+        await CreateDemoAnchorReconciler().ReconcileAllAsync();
+    }
 
-        var trackedBdr = await seedOps.FirstOrDefaultAsync(o => o.Number == "BDR-0001")
-            ?? await seedOps.FirstOrDefaultAsync(o => !o.IsDeleted
-                && o.Kind == TelecomOperationKind.BadDebtRecovery
-                && o.MsisdnAssetId == assetId);
+    private DemoAnchorBaselineReconciler CreateDemoAnchorReconciler() =>
+        new(
+            _query,
+            _profileRepository,
+            _msisdnRepository,
+            _subscriptionRepository,
+            _operationRepository,
+            _logRepository,
+            _paymentRepository,
+            _ticketRepository,
+            _unitOfWork,
+            _billing,
+            _hlr);
 
-        if (trackedBdr != null)
+    /// <summary>
+    /// Pending RCN rows for back-office approve demo (Fraud / Operational only).
+    /// Debt line (0939000002) starts clean — PAY → RCN created live from the showroom.
+    /// </summary>
+    private async Task EnsurePendingReconnectDemoOperationsAsync()
+    {
+        await EnsurePendingReconnectForLineAsync(
+            TelecomDemoMsisdn.ReconnectFraudDemo,
+            ReconnectWellKnown.Fraud,
+            "ديمو RCN-0001: موقوف احتيال — اعتماد باك أوفيس.",
+            fraudClearanceConfirmed: true);
+
+        await EnsurePendingReconnectForLineAsync(
+            TelecomDemoMsisdn.ShowcaseOperationalSuspended,
+            ReconnectWellKnown.Operational,
+            "ديمو RCN-0002: موقوف تشغيلي — اعتماد باك أوفيس.");
+    }
+
+    private async Task EnsurePendingReconnectForLineAsync(
+        string msisdn,
+        string clearanceType,
+        string notes,
+        string? paymentReference = null,
+        bool fraudClearanceConfirmed = false,
+        bool seedPaymentReceipt = false)
+    {
+        var assetRow = await _query.MsisdnAsset.AsNoTracking().IsDeletedEqualTo()
+            .Where(m => m.Msisdn == msisdn)
+            .Select(m => new { m.Id, m.SubscriberProfileId })
+            .FirstOrDefaultAsync();
+        if (assetRow == null || string.IsNullOrEmpty(assetRow.SubscriberProfileId))
         {
-            if (trackedBdr.IsDeleted)
-            {
-                trackedBdr.IsDeleted = false;
-            }
-
-            ApplyHeroBadDebtDemoState(trackedBdr, profileId, assetId);
-            _operationRepository.Update(trackedBdr);
-            await _unitOfWork.SaveAsync();
             return;
         }
 
-        var demoNow = DateTime.UtcNow;
-        var bdr = new TelecomOperationRequest
+        var hasPending = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .AnyAsync(o => o.Kind == TelecomOperationKind.Reconnect
+                           && o.MsisdnAssetId == assetRow.Id
+                           && (o.Status == TelecomOperationStatus.PendingDocuments
+                               || o.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance));
+        if (hasPending)
         {
-            Kind = TelecomOperationKind.BadDebtRecovery,
-            Number = "BDR-0001",
-            CorrelationId = Guid.CreateVersion7().ToString(),
-            Status = TelecomOperationStatus.PendingDocuments,
-            IdentityDocumentStorageKey = "demo-bdr-identity-key",
-            DocumentStatus = TelecomDocumentStatus.Verified,
-            SubscriberProfileId = profileId,
-            MsisdnAssetId = assetId,
-            CollectionAction = "WriteOffPartial",
-            DunningStage = "WriteOffPending",
-            PriorDunningStage = "Reminder2",
-            OutstandingBalanceSnapshot = -15_000m,
-            WriteOffAmount = 10_000m,
-            CollectedAmount = 5_000m,
-            CollectionNote = "ديمو BDR: شطب جزئي معلّق — اعتماد باك أوفيس.",
-            CollectionSettlementStatus = "Pending",
-            ApprovalLevelRequired = "BackOffice",
-            ProvisioningResult = "Pending",
-            Notes = "BDR-0001|demo=WriteOffPartial|balance=-15000|writeoff=10000|cash=5000|bo=true",
-            IsLostOrStolenReport = false,
-            FraudClearanceConfirmed = false,
-            AutoReconnectEnabled = false,
-            NotificationSuppressed = false,
-            CreatedAtUtc = demoNow.AddHours(-2),
-            SlaExpirationTimeUtc = DateTime.UtcNow.AddMinutes(2),
-        };
+            return;
+        }
 
-        ApplyHeroBadDebtDemoState(bdr, profileId, assetId);
-        await _operationRepository.CreateAsync(bdr);
+        if (seedPaymentReceipt && !string.IsNullOrEmpty(paymentReference))
+        {
+            await EnsureDemoPaymentReceiptAsync(paymentReference);
+        }
+
+        var sourceSuspensionId = await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+            .Where(o => o.Kind == TelecomOperationKind.TemporarySuspension
+                        && o.MsisdnAssetId == assetRow.Id
+                        && o.Status == TelecomOperationStatus.Completed)
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Select(o => o.Id)
+            .FirstOrDefaultAsync();
+
+        var status = !string.IsNullOrEmpty(paymentReference)
+            ? TelecomOperationStatus.Paid_Pending_BackOffice_Clearance
+            : TelecomOperationStatus.PendingDocuments;
+
+        var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.Reconnect);
+        var rcnNumber = await _numberSequenceService.GenerateNumberAsync(entityName, prefix, "", useDate: false);
+        var rcn = new TelecomOperationRequest
+        {
+            Kind = TelecomOperationKind.Reconnect,
+            Number = rcnNumber,
+            CorrelationId = Guid.CreateVersion7().ToString(),
+            Status = status,
+            ApprovalLevelRequired = "BackOffice",
+            DocumentStatus = TelecomDocumentStatus.Verified,
+            IdentityDocumentStorageKey = "demo-rcn-identity-key",
+            SubscriberProfileId = assetRow.SubscriberProfileId,
+            MsisdnAssetId = assetRow.Id,
+            SourceSuspensionOperationId = sourceSuspensionId,
+            ClearanceType = clearanceType,
+            ReconnectReason = string.Equals(clearanceType, ReconnectWellKnown.Payment, StringComparison.OrdinalIgnoreCase)
+                ? "LateBillPayment"
+                : "CustomerRequest",
+            PaymentReference = paymentReference,
+            FraudClearanceConfirmed = fraudClearanceConfirmed,
+            CreatedAtUtc = DateTime.UtcNow.AddHours(-2),
+            Notes = notes,
+        };
+        DemoSeedScope.ApplyOperationScope(rcn, null);
+        await _operationRepository.CreateAsync(rcn);
         await _unitOfWork.SaveAsync();
     }
 
-    private static void ApplyHeroBadDebtDemoState(
-        TelecomOperationRequest operation,
-        string profileId,
-        string assetId)
+    private async Task EnsureDemoPaymentReceiptAsync(string receiptNumber)
     {
-        operation.Number = "BDR-0001";
-        operation.SubscriberProfileId = profileId;
-        operation.MsisdnAssetId = assetId;
-        operation.Status = TelecomOperationStatus.PendingDocuments;
-        operation.ApprovalLevelRequired = "BackOffice";
-        operation.IdentityDocumentStorageKey ??= "demo-bdr-identity-key";
-        operation.DocumentStatus = TelecomDocumentStatus.Verified;
-        operation.OutstandingBalanceSnapshot = -15_000m;
-        operation.WriteOffAmount = 10_000m;
-        operation.CollectedAmount = 5_000m;
-        operation.CollectionAction = "WriteOffPartial";
-        operation.DunningStage = "WriteOffPending";
-        operation.Notes = "BDR-0001|demo=WriteOffPartial|balance=-15000|writeoff=10000|cash=5000|bo=true";
-        operation.SlaExpirationTimeUtc = DateTime.UtcNow.AddMinutes(2);
+        var exists = await _query.BillingIntegrationLog.AsNoTracking()
+            .AnyAsync(l => !l.IsDeleted && l.Success && l.CorrelationId == receiptNumber);
+        if (exists)
+        {
+            return;
+        }
+
+        await _logRepository.CreateAsync(new BillingIntegrationLog
+        {
+            Success = true,
+            CorrelationId = receiptNumber,
+            AttemptNumber = 1,
+            Message = "CBS-OK-200: Demo bill pay 15000 SYP (RCPT-2002).",
+            IntegrationTarget = "Huawei CBS API v2.1",
+            BranchId = null,
+        });
+        await _unitOfWork.SaveAsync();
     }
 }

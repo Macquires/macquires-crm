@@ -75,6 +75,9 @@ function formatMoneyOffer(n, lang) {
 
 const telecomT = (key, fallback) => {
     try {
+        if (window.TelecomI18n?.resolve) {
+            return window.TelecomI18n.resolve(key, fallback, ['customer360Profile']);
+        }
         const raw = String(key);
         const paths = [];
         if (!raw.includes('.')) {
@@ -150,6 +153,7 @@ const wizardKindToApi = (k) => {
 };
 
 const RESOLVED = 2;
+const ESCALATED = 3;
 
 const pickHttpErrorMessage = (e) => {
     const d = e?.response?.data;
@@ -312,6 +316,10 @@ const Customer360ProfileApp = {
                     forceCbs: telecomT('ticketsTab.forceCbs', 'CBS'),
                     hlrSync: telecomT('ticketsTab.hlrSync', 'HLR'),
                     escalate: telecomT('ticketsTab.escalate', 'Escalate'),
+                    escalatedFollowUp: telecomT(
+                        'ticketsTab.escalatedFollowUp',
+                        'Escalated to Tier-3 — awaiting engineering. Track here and update the customer.'
+                    ),
                     closed: telecomT('ticketsTab.closed', ''),
                     noRbac: telecomT('ticketsTab.noRbac', ''),
                 },
@@ -451,6 +459,7 @@ const Customer360ProfileApp = {
             hlrBusy: '',
             hlrBySub: {},
             hlrRemediationBusy: '',
+            payAndReconnectBusy: '',
             lastHlrLog: '',
             aiSim: { msisdn: '', transcript: '', busy: false },
             opBusy: null,
@@ -630,10 +639,25 @@ const Customer360ProfileApp = {
                 'telecom.device.sell',
                 'telecom.device.sell_request',
             ]),
-            supportTicket: (StorageManager.getUserRoles?.() || []).some((r) =>
-                ['TelecomAdmin', 'TelecomCallCenter'].includes(r)
-            ),
+            supportTicket: StorageManager.hasAnyPermission(perms.value, [PERM.escalate, 'customer.view']),
         }));
+
+        const HUB_NAV_PERMS = [
+            'telecom.hub.frontline',
+            'telecom.hub.backoffice',
+            'telecom.hub.supervisor',
+            'telecom.line.activate',
+            'telecom.asset.manage',
+            'admin.settings.manage',
+        ];
+
+        const isSupportAgent = Vue.computed(() => {
+            const p = perms.value;
+            const hasSupport =
+                StorageManager.hasAnyPermission(p, ['customer.view', PERM.escalate]);
+            const hasOps = StorageManager.hasAnyPermission(p, HUB_NAV_PERMS);
+            return hasSupport && !hasOps;
+        });
 
         const canRecharge = Vue.computed(() => {
             const roles = StorageManager.getUserRoles?.() || [];
@@ -823,11 +847,32 @@ const Customer360ProfileApp = {
 
         const hlrDataForSub = (sub) => state.hlrBySub[sub?.id] || null;
 
+        const isRevenueLeakageDesync = (crmStatus, hlrState) => {
+            const crm = String(crmStatus || '').trim().toLowerCase();
+            return crm.includes('suspended') && normalizeHlrState(hlrState) === 'ACTIVE';
+        };
+
+        const isBillingSuspensionAligned = (crmStatus, hlrState) => {
+            const crm = String(crmStatus || '').trim().toLowerCase();
+            const hlr = normalizeHlrState(hlrState);
+            return crm.includes('suspended') && (hlr === 'SUSPENDED' || hlr === 'INACTIVE');
+        };
+
+        const isHealthyActiveLine = (crmStatus, hlrState) => {
+            const crm = String(crmStatus || '').trim().toLowerCase();
+            return (crm === 'active' || crm === '1') && normalizeHlrState(hlrState) === 'ACTIVE';
+        };
+
         const hlrNeedsRemediation = (sub) => {
             const data = hlrDataForSub(sub);
             if (!data) return false;
+            const liveCrm = sub?.profileOperationalStatus ?? data.crmOperationalStatus;
+            const hlr = data.hlrSubscriberState;
+            if (isHealthyActiveLine(liveCrm, hlr)) return false;
+            if (isBillingSuspensionAligned(liveCrm, hlr)) return false;
+            if (isRevenueLeakageDesync(liveCrm, hlr)) return true;
             if (data.differsFromCrm) return true;
-            return isHlrRemediationState(data.hlrSubscriberState);
+            return isHlrRemediationState(hlr);
         };
 
         const selectedHlrNeedsRemediation = Vue.computed(() => {
@@ -844,17 +889,21 @@ const Customer360ProfileApp = {
         const hlrStatusBtnClass = (sub) => {
             const data = hlrDataForSub(sub);
             if (!data) return 'btn-outline-secondary';
-            if (data.differsFromCrm) return 'btn-outline-danger';
-            const s = normalizeHlrState(data.hlrSubscriberState);
+            const liveCrm = sub?.profileOperationalStatus ?? data.crmOperationalStatus;
+            const hlr = data.hlrSubscriberState;
+            if (isHealthyActiveLine(liveCrm, hlr)) return 'btn-outline-success';
+            if (isBillingSuspensionAligned(liveCrm, hlr)) return 'btn-outline-success';
+            if (isRevenueLeakageDesync(liveCrm, hlr) || data.differsFromCrm) return 'btn-outline-danger';
+            const s = normalizeHlrState(hlr);
             if (s === 'ACTIVE') return 'btn-outline-success';
             if (isHlrRemediationState(s)) return 'btn-outline-danger';
             return 'btn-outline-warning';
         };
 
         const selectedHlrRemediationCrmStatus = Vue.computed(() => {
-            const snap = selectedHlrSnapshot.value;
             const sub = selectedSubscription.value;
-            return snap?.crmOperationalStatus ?? sub?.profileOperationalStatus ?? '';
+            const snap = selectedHlrSnapshot.value;
+            return sub?.profileOperationalStatus ?? snap?.crmOperationalStatus ?? '';
         });
 
         const hlrRemediationCrmLabel = Vue.computed(() => {
@@ -1162,21 +1211,52 @@ const Customer360ProfileApp = {
             return t360(`enums.operational.${key}`, s);
         };
 
+        const isGuidLike = (value) => /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value || '').trim());
+
+        const timelineKindMeta = (kind) => {
+            localeTick.value;
+            const k = Number(kind);
+            const labels = {
+                0: { label: telecomT('timeline.kinds.operation', 'Operation'), badge: 'bg-danger' },
+                1: { label: telecomT('timeline.kinds.payment', 'Payment'), badge: 'bg-success' },
+                2: { label: telecomT('timeline.kinds.ticket', 'Ticket'), badge: 'bg-warning text-dark' },
+                3: { label: telecomT('timeline.kinds.billing', 'Billing'), badge: 'bg-info text-dark' },
+                4: { label: telecomT('timeline.kinds.audit', 'Audit'), badge: 'bg-secondary' },
+            };
+            return labels[k] || { label: telecomT('timeline.kinds.other', 'Event'), badge: 'bg-light text-dark border' };
+        };
+
         const mappedTimeline = Vue.computed(() => {
             localeTick.value;
             const ar = contentLang() === 'ar';
-            return (state.profile?.timeline || []).map((r) => ({
-                occurredAtUtc: r.occurredAtUtc ?? r.OccurredAtUtc,
-                kind: r.kind ?? r.Kind,
-                title: ar
-                    ? (r.titleAr ?? r.TitleAr ?? '—')
-                    : (r.titleEn ?? r.TitleEn ?? r.titleAr ?? r.TitleAr ?? '—'),
-                subtitle: r.subtitle ?? r.Subtitle,
-                status: r.status ?? r.Status,
-                referenceId: r.referenceId ?? r.ReferenceId,
-                actionUrl: r.actionUrl ?? r.ActionUrl,
-                display: formatDt(r.occurredAtUtc ?? r.OccurredAtUtc),
-            }));
+            return (state.profile?.timeline || []).map((r) => {
+                const kind = r.kind ?? r.Kind;
+                const rawRef = r.referenceId ?? r.ReferenceId;
+                const reference = rawRef && !isGuidLike(rawRef) ? String(rawRef).trim() : '';
+                const subtitle = (r.subtitle ?? r.Subtitle ?? '').trim();
+                const status = (r.status ?? r.Status ?? '').trim();
+                const kindMeta = timelineKindMeta(kind);
+                const detailParts = [];
+                if (subtitle) detailParts.push(subtitle);
+                if (reference && !subtitle.includes(reference)) {
+                    detailParts.push(
+                        ar ? `المرجع ${reference}` : `Ref ${reference}`,
+                    );
+                }
+                return {
+                    occurredAtUtc: r.occurredAtUtc ?? r.OccurredAtUtc,
+                    kind,
+                    kindLabel: kindMeta.label,
+                    kindBadge: kindMeta.badge,
+                    title: ar
+                        ? (r.titleAr ?? r.TitleAr ?? '—')
+                        : (r.titleEn ?? r.TitleEn ?? r.titleAr ?? r.TitleAr ?? '—'),
+                    detail: detailParts.join(' · ') || '—',
+                    status: status || null,
+                    actionUrl: r.actionUrl ?? r.ActionUrl,
+                    display: formatDt(r.occurredAtUtc ?? r.OccurredAtUtc),
+                };
+            });
         });
 
         const timelineFilters = Vue.computed(() => [
@@ -1236,12 +1316,13 @@ const Customer360ProfileApp = {
                     ticketNumber: r.ticketNumber ?? r.TicketNumber,
                     msisdn: r.msisdn ?? r.Msisdn,
                     notes: r.notes ?? r.Notes,
+                    resolutionNotes: r.resolutionNotes ?? r.ResolutionNotes,
                     status,
                     statusLabel: ticketEnumLabel('status', status),
                     statusBadge:
                         status === RESOLVED
                             ? 'bg-success'
-                            : status === 3
+                            : status === ESCALATED
                               ? 'bg-dark'
                               : status === 1
                                 ? 'bg-primary'
@@ -1250,6 +1331,8 @@ const Customer360ProfileApp = {
                     issueLabel: ticketEnumLabel('issue', Number(r.issueType ?? r.IssueType)),
                     createdDisplay: formatDt(r.createdAtUtc ?? r.CreatedAtUtc),
                     canOperate: status !== RESOLVED,
+                    canEscalate: status !== RESOLVED && status !== ESCALATED,
+                    isEscalated: status === ESCALATED,
                 };
             })
         );
@@ -1399,19 +1482,29 @@ const Customer360ProfileApp = {
 
         const rechargeFlowLabels = () => ({
             methodTitle: telecomT('swal.rechargeMethod', 'Recharge method'),
+            methodHint: telecomT('swal.rechargeMethodHint', 'Wallet/cash: amount + receipt. Voucher: prepaid card code.'),
             wallet: telecomT('swal.walletCash', 'Wallet / cash'),
             voucher: telecomT('swal.voucher', 'Voucher'),
             continueBtn: telecomT('swal.continue', 'Continue'),
             cancelBtn: telecomT('swal.cancel', 'Cancel'),
             amountTitle: telecomT('swal.rechargeAmount', 'Amount'),
             amountPlaceholder: '15000',
+            amountHint: telecomT('swal.rechargeAmountHint', 'Cash amount in SYP received from the customer.'),
+            amountFooter: telecomT('swal.rechargeAmountFooter', 'Tip: typical demo amounts are 15,000 or 30,000 SYP.'),
+            amountEmpty: telecomT('swal.rechargeAmountEmpty', 'Please enter the cash amount.'),
+            amountInvalid: telecomT('swal.rechargeAmountInvalid', 'Use numbers only (greater than zero).'),
             invalidAmount: telecomT('swal.amountInvalid', 'Invalid amount'),
+            amountTooHigh: telecomT('swal.rechargeAmountTooHigh', 'Maximum recharge amount is {max} SYP.'),
+            amountMax: String(TelecomRechargeFlow?.DEFAULT_AMOUNT_MAX || 1000000),
             paymentRefTitle: telecomT('swal.paymentRef', 'Payment reference'),
             paymentRefPlaceholder: 'WAL-2026-001234',
+            refHint: telecomT('swal.rechargeRefHint', 'Receipt or cashier reference — required for audit.'),
+            refEmpty: telecomT('swal.rechargeRefEmpty', 'Payment reference is required.'),
             confirmBtn: telecomT('swal.confirmRecharge', 'Confirm'),
             refRequired: telecomT('swal.paymentRefRequired', 'Required'),
             voucherCodeTitle: telecomT('swal.voucherCode', 'Voucher code'),
             voucherPlaceholder: telecomT('swal.voucherPh', ''),
+            voucherHint: telecomT('swal.rechargeVoucherHint', 'Enter the prepaid voucher code.'),
             validateBtn: telecomT('swal.validate', 'Validate'),
             voucherRequired: telecomT('swal.voucherRequired', 'Required'),
             voucherInvalid: telecomT('swal.voucherInvalid', 'Invalid'),
@@ -1489,6 +1582,9 @@ const Customer360ProfileApp = {
 
         const loadSecondaryLineData = async () => {
             const selected = selectedSubscription.value;
+            if (selected?.id) {
+                delete state.hlrBySub[selected.id];
+            }
             await Promise.all([
                 loadCbs(),
                 selected ? checkHlr(selected) : Promise.resolve(),
@@ -1562,6 +1658,53 @@ const Customer360ProfileApp = {
                 return null;
             } finally {
                 state.hlrBusy = '';
+            }
+        };
+
+        const canPayAndReconnect = (sub) => {
+            const status = sub?.profileOperationalStatus || sub?.operationalStatus || '';
+            return (
+                (status === 'SuspendedBilling' || status === 'SUSPENDED_BILLING' || status === 'Suspended' || status === 'SUSPENDED') &&
+                StorageManager.hasAnyPermission(perms.value, ['telecom.line.reconnect_request', 'telecom.line.reconnect', 'telecom.hub.frontline'])
+            );
+        };
+
+        const executePayAndReconnect = async (sub) => {
+            const msisdn = (sub?.msisdn || '').trim();
+            if (!msisdn) {
+                Swal.fire({ icon: 'warning', title: telecomT('swal.noActiveLine', 'No line') });
+                return;
+            }
+            state.payAndReconnectBusy = sub.id;
+            try {
+                const res = await AxiosManager.post('/Telecom/ExecutePayAndReconnect', {
+                    customerId: state.customerId,
+                    subscriberProfileId: sub.subscriberProfileId,
+                    msisdn: msisdn,
+                });
+                const body = res?.data?.content ?? res?.data?.Content ?? res?.data;
+                if (res?.data?.code === 200) {
+                    const paymentRef = body?.paymentReference || body?.PaymentReference || '';
+                    const reconnectRef = body?.reconnectReference || body?.ReconnectReference || body?.operationNumber || body?.OperationNumber || '';
+                    await loadProfile(true);
+                    await loadCbs();
+                    await loadLineWallets();
+                    const refreshed = allSubscriptions.value.find((s) => s.id === sub.id) || sub;
+                    await checkHlr(refreshed);
+                    toastSuccess(
+                        telecomT('lineActions.payAndReconnectSuccess', 'Pay & Reconnect completed'),
+                        `<div class="small">
+                            <p class="mb-1"><strong>${telecomT('lineActions.paymentRef', 'Payment')}:</strong> ${paymentRef}</p>
+                            <p class="mb-0"><strong>${telecomT('lineActions.reconnectRef', 'Reconnect')}:</strong> ${reconnectRef}</p>
+                        </div>`
+                    );
+                } else {
+                    throw Object.assign(new Error(body?.message || res?.data?.message || 'Failed'), { response: res });
+                }
+            } catch (e) {
+                toastError(e, telecomT('lineActions.payAndReconnectFailed', 'Pay & Reconnect failed'));
+            } finally {
+                state.payAndReconnectBusy = '';
             }
         };
 
@@ -2148,36 +2291,43 @@ const Customer360ProfileApp = {
             () => state.wizard.mgrProrationPreview?.sufficientBalance ?? state.wizard.mgrProrationPreview?.SufficientBalance !== false
         );
 
-        const canWizardFinishStep2 = Vue.computed(() => {
-            if (state.wizard.kind === 'addpackage') {
-                return !!state.wizard.vasActivated;
-            }
-            if (state.wizard.kind === 'support') {
-                return !!state.wizard.supportTicketCreated;
-            }
-            if (!state.wizard.createdOperationId || !state.wizard.documentMarkedUploaded) return false;
-            if (state.wizard.kind === 'changeGsm') {
-                return state.wizard.confirmed;
-            }
-            if (state.wizard.kind === 'activate') {
-                if (activateRequiredDeposit.value > 0 && !state.wizard.paymentRecorded) return false;
-            }
-            if (state.wizard.kind === 'takeover') return true;
-            if (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) return true;
-            if (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) return true;
-            if (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) return true;
-            if (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) return true;
-            if (state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) return true;
-            if (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) return true;
-            if (state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) return true;
-            if (state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance) return true;
-            return state.wizard.confirmed;
-        });
+        const wizardRequiresStep2Identity = Vue.computed(() =>
+            typeof TelecomWizardConfirm !== 'undefined'
+                ? TelecomWizardConfirm.requiresStep2IdentityUpload(state.wizard, {
+                    susRequiresStep2Identity: susRequiresStep2Identity.value,
+                })
+                : false);
+
+        const wizardAwaitBackOffice = Vue.computed(() =>
+            typeof TelecomWizardConfirm !== 'undefined'
+                ? TelecomWizardConfirm.awaitBackOffice(state.wizard)
+                : false);
+
+        const wizardShowsConfirmCbs = Vue.computed(() =>
+            typeof TelecomWizardConfirm !== 'undefined'
+                ? TelecomWizardConfirm.showsConfirmCbs(state.wizard, {
+                    activateRequiredDeposit: activateRequiredDeposit.value,
+                })
+                : false);
+
+        const canWizardFinishStep2 = Vue.computed(() =>
+            typeof TelecomWizardConfirm !== 'undefined'
+                ? TelecomWizardConfirm.canFinishStep2(state.wizard, {
+                    activateRequiredDeposit: activateRequiredDeposit.value,
+                })
+                : false);
+
+        const isCorporateProfile = () => {
+            const core = state.profile?.core;
+            return typeof TelecomWizardConfirm !== 'undefined'
+                ? TelecomWizardConfirm.isCorporateCustomerKind(core?.customerKind ?? core?.CustomerKind)
+                : String(core?.customerKind ?? core?.CustomerKind ?? '').toLowerCase() === 'corporate';
+        };
 
         const onTerminationTypeChange = () => {
             const ty = (state.wizard.trmTerminationType || '').trim();
             state.wizard.trmRequiresBackOffice =
-                ty === 'Fraud' || ty === 'Regulatory' || ty === 'Collections';
+                ty === 'Fraud' || ty === 'Regulatory' || ty === 'Collections' || isCorporateProfile();
             if (typeof TelecomBssWizardClearance !== 'undefined') {
                 TelecomBssWizardClearance.termination.reset(state.wizard, ty);
             }
@@ -2561,7 +2711,8 @@ const Customer360ProfileApp = {
 
         const onSusTypeChange = () => {
             const ty = (state.wizard.susSuspensionType || '').trim();
-            state.wizard.susRequiresBackOffice = ty === 'Fraud' || ty === 'Regulatory';
+            state.wizard.susRequiresBackOffice =
+                ty === 'Fraud' || ty === 'Regulatory' || isCorporateProfile();
             if (typeof TelecomBssWizardClearance !== 'undefined') {
                 TelecomBssWizardClearance.suspension.reset(state.wizard, ty);
             }
@@ -2832,11 +2983,15 @@ const Customer360ProfileApp = {
         };
 
         const onChangeNumberTargetPicked = () => {
-            const id = (state.wizard.cnTargetMsisdnAssetId || '').trim();
-            const row = (state.wizard.cnPoolNumbers || []).find((r) => String(r.id ?? r.Id) === id);
-            const cat = row?.category ?? row?.Category;
             state.wizard.cnRequiresBackOffice =
-                (state.wizard.cnChangeMode || 'Internal') === 'PortIn' || isPremiumMsisdnCategory(cat);
+                typeof TelecomWizardConfirm !== 'undefined'
+                    ? TelecomWizardConfirm.resolveChangeNumberRequiresBackOffice(state.wizard)
+                    : (state.wizard.cnChangeMode || 'Internal') === 'PortIn'
+                        || isPremiumMsisdnCategory(
+                            (state.wizard.cnPoolNumbers || []).find(
+                                (r) => String(r.id ?? r.Id) === (state.wizard.cnTargetMsisdnAssetId || '').trim()
+                            )?.category
+                        );
             if (typeof TelecomBssWizardClearance !== 'undefined') {
                 TelecomBssWizardClearance.changeNumber.reset(
                     state.wizard,
@@ -3192,6 +3347,15 @@ const Customer360ProfileApp = {
             } else if (kind === 'suspension') {
                 onSusTypeChange();
             } else if (kind === 'reconnect') {
+                const line = parseSelectedLine();
+                const msisdn = (line?.msisdn || state.wizard.primaryLabel || '').trim();
+                if (msisdn === '0939000002') {
+                    state.wizard.rcnClearanceType = 'Payment';
+                    state.wizard.rcnPaymentReference = 'RCPT-2002';
+                    state.wizard.rcnReconnectReason = 'LateBillPayment';
+                } else if (selectedLineBdrApproved.value) {
+                    state.wizard.rcnClearanceType = 'Payment';
+                }
                 await loadReconnectEligibility();
             } else if (kind === 'badDebt') {
                 await loadBadDebtEligibility();
@@ -3985,46 +4149,20 @@ const Customer360ProfileApp = {
                 if (ok && entity?.id) {
                     state.wizard.createdOperationId = entity.id;
                     state.wizard.createdOperationNumber = entity.number || '';
-                    if (state.wizard.kind === 'termination') {
-                        state.wizard.trmRequiresBackOffice =
-                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
-                            || state.wizard.trmRequiresBackOffice;
-                    }
-                    if (state.wizard.kind === 'suspension') {
-                        state.wizard.susRequiresBackOffice =
-                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
-                            || state.wizard.susRequiresBackOffice;
-                    }
-                    if (state.wizard.kind === 'reconnect') {
-                        state.wizard.rcnRequiresBackOffice =
-                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
-                            || state.wizard.rcnRequiresBackOffice;
+                    if (typeof TelecomWizardConfirm !== 'undefined') {
+                        TelecomWizardConfirm.syncBackOfficeFlagsFromEntity(state.wizard, entity);
                     }
                     if (state.wizard.kind === 'refund') {
-                        state.wizard.rfdRequiresBackOffice =
-                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
-                            || !!entity.requiresDualApproval;
                         state.wizard.rfdDepositSnapshot =
                             entity.depositBalanceSnapshot ?? entity.DepositBalanceSnapshot ?? null;
                         state.wizard.rfdWalletSnapshot =
                             entity.walletBalanceSnapshot ?? entity.WalletBalanceSnapshot ?? null;
                     }
-                    if (state.wizard.kind === 'badDebt') {
-                        state.wizard.bdrRequiresBackOffice =
-                            String(entity.approvalLevelRequired || '').toLowerCase() === 'backoffice'
-                            || state.wizard.bdrRequiresBackOffice;
-                        if (state.wizard.bdrRequiresBackOffice) {
-                            state.wizard.documentMarkedUploaded = true;
-                        }
-                    }
                     if (state.wizard.kind === 'deviceSale') {
-                        state.wizard.devRequiresFinance =
-                            !!entity.deviceApprovalLevelRequired || !!entity.approvalLevelRequired;
                         state.wizard.devFinancingPreview = entity.deviceFinancingNoteAr || entity.notes || '';
                         state.wizard.devDownPayment = String(
                             entity.deviceDownPaymentAmount ?? state.wizard.devDownPayment ?? ''
                         );
-                        state.wizard.documentMarkedUploaded = state.wizard.devSaleType === 'Cash';
                     }
                     Swal.fire({
                         icon: 'success',
@@ -4057,42 +4195,26 @@ const Customer360ProfileApp = {
 
         const submitWizardMarkDocument = async () => {
             if (!state.wizard.createdOperationId) return;
-            if (state.wizard.kind === 'takeover' && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: telecomT('takeOver.identityRequired', 'Upload ID') });
-                return;
-            }
-            if (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: telecomT('customerList.swal.uploadIdentity', 'Upload ID') });
-                return;
-            }
-            if (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: telecomT('changeNumber.paymentDocHint', 'Upload receipt') });
-                return;
-            }
-            if (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: telecomT('termination.identityRequired', 'Upload document') });
-                return;
-            }
-            if (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: telecomT('refund.boHint', 'Upload document') });
-                return;
-            }
-            if (state.wizard.kind === 'suspension' && susRequiresStep2Identity.value && !state.wizard.identityFile) {
-                Swal.fire({ icon: 'warning', title: t360('suspension.kycRequired', 'Upload document') });
+            if (wizardRequiresStep2Identity.value && !state.wizard.identityFile) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: t360('suspension.kycRequired', 'Upload document'),
+                    text: t360('suspension.kycDocumentHint', ''),
+                });
                 return;
             }
             state.wizard.uploadBusy = true;
             try {
                 let res;
                 if (
-                    (state.wizard.kind === 'takeover'
-                        || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen)
-                        || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
-                        || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
-                        || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
-                        || state.wizard.kind === 'suspension')
-                    && state.wizard.identityFile
+                    wizardRequiresStep2Identity.value
+                    && typeof TelecomWizardConfirm !== 'undefined'
                 ) {
+                    res = await TelecomWizardConfirm.uploadOperationIdentityDocument(
+                        state.wizard.createdOperationId,
+                        state.wizard.identityFile
+                    );
+                } else if (wizardRequiresStep2Identity.value) {
                     const form = new FormData();
                     form.append('id', state.wizard.createdOperationId);
                     form.append('file', state.wizard.identityFile);
@@ -4106,15 +4228,13 @@ const Customer360ProfileApp = {
                 }
                 if (res?.data?.code === 200) {
                     state.wizard.documentMarkedUploaded = true;
-                    const title =
-                        state.wizard.kind === 'takeover'
-                        || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen)
-                        || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice)
-                        || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice)
-                        || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice)
-                        || (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice)
-                            ? telecomT('swal.sentToBackOffice', 'Sent to BO')
-                            : telecomT('swal.documentRecorded', 'Document recorded');
+                    const sentBo =
+                        typeof TelecomWizardConfirm !== 'undefined'
+                            ? TelecomWizardConfirm.uploadSuccessIsBackOffice(state.wizard)
+                            : false;
+                    const title = sentBo
+                        ? telecomT('swal.sentToBackOffice', 'Sent to BO')
+                        : telecomT('swal.documentRecorded', 'Document recorded');
                     Swal.fire({ icon: 'success', title, timer: 1400, showConfirmButton: false });
                 } else {
                     throw Object.assign(
@@ -4131,6 +4251,22 @@ const Customer360ProfileApp = {
 
         const submitWizardConfirmCbs = async () => {
             if (!state.wizard.createdOperationId) return;
+            if (
+                typeof TelecomWizardConfirm !== 'undefined'
+                && TelecomWizardConfirm.shouldSkipConfirm(state.wizard)
+            ) {
+                if (
+                    !TelecomWizardConfirm.hasConfirmCbsPermission()
+                    && typeof Swal !== 'undefined'
+                ) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: telecomT('swal.notAllowed', 'Not allowed'),
+                        text: telecomT('wizardUi.awaitBo', 'Awaiting back office'),
+                    });
+                }
+                return;
+            }
             state.wizard.confirmBusy = true;
             state.isProvisioningInFlight = true;
             try {
@@ -4302,6 +4438,7 @@ const Customer360ProfileApp = {
                 return tpl.replace('{count}', String(activeLinesCount.value));
             }),
             can,
+            isSupportAgent,
             selectedLineTerminated,
             selectedLineSuspended,
             selectedLineActive,
@@ -4367,6 +4504,8 @@ const Customer360ProfileApp = {
             onDevicePicked,
             recordDeviceDownPaymentC360,
             canRecharge,
+            canPayAndReconnect,
+            executePayAndReconnect,
             formatDt,
             formatDateOnly,
             formatAmount,
@@ -4421,6 +4560,9 @@ const Customer360ProfileApp = {
             selectedSubscription,
             wizardTitle,
             canWizardFinishStep2,
+            wizardAwaitBackOffice,
+            wizardShowsConfirmCbs,
+            wizardRequiresStep2Identity,
             activateRequiredDeposit,
             openProvisioningWizard,
             closeProvisioningWizard,

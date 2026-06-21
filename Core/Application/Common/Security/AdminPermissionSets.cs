@@ -26,4 +26,18 @@ public static class AdminPermissionSets
         PermissionCatalog.AdminSettingsManage,
         PermissionCatalog.AdminUsersManage,
     ];
+
+    /// <summary>Read org-unit / branch lookup — admin screens plus operational filters (device inventory, asset pool).</summary>
+    public static readonly IReadOnlyList<string> OrgUnitReadAny = Merge(
+        UsersManageAny,
+        [
+            PermissionCatalog.TelecomDeviceInventoryManage,
+            PermissionCatalog.TelecomAssetManage,
+            PermissionCatalog.BulkImportUpload,
+            PermissionCatalog.BulkImportMonitor,
+            PermissionCatalog.TelecomReportsMis,
+        ]);
+
+    private static IReadOnlyList<string> Merge(params IEnumerable<string>[] sources) =>
+        sources.SelectMany(s => s).Distinct(StringComparer.Ordinal).ToList();
 }

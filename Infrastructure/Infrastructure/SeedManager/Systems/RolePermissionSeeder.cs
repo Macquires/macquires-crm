@@ -80,7 +80,7 @@ public class RolePermissionSeeder
 
     {
 
-        var allowedRoles = new HashSet<string>(TelecomEnterpriseRoleMatrix.StandardRoles, StringComparer.OrdinalIgnoreCase);
+        var allowedRoles = new HashSet<string>(PermissionCatalog.DefaultRoleGrants.Keys, StringComparer.OrdinalIgnoreCase);
 
         var validKeys = PermissionCatalog.All.Select(p => p.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -158,7 +158,7 @@ public class RolePermissionSeeder
 
     {
 
-        foreach (var roleName in TelecomEnterpriseRoleMatrix.StandardRoles)
+        foreach (var roleName in PermissionCatalog.DefaultRoleGrants.Keys)
 
         {
 

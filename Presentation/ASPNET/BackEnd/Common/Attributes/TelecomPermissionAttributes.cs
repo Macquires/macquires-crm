@@ -257,6 +257,14 @@ public sealed class RequireFinanceBdrViewAttribute : HasAnyPermissionAttribute
     }
 }
 
+public sealed class RequireBackOfficePendingQueueViewAttribute : HasAnyPermissionAttribute
+{
+    public RequireBackOfficePendingQueueViewAttribute()
+        : base(BackOfficePermissionSets.PendingQueueViewAny)
+    {
+    }
+}
+
 public sealed class RequireFinanceBdrExecuteAttribute : HasAnyPermissionAttribute
 {
     public RequireFinanceBdrExecuteAttribute()

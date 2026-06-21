@@ -85,6 +85,7 @@ public class CustomerSeeder
                 entity.SetOrgUnitId(branchId);
             }
 
+            DemoSeedScope.StampCustomer(entity);
             await _customerRepository.CreateAsync(entity);
         }
 

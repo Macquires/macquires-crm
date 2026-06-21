@@ -9,7 +9,8 @@ public static class PermissionLandingResolver
     public const string AdministrationUsers = "/Administration/UserList";
     public const string BackOfficeDashboard = "/Telecom/BackOfficeDashboard";
     public const string TelecomHub = "/Telecom/TelecomHub";
-    /// <summary>Legacy dashboard path; operators with customer.view land on <see cref="TelecomHub"/> instead.</summary>
+    public const string UnifiedSearch = "/Telecom/UnifiedSearch";
+    /// <summary>POS / NOC operators with hub surface permissions.</summary>
     public const string DefaultCrmDashboard = TelecomHub;
 
     public static string Resolve(IReadOnlySet<string> permissions)
@@ -39,7 +40,9 @@ public static class PermissionLandingResolver
 
         if (permissions.Contains(PermissionCatalog.CustomerView))
         {
-            return DefaultCrmDashboard;
+            return HasAny(permissions, HubPermissionSets.NavAny.ToArray())
+                ? DefaultCrmDashboard
+                : UnifiedSearch;
         }
 
         return MyProfile;

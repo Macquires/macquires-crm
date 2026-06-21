@@ -16,9 +16,17 @@
                 if (state.filters.searchTerm) q.searchTerm = state.filters.searchTerm;
                 if (state.filters.domain !== '') q.domain = parseInt(state.filters.domain);
                 if (state.filters.slaBreached !== '') q.slaBreached = state.filters.slaBreached === 'true';
-                // Note: Backend might need to be updated to support these extra filters in GetPendingRequests
                 return q;
             };
+
+            const HISTORICAL_LEDGER_STATUSES = new Set([3, 4, 8]);
+            const HISTORICAL_LEDGER_PIPELINE_STATES = new Set(['Completed', 'Failed', 'Approved_Pending_Cash']);
+            const filterHistoricalLedgerRows = (rows) => (rows || []).filter((row) => {
+                const status = Number(row.status ?? row.Status);
+                if (!Number.isNaN(status) && HISTORICAL_LEDGER_STATUSES.has(status)) return true;
+                const pipeline = row.pipelineState ?? row.PipelineState ?? '';
+                return HISTORICAL_LEDGER_PIPELINE_STATES.has(pipeline);
+            });
 
             const methods = {
                 hasPermission: (key) => {
@@ -36,8 +44,8 @@
                             params: buildQuery(),
                         });
                         const content = res?.data?.content ?? res?.data?.Content;
-                        state.rows = content?.data ?? content?.Data ?? [];
-                        state.totalCount = content?.total ?? content?.Total ?? state.rows.length;
+                        state.rows = filterHistoricalLedgerRows(content?.data ?? content?.Data ?? []);
+                        state.totalCount = state.rows.length;
                     } catch (e) {
                         console.error('BackOfficeHistoricalLedger load:', e);
                     } finally {
@@ -49,6 +57,15 @@
             const formatDt = (utc) => {
                 if (!utc) return '—';
                 return new Date(utc).toLocaleString();
+            };
+
+            const escapeHtml = (value) => {
+                if (value == null) return '';
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
             };
 
             const createGrid = () => {
@@ -81,7 +98,15 @@
                             field: 'auditorDisplayName', 
                             headerText: 'المدقق', 
                             width: 150,
-                            template: (data) => data.auditorDisplayName || data.updatedById || '—'
+                            template: (data) => escapeHtml(data.auditorDisplayName || '—')
+                        },
+                        {
+                            field: 'rejectionReasonAr',
+                            headerText: 'سبب الرفض',
+                            width: 180,
+                            template: (data) => data.rejectionReasonAr
+                                ? `<span class="text-danger">${escapeHtml(data.rejectionReasonAr)}</span>`
+                                : '—',
                         },
                         { 
                             field: 'updatedAtUtc', 

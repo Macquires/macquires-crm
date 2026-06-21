@@ -41,9 +41,65 @@ public static class BackOfficeTelecomPipelineState
         && (operation.Status == TelecomOperationStatus.PendingDocuments || operation.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance)
         && string.Equals(operation.ApprovalLevelRequired, "BackOffice", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Statuses that represent a decided back-office outcome for the historical audit ledger.</summary>
+    public static readonly TelecomOperationStatus[] HistoricalLedgerStatuses =
+    [
+        TelecomOperationStatus.Completed,
+        TelecomOperationStatus.Failed,
+        TelecomOperationStatus.Approved_Pending_Cash,
+    ];
+
+    public static bool IsHistoricalLedgerStatus(TelecomOperationStatus status) =>
+        HistoricalLedgerStatuses.Contains(status);
+
+    /// <summary>Statuses still belonging to the active back-office work queue.</summary>
+    public static bool IsActiveBackOfficeQueueStatus(TelecomOperationStatus status) =>
+        status is TelecomOperationStatus.PendingDocuments
+            or TelecomOperationStatus.Paid_Pending_BackOffice_Clearance
+            or TelecomOperationStatus.In_Progress;
+
+    /// <summary>Places a branch request on the back-office active queue with a reviewable status.</summary>
+    public static void ApplyBackOfficeRouting(TelecomOperationRequest entity, bool paidSettlement = false)
+    {
+        entity.ApprovalLevelRequired = "BackOffice";
+        if (paidSettlement)
+        {
+            entity.Status = TelecomOperationStatus.Paid_Pending_BackOffice_Clearance;
+            return;
+        }
+
+        if (entity.Status == TelecomOperationStatus.Draft)
+        {
+            entity.Status = TelecomOperationStatus.PendingDocuments;
+        }
+    }
+
     public static bool CanAcceptDocumentUpload(TelecomOperationRequest entity) =>
         entity.Status == TelecomOperationStatus.Draft
-        || (entity.Status == TelecomOperationStatus.PendingDocuments
+        || ((entity.Status == TelecomOperationStatus.PendingDocuments
+             || entity.Status == TelecomOperationStatus.Paid_Pending_BackOffice_Clearance)
             && string.Equals(entity.ApprovalLevelRequired, "BackOffice", StringComparison.OrdinalIgnoreCase)
             && entity.DocumentStatus < TelecomDocumentStatus.Uploaded);
+
+    public const string BackOfficeRejectedNotePrefix = "[BackOfficeRejected]";
+
+    public static string? TryExtractBackOfficeRejectionReason(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return null;
+        }
+
+        foreach (var line in notes.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith(BackOfficeRejectedNotePrefix, StringComparison.Ordinal))
+            {
+                var reason = trimmed[BackOfficeRejectedNotePrefix.Length..].Trim();
+                return string.IsNullOrWhiteSpace(reason) ? null : reason;
+            }
+        }
+
+        return null;
+    }
 }

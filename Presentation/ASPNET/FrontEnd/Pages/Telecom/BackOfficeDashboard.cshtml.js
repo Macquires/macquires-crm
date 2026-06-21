@@ -42,12 +42,13 @@
 
         // 2. Action Button Visibility in Drawer (Technical Actions)
         const hlrBtn = document.getElementById('boHlrBtn');
+        const forceHlrBtn = document.getElementById('boForceHlrBtn');
         const cbsBtn = document.getElementById('btnCbsForceSync');
         const pingBtn = document.getElementById('btnNetworkPing');
         const escBtn = document.getElementById('btnCoreEscalate');
 
         if (!canSyncNet) {
-            [hlrBtn, cbsBtn, pingBtn, escBtn].forEach(btn => btn?.classList.add('d-none', 'security-blocked'));
+            [hlrBtn, forceHlrBtn, cbsBtn, pingBtn, escBtn].forEach(btn => btn?.classList.add('d-none', 'security-blocked'));
         }
     }
 
@@ -61,11 +62,17 @@
     };
     const PREVIEW_MAX = 50;
 
-    const ENUM_FALLBACK = {
+    const ENUM_FALLBACK_EN = {
         issue: { 0: 'Network', 1: 'Billing', 2: 'SIM bar', 3: 'Activation' },
         priority: { 0: 'Low', 1: 'Medium', 2: 'High', 3: 'Critical' },
         status: { 0: 'Open', 1: 'In progress', 2: 'Resolved', 3: 'Escalated' },
         paymentStatus: { 0: 'Draft', 1: 'Gateway', 2: 'Completed', 3: 'Failed', 4: 'Reversed' },
+    };
+    const ENUM_FALLBACK_AR = {
+        issue: { 0: 'شبكة', 1: 'فوترة', 2: 'حظر شريحة', 3: 'تفعيل' },
+        priority: { 0: 'منخفض', 1: 'متوسط', 2: 'عالي', 3: 'حرج' },
+        status: { 0: 'مفتوحة', 1: 'قيد المعالجة', 2: 'تم الحل', 3: 'مصعّدة' },
+        paymentStatus: { 0: 'مسودة', 1: 'بوابة', 2: 'مكتمل', 3: 'فاشل', 4: 'معكوس' },
     };
 
     const BACK_OFFICE_PERMISSIONS = [
@@ -74,6 +81,13 @@
         'telecom.asset.manage',
         'admin.settings.manage',
         'customer.view',
+    ];
+
+    const PENDING_QUEUE_VIEW_PERMISSIONS = [
+        'Permission.Finance.Bdr.View',
+        'Permission.Finance.Bdr.Execute',
+        'Permission.Network.Technical.View',
+        ...BACK_OFFICE_PERMISSIONS,
     ];
 
     const emptyGridHtml = () => `
@@ -94,7 +108,13 @@
     let liveStatusCollapse = null;
     let tier3Collapse = null;
     let currentView = 'active'; // 'active', 'tech', 'historical'
+    const HISTORICAL_LEDGER_STATUSES = new Set([3, 4, 8]); // Completed, Failed, Approved_Pending_Cash
+    const HISTORICAL_LEDGER_PIPELINE_STATES = new Set(['Completed', 'Failed', 'Approved_Pending_Cash']);
     const scopeState = { regionId: null, branchId: null, regions: [], branches: [], canFilter: false };
+    let playbookState = { steps: [], currentIndex: 0, completed: new Set() };
+    let lastLiveStatusData = null;
+    let lastDrawerRow = null;
+    let lastDrawerDetail = null;
 
     function scopeParams() {
         const p = {};
@@ -274,6 +294,20 @@
         return t(map[value] || '', value || t('backOffice.dashboard.accountTypes.postpaidIndividual', 'Postpaid Account'));
     };
 
+    const boIdentityDocumentUrl = (operationId) => {
+        if (typeof TelecomWizardConfirm !== 'undefined') {
+            return TelecomWizardConfirm.operationIdentityDocumentUrl(operationId);
+        }
+        const opId = (operationId || '').trim();
+        if (!opId) return '';
+        const base = (typeof AxiosManager !== 'undefined' && AxiosManager.getBaseUrl
+            ? AxiosManager.getBaseUrl()
+            : '/api').replace(/\/$/, '');
+        const token = typeof StorageManager !== 'undefined' ? StorageManager.getAccessToken?.() || '' : '';
+        const q = `id=${encodeURIComponent(opId)}${token ? `&access_token=${encodeURIComponent(token)}` : ''}`;
+        return `${base}/Telecom/DownloadTelecomOperationIdentityDocument?${q}`;
+    };
+
     const blockReasonLabel = (row) => {
         const code = pick(row, 'blockReasonCode', 'BlockReasonCode');
         if (code) {
@@ -293,8 +327,10 @@
         return out;
     };
 
+    const enumFallback = () => (isEnUi() ? ENUM_FALLBACK_EN : ENUM_FALLBACK_AR);
+
     const enumLabel = (group, n) =>
-        t(`backOffice.dashboard.enums.${group}.${n}`, ENUM_FALLBACK[group]?.[n] ?? '—');
+        t(`backOffice.dashboard.enums.${group}.${n}`, enumFallback()[group]?.[n] ?? '—');
 
     const getUiLocale = () =>
         document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en-GB' : 'ar-SY';
@@ -335,24 +371,22 @@
     };
 
     const remapTicketLabels = () => {
-        tickets = tickets.map((row) => ({
+        const mapRow = (row) => ({
             ...row,
             issueLabel: enumLabel('issue', Number(row.issueType)),
             priorityLabel: enumLabel('priority', Number(row.priority)),
             statusLabel: enumLabel('status', Number(row.status)),
-        }));
-        ticketPreview = tickets.slice(0, PREVIEW_MAX).map((row) => ({
-            ...row,
-            issueLabel: enumLabel('issue', Number(row.issueType)),
-            priorityLabel: enumLabel('priority', Number(row.priority)),
-            statusLabel: enumLabel('status', Number(row.status)),
-        }));
+            categoryLabelHtml: categoryLabelHtml(row.ticketCategory),
+        });
+        tickets = tickets.map(mapRow);
+        ticketPreview = tickets.slice(0, PREVIEW_MAX).map(mapRow);
     };
 
     const applyPageI18n = () => {
         const title = t('backOffice.title');
         if (title) document.title = title;
         window.TelecomI18n?.refresh?.(document.getElementById('bo-dashboard-page'));
+        window.TelecomI18n?.refresh?.(document.getElementById('ticketDrawer'));
     };
 
     const parseTicketList = (res) => {
@@ -396,6 +430,8 @@
             createdByChannel: pick(raw, 'createdByChannel', 'CreatedByChannel') || 'CallCenter_Agent',
             customerDisplayName: pick(raw, 'customerDisplayName', 'CustomerDisplayName'),
             resolutionNotes: pick(raw, 'resolutionNotes', 'ResolutionNotes'),
+            createdAtUtc: pick(raw, 'createdAtUtc', 'CreatedAtUtc'),
+            updatedAtUtc: pick(raw, 'updatedAtUtc', 'UpdatedAtUtc'),
             issueLabel: enumLabel('issue', Number(pick(raw, 'issueType', 'IssueType'))),
             categoryLabelHtml: categoryLabelHtml(ticketCategory),
             priorityLabel: enumLabel('priority', Number(pick(raw, 'priority', 'Priority'))),
@@ -416,20 +452,215 @@
         return c === 'simswap' || c === 'lineactivation' || cat === 1 || cat === 4;
     };
 
+    const categoryNeedsForceHlr = (cat) => {
+        const c = String(cat || '').toLowerCase();
+        return c === 'lineactivation' || cat === 4;
+    };
+
     const categoryNeedsCbs = (cat) => {
         const c = String(cat || '').toLowerCase();
         return c === 'packagemigration' || c === 'complaint' || c === 'vasactivation' || cat === 0 || cat === 2 || cat === 5;
     };
 
-    function updateDrawerToolbar(category) {
+    function playbookActionIds(detail, row) {
+        return new Set(
+            buildPlaybookSteps(detail, row)
+                .filter((s) => s.kind === 'action' && s.actionId)
+                .map((s) => s.actionId)
+        );
+    }
+
+    function updateDrawerToolbar(category, detail, row) {
         const hlrBtn = document.getElementById('boHlrBtn');
+        const forceHlrBtn = document.getElementById('boForceHlrBtn');
         const cbsBtn = document.getElementById('btnCbsForceSync');
         const pingBtn = document.getElementById('btnNetworkPing');
         const escBtn = document.getElementById('btnCoreEscalate');
-        if (hlrBtn) hlrBtn.classList.toggle('d-none', !categoryNeedsHlr(category));
-        if (cbsBtn) cbsBtn.classList.toggle('d-none', !categoryNeedsCbs(category));
+        const actions = detail || row ? playbookActionIds(detail ?? row, row ?? detail) : null;
+
+        if (actions) {
+            if (hlrBtn) hlrBtn.classList.toggle('d-none', !actions.has('boHlrBtn'));
+            if (forceHlrBtn) forceHlrBtn.classList.toggle('d-none', !actions.has('boForceHlrBtn'));
+            if (cbsBtn) cbsBtn.classList.toggle('d-none', !actions.has('btnCbsForceSync'));
+        } else {
+            if (hlrBtn) hlrBtn.classList.toggle('d-none', !categoryNeedsHlr(category));
+            if (forceHlrBtn) forceHlrBtn.classList.toggle('d-none', !categoryNeedsForceHlr(category));
+            if (cbsBtn) cbsBtn.classList.toggle('d-none', !categoryNeedsCbs(category));
+        }
         if (pingBtn) pingBtn.classList.remove('d-none');
         if (escBtn) escBtn.classList.remove('d-none');
+    }
+
+    function playbookText(key) {
+        return t(`backOffice.dashboard.playbook.${key}`, key);
+    }
+
+    function liveStatusLabel(key) {
+        return t(`backOffice.dashboard.liveStatus.${key}`, key);
+    }
+
+    function yesNoLabel(value) {
+        return value ? liveStatusLabel('yes') : liveStatusLabel('no');
+    }
+
+    function detectNotProvisioned(detail, row) {
+        const blob = [
+            pick(detail, 'notes', 'Notes'),
+            pick(detail, 'payloadJson', 'PayloadJson'),
+            row?.notes,
+            row?.payloadJson,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toUpperCase();
+        return /NOT[_\s-]?PROVISIONED|REPROVISION|إعادة تهيئة HLR/.test(blob);
+    }
+
+    function buildPlaybookSteps(detail, row) {
+        const issue = Number(pick(detail, 'issueType', 'IssueType') ?? row?.issueType ?? 0);
+        const status = Number(pick(detail, 'status', 'Status') ?? row?.status ?? 0);
+        const category = resolveCategoryKey(detail ?? row);
+        const notProv = detectNotProvisioned(detail, row);
+
+        const steps = [{ id: 'review', kind: 'info' }];
+        if (status === 3) steps.push({ id: 'tier3Context', kind: 'info' });
+        steps.push({ id: 'ping', kind: 'action', actionId: 'btnNetworkPing' });
+
+        if (issue === 1 || (categoryNeedsCbs(category) && !notProv && !categoryNeedsForceHlr(category))) {
+            steps.push({ id: 'cbs', kind: 'action', actionId: 'btnCbsForceSync' });
+        } else if (notProv || categoryNeedsForceHlr(category)) {
+            steps.push({ id: 'forceHlr', kind: 'action', actionId: 'boForceHlrBtn' });
+        } else if (issue === 0 || issue === 2 || categoryNeedsHlr(category)) {
+            steps.push({ id: 'hlr', kind: 'action', actionId: 'boHlrBtn' });
+        }
+
+        steps.push({ id: 'resolve', kind: 'action', actionId: 'boSaveStatusBtn' });
+        return steps;
+    }
+
+    function getPlaybookIntro(detail, row) {
+        const issue = Number(pick(detail, 'issueType', 'IssueType') ?? row?.issueType ?? 0);
+        const status = Number(pick(detail, 'status', 'Status') ?? row?.status ?? 0);
+        if (status === 3) return playbookText('introEscalated');
+        if (detectNotProvisioned(detail, row)) return playbookText('introNotProvisioned');
+        if (issue === 1) return playbookText('introBilling');
+        if (issue === 0) return playbookText('introNetwork');
+        if (issue === 2) return playbookText('introSim');
+        return playbookText('introDefault');
+    }
+
+    function stepLabel(step) {
+        return playbookText(`steps.${step.id}`, step.id);
+    }
+
+    function clearPlaybookHighlights() {
+        document.querySelectorAll('.bo-playbook-action-target').forEach((el) => {
+            el.classList.remove('bo-playbook-action-target');
+        });
+    }
+
+    function highlightPlaybookAction(actionId) {
+        clearPlaybookHighlights();
+        if (!actionId) return;
+        const btn = document.getElementById(actionId);
+        btn?.classList.add('bo-playbook-action-target');
+        btn?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function findPlaybookStepIndex(stepId) {
+        return playbookState.steps.findIndex((s) => s.id === stepId);
+    }
+
+    function refreshPlaybookStepClasses() {
+        const stepsEl = document.getElementById('boPlaybookSteps');
+        if (!stepsEl) return;
+        stepsEl.querySelectorAll('li').forEach((li, i) => {
+            const sid = li.getAttribute('data-playbook-step');
+            const done = playbookState.completed.has(sid);
+            li.classList.toggle('bo-step-done', done);
+            li.classList.toggle('bo-step-current', i === playbookState.currentIndex && !done);
+        });
+    }
+
+    function updatePlaybookHint() {
+        const hintEl = document.getElementById('boPlaybookHint');
+        if (!hintEl || !playbookState.steps.length) return;
+
+        if (playbookState.currentIndex >= playbookState.steps.length) {
+            hintEl.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>${escapeHtml(
+                playbookText('allDone')
+            )}</span>`;
+            clearPlaybookHighlights();
+            return;
+        }
+
+        const current = playbookState.steps[playbookState.currentIndex];
+        if (!current || current.kind === 'info') return;
+
+        const hintKey = `hints.${current.id}`;
+        const hintIcon = isEnUi() ? 'bi-arrow-right-circle' : 'bi-arrow-left-circle';
+        hintEl.innerHTML = `<i class="bi ${hintIcon} me-1"></i>${escapeHtml(
+            playbookText(hintKey) || stepLabel(current)
+        )}`;
+        highlightPlaybookAction(current.actionId);
+    }
+
+    function advancePlaybookStep(stepId) {
+        if (!playbookState.steps.length) return;
+        const idx = findPlaybookStepIndex(stepId);
+        if (idx < 0) return;
+        playbookState.completed.add(stepId);
+
+        let nextIdx = idx + 1;
+        while (nextIdx < playbookState.steps.length && playbookState.steps[nextIdx].kind === 'info') {
+            playbookState.completed.add(playbookState.steps[nextIdx].id);
+            nextIdx++;
+        }
+        playbookState.currentIndex = nextIdx;
+        refreshPlaybookStepClasses();
+        updatePlaybookHint();
+    }
+
+    function renderTicketPlaybook(row, detail) {
+        const panel = document.getElementById('boPlaybookPanel');
+        const introEl = document.getElementById('boPlaybookIntro');
+        const stepsEl = document.getElementById('boPlaybookSteps');
+        if (!panel || !stepsEl) return;
+
+        playbookState.steps = buildPlaybookSteps(detail, row);
+        playbookState.completed = new Set();
+        playbookState.steps.forEach((step) => {
+            if (step.kind === 'info') playbookState.completed.add(step.id);
+        });
+
+        playbookState.currentIndex = playbookState.steps.findIndex(
+            (s) => s.kind === 'action' && !playbookState.completed.has(s.id)
+        );
+        if (playbookState.currentIndex < 0) playbookState.currentIndex = playbookState.steps.length;
+
+        panel.classList.remove('d-none');
+        if (introEl) introEl.textContent = getPlaybookIntro(detail, row);
+
+        stepsEl.innerHTML = playbookState.steps
+            .map((step, idx) => {
+                const done = playbookState.completed.has(step.id);
+                const current = idx === playbookState.currentIndex && !done;
+                const cls = [done ? 'bo-step-done' : '', current ? 'bo-step-current' : '']
+                    .filter(Boolean)
+                    .join(' ');
+                return `<li class="${cls}" data-playbook-step="${step.id}" data-step-idx="${idx}">${escapeHtml(
+                    stepLabel(step)
+                )}</li>`;
+            })
+            .join('');
+
+        updatePlaybookHint();
+    }
+
+    function hideTicketPlaybook() {
+        clearPlaybookHighlights();
+        document.getElementById('boPlaybookPanel')?.classList.add('d-none');
+        playbookState = { steps: [], currentIndex: 0, completed: new Set() };
     }
 
     const normalizeOffering = (raw) => ({
@@ -503,10 +734,13 @@
     function computeStats() {
         const open = tickets.filter((x) => Number(x.status) === 0).length;
         const inProgress = tickets.filter((x) => Number(x.status) === 1).length;
+        const escalated = tickets.filter((x) => Number(x.status) === 3).length;
         const critical = tickets.filter(
-            (x) => Number(x.priority) === 3 && (Number(x.status) === 0 || Number(x.status) === 1)
+            (x) =>
+                Number(x.priority) === 3
+                && [0, 1, 3].includes(Number(x.status))
         ).length;
-        return { open, inProgress, critical, active: open + inProgress };
+        return { open, inProgress, escalated, critical, active: open + inProgress + escalated };
     }
 
     function updateKpis(activeCountFromApi) {
@@ -546,15 +780,49 @@
         if (gridPanel) gridPanel.classList.toggle('d-none', !hasRows);
     }
 
+    function sortTicketsForQueue(rows) {
+        return rows.slice().sort((a, b) => {
+            const sa = Number(a.status);
+            const sb = Number(b.status);
+            if (sa === 3 && sb !== 3) return -1;
+            if (sb === 3 && sa !== 3) return 1;
+            const pa = Number(a.priority);
+            const pb = Number(b.priority);
+            if (pa === 3 && pb !== 3) return -1;
+            if (pb === 3 && pa !== 3) return 1;
+            const ta = new Date(a.updatedAtUtc || a.createdAtUtc || 0).getTime();
+            const tb = new Date(b.updatedAtUtc || b.createdAtUtc || 0).getTime();
+            return tb - ta;
+        });
+    }
+
+    function updateEscalatedBanner() {
+        const banner = document.getElementById('boEscalatedBanner');
+        const text = document.getElementById('boEscalatedBannerText');
+        if (!banner || !text) return;
+        const escalated = tickets.filter((x) => Number(x.status) === 3);
+        if (escalated.length === 0) {
+            banner.classList.add('d-none');
+            return;
+        }
+        const tpl = t(
+            'backOffice.dashboard.escalatedAlert',
+            '{count} escalated Tier-3 ticket(s) need engineering review — shown first in the queue below.'
+        );
+        text.textContent = tpl.replace('{count}', String(escalated.length));
+        banner.classList.remove('d-none');
+    }
+
     async function loadTickets() {
         const res = await AxiosManager.get('/TelecomBackOffice/GetTechnicalTickets', {
             params: { activeQueueOnly: currentView !== 'historical' },
         });
         const content = res?.data?.content ?? res?.data?.Content;
-        tickets = parseTicketList(res).map(normalizeTicket);
+        tickets = sortTicketsForQueue(parseTicketList(res).map(normalizeTicket));
         ticketPreview = tickets.slice(0, PREVIEW_MAX);
         const activeCount = content?.activeOpenCount ?? content?.ActiveOpenCount;
         updateKpis(activeCount);
+        updateEscalatedBanner();
         updateEmptyState();
         if (ticketsGrid) {
             ticketsGrid.dataSource = ticketPreview.slice();
@@ -766,6 +1034,10 @@
     }
 
     function fillDrawer(row, detail) {
+        lastDrawerRow = row;
+        lastDrawerDetail = detail;
+        window.TelecomI18n?.applyDomI18n?.(document.getElementById('ticketDrawer'));
+
         const status = pick(detail, 'status', 'Status') ?? row.status ?? 0;
         document.getElementById('boDrawerTitle').textContent = pick(detail, 'ticketNumber', 'TicketNumber') || row.ticketNumber || '—';
         document.getElementById('boDrawerMsisdn').textContent = pick(detail, 'msisdn', 'Msisdn') || row.msisdn || '—';
@@ -776,7 +1048,7 @@
         const categoryKey = resolveCategoryKey(detail ?? row);
         const catHost = document.getElementById('boDrawerCategory');
         if (catHost) catHost.innerHTML = categoryLabelHtml(categoryKey);
-        updateDrawerToolbar(categoryKey);
+        updateDrawerToolbar(categoryKey, detail, row);
 
         const priEl = document.getElementById('boDrawerPriority');
         if (priEl) {
@@ -808,6 +1080,7 @@
         const payload =
             pick(detail, 'payloadJson', 'PayloadJson') || row.payloadJson || row.notes || '—';
         document.getElementById('boDrawerPayload').textContent = payload;
+        renderTicketPlaybook(row, detail);
     }
 
     async function openTicket(row) {
@@ -853,6 +1126,7 @@
         'boSaveStatusBtn',
         'boResolveOpenBtn',
         'boHlrBtn',
+        'boForceHlrBtn',
         'btnCbsForceSync',
         'btnNetworkPing',
         'btnCoreEscalate',
@@ -874,6 +1148,7 @@
     }
 
     function hideLiveStatusPanel() {
+        lastLiveStatusData = null;
         const panel = document.getElementById('boLiveStatusPanel');
         const body = document.getElementById('boLiveStatusBody');
         if (body) body.textContent = '—';
@@ -917,15 +1192,16 @@
     function renderLiveStatus(data) {
         const body = document.getElementById('boLiveStatusBody');
         if (!body || !data) return;
+        lastLiveStatusData = data;
         const lines = [
-            `MSISDN: ${pick(data, 'msisdn', 'Msisdn') || '—'}`,
-            `CBS: ${pick(data, 'cbsBalanceLabel', 'CbsBalanceLabel') || pick(data, 'cbsBalance', 'CbsBalance')}`,
-            `HLR State: ${pick(data, 'hlrSubscriberState', 'HlrSubscriberState') || '—'}`,
-            `HLR Online: ${pick(data, 'hlrIsOnline', 'HlrIsOnline') ? 'YES' : 'NO'}`,
-            `HLR Site: ${pick(data, 'hlrLocation', 'HlrLocation') || '—'}`,
-            `CRM Status: ${pick(data, 'crmOperationalStatus', 'CrmOperationalStatus') || '—'}`,
-            `Package: ${pick(data, 'productOfferingName', 'ProductOfferingName') || '—'}`,
-            `CRM≠HLR: ${pick(data, 'differsFromCrm', 'DiffersFromCrm') ? 'YES' : 'NO'}`,
+            `${liveStatusLabel('msisdn')}: ${pick(data, 'msisdn', 'Msisdn') || '—'}`,
+            `${liveStatusLabel('cbs')}: ${pick(data, 'cbsBalanceLabel', 'CbsBalanceLabel') || pick(data, 'cbsBalance', 'CbsBalance')}`,
+            `${liveStatusLabel('hlrState')}: ${pick(data, 'hlrSubscriberState', 'HlrSubscriberState') || '—'}`,
+            `${liveStatusLabel('hlrOnline')}: ${yesNoLabel(!!pick(data, 'hlrIsOnline', 'HlrIsOnline'))}`,
+            `${liveStatusLabel('hlrSite')}: ${pick(data, 'hlrLocation', 'HlrLocation') || '—'}`,
+            `${liveStatusLabel('crmStatus')}: ${pick(data, 'crmOperationalStatus', 'CrmOperationalStatus') || '—'}`,
+            `${liveStatusLabel('package')}: ${pick(data, 'productOfferingName', 'ProductOfferingName') || '—'}`,
+            `${liveStatusLabel('crmHlrDiff')}: ${yesNoLabel(!!pick(data, 'differsFromCrm', 'DiffersFromCrm'))}`,
         ];
         body.textContent = lines.join('\n');
         const panel = document.getElementById('boLiveStatusPanel');
@@ -947,6 +1223,7 @@
     function hideTicketDrawer() {
         hideLiveStatusPanel();
         hideTier3Panel();
+        hideTicketPlaybook();
         selectedTicket = null;
         const drawerEl = document.getElementById('ticketDrawer');
         if (ticketDrawer) {
@@ -1017,6 +1294,19 @@
             });
             const body = StorageManager.apiContent(res);
             const defaultOk = t('backOffice.hlrOk');
+            advancePlaybookStep('hlr');
+            await finalizeTelecomActionSuccess(pickActionMessage(res, defaultOk) + queueOutcomeSuffix(body));
+        }).catch((e) => showTelecomActionError(e, t('backOffice.dashboard.messages.hlrFailed')));
+    }
+
+    async function forceHlrSync() {
+        await withTelecomAction(async () => {
+            const res = await AxiosManager.post('/TelecomBackOffice/ForceHlrSync', {
+                ticketId: selectedTicket.id,
+            });
+            const body = StorageManager.apiContent(res);
+            const defaultOk = t('backOffice.dashboard.forceHlrOk');
+            advancePlaybookStep('forceHlr');
             await finalizeTelecomActionSuccess(pickActionMessage(res, defaultOk) + queueOutcomeSuffix(body));
         }).catch((e) => showTelecomActionError(e, t('backOffice.dashboard.messages.hlrFailed')));
     }
@@ -1028,6 +1318,7 @@
             });
             const body = StorageManager.apiContent(res);
             const defaultOk = t('backOffice.dashboard.cbsForceOk');
+            advancePlaybookStep('cbs');
             await finalizeTelecomActionSuccess(pickActionMessage(res, defaultOk) + queueOutcomeSuffix(body));
         }).catch((e) =>
             showTelecomActionError(e, t('backOffice.dashboard.messages.cbsFailed'))
@@ -1049,6 +1340,7 @@
                 return;
             }
             renderLiveStatus(data);
+            advancePlaybookStep('ping');
             await finalizeTelecomActionInDrawer(
                 t('backOffice.dashboard.networkPingOk')
             );
@@ -1111,6 +1403,7 @@
             });
             let msg = t('backOffice.dashboard.statusUpdated');
             if (newStatus === 2) {
+                advancePlaybookStep('resolve');
                 msg = t('backOffice.dashboard.resolvedQueue') + queueRemovedSuffix();
             } else if (newStatus === 3) {
                 msg = t('backOffice.dashboard.escalatedQueue') + queueRemovedSuffix();
@@ -1347,6 +1640,64 @@
         }
     }
 
+    function isHistoricalLedgerRow(row) {
+        const status = Number(pick(row, 'status', 'Status'));
+        if (!Number.isNaN(status) && HISTORICAL_LEDGER_STATUSES.has(status)) return true;
+        const pipeline = pick(row, 'pipelineState', 'PipelineState') || '';
+        return HISTORICAL_LEDGER_PIPELINE_STATES.has(pipeline);
+    }
+
+    function filterHistoricalLedgerRows(rows) {
+        return (rows || []).filter(isHistoricalLedgerRow);
+    }
+
+    function findTelecomQueueRow(operationId) {
+        return document.querySelector(`.bo-queue-row[onclick*="${operationId}"]`)
+            || document.querySelector(`button[onclick*="${operationId}"]`)?.closest('tr');
+    }
+
+    function fadeTelecomQueueRow(operationId) {
+        const row = findTelecomQueueRow(operationId);
+        if (!row) return;
+        row.classList.add('bo-row-fade-out');
+        const details = row.nextElementSibling;
+        if (details?.classList.contains('collapse-row')) {
+            details.classList.add('bo-row-fade-out');
+        }
+    }
+
+    function removeFromActiveTelecomQueue(operationId) {
+        const before = pendingTelecomOps.length;
+        pendingTelecomOps = pendingTelecomOps.filter((row) => {
+            const id = pick(row, 'id', 'Id');
+            return id !== operationId;
+        });
+        if (pendingTelecomOps.length !== before) {
+            renderTelecomQueue();
+            if (currentView === 'active') {
+                updateTabCounters(pendingTelecomOps.length);
+            }
+        }
+    }
+
+    function extractBackOfficeActionMessage(res, fallback) {
+        const content = StorageManager.apiContent(res) ?? {};
+        return pick(content, 'messageAr', 'MessageAr')
+            || pick(content?.confirmResult ?? content?.ConfirmResult ?? {}, 'userMessageAr', 'UserMessageAr')
+            || pick(content, 'message', 'Message')
+            || fallback;
+    }
+
+    async function finalizeTelecomQueueAction(operationId, res, fallbackMessage) {
+        fadeTelecomQueueRow(operationId);
+        removeFromActiveTelecomQueue(operationId);
+        toastSuccess(extractBackOfficeActionMessage(res, fallbackMessage));
+        await loadPendingTelecomRequests();
+        loadSuspensionKpis();
+        loadReconnectKpis();
+        loadBadDebtKpis();
+    }
+
     let pendingTelecomOps = [];
 
     const updateSlaTimers = () => {
@@ -1441,14 +1792,23 @@
                     const balance = pick(row, 'outstandingBalanceSnapshot', 'OutstandingBalanceSnapshot') || 0;
                     const writeOff = pick(row, 'writeOffAmount', 'WriteOffAmount') || 0;
                     const cashTarget = pick(row, 'collectedAmount', 'CollectedAmount') || 0;
+                    const ledgerMode = pick(row, 'bdrLedgerMode', 'BdrLedgerMode');
+                    const ledgerNote = pick(row, 'bdrLedgerNoteAr', 'BdrLedgerNoteAr');
+                    const isFullSettlement = ledgerMode === 'FullPaymentSettlement';
                     const accountType = accountTypeLabel(pick(row, 'accountType', 'AccountType'));
-                    
+                    const debtDisplay = isFullSettlement ? 0 : Math.abs(Number(balance) || 0);
+                    const writeOffDisplay = isFullSettlement ? 0 : writeOff;
+                    const ledgerBadge = isFullSettlement
+                        ? t('backOffice.dashboard.telecomQueue.bdrFullSettlement', 'Full payment settlement')
+                        : t('backOffice.dashboard.telecomQueue.bdrVerified', 'Verified & audited');
+
                     bdrLedgerHtml = `
                         <div class="p-3 bg-white rounded border bo-bdr-ledger-card mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                                 <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-bank me-2"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.bdrLedgerTitle', 'Financial ledger (BDR audit)'))}</h6>
-                                <span class="badge bg-primary-subtle text-primary">${escapeHtml(t('backOffice.dashboard.telecomQueue.bdrVerified', 'Verified & audited'))}</span>
+                                <span class="badge ${isFullSettlement ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'}">${escapeHtml(ledgerBadge)}</span>
                             </div>
+                            ${ledgerNote ? `<p class="small text-muted mb-3">${escapeHtml(ledgerNote)}</p>` : ''}
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <div class="bo-finance-block">
@@ -1457,15 +1817,15 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="bo-debt-highlight">
+                                    <div class="bo-debt-highlight ${isFullSettlement ? 'bg-success-subtle border-success-subtle' : ''}">
                                         <label class="small d-block mb-1 opacity-75">${escapeHtml(t('backOffice.dashboard.telecomQueue.outstandingDebt', 'Outstanding debt'))}</label>
-                                        <span class="fw-bold fs-5">-${balance.toLocaleString(getUiLocale())} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}</span>
+                                        <span class="fw-bold fs-5 ${isFullSettlement ? 'text-success' : ''}">${isFullSettlement ? '0' : `-${debtDisplay.toLocaleString(getUiLocale())}`} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="bo-finance-block" style="background: #f0fdf4; border-color: #dcfce7;">
                                         <label class="small text-success d-block mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.writeOffWaiver', 'Write-off waiver'))}</label>
-                                        <span class="fw-bold text-success fs-5">${writeOff.toLocaleString(getUiLocale())} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}</span>
+                                        <span class="fw-bold text-success fs-5">${isFullSettlement ? '—' : `${writeOffDisplay.toLocaleString(getUiLocale())} ${escapeHtml(t('backOffice.dashboard.kpi.currencySyp'))}`}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -1480,6 +1840,30 @@
                 }
 
                 const collapseId = `details_${id.replace(/-/g, '_')}`;
+                const auditorName = pick(row, 'auditorDisplayName', 'AuditorDisplayName')
+                    || t('backOffice.dashboard.telecomQueue.auditor', 'Auditor');
+                const rejectionReason = pick(row, 'rejectionReasonAr', 'RejectionReasonAr');
+                const isRejected = row.status === 4 || row.Status === 4;
+                const hasIdentity = !!(pick(row, 'hasIdentityDocument', 'HasIdentityDocument'));
+                const identityDocUrl = hasIdentity ? boIdentityDocumentUrl(id) : '';
+                const identityReviewHtml = hasIdentity
+                    ? `<div class="p-3 bg-white rounded border mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0 text-dark fw-bold"><i class="bi bi-person-vcard me-2"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.identityDocTitle', 'Identity document'))}</h6>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">${escapeHtml(t('backOffice.dashboard.telecomQueue.identityUploaded', 'Uploaded'))}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn btn-sm btn-outline-primary" href="${escapeHtml(identityDocUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                                    <i class="bi bi-eye me-1"></i>${escapeHtml(t('backOffice.dashboard.telecomQueue.viewIdentity', 'View document'))}
+                                </a>
+                            </div>
+                            <div class="mt-2 border rounded overflow-hidden bg-light" style="max-height: 220px;">
+                                <iframe src="${escapeHtml(identityDocUrl)}" title="identity" class="w-100" style="height: 220px; border: 0;" onclick="event.stopPropagation()"></iframe>
+                            </div>
+                       </div>`
+                    : `<div class="alert alert-warning py-2 small mb-3">
+                            <i class="bi bi-exclamation-triangle me-1"></i>${escapeHtml(blockReason || t('backOffice.dashboard.telecomQueue.identityMissing', 'Identity document not uploaded yet.'))}
+                       </div>`;
 
                 return `
                 <tr class="align-middle bo-queue-row" style="cursor: pointer;" onclick="if(!event.target.closest('button')) document.getElementById('btn_toggle_${collapseId}').click()">
@@ -1513,24 +1897,29 @@
                         <div class="collapse" id="${collapseId}">
                             <div class="px-4 py-3 bg-light-subtle border-start border-end border-danger border-4 border-top-0 border-bottom-0">
                                 ${bdrLedgerHtml}
+                                ${identityReviewHtml}
                                 <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                    <div class="small text-muted font-monospace">
-                                        <div class="mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.recordId', 'ID'))}: ${id}</div>
-                                        <div>${escapeHtml(t('backOffice.dashboard.telecomQueue.recordCreated', 'Created'))}: ${formatDateTime(pick(row, 'createdAtUtc', 'CreatedAtUtc'))}</div>
+                                    <div class="small text-muted">
+                                        <div class="mb-1">${escapeHtml(t('backOffice.dashboard.telecomQueue.recordCreated', 'Created'))}: ${formatDateTime(pick(row, 'createdAtUtc', 'CreatedAtUtc'))}</div>
                                     </div>
                                     <div class="btn-group shadow-sm">
                                         ${isFinalState ? 
-                                            `<div class="alert alert-light border small mb-0 py-1 px-3">
+                                            `<div class="alert alert-light border small mb-0 py-2 px-3">
                                                 <i class="bi bi-info-circle me-2"></i>
                                                 ${escapeHtml(formatTpl(
                                                     row.status === 3 || row.status === 8
                                                         ? t('backOffice.dashboard.telecomQueue.approvedBy', 'Approved by {user} at {time}')
                                                         : t('backOffice.dashboard.telecomQueue.rejectedBy', 'Rejected by {user} at {time}'),
                                                     {
-                                                        user: row.updatedById || t('backOffice.dashboard.telecomQueue.auditor', 'Auditor'),
+                                                        user: auditorName,
                                                         time: formatDateTime(row.updatedAtUtc || new Date()),
                                                     }
                                                 ))}
+                                                ${isRejected && rejectionReason ? `
+                                                    <div class="mt-2 pt-2 border-top text-danger">
+                                                        <strong>${escapeHtml(t('backOffice.dashboard.telecomQueue.rejectionReason', 'Rejection reason'))}:</strong>
+                                                        ${escapeHtml(rejectionReason)}
+                                                    </div>` : ''}
                                             </div>` : 
                                             (canExecuteFin ? 
                                                 `<button type="button" class="btn btn-success px-4 bo-approve-op" 
@@ -1561,6 +1950,12 @@
     };
 
     async function loadPendingTelecomRequests() {
+        const userPerms = StorageManager.getPermissions?.() || [];
+        if (!StorageManager.hasAnyPermission(userPerms, PENDING_QUEUE_VIEW_PERMISSIONS)) {
+            pendingTelecomOps = [];
+            renderTelecomQueue();
+            return;
+        }
         try {
             const params = { take: 100 };
             if (currentView === 'historical') {
@@ -1573,14 +1968,18 @@
 
             const res = await AxiosManager.get('/TelecomBackOffice/GetPendingRequests', { params });
             const content = res?.data?.content ?? res?.data?.Content ?? {};
-            pendingTelecomOps = content.data ?? content.Data ?? [];
+            let rows = content.data ?? content.Data ?? [];
+            if (currentView === 'historical') {
+                rows = filterHistoricalLedgerRows(rows);
+            }
+            pendingTelecomOps = rows;
             
             if (currentView === 'tech') {
                 await loadTickets();
             }
 
             renderTelecomQueue();
-            updateTabCounters(content.total ?? content.Total ?? pendingTelecomOps.length);
+            updateTabCounters(currentView === 'historical' ? pendingTelecomOps.length : (content.total ?? content.Total ?? pendingTelecomOps.length));
         } catch (e) {
             console.warn('Pending telecom queue', e);
             pendingTelecomOps = [];
@@ -1600,33 +1999,17 @@
 
     async function approveTelecomOperation(operationId) {
         if (!operationId || isTelecomActionInFlight) return;
-        
-        // Visual feedback: find the row and start fade out
-        const row = document.querySelector(`.bo-queue-row[onclick*="${operationId}"]`) || 
-                    document.querySelector(`button[onclick*="${operationId}"]`)?.closest('tr');
-        
+
         setTelecomActionBusy(true);
         try {
             const res = await AxiosManager.post('/TelecomBackOffice/ApproveRequest', {
                 operationId,
             });
-            const body = StorageManager.apiContent(res);
-            const defaultOk = t('backOffice.dashboard.telecomQueue.approved');
-            
-            if (row) {
-                row.classList.add('bo-row-fade-out');
-                const details = row.nextElementSibling;
-                if (details && details.classList.contains('collapse-row')) {
-                    details.classList.add('bo-row-fade-out');
-                }
-            }
-            
-            setTimeout(async () => {
-                toastSuccess(pick(body, 'message', 'Message') || defaultOk);
-                await loadPendingTelecomRequests();
-                loadSuspensionKpis();
-                loadReconnectKpis();
-            }, 600);
+            await finalizeTelecomQueueAction(
+                operationId,
+                res,
+                t('backOffice.dashboard.telecomQueue.approved')
+            );
         } catch (e) {
             console.error('Approval failed:', e);
             toastError(e, t('backOffice.dashboard.messages.loadError'));
@@ -1661,33 +2044,17 @@
 
         if (!result.isConfirmed || !result.value) return;
 
-        // Visual feedback
-        const row = document.querySelector(`.bo-queue-row[onclick*="${operationId}"]`) || 
-                    document.querySelector(`button[onclick*="${operationId}"]`)?.closest('tr');
-
         setTelecomActionBusy(true);
         try {
             const res = await AxiosManager.post('/TelecomBackOffice/RejectRequest', {
                 operationId,
                 rejectionReason: result.value,
             });
-            const body = StorageManager.apiContent(res);
-            const defaultOk = t('backOffice.dashboard.telecomQueue.rejected');
-            
-            if (row) {
-                row.classList.add('bo-row-fade-out');
-                const details = row.nextElementSibling;
-                if (details && details.classList.contains('collapse-row')) {
-                    details.classList.add('bo-row-fade-out');
-                }
-            }
-
-            setTimeout(async () => {
-                toastSuccess(pick(body, 'message', 'Message') || defaultOk);
-                await loadPendingTelecomRequests();
-                loadSuspensionKpis();
-                loadReconnectKpis();
-            }, 600);
+            await finalizeTelecomQueueAction(
+                operationId,
+                res,
+                t('backOffice.dashboard.telecomQueue.rejected')
+            );
         } catch (e) {
             console.error('Rejection failed:', e);
             toastError(e, t('backOffice.dashboard.messages.loadError'));
@@ -1707,20 +2074,10 @@
             tab.addEventListener('shown.bs.tab', async (e) => {
                 const view = e.target.dataset.view;
                 currentView = view;
-                
-                // Show/Hide technical tickets grid based on view
-                const techGridPanel = document.getElementById('boTicketsGrid')?.closest('.telecom-bento-card');
-                if (techGridPanel) {
-                    techGridPanel.classList.toggle('d-none', view !== 'tech');
-                }
-                
-                // Show/Hide main queue table based on view (if needed)
-                const mainTable = document.getElementById('boMainQueueTable');
-                if (mainTable) {
-                    // We keep it visible for all, but content changes
-                }
-                
                 await loadPendingTelecomRequests();
+                if (view !== 'historical') {
+                    await loadTickets();
+                }
             });
         });
     }
@@ -2086,6 +2443,7 @@
         wireTelecomQueueActions();
         document.getElementById('boReloadBtn')?.addEventListener('click', () => loadDashboardData(true));
         document.getElementById('boHlrBtn')?.addEventListener('click', hlrResync);
+        document.getElementById('boForceHlrBtn')?.addEventListener('click', forceHlrSync);
         document.getElementById('btnCbsForceSync')?.addEventListener('click', forceCbsSync);
         document.getElementById('btnNetworkPing')?.addEventListener('click', queryLiveNetworkStatus);
         document.getElementById('btnCoreEscalate')?.addEventListener('click', openTier3EscalationPanel);
@@ -2103,10 +2461,13 @@
                     catalogGrid.columns = getCatalogColumns();
                     catalogGrid.refresh();
                 }
-                if (selectedTicket) {
+                if (selectedTicket && lastDrawerRow && lastDrawerDetail) {
+                    fillDrawer(lastDrawerRow, lastDrawerDetail);
+                } else if (selectedTicket) {
                     const row = ticketPreview.find((x) => x.id === selectedTicket.id) || selectedTicket;
                     fillDrawer(row, selectedTicket);
                 }
+                if (lastLiveStatusData) renderLiveStatus(lastLiveStatusData);
                 await loadPaymentServicesPanel();
                 renderTelecomQueue();
                 updateSlaTimers();

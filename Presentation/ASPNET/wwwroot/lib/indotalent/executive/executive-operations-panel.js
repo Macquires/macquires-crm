@@ -38,10 +38,6 @@ const ExecutiveOperationsPanel = (function () {
                 const c = res?.data?.content;
                 state.data = c
                     ? {
-                        paymentRecharge: pick(c, 'paymentRechargeToday', 'PaymentRechargeToday'),
-                        paymentCompleted: pick(c, 'paymentCompletedToday', 'PaymentCompletedToday'),
-                        paymentFailure: pick(c, 'paymentFailureRatePercent', 'PaymentFailureRatePercent'),
-                        paymentSla: pick(c, 'paymentSlaPercent', 'PaymentSlaPercent'),
                         activations: pick(c, 'activationsToday', 'ActivationsToday'),
                         pending: pick(c, 'pendingOperations', 'PendingOperations'),
                         overdue: pick(c, 'overdueTickets', 'OverdueTickets'),
@@ -70,12 +66,11 @@ const ExecutiveOperationsPanel = (function () {
                     <div v-if="state.loading" class="text-center py-3"><span class="spinner-border spinner-border-sm text-danger"></span></div>
                     <div v-else>
                         <div class="row g-3 mb-4 strategic-bento">
-                            <div class="col-6 col-lg-3" v-for="kpi in [
-                                { l: t('recharge'), v: formatMoney(state.data?.paymentRecharge) },
-                                { l: t('payments'), v: state.data?.paymentCompleted },
+                            <div class="col-6 col-lg-4" v-for="kpi in [
                                 { l: t('activations'), v: state.data?.activations },
                                 { l: t('pendingOps'), v: state.data?.pending },
-                            ]" :key="kpi.l" class="col-6 col-lg-3">
+                                { l: t('overdue'), v: state.data?.overdue },
+                            ]" :key="kpi.l" class="col-6 col-lg-4">
                                 <div class="strategic-bento-card h-100">
                                     <p class="strategic-card-title">{{ kpi.l }}</p>
                                     <p class="strategic-metric-lg mb-0">{{ kpi.v ?? '—' }}</p>

@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سيناريوهات الديمو — 14 ويزارد | سيريتيل CRM</title>
+<style>
+  :root{
+    --green:#198754; --green-d:#0f5132; --red:#c0392b; --red-d:#7b241c;
+    --blue:#0d6efd; --purple:#6f42c1; --amber:#d98a00; --ink:#1d2733;
+    --muted:#6b7785; --line:#e4e8ee; --bg:#f4f6f9; --card:#ffffff;
+    --frontline:#0d6efd; --backoffice:#c0392b; --supervisor:#6f42c1; --exec:#0f5132;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:"Segoe UI","Tahoma",sans-serif; margin:0; background:var(--bg);
+    color:var(--ink); line-height:1.85; font-size:16px;
+  }
+  a{color:var(--blue); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ====== HEADER ====== */
+  .top{
+    background:linear-gradient(135deg,#0f5132,#198754); color:#fff;
+    padding:34px 22px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,.12);
+  }
+  .top h1{margin:0 0 6px; font-size:30px; font-weight:800}
+  .top p{margin:0; opacity:.92; font-size:16px}
+  .top .tag{
+    display:inline-block; margin-top:14px; background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.35); padding:5px 14px; border-radius:999px; font-size:13px;
+  }
+
+  .wrap{max-width:1080px; margin:0 auto; padding:24px 18px 80px}
+
+  /* ====== INTRO / LOGIN PERSONAS ====== */
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:22px 24px; margin:22px 0; box-shadow:0 2px 10px rgba(20,40,60,.05);
+  }
+  .panel h2{margin:0 0 8px; font-size:21px; color:var(--green-d)}
+  .panel h3{margin:18px 0 8px; font-size:17px}
+  .lead{color:var(--muted); margin:0 0 6px}
+
+  .personas{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:14px}
+  .persona{border:1px solid var(--line); border-radius:14px; padding:14px; background:#fbfdff; border-top:5px solid var(--muted)}
+  .persona.front{border-top-color:var(--frontline)}
+  .persona.back{border-top-color:var(--backoffice)}
+  .persona.call{border-top-color:var(--amber)}
+  .persona.exec{border-top-color:var(--exec)}
+  .persona .who{font-weight:800; font-size:16px}
+  .persona .role{font-size:12.5px; color:var(--muted); margin-bottom:8px}
+  .persona code{background:#eef2f7; padding:2px 7px; border-radius:6px; font-size:12.5px; direction:ltr; display:inline-block}
+  .persona .pw{font-size:12px; color:var(--muted); margin-top:6px}
+
+  /* ====== CODE LEGEND ====== */
+  .codes{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+  .codes .c{background:#eef2f7; border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px}
+  .codes .c b{color:var(--green-d); direction:ltr; display:inline-block}
+
+  /* ====== INDEX ====== */
+  .toc{columns:2; column-gap:26px}
+  .toc a{display:block; padding:7px 0; border-bottom:1px dashed var(--line); font-weight:600}
+  .toc a .n{display:inline-block; width:28px; height:28px; line-height:28px; text-align:center; border-radius:8px; background:var(--green); color:#fff; font-size:13px; margin-left:8px}
+  @media(max-width:680px){.toc{columns:1}}
+
+  /* ====== WIZARD SECTION ====== */
+  .wz{background:var(--card); border:1px solid var(--line); border-radius:18px; margin:26px 0; overflow:hidden; box-shadow:0 3px 14px rgba(20,40,60,.06)}
+  .wz-head{padding:18px 22px; color:#fff; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .wz-head .num{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4); width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:800; flex-shrink:0}
+  .wz-head .tt{flex:1; min-width:200px}
+  .wz-head .tt h2{margin:0; font-size:21px; font-weight:800}
+  .wz-head .tt .sub{font-size:13px; opacity:.92}
+  .wz-head .op{background:#fff; color:var(--ink); font-weight:800; padding:5px 12px; border-radius:999px; font-size:13px; direction:ltr}
+
+  /* surface colors on head */
+  .surface-front .wz-head{background:linear-gradient(135deg,#0b5ed7,#3d8bfd)}
+  .surface-back  .wz-head{background:linear-gradient(135deg,#922b21,#c0392b)}
+  .surface-sup   .wz-head{background:linear-gradient(135deg,#59359a,#6f42c1)}
+
+  .wz-body{padding:6px 22px 22px}
+
+  .badge-line{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0}
+  .badge{font-size:12.5px; padding:4px 11px; border-radius:999px; font-weight:700; border:1px solid transparent}
+  .badge.user{background:#eaf3ff; color:#0b5ed7; border-color:#cfe2ff}
+  .badge.user.back{background:#fdeceb; color:#922b21; border-color:#f5c6c2}
+  .badge.user.sup{background:#f1ebfb; color:#59359a; border-color:#dcccf5}
+  .badge.line{background:#e7f7ee; color:#0f5132; border-color:#bfe6cf; direction:ltr}
+  .badge.cust{background:#fff6e6; color:#8a5a00; border-color:#ffe2ab}
+  .badge.status{background:#f0f2f5; color:#37414c; border-color:#dde2e8}
+
+  /* story scene */
+  .scene{border-right:4px solid var(--green); background:#f8fbf9; border-radius:10px; padding:12px 16px; margin:14px 0}
+  .scene.back{border-right-color:var(--red); background:#fdf7f6}
+  .scene.exec{border-right-color:var(--green-d); background:#f5faf7}
+  .scene .label{font-weight:800; font-size:13px; color:var(--green-d); display:block; margin-bottom:4px}
+  .scene.back .label{color:var(--red-d)}
+  .scene p{margin:4px 0}
+
+  /* field table */
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14.5px}
+  thead th{background:#0f5132; color:#fff; text-align:right; padding:9px 11px; font-size:13.5px}
+  .surface-front thead th{background:#0b5ed7}
+  .surface-back thead th{background:#922b21}
+  .surface-sup thead th{background:#59359a}
+  td{border:1px solid var(--line); padding:9px 11px; vertical-align:top}
+  tbody tr:nth-child(even){background:#fafcfe}
+  td .req{color:var(--red); font-weight:800}
+  td code{background:#eef2f7; padding:1px 6px; border-radius:5px; font-size:12.5px; direction:ltr; display:inline-block}
+
+  .why{font-weight:800; color:var(--green-d); margin:14px 0 4px}
+  .surface-back .why{color:var(--red-d)}
+  .surface-sup .why{color:#59359a}
+
+  /* result / timeline */
+  .result{background:#e7f7ee; border:1px solid #bfe6cf; border-radius:10px; padding:12px 16px; margin:14px 0}
+  .result.warn{background:#fff6e6; border-color:#ffe2ab}
+  .result b{color:var(--green-d)}
+  .tl{list-style:none; margin:10px 0; padding:0}
+  .tl li{position:relative; padding:6px 22px 6px 0; border-right:2px solid var(--green); margin-right:6px}
+  .tl li::before{content:""; position:absolute; right:-7px; top:12px; width:12px; height:12px; border-radius:50%; background:var(--green); border:2px solid #fff}
+  .tl li b{direction:ltr; display:inline-block}
+
+  .exec-box{background:#f5faf7; border:1px dashed var(--green); border-radius:10px; padding:12px 16px; margin:14px 0}
+  .exec-box .label{font-weight:800; color:var(--green-d); display:block; margin-bottom:4px}
+
+  .alt{background:#fbfbfd; border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:12px 0; font-size:14px}
+  .alt b{color:var(--purple)}
+
+  .backlink{display:inline-block; margin-top:10px; font-size:13px}
+  .note{font-size:13px; color:var(--muted); background:#f0f3f6; border-radius:8px; padding:8px 12px; margin-top:12px}
+  /* ripple = fixed after-effect section */
+  .ripple{border:1px solid var(--line); border-radius:14px; margin:18px 0; overflow:hidden}
+  .ripple .rh{background:#2b3440; color:#fff; padding:9px 16px; font-weight:800; font-size:14.5px}
+  .ripple .rgrid{display:grid; grid-template-columns:1fr 1fr}
+  @media(max-width:680px){.ripple .rgrid{grid-template-columns:1fr}}
+  .ripple .rcell{padding:13px 16px}
+  .ripple .rcell.bo{background:#fdf6f5}
+  .ripple .rcell.ex{background:#f4faf6}
+  .ripple .rcell h4{margin:0 0 7px; font-size:14.5px; display:flex; align-items:center; gap:6px}
+  .ripple .rcell.bo h4{color:var(--red-d)}
+  .ripple .rcell.ex h4{color:var(--green-d)}
+  .ripple .rcell ul{margin:0; padding-right:18px}
+  .ripple .rcell li{margin:5px 0; font-size:13.8px; line-height:1.7}
+  .approve-rule{padding:11px 16px; font-size:14px; background:#fff8e8; border-top:1px solid #ffe2ab; line-height:1.8}
+  .approve-rule .ar-t{font-weight:800; color:#8a5a00; display:block; margin-bottom:2px}
+  .ayes{color:#0f5132; font-weight:800}
+  .ano{color:#0b5ed7; font-weight:800}
+  /* second scenario */
+  .scn2{background:#fbf7ff; border:1px solid #e3d5fb; border-right:5px solid var(--purple); border-radius:12px; padding:12px 16px; margin:16px 0}
+  .scn2 .h{font-weight:800; color:var(--purple); margin-bottom:6px; font-size:14.5px}
+  .scn2 p{margin:5px 0; font-size:14px}
+  .scn2 .v{background:#fff8e1; border:1px solid #ffe2ab; padding:1px 7px; border-radius:6px; font-weight:700; display:inline-block}
+  .scn2 .vn{direction:ltr; display:inline-block}
+  /* exact steps recipe */
+  .steps{background:#f1f7ff; border:1px solid #cfe2ff; border-right:5px solid #0b5ed7; border-radius:12px; padding:14px 18px; margin:16px 0}
+  .steps .h{font-weight:800; color:#0b5ed7; margin-bottom:8px; font-size:15px}
+  .steps ol{margin:0; padding-right:20px}
+  .steps li{margin:7px 0}
+  .steps .login{background:#0f5132; color:#fff; padding:2px 9px; border-radius:6px; font-size:12.5px; direction:ltr; display:inline-block; font-weight:700}
+  .steps kbd{background:#fff; border:1px solid #b9c4d0; border-bottom-width:2px; border-radius:6px; padding:1px 8px; font-size:13px; direction:ltr; display:inline-block; font-family:inherit; color:#1d2733}
+  .steps .v{background:#fff8e1; border:1px solid #ffe2ab; padding:1px 8px; border-radius:6px; font-weight:700; display:inline-block}
+  .steps .vn{direction:ltr; display:inline-block}
+  hr{border:none; border-top:1px solid var(--line); margin:0}
+  .foot{text-align:center; color:var(--muted); font-size:13px; padding:30px 10px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🎬 سيناريوهات الديمو — 14 ويزارد</h1>
+  <p>نظام سيريتيل CRM/OSS-BSS — دليل المشي قدام اللجنة خطوة بخطوة</p>
+  <span class="tag">كل سيناريو مربوط بالـ Seed الحالي — أبطال: «سعدون الشامي» + «مازن المديون» + عملاء الفروع</span>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <div class="panel">
+    <h2>قبل ما نبلّش — كيف نقرأ هالملف؟</h2>
+    <p class="lead">هالملف معمول مشان تمشي فيه قدام اللجنة وتشرح <b>كل فيلد بكل ويزارد: شو بيعمل، وليش بدنا ندخله</b>. كل ويزارد إله:</p>
+    <ul>
+      <li>🎭 <b>القصة</b> — حالة واقعية بتصير ألف مرة باليوم بالمعارض.</li>
+      <li>🔑 <b>مين بيعمل لوغن</b> — اليوزر والدور (Showroom / Back-Office / Call-Center / الإدارة العليا).</li>
+      <li>📋 <b>جدول الحقول</b> — كل حقل قدام عين الموظف: شو بيمثّل، ليش مهم، وشو نعبّي بالديمو.</li>
+      <li>✅ <b>النتيجة</b> — وين بتروح المعاملة (مكتملة فوراً، أو <code>Pending_BackOffice_Approval</code>).</li>
+      <li>👔 <b>الإدارة العليا</b> — شو بيشوف المدير العام بالـ Command Center بعد العملية.</li>
+    </ul>
+  </div>
+
+  <!-- ============ PERSONAS ============ -->
+  <div class="panel">
+    <h2>🔑 الحسابات اللي رح نعمل فيها لوغن (كلها كلمة السر <code>123456</code>)</h2>
+    <p class="lead">الدور (Role) + فرع الـ JWT (<code>BranchId</code>) بيحدّدوا شو بتشوف بالـ Hub ومن أي طابور. <b>سعدون الشامي</b> و<b>مازن المديون</b> وخطوط <code>093900000x</code> <b>وطنية</b> (<code>BranchId = NULL</code>) — يظهروا لكل الفروع. باقي العملاء مربوطين بفرعهم (مثلاً سارة النابلسي → حلب).</p>
+    <div class="personas">
+      <div class="persona front">
+        <div class="who">👨‍💼 موظف الصالة</div>
+        <div class="role">TelecomShowroom — كروت <b>Frontline</b></div>
+        <code>st-showroom@syriatelecom-demo.local</code>
+        <div class="pw">POS سيريتيل · فرع: <b>دمشق — المزة</b></div>
+      </div>
+      <div class="persona back">
+        <div class="who">🛡️ موظف الباك أوفيس</div>
+        <div class="role">TelecomBackOffice — <b>Approve / Reject</b> + طابور التذاكر</div>
+        <code>st-backoffice@syriatelecom-demo.local</code>
+        <div class="pw">مكتب خلفي · فرع: <b>طرطوس</b> (يشوف التذاكر الوطنية + Tier-3)</div>
+      </div>
+      <div class="persona call">
+        <div class="who">🎧 موظف خدمة العملاء</div>
+        <div class="role">TelecomCallCenter — Unified Search + Customer 360 + تذاكر</div>
+        <code>st-callcenter@syriatelecom-demo.local</code>
+        <div class="pw">دعم خط · فرع: <b>حلب</b> · طابور «تذاكري» + تصعيد Tier-3</div>
+      </div>
+      <div class="persona exec">
+        <div class="who">👔 المدير العام / MIS</div>
+        <div class="role">TelecomManagement — Command Center + كروت Supervisor</div>
+        <code>st-mis@syriatelecom-demo.local</code>
+        <div class="pw">أحمد الشوا · <b>كل سوريا</b> (بدون BranchId)</div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:18px">📋 من يستخدم أي حساب — حسب السيناريو</h3>
+    <table>
+      <thead><tr><th>السيناريو / الويزارد</th><th>حساب اللوغن</th><th>ملاحظة Seed</th></tr></thead>
+      <tbody>
+        <tr><td>1–2 تسجيل + تفعيل (CRM / ACT)</td><td><code>st-showroom@</code></td><td>فرع المزة — عميل جديد يرتبط بمدينة/فرع</td></tr>
+        <tr><td>3 دفع فاتورة + 11 RCN + 14 BDR</td><td><code>st-showroom@</code> ثم <code>st-backoffice@</code></td><td>البطل: <b>مازن المديون</b> · <code>0939000002</code></td></tr>
+        <tr><td>4–7 MGR / SIM / CNR (سعدون)</td><td><code>st-showroom@</code></td><td>خطوط وطنية <code>0939000001</code> — مرئية من المزة</td></tr>
+        <tr><td>5 VAS · RCN تشغيلي/احتيال (سعدون) · 13 RFD · DEV</td><td><code>st-mis@</code></td><td>كروت Supervisor — خطوط <code>0939000005</code> / <code>0939000091</code></td></tr>
+        <tr><td>8–10 · 12 CGT / TKO / SUS / TRM</td><td><code>st-backoffice@</code></td><td>كروت باك أوفيس + طابور الاعتماد</td></tr>
+        <tr><td>تذكرة دعم + تصعيد Tier-3 (ملحق)</td><td><code>st-callcenter@</code> ← ثم <code>st-backoffice@</code></td><td>كول سنتر يفتح/يصعّد · BO يعالج/يغلق</td></tr>
+        <tr><td>Command Center (الفصل الأخير)</td><td><code>st-mis@</code></td><td><code>/Executive/CommandCenter</code></td></tr>
+        <tr><td>KPI فرع محدّد (اختياري)</td><td><code>st-branch-mezzeh@</code> · <code>st-branch-aleppo@</code> · <code>st-branch-tartus@</code></td><td>مديرو الفروع — نطاق فرعهم فقط</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">قاعدة حوكمة: الصالة <b>تقدّم</b> · الباك أوفيس <b>يعتمد</b> · الكول سنتر <b>يتابع الزبون</b> · MIS <b>يراقب</b>. بعد <b>تصعيد Tier-3</b> التذكرة تصير وطنية وتظهر <b>أول صف</b> في <code>/Telecom/BackOfficeDashboard</code> (طابور التذاكر الفني — أعلى اللوحة).</div>
+  </div>
+
+  <!-- ============ HERO DATA ============ -->
+  <div class="panel">
+    <h2>🦸 أبطال السيناريوهات في الـ Seed</h2>
+    <p class="lead"><b>سعدون الشامي</b> (وطني — <code>BranchId NULL</code>) — خطوط العرض والشبكة. <b>مازن المديون</b> (وطني) — سيناريو الفاتورة والديون. عملاء الفروع (مثل <b>سارة النابلسي</b> — فرع حلب) لتذاكر الكول سنتر واختبار RLS.</p>
+    <table>
+      <thead><tr><th>الرقم (MSISDN)</th><th>العميل</th><th>الحالة</th><th>القصة بالديمو</th></tr></thead>
+      <tbody>
+        <tr><td><code>0939000001</code></td><td>سعدون الشامي</td><td>Active · Hybrid MIX_500</td><td>الخط الذهبي — MGR / SIM / VAS / تذكرة Billing Critical</td></tr>
+        <tr><td><code>0939000000</code></td><td>سعدون الشامي</td><td>Active · Prepaid</td><td>خط سليم — CGT / شحن Prepaid</td></tr>
+        <tr><td><code>0939000003</code></td><td>سعدون الشامي</td><td>Active · HLR NOT_PROVISIONED</td><td>إعادة تهيئة HLR (Tribulation)</td></tr>
+        <tr><td><code>0939000005</code></td><td>سعدون الشامي</td><td>Suspended Operational</td><td>RCN تشغيلي (ويزارد 11)</td></tr>
+        <tr><td><code>0939000091</code></td><td>سعدون الشامي</td><td>Suspended Fraud</td><td>RCN احتيال — باك أوفيس إجباري</td></tr>
+        <tr><td><code>0939000002</code></td><td><b>مازن المديون</b></td><td>Suspended Billing · −15,000 ل.س</td><td>PAY → RCN → BDR-0001 (ويزارد 3 · 11 · 14)</td></tr>
+        <tr><td>عميل فرعي (Seed)</td><td>مثلاً سارة النابلسي</td><td>Active · BranchId = فرع حلب</td><td>تذكرة SIM Swap — تصعيد Tier-3 واختبار RLS</td></tr>
+      </tbody>
+    </table>
+    <p class="lead">عملاء إضافيون: <b>أحمد الخطيب</b> (مستلم TKO) · <b>البنك العربي</b> B2B · <b>موزّع DLR-001</b> · أرقام Pool <code>0932000001</code> · أجهزة <b>سامسونج A15</b> مخزون المزة.</p>
+  </div>
+
+  <!-- ============ OP CODES ============ -->
+  <div class="panel">
+    <h2>🏷️ رموز العمليات (Operation Codes) — اللي رح تظهر بالتايم لاين</h2>
+    <div class="codes">
+      <span class="c"><b>ACT</b> تفعيل خط</span>
+      <span class="c"><b>PAY</b> دفع/شحن</span>
+      <span class="c"><b>MGR</b> ترحيل باقة</span>
+      <span class="c"><b>VAS</b> خدمة مضافة</span>
+      <span class="c"><b>SIM</b> تبديل شريحة</span>
+      <span class="c"><b>CNR</b> تغيير رقم</span>
+      <span class="c"><b>CGT</b> تغيير نوع خط</span>
+      <span class="c"><b>TKO</b> نقل ملكية</span>
+      <span class="c"><b>SUS</b> إيقاف مؤقت</span>
+      <span class="c"><b>RCN</b> إعادة توصيل</span>
+      <span class="c"><b>TRM</b> إنهاء خط</span>
+      <span class="c"><b>RFD</b> استرجاع أمانة</span>
+      <span class="c"><b>BDR</b> تحصيل ديون</span>
+      <span class="c"><b>DEV</b> بيع جهاز</span>
+    </div>
+  </div>
+
+  <!-- ============ TOC ============ -->
+  <div class="panel">
+    <h2>📑 فهرس الـ 14 ويزارد</h2>
+    <div class="toc">
+      <a href="#w1"><span class="n">1</span> تسجيل مشترك جديد (New Customer)</a>
+      <a href="#w2"><span class="n">2</span> تفعيل خط جديد (ACT)</a>
+      <a href="#w3"><span class="n">3</span> الشحن وتسديد الفواتير (PAY)</a>
+      <a href="#w4"><span class="n">4</span> ترحيل الباقة (MGR)</a>
+      <a href="#w5"><span class="n">5</span> إضافة خدمة / باقة VAS</a>
+      <a href="#w6"><span class="n">6</span> تبديل الشريحة (SIM)</a>
+      <a href="#w7"><span class="n">7</span> تغيير الرقم (CNR)</a>
+      <a href="#w8"><span class="n">8</span> تغيير نوع الخط (CGT)</a>
+      <a href="#w9"><span class="n">9</span> نقل الملكية (TKO)</a>
+      <a href="#w10"><span class="n">10</span> الإيقاف المؤقت (SUS)</a>
+      <a href="#w11"><span class="n">11</span> إعادة التوصيل (RCN)</a>
+      <a href="#w12"><span class="n">12</span> إنهاء الخط (TRM)</a>
+      <a href="#w13"><span class="n">13</span> استرجاع الأمانة (RFD)</a>
+      <a href="#w14"><span class="n">14</span> تحصيل الديون (BDR)</a>
+    </div>
+    <div class="note">ملحق إضافي بآخر الملف: <a href="#wb1">بيع جهاز (DEV)</a> و <a href="#wb2">تذكرة دعم فني (SUP)</a> — لتكتمل الصورة قدام اللجنة.</div>
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- ============================ WIZARD 1 =============================== -->
+  <!-- ===================================================================== -->
+  <section class="wz surface-front" id="w1">
+    <div class="wz-head">
+      <div class="num">1</div>
+      <div class="tt"><h2>تسجيل مشترك جديد</h2><div class="sub">New Customer — إنشاء ملف العميل بالـ CRM قبل أي خط</div></div>
+      <div class="op">CRM</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة (st-showroom)</span>
+        <span class="badge cust">عميل جديد</span>
+        <span class="badge status">3 خطوات</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>زبونة جديدة اسمها «ريم» إجت على معرض المزة، بدها تفتح خط أول مرة. الموظف لازم أول شي يتأكد إنها مش مسجّلة عنا من قبل (مشان ما نكرّر العميل)، وإذا مش موجودة بيعمل لها ملف عميل كامل. هالويزارد ما بيفعّل خط — بس بيأسس «هوية العميل» اللي رح ينبني عليها كل العمليات بعدين.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اعملي لوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · كلمة السر <kbd>123456</kbd></li>
+          <li>من الـ Hub اكبسي كرت <kbd>مشترك جديد</kbd></li>
+          <li><b>خطوة 1:</b> بحقل الرقم الوطني اكتبي <span class="v vn">0112233445</span> ← اكبسي <kbd>بحث</kbd> ← ما رح يطلع نتيجة ← اكبسي <kbd>مشترك جديد</kbd></li>
+          <li><b>خطوة 2 عبّي:</b> نوع المشترك = <span class="v">فرد</span> · الاسم = <span class="v">ريم الخطيب</span> · مجموعة العميل = <span class="v">عملاء أفراد — تجزئة</span> · فئة العميل = <span class="v">أفراد — استهلاك منزلي</span></li>
+          <li>الرقم الوطني = <span class="v vn">0112233445</span> · تاريخ الميلاد = <span class="v vn">1990-05-10</span> · المدينة = <span class="v">دمشق</span> (المحافظة بتتعبّى لحالها) · الشارع = <span class="v">أبو رمانة — بناء النخيل</span> · الرمز البريدي = <span class="v vn">22000</span> · الموبايل = <span class="v vn">0932000001</span></li>
+          <li>اكبسي <kbd>حفظ</kbd> ← خطوة 3 ← اكبسي <kbd>تفعيل اشتراك جديد</kbd> (بياخدك للويزارد 2)</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الخطوة 1 — التحقق (Verify): منع التكرار</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي بالديمو</th></tr></thead>
+        <tbody>
+          <tr><td>الرقم الوطني / السجل التجاري</td><td>هوية العميل الرسمية</td><td>أهم حقل بحث: نكتب رقم وطني ونكبس بحث. <b>ليش؟</b> عشان ما نفتح عميل مكرّر — السستم بيدوّر إذا موجود. بالديمو نكتب رقم جديد ما بيرجّع نتيجة.</td></tr>
+          <tr><td>الموبايل / MSISDN</td><td>رقم تواصل للبحث</td><td>بحث مساعد إذا الزبون نسي رقمه الوطني.</td></tr>
+        </tbody>
+      </table>
+      <p>لو طلع نتيجة (عميل موجود)، بيظهر زر «تفعيل خط جديد لهالعميل» يفتح ويزارد التفعيل مباشرةً. بما إنها جديدة، نكبس <b>«مشترك جديد»</b> وننتقل للخطوة 2.</p>
+
+      <div class="why">📋 الخطوة 2 — بيانات المشترك</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>نوع المشترك <span class="req">*</span></td><td>فرد / شركة</td><td>بيغيّر شكل الفورم كامل. <b>فرد</b> = رقم وطني وتاريخ ميلاد. <b>شركة</b> = سجل تجاري ورقم ضريبي ومفوّض. بالديمو نختار «فرد».</td></tr>
+          <tr><td>اسم المشترك <span class="req">*</span></td><td>الاسم الكامل</td><td>نكتب «ريم الخطيب». مطلوب — هوية العميل.</td></tr>
+          <tr><td>مجموعة العميل <span class="req">*</span></td><td>تصنيف تجاري (أفراد تجزئة / شركات…)</td><td>من الـ Seed: «عملاء أفراد — تجزئة». بيستخدم للتقارير وتقسيم السوق بالـ MIS.</td></tr>
+          <tr><td>فئة العميل <span class="req">*</span></td><td>شريحة (Enterprise / أفراد منزلي…)</td><td>«أفراد — استهلاك منزلي». بتحدد العروض المؤهّلة لاحقاً.</td></tr>
+          <tr><td>الرقم الوطني <span class="req">*</span></td><td>10 خانات</td><td>إلزامي للأفراد — التزام KYC القانوني.</td></tr>
+          <tr><td>تاريخ الميلاد</td><td>عمر العميل</td><td>اختياري — للتحقق من السن القانوني والعروض العمرية.</td></tr>
+          <tr><td>المدينة <span class="req">*</span></td><td>من جدول المحافظات</td><td>لما نختار «دمشق» بتنعبّى المحافظة أوتوماتيكياً. <b>ليش مهم؟</b> بتربط العميل بالفرع (المزة) وبتغذّي خريطة الإدارة العليا.</td></tr>
+          <tr><td>الشارع / الرمز البريدي <span class="req">*</span></td><td>العنوان التفصيلي</td><td>مطلوب للفوترة والمراسلات الرسمية.</td></tr>
+          <tr><td>الموبايل / الإيميل</td><td>تواصل</td><td>اختياري لكن مفيد للإشعارات.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ النتيجة:</b> ينحفظ العميل ويتولّد له رقم حساب <code>CST-xxxx</code> أوتوماتيكياً، وينعمل له «ملف مشترك» (Subscriber Profile) فاضي. بالخطوة 3 بيظهر زر <b>«تفعيل اشتراك جديد»</b> اللي بياخدنا مباشرة لويزارد التفعيل (الويزارد رقم 2).
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>ما في شي يطير لطابور الباك أوفيس — إنشاء عميل عملية CRM صرفة بدون اعتماد.</li>
+              <li>بس العميل بيصير قابل للبحث فوراً عند كل الموظفين (مصدر حقيقة واحد) — أي موظف لو بحث بنفس الرقم الوطني رح يلاقيه.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>عداد «العملاء الجدد» بفرع المزة بيزيد +1، وبيظهر بتقسيم الشرائح بالـ MIS.</li>
+              <li>بدون إيراد لهلأ لأنه ما فعّل خط — بيضل «عميل محتمل» لحد ما يعمل تفعيل (ويزارد 2).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما في Approve أبداً</span> — تسجيل العميل ما بيمرّ بالباك أوفيس بأي حالة.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — تسجيل عميل «شركة» (Corporate)</div>
+        <p>لو إجت شركة بدل فرد: بالخطوة 2 نختار نوع المشترك = <span class="v">شركة</span> ← بيتبدّل الفورم: بدل الرقم الوطني بيطلب <span class="v">سجل تجاري</span> (مثال <span class="v vn">CR-100200</span>) و<span class="v">رقم ضريبي</span> (<span class="v vn">TAX-99001</span>) و<span class="v">المفوّض بالتوقيع</span>.</p>
+        <p><b>الفرق بالموجة:</b> العميل الشركة بينضمّ لمجموعة «شركات — أعمال» وبيمهّد لتفعيل خطوط أسطول (Fleet) لاحقاً — وهدول التفعيلات بتمرّ بالباك أوفيس (مش متل الفرد).</p>
+      </div>
+
+      <a class="backlink" href="#w2">التالي: تفعيل الخط ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 2 =============================== -->
+  <section class="wz surface-front" id="w2">
+    <div class="wz-head">
+      <div class="num">2</div>
+      <div class="tt"><h2>تفعيل خط جديد</h2><div class="sub">New Activation — ربط مشترك + رقم + شريحة + باقة</div></div>
+      <div class="op">ACT</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة (st-showroom)</span>
+        <span class="badge cust">العميل: ريم الخطيب (من الويزارد 1)</span>
+        <span class="badge line">رقم من الـ Pool: 0932000001</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>كمّلنا من تسجيل ريم. هلأ بدها تختار رقم، نوع باقة، ونلصق الشريحة. هاد أكتر ويزارد بيصير بالصالة. الفكرة: «الربط الثلاثي» — رقم (MSISDN) + شريحة (ICCID) + ملف العميل، وكلهم بينزلوا سوا عالمقسم.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd> (مكمّلين من الويزارد 1، أو افتحي كرت <kbd>تفعيل خط</kbd>)</li>
+          <li><b>خطوة 1 عبّي:</b> المشترك = <span class="v">ريم الخطيب</span> (منعبّى) · نوع الخط = <span class="v">Prepaid</span></li>
+          <li>رقم الخط (MSISDN): افتحي نافذة الأرقام واختاري <span class="v vn">0932000001</span> · الباقة = <span class="v">يا هلا (15,000 ل.س)</span></li>
+          <li>رقم الشريحة ICCID = <span class="v vn">8963000000000000017</span> (19 خانة) · تاريخ النفاذ = <span class="v">فوري</span></li>
+          <li><b>خطوة 2:</b> ارفعي وثيقة الهوية KYC (أي صورة/PDF) · الدفع: المبلغ = <span class="v vn">15000</span> · القناة = <span class="v">كاش</span> · المرجع = <span class="v vn">RCPT-1001</span></li>
+          <li>اكبسي <kbd>تأكيد CBS/HLR</kbd> ← الحالة <span class="v vn">Completed</span> والخط <span class="v vn">ACTIVE</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الخطوة 1 — تفاصيل التفعيل</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك الأساسي</td><td>صاحب الخط</td><td>منعبّى أوتوماتيكياً من ويزارد العميل. لو دخلنا مباشرة، منبحث باسم/رقم وطني.</td></tr>
+          <tr><td>نوع الخط <span class="req">*</span></td><td>Prepaid / Postpaid / Hybrid</td><td><b>أهم اختيار</b> — بيفلتر أي أرقام وأي باقات رح تظهر. بالديمو نختار «Prepaid».</td></tr>
+          <tr><td>رقم الخط (MSISDN) <span class="req">*</span></td><td>الرقم من مخزون الأرقام المتاحة</td><td>بنفتح نافذة اختيار الرقم ونحجز رقم متاح مثل <code>0932000001</code>. <b>ليش؟</b> السستم بيحجزه فوراً عشان موظف تاني ما ياخده بنفس اللحظة.</td></tr>
+          <tr><td>الباقة / العرض <span class="req">*</span></td><td>التعرفة</td><td>تنفلتر حسب نوع الخط. نختار «يا هلا» (15,000 ل.س). بتحدد قيمة الأمانة المطلوبة.</td></tr>
+          <tr><td>رقم الشريحة ICCID <span class="req">*</span></td><td>19 خانة على ظهر الشريحة</td><td>الربط الثلاثي. لازم 19 خانة بالضبط — السستم بيرفض غير هيك. بيربط الشريحة الفيزيائية بالرقم.</td></tr>
+          <tr><td>تاريخ النفاذ</td><td>فوري / مجدوَل</td><td>عادة «فوري». لو شركة بدها تفعيل بكرا منختار «مجدوَل».</td></tr>
+        </tbody>
+      </table>
+
+      <div class="why">📋 الخطوة 2 — الوثائق والدفع</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم</th></tr></thead>
+        <tbody>
+          <tr><td>وثيقة الهوية (KYC) <span class="req">*</span></td><td>صورة الهوية PDF/صورة</td><td>إلزامي قبل الحفظ — زر «حفظ الطلب» بيضل مقفول لتنرفع. التزام تنظيمي ما إله نقاش.</td></tr>
+          <tr><td>الدفع (مرجع/قناة/مبلغ)</td><td>أمانة التفعيل</td><td>إذا الباقة عليها أمانة، لازم ندفع قبل تأكيد الـ CBS. منستلم الكاش وندخل المرجع.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ النتيجة:</b> بعد رفع الـ KYC والدفع، نكبس «تأكيد CBS/HLR». المعاملة بتنزل عالمقسم، الخط بيتحوّل لـ <b>ACTIVE</b> ويصير شغّال بإيد ريم. الحالة: <code>Completed</code> فوراً (تفعيل عادي ما بدّو باك أوفيس).
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>التفعيل الفردي العادي بيتأكّد فوراً بالصالة — <b>ما بيمرّ بالباك أوفيس</b>.</li>
+              <li>بيظهر بشاشة الباك أوفيس بس كسجل منجَز (Completed) للاطلاع والتدقيق، مش كطلب معلّق.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>عداد «العمليات» +1، وإيراد الأمانة بينزل لحظياً بالـ Financial MIS تحت فرع المزة.</li>
+              <li>الخط الجديد بينضاف لـ «المتصلون لايف بالشبكة» (active subscribers).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما نعمل Approve</span> للتفعيل الفردي العادي (بيخلص بالصالة). <span class="ayes">✅ نعمل Approve</span> لو كان تفعيل خطوط أسطول شركة أو عبر قناة موزّع (Dealer) — هون بيمرّ بمراجعة الباك أوفيس.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — تفعيل خط Postpaid لشركة</div>
+        <p>نختار نوع الخط = <span class="v">Postpaid</span> وباقة شركات (مثلاً <span class="v">بزنس ستاندرد 85,000</span>)، ومع عميل شركة لازم نحدّد <span class="v">طرف ثاني</span> (المستخدم/المفوّض).</p>
+        <p><b>الفرق بالموجة:</b> العلاقة المالية صارت آجلة (فاتورة)، فالباك أوفيس بيدقّق على حد الائتمان، والإدارة بتشوف ارتفاع متوقع بالـ ARPU من خطوط الشركات.</p>
+      </div>
+
+      <a class="backlink" href="#w3">التالي: الشحن وتسديد الفواتير ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 3 =============================== -->
+  <section class="wz surface-front" id="w3">
+    <div class="wz-head">
+      <div class="num">3</div>
+      <div class="tt"><h2>الشحن وتسديد الفواتير</h2><div class="sub">Recharge & Bill Pay — الكاش اللي بيدخل الصالة</div></div>
+      <div class="op">PAY</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة (st-showroom)</span>
+        <span class="badge cust">العميل: مازن المديون</span>
+        <span class="badge line">الخط: 0939000002 (مديون 15,000 ل.س)</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة (سيناريو «أبو جاد» — بطل الديون بالـ Seed)</span>
+        <p>مازن المديون خطه الفاتورة <code>0939000002</code> انقطع لأنه ما دفع — السستم حظره مالياً (Suspended Billing). إجا مستعجل بدّو يدفع كاش ويشغّل خطه. موظف الصالة بيستلم الكاش ويسدّد الفاتورة فوراً عالـ Ledger المالي.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>الشحن وتسديد الفواتير</kbd></li>
+          <li>الرقم = <span class="v vn">0939000002</span> ← بيطلع اسم <span class="v">مازن المديون</span> والمستحق <span class="v vn">-15,000 ل.س</span></li>
+          <li>المبلغ = <span class="v vn">15000</span> · القناة = <span class="v">كاش</span> · مرجع الدفع = <span class="v vn">RCPT-2002</span></li>
+          <li>اكبسي <kbd>تسديد الفاتورة</kbd> ← كرت أخضر Success والرصيد بيصفّر وبينطبع ختم <span class="v vn">PAY-</span></li>
+          <li>احتفظي بالمرجع <span class="v vn">RCPT-2002</span> لأنه رح نستعمله بالويزارد 11 (إعادة التوصيل)</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 حقول عملية الدفع</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>الرقم (MSISDN)</td><td>الخط المطلوب الدفع عنه</td><td>نكتب <code>0939000002</code>، السستم بيجيب اسم <b>مازن المديون</b> والرصيد المستحق (-15,000).</td></tr>
+          <tr><td>قيمة المبلغ</td><td>الكاش المستلَم</td><td>ندخل 15,000 ل.س. <b>ليش؟</b> عشان الرصيد المستحق يصفّر فوراً بالـ CBS.</td></tr>
+          <tr><td>قناة الدفع</td><td>كاش / سيريتيل كاش / بطاقة</td><td>نختار «كاش» — مطابقة مع الخزنة.</td></tr>
+          <tr><td>مرجع الدفع</td><td>رقم الإيصال</td><td>للتدقيق المالي ومطابقة الكاش بالخزنة آخر اليوم.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ النتيجة:</b> كرت أخضر (Success)، والرصيد بيصفّر فوراً بالـ CBS وبينطبع ختم <code>PAY-</code> بالـ Ledger. <b>بس انتبهي للحبكة:</b> الفلوس انسدّدت، لكن الخط لسا محظور على المقسم — لازم أمر فك حظر فني. هون منكمّل بالويزارد رقم 11 (إعادة التوصيل RCN) اللي بيروح للباك أوفيس.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>الدفع نفسه <b>ما بيمرّ بالباك أوفيس</b> — الرصيد بيصفّر فوراً بالـ CBS.</li>
+              <li><b>الحبكة المهمة:</b> الدفع لحاله ما بيرجّع الإرسال إذا الخط كان محظور — الخط بيضل واقف لحد ما يصير فك حظر فني (RCN) اللي <b>بيمرّ</b> بالباك أوفيس.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>المبلغ بينضاف لإيراد اليوم لحظياً فوق خريطة المحافظات بالـ Financial MIS.</li>
+              <li>الدفعات النقدية بتغذّي مطابقة الكاش مع الخزنة بالتقارير المالية.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما في Approve للدفع</span> نفسه. الاعتماد بيلزم بس لخطوة فك الحظر بعده (شوفي ويزارد 11 — إعادة التوصيل).</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — شحن خط Prepaid عادي</div>
+        <p>على خط <span class="v vn">0939000000</span> (شغّال ومش محظور): نكتب الرقم، المبلغ مثلاً <span class="v vn">10000</span>، القناة كاش ← الرصيد بينزاد فوراً.</p>
+        <p><b>الفرق بالموجة:</b> ما في فاتورة ولا حظر ولا RCN — عملية تنتهي بثانية، ما بتمرّ بالباك أوفيس، وبتظهر بس كإيراد شحن بالإدارة.</p>
+      </div>
+
+      <a class="backlink" href="#w4">التالي: ترحيل الباقة ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 4 =============================== -->
+  <section class="wz surface-front" id="w4">
+    <div class="wz-head">
+      <div class="num">4</div>
+      <div class="tt"><h2>ترحيل الباقة</h2><div class="sub">Migration — تغيير الباقة/العرض للخط</div></div>
+      <div class="op">MGR</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة (st-showroom)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">الخط: 0939000001</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>سعدون مبسوط من خطه الذهبي <code>0939000001</code> بس صار يستهلك أكتر، بدّو يطلّع من «يا هلا» لباقة أكبر «سيريتيل ميكس 500». بالداتا في عنده ترحيل مكتمل أصلاً من يا هلا ← ميكس 500، فهالويزارد بيوضّح القصة.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>ترحيل الباقة</kbd></li>
+          <li>المشترك/الخط = <span class="v vn">0939000001</span> (سعدون) ← بتشوفي الباقة الحالية <span class="v">يا هلا</span></li>
+          <li>الباقة الجديدة = <span class="v">سيريتيل ميكس 500 (25,000 ل.س)</span> · تاريخ النفاذ = <span class="v">فوري</span></li>
+          <li>اكبسي <kbd>حفظ طلب الترحيل</kbd> ثم <kbd>تأكيد CBS/HLR</kbd> ← ختم <span class="v vn">MGR-</span> والحالة <span class="v vn">Completed</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك / الخط</td><td>الخط المراد ترحيله</td><td>منبحث برقم سعدون ونختار <code>0939000001</code>.</td></tr>
+          <tr><td>الباقة الحالية</td><td>عرض للقراءة فقط</td><td>بيبيّن «يا هلا» الحالية — مرجع للمقارنة.</td></tr>
+          <tr><td>الباقة/العرض الجديد <span class="req">*</span></td><td>التعرفة الجديدة</td><td>نختار «سيريتيل ميكس 500» (25,000 ل.س). بتنفلتر حسب نوع الخط.</td></tr>
+          <tr><td>معاينة التسوية المالية (Proration)</td><td>فرق السعر المحسوب</td><td>للقراءة — <b>بيوقّف الإرسال إذا الرصيد ما بيكفّي</b>. حماية مالية مهمة جداً.</td></tr>
+          <tr><td>تاريخ النفاذ / ملاحظات</td><td>متى يطبّق</td><td>«فوري» عادة، أو بداية الدورة القادمة.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ النتيجة:</b> «حفظ طلب الترحيل» ← «تأكيد CBS/HLR» ← الباقة بتتبدّل عالمقسم وبيظهر ختم <code>MGR-</code> بالتايم لاين. الحالة <code>Completed</code> (ترحيل بسيط ما بدّو باك أوفيس).
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>الترحيل العادي (والرصيد كافٍ) بيتأكّد بالصالة — <b>ما بيمرّ بالباك أوفيس</b>.</li>
+              <li>بيظهر كسجل MGR منجَز للتدقيق فقط.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الترحيل لباقة أغلى بيرفع الـ ARPU — رقم أساسي بالـ Scorecard.</li>
+              <li>بيظهر بتوزيع الباقات وحركة الترقيات (Upgrades) بالفرع.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما نعمل Approve</span> للترحيل العادي إذا الرصيد كافٍ. <span class="ayes">✅ ممكن يلزم</span> لو في تسوية مالية كبيرة أو ترحيل لعرض مقيّد.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — ترحيل لباقة أرخص (Downgrade)</div>
+        <p>لو سعدون بدّو ينزل من «ميكس 500» لباقة أرخص: نختار الباقة الأقل ← السستم بيحسب <span class="v">تسوية معاكسة (Proration)</span> وممكن يطلب تأكيد.</p>
+        <p><b>الفرق بالموجة:</b> الـ ARPU بينخفض (إشارة سلبية للإدارة)، والباك أوفيس قد يراجع لو في فرق رصيد كبير لازم يرجع للعميل.</p>
+      </div>
+
+      <a class="backlink" href="#w5">التالي: إضافة خدمة VAS ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 5 =============================== -->
+  <section class="wz surface-sup" id="w5">
+    <div class="wz-head">
+      <div class="num">5</div>
+      <div class="tt"><h2>إضافة خدمة / باقة (VAS)</h2><div class="sub">Value Added Service — تفعيل/إلغاء خدمة مضافة</div></div>
+      <div class="op">VAS</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user sup">🔑 لوغن: مشرف/إدارة (st-mis أو صاحب صلاحية Supervisor)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">الخط: 0939000001</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>سعدون بدّو يفعّل «التجوال الدولي» لأنه مسافر. أو منوقف خدمة قديمة. هاد ويزارد سريع جداً (خطوتين) لأنه بيمرّ عن طريق Toggle مباشر مش معاملة كاملة.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-mis@syriatelecom-demo.local</span> · <kbd>123456</kbd> (كرت VAS بيظهر لصاحب صلاحية Supervisor)</li>
+          <li>اكبسي كرت <kbd>إضافة خدمة / باقة</kbd></li>
+          <li>المشترك = <span class="v vn">0939000001</span> (سعدون)</li>
+          <li>الخدمة (VAS) = <span class="v">التجوال الدولي (250 ل.س/شهر)</span> · الإجراء = <span class="v">تفعيل</span></li>
+          <li>اكبسي <kbd>تنفيذ</kbd> ← الخدمة تنزل على الـ HLR وبينطبع ختم <span class="v vn">VAS-</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك (لازم عنده MSISDN)</td><td>الخط المستهدف</td><td>نبحث ونختار <code>0939000001</code>.</td></tr>
+          <tr><td>الخدمة (VAS) <span class="req">*</span></td><td>من كتالوج الخدمات</td><td>نختار «التجوال الدولي» (250 ل.س/شهر) أو «كاشف الأرقام» (75). الكتالوج كامل بالـ Seed.</td></tr>
+          <tr><td>الإجراء</td><td>تفعيل / إلغاء</td><td>«تفعيل». ليش الحقلين منفصلين؟ عشان نفس الويزارد يخدم التفعيل والإلغاء.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ النتيجة:</b> زر واحد ← الخدمة بتنزل على الـ HLR فوراً (أمر <code>ADD-SUPPLEMENTARY</code>) وبيتولّد ختم <code>VAS-</code>. سعدون أصلاً عنده «كاشف الأرقام» مفعّلة بالداتا — منقدر نفرجي اللجنة كيف بتظهر بالـ 360.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>التفعيل/الإلغاء بيمرّ مباشر على الـ HLR — <b>ما في طابور ولا اعتماد</b>.</li>
+              <li>بيظهر كسجل VAS بالتايم لاين للتدقيق.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الـ VAS مصدر إيراد إضافي شهري متكرر — بيظهر بتقارير الخدمات المضافة.</li>
+              <li>الإدارة بتراقب نسبة اختراق الخدمات (VAS penetration) بكل فرع.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما في Approve</span> لتفعيل/إلغاء VAS — عملية فورية بدون باك أوفيس.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — إلغاء خدمة VAS</div>
+        <p>سعدون رجع من السفر وبدّو يوقف «التجوال الدولي»: نفس الويزارد، نختار الخدمة، الإجراء = <span class="v">إلغاء</span>.</p>
+        <p><b>الفرق بالموجة:</b> الإيراد المتكرر الشهري بينقص بمقدار رسم الخدمة — وبيظهر كـ «تناقص خدمات» بتقارير الإدارة.</p>
+      </div>
+
+      <a class="backlink" href="#w6">التالي: تبديل الشريحة ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 6 =============================== -->
+  <section class="wz surface-front" id="w6">
+    <div class="wz-head">
+      <div class="num">6</div>
+      <div class="tt"><h2>تبديل الشريحة</h2><div class="sub">SIM Swap — شريحة جديدة لنفس الرقم</div></div>
+      <div class="op">SIM</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة (st-showroom)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">الخط: 0939000001</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة — حالتين بنفس الويزارد</span>
+        <p><b>الحالة أ (بسيطة):</b> شريحة سعدون انكسرت، بدّو شريحة بديلة 5G لنفس الرقم. <b>الحالة ب (حسّاسة):</b> الشريحة مسروقة! هون الويزارد بيتحوّل لمسار أمني وبيروح للباك أوفيس — وهاد بيفرش الحوكمة قدام اللجنة.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>تبديل الشريحة</kbd> · الخط = <span class="v vn">0939000001</span></li>
+          <li><b>الحالة أ:</b> سبب الاستبدال = <span class="v">تالفة</span> · ICCID الجديد = <span class="v vn">8963000000000000099</span> ← <kbd>حفظ</kbd> ثم <kbd>تأكيد CBS</kbd> ← <span class="v vn">Completed</span></li>
+          <li><b>الحالة ب (سرقة):</b> نفس القيم + كبّي مربّع <span class="v">بلاغ ضياع/سرقة ✔</span> · رقم المحضر = <span class="v vn">POL-5567</span> ← الحالة <span class="v vn">Pending_BackOffice_Approval</span> (لازم اعتماد الباك أوفيس)</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك / الخط</td><td>صاحب الشريحة</td><td>نبحث ونختار <code>0939000001</code>.</td></tr>
+          <tr><td>سبب الاستبدال <span class="req">*</span></td><td>تالفة / ترقية 5G / أخرى</td><td>بالحالة أ نختار «تالفة».</td></tr>
+          <tr><td>بلاغ ضياع/سرقة (مربّع اختيار)</td><td>تفعيل المسار الأمني</td><td><b>المفتاح:</b> لو كبّسناه، بيفتح حقول أمنية وبيخلّي العملية تحتاج باك أوفيس. بالحالة ب نكبّسه.</td></tr>
+          <tr><td>رقم محضر الشرطة / تذكرة أمنية</td><td>إثبات البلاغ</td><td>يظهر بس بحالة السرقة. ليش؟ منع الاحتيال (حدا يسرق رقم غيره).</td></tr>
+          <tr><td>رقم الشريحة الجديدة ICCID <span class="req">*</span></td><td>19 خانة</td><td>الشريحة الجديدة اللي رح تربط بالرقم.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ الحالة أ:</b> حفظ ← تأكيد CBS ← <code>Completed</code> فوراً بالصالة.<br>
+        <b>⏳ الحالة ب (سرقة):</b> بعد رفع المحضر، الحالة بتصير <code>Pending_BackOffice_Approval</code> — وموظف الصالة <b>ما بيقدر</b> يأكّد CBS. لازم الباك أوفيس يعتمد (شوفي الويزارد رقم 11 للفكرة نفسها).
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>الحالة أ (تالفة/ترقية):</b> ما بتمرّ بالباك أوفيس — تخلص بالصالة فوراً.</li>
+              <li><b>الحالة ب (سرقة/ضياع):</b> بتطير لطابور الباك أوفيس بحالة <code>Pending_BackOffice_Approval</code>، وموظف الباك أوفيس بيشوف رقم المحضر قبل ما يقرّر.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>عملية SIM بتظهر بعداد العمليات.</li>
+              <li>تكرار بلاغات السرقة بفرع معيّن بيطلّع تنبيه احتيال بتبويب «التنبيهات والتدقيق».</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما نعمل Approve</span> لتبديل شريحة تالفة. <span class="ayes">✅ نعمل Approve</span> لحالة السرقة/الضياع بعد التأكد من المحضر الأمني — منع انتحال هوية وسرقة أرقام.</div>
+      </div>
+
+      <a class="backlink" href="#w7">التالي: تغيير الرقم ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 7 =============================== -->
+  <section class="wz surface-front" id="w7">
+    <div class="wz-head">
+      <div class="num">7</div>
+      <div class="tt"><h2>تغيير الرقم</h2><div class="sub">Change Number / Port-In — رقم جديد أو نقل من مشغّل آخر</div></div>
+      <div class="op">CNR</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة (st-showroom)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">رقم مميّز من الـ Pool</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة — مسارين</span>
+        <p><b>داخلي (Internal):</b> سعدون بدّو يبدّل رقمه لرقم مميّز (Gold) من المخزون. <b>نقل من مشغّل (Port-In):</b> زبون جاي من MTN بدّو ينقل رقمه لعنا. المسار التاني <b>دايماً</b> بيمرّ بالباك أوفيس.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>تغيير الرقم</kbd> · الخط = <span class="v vn">0939000001</span></li>
+          <li><b>مسار داخلي:</b> نوع العملية = <span class="v">داخلي</span> · الرقم الجديد من المخزون = <span class="v vn">0932000005</span> (Gold) · سبب التغيير = <span class="v">رغبة العميل برقم مميّز</span> · مرجع الدفع = <span class="v vn">RCPT-7001</span></li>
+          <li><b>مسار نقل (Port-In):</b> نوع العملية = <span class="v">نقل من مشغّل</span> · الرقم المراد نقله = <span class="v vn">0944556677</span> · المشغّل المانح = <span class="v">MTN</span> · مرجع MNP = <span class="v vn">MNP-7788</span></li>
+          <li>رقم عادي ← <kbd>تأكيد CBS</kbd> ← <span class="v vn">Completed</span> · رقم مميّز أو Port-In ← <span class="v vn">Pending_BackOffice_Approval</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>نوع العملية</td><td>داخلي / نقل من مشغّل</td><td>بيغيّر الحقول. بالديمو نبلّش «داخلي».</td></tr>
+          <tr><td>الرقم الجديد من المخزون <span class="req">*</span></td><td>(للداخلي) رقم متاح</td><td>نختار رقم Gold من أول 12 رقم متاح. <b>الأرقام المميّزة بتتطلّب رسوم واعتماد باك أوفيس.</b></td></tr>
+          <tr><td>الرقم المراد نقله <span class="req">*</span></td><td>(للنقل) رقم المشغّل الآخر</td><td>يظهر بمسار Port-In فقط.</td></tr>
+          <tr><td>المشغّل المانح</td><td>MTN / أخرى</td><td>من وين جاي الرقم. مطلوب قانونياً لعملية النقل.</td></tr>
+          <tr><td>مرجع طلب النقل MNP</td><td>رقم طلب النقل الرسمي</td><td>للتتبع مع الجهة التنظيمية.</td></tr>
+          <tr><td>سبب التغيير <span class="req">*</span></td><td>توثيق السبب</td><td>إلزامي.</td></tr>
+          <tr><td>رسوم الرقم المميّز / مرجع الدفع</td><td>الرسوم</td><td>يظهر لو الرقم مميّز.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ رقم عادي:</b> حجز الرقم ← تأكيد CBS ← <code>Completed</code>.<br>
+        <b>⏳ رقم مميّز / Port-In:</b> <code>Pending_BackOffice_Approval</code> — لازم اعتماد لمطابقة الرسوم أو إتمام النقل القانوني.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>رقم عادي داخلي:</b> ما بيمرّ — يخلص بالصالة.</li>
+              <li><b>رقم مميّز (Gold/Platinum) أو Port-In:</b> بيطير للطابور، والباك أوفيس بيتأكّد من دفع الرسوم أو إتمام النقل القانوني مع المشغّل المانح.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>رسوم الأرقام المميّزة بتظهر كإيراد إضافي.</li>
+              <li>الـ Port-In بيزيد صافي المشتركين (إشارة إيجابية)، والـ Port-Out بينقصهم.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ رقم عادي</span> ما بدّو Approve. <span class="ayes">✅ رقم مميّز</span> (مطابقة الرسوم) و <span class="ayes">✅ Port-In</span> (إتمام النقل القانوني) لازمهم اعتماد.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — نقل رقم من مشغّل آخر (Port-In من MTN)</div>
+        <p>زبون جاي من MTN: نوع العملية = <span class="v">نقل من مشغّل</span> · الرقم المراد نقله = <span class="v vn">0944556677</span> · المشغّل المانح = <span class="v">MTN</span> · مرجع MNP = <span class="v vn">MNP-7788</span>.</p>
+        <p><b>الفرق بالموجة:</b> <b>دايماً</b> بيمرّ بالباك أوفيس لإتمام النقل القانوني، والإدارة بتعدّه «مكسب مشترك من منافس».</p>
+      </div>
+
+      <a class="backlink" href="#w8">التالي: تغيير نوع الخط ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 8 =============================== -->
+  <section class="wz surface-back" id="w8">
+    <div class="wz-head">
+      <div class="num">8</div>
+      <div class="tt"><h2>تغيير نوع الخط</h2><div class="sub">Change GSM Type — من Prepaid لـ Postpaid مثلاً</div></div>
+      <div class="op">CGT</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user back">🔑 لوغن: موظف الباك أوفيس (st-backoffice)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">الخط: 0939000000</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>سعدون عنده خط Prepaid <code>0939000000</code> وبدّو يحوّله لـ Postpaid (فاتورة) لأنه صار يستهلك كتير. هاد كرت <b>باك أوفيس</b> — ما بيظهر عند موظف الصالة العادي، لأنه بيمسّ علاقة مالية مستمرة مع العميل.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-backoffice@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>تغيير نوع الخط</kbd> · الخط = <span class="v vn">0939000000</span></li>
+          <li>نوع الخط الجديد = <span class="v">Postpaid</span> · سبب التحويل = <span class="v">استهلاك مرتفع ورغبة بفاتورة</span> · مسار التحويل = <span class="v">عادي</span></li>
+          <li>العرض المؤهّل = <span class="v">فاتورة كلاسيك (28,000)</span> · ارفعي وثيقة هوية (إعادة تحقق KYC)</li>
+          <li>اكبسي <kbd>حفظ</kbd> ثم <kbd>تأكيد CBS</kbd> ← الخط بيتحوّل Postpaid على المقسم</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك / الخط</td><td>الخط المستهدف</td><td>نختار <code>0939000000</code>.</td></tr>
+          <tr><td>نوع الخط الجديد <span class="req">*</span></td><td>Postpaid / Hybrid</td><td>نختار «Postpaid».</td></tr>
+          <tr><td>سبب التحويل <span class="req">*</span></td><td>توثيق</td><td>إلزامي — لازم نوثّق ليش تغيّر النوع.</td></tr>
+          <tr><td>مسار التحويل</td><td>عادي / تنظيمي</td><td>«تنظيمي» بيفتح حقول قرار رسمي ومرفق.</td></tr>
+          <tr><td>مرجع الدفع</td><td>تسوية مالية</td><td>يظهر بالمسار المالي (Prepaid→Postpaid قد يحتاج أمانة).</td></tr>
+          <tr><td>وثيقة هوية (إعادة تحقق KYC)</td><td>تحقق هوية</td><td>لأن العلاقة المالية بتتغيّر — لازم إعادة توثيق.</td></tr>
+          <tr><td>العرض المؤهَّل</td><td>باقة Postpaid</td><td>تنحمّل بعد اختيار النوع الجديد.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ النتيجة:</b> بعد الحفظ لازم تأكيد CBS لإتمام تغيير النوع على المقسم. لأنه باك أوفيس، الموظف الحصين هو اللي بيكمّلها بصلاحياته.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>هاد <b>كرت باك أوفيس أصلاً</b> — ما بيظهر عند موظف الصالة. الموظف الحصين هو اللي بينفّذه بصلاحياته.</li>
+              <li>المسار المالي (Prepaid→Postpaid) والتنظيمي بيتطلّبوا تدقيق هوية ووثائق قبل التنفيذ.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>التحويل لـ Postpaid بيغيّر تركيبة الإيراد (من شحن لفوترة) ويرفع الـ ARPU المتوقع.</li>
+              <li>بيظهر بتقرير «تحوّلات نوع الخط» وتوزيع Prepaid/Postpaid/Hybrid.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ayes">✅ غالباً بيلزم تنفيذ/اعتماد باك أوفيس</span> خاصةً بالمسار المالي والتنظيمي. التحويل البسيط بين الأنواع المتوافقة ممكن يتأكّد مباشرة بصلاحية الباك أوفيس.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — تحويل تنظيمي (Regulatory)</div>
+        <p>لو التحويل بقرار رسمي: مسار التحويل = <span class="v">تنظيمي</span> ← بيفتح حقول <span class="v">رقم القرار الرسمي</span> و<span class="v">مرفق القرار</span> (لازم نرفقهم).</p>
+        <p><b>الفرق بالموجة:</b> الباك أوفيس ما بيوافق إلا بعد التأكد من القرار الرسمي، وبيتسجّل بسجل التدقيق (audit) اللي بتشوفه الإدارة بتبويب التنبيهات.</p>
+      </div>
+
+      <a class="backlink" href="#w9">التالي: نقل الملكية ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 9 =============================== -->
+  <section class="wz surface-back" id="w9">
+    <div class="wz-head">
+      <div class="num">9</div>
+      <div class="tt"><h2>نقل الملكية</h2><div class="sub">Takeover — نقل الخط من صاحب لصاحب</div></div>
+      <div class="op">TKO</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user back">🔑 لوغن: موظف الباك أوفيس (st-backoffice)</span>
+        <span class="badge cust">من: سعدون الشامي ← إلى: أحمد الخطيب</span>
+        <span class="badge line">الخط: 0939000001</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>سعدون بدّو ينقل ملكية خطه الذهبي <code>0939000001</code> لأخوه «أحمد الخطيب». نقل الملكية <b>دايماً</b> بيحتاج باك أوفيس لأنه بيغيّر صاحب الالتزام المالي. بالداتا في طلب TKO جاهز بحالة <code>PendingDocuments</code> — منفرجيه للّجنة.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-backoffice@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>نقل الملكية</kbd></li>
+          <li>المالك الحالي = <span class="v vn">0939000001</span> (سعدون) · الطرف الثاني (المالك الجديد) = <span class="v">أحمد الخطيب</span></li>
+          <li>سبب النقل = <span class="v">نقل لقريب من العائلة</span> · سياسة الأمانة = <span class="v">تنقل للمالك الجديد</span></li>
+          <li>ارفعي هوية الطرفين ← الحالة <span class="v vn">Pending_BackOffice_Approval</span></li>
+          <li><b>الاعتماد:</b> افتحي <kbd>/Telecom/BackOfficeDashboard</kbd> ← تبويب «طابور العمل النشط» ← افتحي طلب <span class="v vn">TKO-</span> ← اكبسي <kbd>Approve</kbd> (أو <kbd>Reject</kbd> مع سبب 5–500 حرف)</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك الأساسي (المالك الحالي)</td><td>سعدون</td><td>صاحب الخط الحالي.</td></tr>
+          <tr><td>الطرف الثاني (المالك الجديد) <span class="req">*</span></td><td>أحمد الخطيب</td><td>لازم يكون عميل مسجّل بالسستم. مين رح يستلم الخط.</td></tr>
+          <tr><td>مرجع تسوية الالتزامات</td><td>دفع المتأخرات</td><td>يظهر لو الخط عليه رصيد سالب — لازم يتصفّى قبل النقل.</td></tr>
+          <tr><td>سبب النقل <span class="req">*</span></td><td>توثيق</td><td>إلزامي.</td></tr>
+          <tr><td>سياسة الأمانة/الكفالة</td><td>تبقى/تنقل/تُصادَر/تُرجّع</td><td>شو بيصير بأمانة سعدون؟ نختار «تنقل للمالك الجديد».</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result warn">
+        <b>⏳ النتيجة:</b> بعد رفع الهوية، الطلب بيطير لطابور الباك أوفيس بحالة <code>Pending_BackOffice_Approval</code>. موظف الصالة <b>ما بيقدر</b> يكمّلها.
+      </div>
+
+      <div class="scene back">
+        <span class="label">🛡️ الفصل الثاني — قرار الباك أوفيس</span>
+        <p>منعمل لوغن بحساب <b>st-backoffice</b> ← نفتح <code>/Telecom/BackOfficeDashboard</code> ← تبويب «طابور العمل النشط» ← نلاقي طلب TKO ← نكبس <b>Approve</b> الخضراء. بوم! بينزل أمر للمقسم والملكية بتتحوّل لأحمد. (أو <b>Reject</b> مع كتابة سبب الرفض 5–500 حرف).</p>
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>نقل الملكية <b>دايماً</b> بيطير لطابور الباك أوفيس بحالة <code>Pending_BackOffice_Approval</code>.</li>
+              <li>الموظف الحصين بيتأكّد من هوية الطرفين وتسوية أي متأخرات قبل الـ Approve. <b>ممنوع</b> يكمل من الصالة.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>ما بيغيّر الإيراد، بس بيغيّر صاحب الحساب — بيتسجّل بسجل التدقيق.</li>
+              <li>تكرار نقل الملكية بشكل غير طبيعي بيطلّع تنبيه «تجاوزات» للمراقبة.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ayes">✅ Approve إجباري دايماً</span> (بعد التأكد من الهوية وتسوية المتأخرات). <span class="ano">❌ ما بيكمل من الصالة أبداً</span>.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — نقل ملكية خط عليه دين</div>
+        <p>لو الخط المنقول عليه رصيد سالب: بيظهر حقل <span class="v">مرجع تسوية الالتزامات</span> ولازم نصفّي الدين أول (دفع كاش + مرجع) قبل ما الباك أوفيس يقبل.</p>
+        <p><b>الفرق بالموجة:</b> الباك أوفيس بيرفض (Reject) لو الدين لسا قائم — حماية مالية إنه ما ننقل خط مديون لشخص بريء.</p>
+      </div>
+
+      <a class="backlink" href="#w10">التالي: الإيقاف المؤقت ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 10 =============================== -->
+  <section class="wz surface-back" id="w10">
+    <div class="wz-head">
+      <div class="num">10</div>
+      <div class="tt"><h2>الإيقاف المؤقت</h2><div class="sub">Suspension — حظر مؤقت للخط</div></div>
+      <div class="op">SUS</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user back">🔑 لوغن: موظف الباك أوفيس (st-backoffice)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">الخط: 0939000000</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة — أنواع الإيقاف</span>
+        <p>في كذا سبب لإيقاف خط: العميل طالب إيقاف مؤقت (مسافر)، أو فاتورة، أو <b>احتيال</b>، أو تنظيمي. الاحتيال والتنظيمي بيحتاجوا باك أوفيس. بالداتا: خط <b>مازن</b> <code>0939000002</code> موقوف Billing · خط سعدون <code>0939000005</code> Operational · <code>0939000091</code> Fraud — حالات جاهزة.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-backoffice@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>الإيقاف المؤقت</kbd> · الخط = <span class="v vn">0939000000</span></li>
+          <li><b>حالة بسيطة:</b> نوع الإيقاف = <span class="v">بطلب العميل</span> · مستوى الحظر = <span class="v">كامل</span> · السبب = <span class="v">العميل مسافر</span> · إعادة توصيل تلقائي ✔ · تاريخ الانتهاء = <span class="v">بعد 30 يوم</span> ← <kbd>تأكيد CBS</kbd> ← <span class="v vn">SUSPENDED</span></li>
+          <li><b>حالة احتيال:</b> نوع الإيقاف = <span class="v">احتيال</span> · تأكيد المشرف ✔ · تذكرة أمنية = <span class="v vn">SEC-3321</span> ← الحالة <span class="v vn">Pending_BackOffice_Approval</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>نوع الإيقاف <span class="req">*</span></td><td>عميل/فوترة/احتيال/تنظيمي/تشغيلي</td><td>بيحدد المسار. الاحتيال+التنظيمي = باك أوفيس.</td></tr>
+          <tr><td>مستوى الحظر <span class="req">*</span></td><td>كامل/وارد/صادر/داتا فقط</td><td>شو بدنا نوقف بالضبط؟ نختار «كامل».</td></tr>
+          <tr><td>سبب الإيقاف <span class="req">*</span></td><td>توثيق</td><td>إلزامي.</td></tr>
+          <tr><td>تأكيد المشرف (مربّع) + تذكرة أمنية</td><td>للاحتيال</td><td>يظهر بحالة الاحتيال — حوكمة مزدوجة.</td></tr>
+          <tr><td>إعادة توصيل تلقائي + تاريخ الانتهاء</td><td>جدولة الفك</td><td>لو بدنا الخط يرجع لحاله بعد فترة (حتى 90 يوم). مفيد للسفر.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>✅ إيقاف بسيط (عميل/تشغيلي):</b> تأكيد CBS ← الخط <code>SUSPENDED</code> فوراً.<br>
+        <b>⏳ احتيال/تنظيمي:</b> <code>Pending_BackOffice_Approval</code> بعد رفع الوثائق.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>عميل/تشغيلي:</b> ما بيمرّ — بيتأكّد بصلاحية الباك أوفيس مباشرة.</li>
+              <li><b>احتيال/تنظيمي (والشركات):</b> بيطير للطابور بحالة <code>Pending_BackOffice_Approval</code> مع تذكرة أمنية ووثائق.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الخطوط الموقوفة بتنقص من «المتصلون لايف بالشبكة».</li>
+              <li>تكرار إيقاف الاحتيال بفرع بيطلّع تنبيه بتبويب التنبيهات والتدقيق.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ ما نعمل Approve</span> للإيقاف بطلب العميل أو التشغيلي. <span class="ayes">✅ نعمل Approve</span> لإيقاف الاحتيال/التنظيمي (يحتاج تأكيد مشرف + وثائق).</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — إيقاف احتيال (Fraud)</div>
+        <p>على خط مشبوه: نوع الإيقاف = <span class="v">احتيال</span> · مستوى الحظر = <span class="v">كامل</span> · تأكيد المشرف ✔ · تذكرة أمنية = <span class="v vn">SEC-3321</span>.</p>
+        <p><b>الفرق بالموجة:</b> بيروح للباك أوفيس إجبارياً، والإدارة بتشوفه كمؤشّر مخاطر — وفكّه لاحقاً بيحتاج تخليص أمني (ويزارد 11).</p>
+      </div>
+
+      <a class="backlink" href="#w11">التالي: إعادة التوصيل ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 11 =============================== -->
+  <section class="wz surface-sup" id="w11">
+    <div class="wz-head">
+      <div class="num">11</div>
+      <div class="tt"><h2>إعادة التوصيل</h2><div class="sub">Reconnect — فك الحظر وإرجاع الخط للخدمة</div></div>
+      <div class="op">RCN</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user">🔑 لوغن: موظف الصالة ثم اعتماد الباك أوفيس</span>
+        <span class="badge cust">العميل: مازن المديون</span>
+        <span class="badge line">الخط: 0939000002 (بعد دفع الويزارد 3)</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة (تكملة سيناريو أبو جاد)</span>
+        <p>بالويزارد رقم 3 <b>مازن</b> دفع فاتورته كاش. بس الخط لسا واقف على المقسم — لازم أمر فك حظر فني. هون منقدّم طلب «إعادة توصيل» (RCN) اللي بيتحقّق إن الفلوس انسدّدت فعلاً قبل ما يرجع الإرسال.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li><b>تقديم الطلب:</b> اللوغن <span class="login">st-showroom@syriatelecom-demo.local</span> · <kbd>123456</kbd> (كرت إعادة التوصيل — Frontline)</li>
+          <li>اكبسي كرت <kbd>إعادة التوصيل</kbd> · الخط = <span class="v vn">0939000002</span> (مازن المديون — وطني، مرئي من المزة)</li>
+          <li>نوع التخليص = <span class="v">دفع (Payment)</span> · السبب = <span class="v">دفع الفاتورة المتأخرة</span> · مرجع الدفع = <span class="v vn">RCPT-2002</span> (نفس إيصال الويزارد 3)</li>
+          <li>اكبسي <kbd>تقديم</kbd> ← الحالة <span class="v vn">Pending_BackOffice_Approval</span></li>
+          <li><b>الاعتماد:</b> اللوغن <span class="login">st-backoffice@syriatelecom-demo.local</span> ← <kbd>/Telecom/BackOfficeDashboard</kbd> ← طابور الاعتماد أو طابور التذاكر أعلى الصفحة ← تأكّدي إن الحساب صفّر ← <kbd>Approve</kbd> ← الخط <span class="v vn">ACTIVE</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>نوع التخليص <span class="req">*</span></td><td>عميل/دفع/احتيال/تنظيمي/تشغيلي</td><td>نختار «دفع» لأنه دفع الفاتورة. بيحدد الحقول.</td></tr>
+          <tr><td>سبب إعادة التوصيل <span class="req">*</span></td><td>توثيق</td><td>إلزامي.</td></tr>
+          <tr><td>مرجع الدفع</td><td>إيصال الفاتورة</td><td>يظهر بمسار «دفع» — <b>بيربط فك الحظر بالدفع الفعلي</b>. هون قوّة الحوكمة.</td></tr>
+          <tr><td>مصفوفة الأهلية (للقراءة)</td><td>فحص هل الخط مؤهّل للفك</td><td>السستم بيفحص أوتوماتيكياً — وبيوقف لو مش مؤهّل (مثلاً موقوف احتيال بدون تخليص).</td></tr>
+          <tr><td>تأكيد تخليص الاحتيال</td><td>للحالات الأمنية</td><td>يظهر لو الإيقاف كان احتيال (مثل <code>0939000091</code>).</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result">
+        <b>المسار الكامل قدام اللجنة:</b><br>
+        ⏳ الطلب بيصير <code>Pending_BackOffice_Approval</code> ← منعمل لوغن <b>st-backoffice</b> ← نفتح الطابور ← نشوف إن <b>مازن</b> صفّر حسابه ودفع كاش ← نكبس <b>Approve</b> ← بوم! أمر فوري للـ HLR والخط <code>0939000002</code> بيتحوّل <code>ACTIVE</code> والإرسال بيرجع!
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>مسار الدفع/الاحتيال/التنظيمي:</b> بيطير للطابور، والباك أوفيس بيتأكّد إن الفلوس انسدّدت فعلاً أو التخليص الأمني تمّ قبل الـ Approve.</li>
+              <li><b>تشغيلي بسيط:</b> ممكن يكمل بدون اعتماد كامل.</li>
+              <li>عند الـ Approve: أمر فوري للـ HLR والخط بيرجع <code>ACTIVE</code> بلحظتها.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الخط بيرجع لـ «المتصلون لايف بالشبكة».</li>
+              <li>الإيراد المحصّل (الفاتورة المدفوعة) بيظهر بالـ Financial MIS.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ayes">✅ Approve إجباري</span> بعد إيقاف مالي/احتيال (بعد التأكد من الدفع/التخليص). <span class="ano">❌ ما بدّو Approve</span> للإيقاف التشغيلي البسيط.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 سيناريوهات تانية جاهزة بالداتا</div>
+        <p><b>1) إعادة توصيل تشغيلي:</b> خط <span class="v vn">0939000005</span> موقوف «تشغيلي» — نوع التخليص = <span class="v">تشغيلي</span> بدون دفع ← أبسط مسار، ممكن يخلص بسرعة.</p>
+        <p><b>2) إعادة توصيل بعد احتيال:</b> خط <span class="v vn">0939000091</span> موقوف «احتيال» — نوع التخليص = <span class="v">احتيال</span> + تأكيد تخليص أمني ← <b>إجباري</b> يمرّ بالباك أوفيس.</p>
+      </div>
+
+      <a class="backlink" href="#w12">التالي: إنهاء الخط ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 12 =============================== -->
+  <section class="wz surface-back" id="w12">
+    <div class="wz-head">
+      <div class="num">12</div>
+      <div class="tt"><h2>إنهاء الخط</h2><div class="sub">Termination — إغلاق نهائي للخط</div></div>
+      <div class="op">TRM</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user back">🔑 لوغن: موظف الباك أوفيس (st-backoffice)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">الخط: 0939000005</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة — أنواع الإنهاء</span>
+        <p>سعدون قرّر يسكّر خطه <code>0939000005</code> نهائياً (طوعي). في أنواع تانية أخطر: تحصيل (Collections)، تنظيمي، أو احتيال — وكلها بتحتاج باك أوفيس. هاد كرت باك أوفيس لأنه قرار لا رجعة فيه ويحرّر الرقم.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-backoffice@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>إنهاء الخط</kbd> · الخط = <span class="v vn">0939000005</span></li>
+          <li>نوع الإنهاء = <span class="v">طوعي</span> · سبب الإنهاء = <span class="v">العميل ما عاد يحتاج الخط</span> · نتيجة عرض الاحتفاظ = <span class="v">عُرض ورُفض</span></li>
+          <li>اكبسي <kbd>حفظ</kbd> ← توثيق ← (الطوعي البسيط) <kbd>تأكيد</kbd> · الأنواع الحساسة ← <span class="v vn">Pending_BackOffice_Approval</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>نوع الإنهاء <span class="req">*</span></td><td>طوعي/تحصيل/تنظيمي/احتيال</td><td>نختار «طوعي». الأنواع التانية = باك أوفيس إجباري.</td></tr>
+          <tr><td>سبب الإنهاء <span class="req">*</span></td><td>توثيق</td><td>إلزامي.</td></tr>
+          <tr><td>نتيجة عرض الاحتفاظ <span class="req">*</span></td><td>قُبل/رُفض/ما عُرض</td><td>يظهر بالطوعي — <b>هل عرضنا عليه عرض ليبقى؟</b> مهم لتقليل فقدان العملاء (Churn).</td></tr>
+          <tr><td>مرجع الدفع</td><td>تسوية</td><td>يظهر بحالة التحصيل.</td></tr>
+          <tr><td>تذكرة أمنية / مرفق قرار</td><td>للاحتيال/التنظيمي</td><td>إثبات رسمي للإنهاء القسري.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result warn">
+        <b>النتيجة:</b> الطوعي البسيط ممكن يتأكّد بعد توثيق الوثيقة. الأنواع الحساسة ← <code>Pending_BackOffice_Approval</code>. بعد الإنهاء بيتحرّر الرقم ويرجع للمخزون بعد فترة حجر (Quarantine).
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>طوعي بسيط (فرد):</b> ممكن يتأكّد بعد توثيق الوثيقة.</li>
+              <li><b>تحصيل/تنظيمي/احتيال + خطوط الشركات:</b> بتطير للطابور وتلزم اعتماد — لأنه قرار لا رجعة فيه.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الإنهاءات بترفع معدّل فقدان العملاء (Churn) — رقم أساسي بالـ Scorecard.</li>
+              <li>ارتفاع الإنهاءات بفرع بيطلّع تنبيه «انخفاض إيراد فرع».</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ طوعي فردي بسيط</span> ما بدّو اعتماد كامل. <span class="ayes">✅ تحصيل/تنظيمي/احتيال/شركات</span> لازمهم Approve.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — إنهاء تحصيل (Collections) لخط مديون</div>
+        <p>خط عليه دين متراكم: نوع الإنهاء = <span class="v">تحصيل</span> · مرجع الدفع = <span class="v vn">RCPT-9009</span> (تسوية المتبقّي).</p>
+        <p><b>الفرق بالموجة:</b> <b>إجباري</b> يمرّ بالباك أوفيس، وبيرتبط بسجل الديون — والإدارة بتشوفه بتقرير تسرّب الإيراد قبل تحرير الرقم.</p>
+      </div>
+
+      <a class="backlink" href="#w13">التالي: استرجاع الأمانة ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 13 =============================== -->
+  <section class="wz surface-sup" id="w13">
+    <div class="wz-head">
+      <div class="num">13</div>
+      <div class="tt"><h2>استرجاع الأمانة</h2><div class="sub">Refund — إرجاع أمانة/رصيد للعميل</div></div>
+      <div class="op">RFD</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user sup">🔑 لوغن: مشرف (Supervisor) — والمبالغ الكبيرة للباك أوفيس</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">بعد إنهاء الخط 0939000005</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>بعد ما سعدون سكّر خطه، إله أمانة مدفوعة وقت التفعيل بدّو يستردّها. هاد ويزارد مالي حسّاس — لأنه فلوس <b>طالعة</b> من الشركة، فالحوكمة هون أشدّ.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-mis@syriatelecom-demo.local</span> · <kbd>123456</kbd> (كرت الاسترجاع Supervisor)</li>
+          <li>اكبسي كرت <kbd>استرجاع الأمانة</kbd> · العميل = <span class="v">سعدون الشامي</span></li>
+          <li>نوع الاسترجاع = <span class="v">أمانة</span> · طريقة التسوية = <span class="v">كاش</span> · المبلغ = <span class="v vn">50000</span></li>
+          <li>سبب الاسترجاع = <span class="v">إنهاء الخط واسترجاع الأمانة</span> · مرجع المعاملة الأصلية = <span class="v vn">RCPT-0001</span></li>
+          <li>مبلغ صغير ← <kbd>تأكيد</kbd> · أكبر من <span class="v vn">500,000</span> أو سيريتيل كاش ← <span class="v vn">Pending_BackOffice_Approval</span> + رفع هوية</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>نوع الاسترجاع <span class="req">*</span></td><td>أمانة/محفظة/دفع زائد/سيريتيل كاش</td><td>نختار «أمانة». «سيريتيل كاش» دايماً باك أوفيس.</td></tr>
+          <tr><td>طريقة التسوية <span class="req">*</span></td><td>إشعار دائن/محفظة/بنك/كاش</td><td>كيف رح نرجّع الفلوس؟</td></tr>
+          <tr><td>مبلغ الاسترجاع <span class="req">*</span></td><td>القيمة</td><td>أكبر من 500,000 ل.س = اعتماد باك أوفيس إجباري. حماية ضد التلاعب.</td></tr>
+          <tr><td>سبب الاسترجاع <span class="req">*</span></td><td>توثيق</td><td>إلزامي.</td></tr>
+          <tr><td>مرجع المعاملة الأصلية</td><td>إيصال الأمانة الأصلي</td><td>لمطابقة إنه فعلاً دفع هالأمانة قبل.</td></tr>
+          <tr><td>وجهة الصرف (IBAN/محفظة)</td><td>وين تنحوّل</td><td>يظهر حسب طريقة التسوية.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result warn">
+        <b>النتيجة:</b> المبالغ الكبيرة أو الكاش الكبير ← <code>Pending_BackOffice_Approval</code> + رفع هوية. غير هيك بيتأكّد بعد التوثيق. ختم <code>RFD-</code> بالتايم لاين.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>مبلغ صغير:</b> بيتأكّد بصلاحية المشرف بدون طابور.</li>
+              <li><b>مبلغ كبير (أكبر من 500,000) أو سيريتيل كاش:</b> بيطير للطابور ويلزم Approve + رفع هوية — لأنه فلوس طالعة من الشركة.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الاسترجاعات بتظهر بتقارير التسويات (فلوس طالعة).</li>
+              <li>تكرار الاسترجاعات الكبيرة بفرع بيطلّع تدقيق مالي.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ مبلغ صغير</span> ما بدّو اعتماد. <span class="ayes">✅ مبلغ كبير (&gt;500,000) أو سيريتيل كاش</span> لازمهم Approve.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — استرجاع كبير عبر تحويل بنكي</div>
+        <p>مبلغ = <span class="v vn">800000</span> · طريقة التسوية = <span class="v">بنك</span> · وجهة الصرف = <span class="v vn">IBAN: SYxx...</span>.</p>
+        <p><b>الفرق بالموجة:</b> لأنه أكبر من 500,000 ← <code>Pending_BackOffice_Approval</code> إجباري + رفع هوية، والإدارة بتراقبه كصرف كبير.</p>
+      </div>
+
+      <a class="backlink" href="#w14">التالي: تحصيل الديون ←</a>
+    </div>
+  </section>
+
+
+  <!-- ============================ WIZARD 14 =============================== -->
+  <section class="wz surface-back" id="w14">
+    <div class="wz-head">
+      <div class="num">14</div>
+      <div class="tt"><h2>تحصيل الديون</h2><div class="sub">Bad Debt Recovery — معالجة الديون المتعثرة</div></div>
+      <div class="op">BDR</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user back">🔑 لوغن: موظف الباك أوفيس (st-backoffice)</span>
+        <span class="badge cust">العميل: مازن المديون</span>
+        <span class="badge line">الخط: 0939000002 — مديون 15,000 ل.س</span>
+      </div>
+
+      <div class="scene">
+        <span class="label">🎬 القصة</span>
+        <p>خط <b>مازن المديون</b> <code>0939000002</code> عليه دين 15,000 ل.س من فترة طويلة. بالداتا في طلب جاهز <code>BDR-0001</code>: تحصيل 5,000 كاش وشطب جزئي 10,000، بحالة <code>PendingDocuments</code>. هاد ويزارد بيعالج كيف الشركة بتسترجع ديونها أو بتشطبها بحوكمة.</p>
+      </div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-backoffice@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>اكبسي كرت <kbd>تحصيل الديون</kbd> · الخط = <span class="v vn">0939000002</span> (لقطة الرصيد بتبيّن <span class="v vn">-15,000</span>)</li>
+          <li>إجراء التحصيل = <span class="v">شطب جزئي</span> · مرحلة الإنذار = <span class="v">قيد الشطب</span></li>
+          <li>المبلغ المحصّل = <span class="v vn">5000</span> · مرجع الدفع = <span class="v vn">RCPT-3003</span> · مبلغ الشطب = <span class="v vn">10000</span> · تأكيد المشرف ✔</li>
+          <li>الحالة <span class="v vn">Pending_BackOffice_Approval</span> ← <kbd>Approve</kbd> ← الدفع بيتحصّل (<span class="v vn">Approved_Pending_Cash</span>) والباقي بينشطب</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم / شو نعبّي</th></tr></thead>
+        <tbody>
+          <tr><td>إجراء التحصيل <span class="req">*</span></td><td>دفع/خطة تقسيط/إنذار/وكالة تحصيل/شطب جزئي/شطب كامل</td><td>نختار «شطب جزئي» (متل BDR-0001).</td></tr>
+          <tr><td>مرحلة الإنذار (Dunning)</td><td>إنذار 1/2/.../قيد الشطب</td><td>وين وصلنا بسلسلة الإنذارات قبل الشطب.</td></tr>
+          <tr><td>لقطة الرصيد (للقراءة)</td><td>الدين الحالي من CBS</td><td>-15,000 ل.س — مصدر الحقيقة.</td></tr>
+          <tr><td>المبلغ المحصّل + مرجع الدفع</td><td>اللي قبضناه كاش</td><td>5,000 ل.س.</td></tr>
+          <tr><td>مبلغ الشطب</td><td>اللي رح نشطبه</td><td>10,000 ل.س — خسارة مقبولة.</td></tr>
+          <tr><td>تأكيد المشرف (مربّع)</td><td>موافقة قيادية</td><td><b>إلزامي للشطب</b> — ما حدا بيشطب دين لحاله، حوكمة صارمة.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="result warn">
+        <b>النتيجة:</b> الشطب والوكالة ← <code>Pending_BackOffice_Approval</code>. عند الموافقة، الدفع بيتحصّل (<code>Approved_Pending_Cash</code> عشان يتقبض بالصالة) والباقي بينشطب بقرار موثّق.
+      </div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>تسجيل دفعة تحصيل بسيطة:</b> ممكن بدون شطب — بيقفل/بينقص الدين مباشرة.</li>
+              <li><b>شطب جزئي/كامل أو إحالة لوكالة:</b> بتطير للطابور وتلزم Approve + تأكيد مشرف. عند الموافقة الدفع بيتحصّل (<code>Approved_Pending_Cash</code>) والباقي بينشطب.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>الديون المتعثرة والشطب بيظهروا بتقرير «تسرّب الإيراد» (Revenue Leakage).</li>
+              <li>المدير العام بيراقب نسبة الشطب بكل فرع — نسبة عالية = إشارة خطر.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ تسجيل دفعة تحصيل</span> ما بدّو اعتماد شطب. <span class="ayes">✅ الشطب الجزئي/الكامل والإحالة لوكالة</span> لازمهم Approve + تأكيد مشرف.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — تحصيل كامل بدون شطب</div>
+        <p>لو مازن دفع كل الدين: إجراء التحصيل = <span class="v">تسجيل دفعة</span> · المبلغ المحصّل = <span class="v vn">15000</span> (كامل الدين) · بدون مبلغ شطب.</p>
+        <p><b>الفرق بالموجة:</b> الدين بيتصفّر بالكامل، ما في خسارة شطب — ما بيحتاج تأكيد مشرف للشطب، والإدارة بتشوفه كتحصيل ناجح (إيراد مسترجَع).</p>
+      </div>
+
+      <a class="backlink" href="#exec">التالي: مشهد الإدارة العليا ←</a>
+    </div>
+  </section>
+
+
+  <!-- ===================================================================== -->
+  <!-- ============================ BONUS ================================== -->
+  <!-- ===================================================================== -->
+  <div class="panel" style="border-top:5px solid var(--purple)">
+    <h2>➕ ملحق إضافي — ويزاردين لتكتمل الصورة</h2>
+    <p class="lead">هدول مش من الـ 14 الأساسية بس مهمين للديمو الكامل.</p>
+  </div>
+
+  <!-- BONUS 1: DEVICE -->
+  <section class="wz surface-sup" id="wb1">
+    <div class="wz-head">
+      <div class="num">＋</div>
+      <div class="tt"><h2>بيع جهاز</h2><div class="sub">Device Sale — بيع موبايل/راوتر كاش أو تقسيط</div></div>
+      <div class="op">DEV</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user sup">🔑 لوغن: مشرف (Supervisor)</span>
+        <span class="badge cust">العميل: سعدون الشامي</span>
+        <span class="badge line">جهاز: سامسونج A15 — 5,200,000 ل.س</span>
+      </div>
+      <div class="scene"><span class="label">🎬 القصة</span><p>سعدون بدّو يشتري موبايل جديد من المعرض، كاش أو تقسيط. التقسيط بيحتاج موافقة تمويل (باك أوفيس).</p></div>
+
+      <div class="steps">
+        <div class="h">📝 شو بتعمل بالضبط (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li>اللوغن: <span class="login">st-mis@syriatelecom-demo.local</span> · <kbd>123456</kbd> (كرت بيع جهاز Supervisor)</li>
+          <li>اكبسي كرت <kbd>بيع جهاز</kbd> · العميل = <span class="v">سعدون الشامي</span></li>
+          <li>الجهاز (IMEI) = <span class="v">سامسونج غالاكسي A15 — 128GB (5,200,000 ل.س)</span> من مخزون فرع المزة</li>
+          <li>نوع البيع = <span class="v">كاش</span> ← <kbd>تأكيد CBS</kbd> · أو <span class="v">تقسيط</span> (دفعة أولى + خطة) ← <span class="v vn">Pending_BackOffice_Approval</span></li>
+        </ol>
+      </div>
+
+      <div class="why">📋 الحقول</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم</th></tr></thead>
+        <tbody>
+          <tr><td>الجهاز (IMEI) <span class="req">*</span></td><td>من المخزون</td><td>نختار سامسونج A15 من مخزون فرع المزة — بيربط الـ IMEI بالبيع.</td></tr>
+          <tr><td>نوع البيع <span class="req">*</span></td><td>كاش / تقسيط</td><td>«كاش» = إتمام فوري. «تقسيط» = موافقة تمويل.</td></tr>
+          <tr><td>خطة التقسيط + الدفعة الأولى</td><td>للتقسيط</td><td>تظهر لو اخترنا تقسيط.</td></tr>
+        </tbody>
+      </table>
+      <div class="result"><b>✅ كاش:</b> تأكيد CBS فوري. <b>⏳ تقسيط:</b> <code>Pending_BackOffice_Approval</code> لموافقة التمويل.</div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li><b>بيع كاش:</b> ما بيمرّ — بيخلص فوراً وبينقص الجهاز من المخزون.</li>
+              <li><b>بيع تقسيط:</b> بيطير للطابور لموافقة التمويل (تقييم ائتماني) قبل التسليم.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>مبيعات الأجهزة بتظهر كإيراد إضافي بالفرع.</li>
+              <li>الإدارة بتراقب مخزون الأجهزة والمبيعات بالتقسيط (مخاطر ائتمانية).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> <span class="ano">❌ بيع كاش</span> ما بدّو اعتماد. <span class="ayes">✅ بيع تقسيط/تمويل</span> لازمه موافقة الباك أوفيس.</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — بيع بالتقسيط</div>
+        <p>نوع البيع = <span class="v">تقسيط</span> · الدفعة الأولى = <span class="v vn">1000000</span> · خطة التقسيط = <span class="v">12 شهر</span>.</p>
+        <p><b>الفرق بالموجة:</b> الحالة <code>Pending_BackOffice_Approval</code> — الباك أوفيس بيقيّم الائتمان، والإدارة بتشوفه ضمن «المبيعات المؤجّلة».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BONUS 2: SUPPORT -->
+  <section class="wz surface-sup" id="wb2">
+    <div class="wz-head">
+      <div class="num">＋</div>
+      <div class="tt"><h2>تذكرة دعم فني + تصعيد Tier-3</h2><div class="sub">Support Ticket — كول سنتر → باك أوفيس → شبكة وطنية</div></div>
+      <div class="op">SUP</div>
+    </div>
+    <div class="wz-body">
+      <div class="badge-line">
+        <span class="badge user call" style="background:#fff4e0;color:#8a5a00;border:1px solid #ffe2ab">🔑 لوغن: st-callcenter ← ثم st-backoffice</span>
+        <span class="badge cust">العميل: سعدون الشامي (+ عميل فرعي للـ RLS)</span>
+        <span class="badge line">الخط: 0939000001 · تذكرة Seed «شحن كاش والنت واقف»</span>
+      </div>
+      <div class="scene"><span class="label">🎬 القصة</span><p>موظف الكول سنتر (<b>فرع حلب</b>) بتابع شكوى على خط سعدون الوطني <code>0939000001</code>. بالـ Seed في تذكرة Critical جاهزة «شحن كاش والنت واقف». إذا ما انحلّت محلياً، بيصعّدها لـ <b>Tier-3</b> — التذكرة بتصير وطنية (<code>BranchId = NULL</code>) وبتظهر لموظف الباك أوفيس ب<strong>طرطوس</strong> أعلى <code>BackOfficeDashboard</code>.</p></div>
+
+      <div class="steps">
+        <div class="h">📝 المسار الكامل (إيميل اللوغن + القيم)</div>
+        <ol>
+          <li><b>الكول سنتر:</b> <span class="login">st-callcenter@syriatelecom-demo.local</span> · <kbd>123456</kbd></li>
+          <li>من <kbd>Unified Search</kbd> أو <kbd>Customer 360</kbd> ← ابحثي <span class="v vn">0939000001</span> أو الرقم الوطني <span class="v vn">0109988776</span></li>
+          <li>افتحي التذكرة الجاهزة «شحن كاش والنت واقف» أو أنشئي تذكرة: نوع = <span class="v">فوترة/شبكة</span> · أولوية = <span class="v">Critical</span></li>
+          <li>من Customer 360 أو تفاصيل التذكرة ← <kbd>تصعيد Tier-3</kbd> ← الحالة <span class="v vn">Escalated</span> · المجموعة = <span class="v">Tier-3-CoreNetwork</span></li>
+          <li>تأكّدي إن التذكرة لسا بـ «تذاكري المفتوحة» عند الكول سنتر (Open + InProgress + Escalated)</li>
+          <li><b>الباك أوفيس:</b> <span class="login">st-backoffice@syriatelecom-demo.local</span> ← <kbd>/Telecom/BackOfficeDashboard</kbd></li>
+          <li>طابور التذاكر الفني <b>أول الصفحة</b> (مش بس تبويب العمليات) ← banner Tier-3 ← <kbd>Resolve</kbd> أو معالجة HLR</li>
+        </ol>
+      </div>
+
+      <div class="why">📋 حقول التذكرة</div>
+      <table>
+        <thead><tr><th>الحقل</th><th>شو بيمثّل</th><th>ليش مهم</th></tr></thead>
+        <tbody>
+          <tr><td>المشترك (MSISDN)</td><td>الخط صاحب الشكوى</td><td><code>0939000001</code> — بطل وطني، مرئي من كل الفروع.</td></tr>
+          <tr><td>نوع المشكلة</td><td>شبكة/فوترة/حظر شريحة/تفعيل</td><td>«شحن كاش والنت واقف» = Billing Critical بالـ Seed.</td></tr>
+          <tr><td>الحالة بعد التصعيد</td><td>Escalated</td><td>BranchId يصير NULL — باك أوفيس طرطوس يشوفها رغم إن التذكرة فتحت من حلب.</td></tr>
+          <tr><td>ملاحظات</td><td>تفاصيل الشكوى</td><td>تظهر بالتايم لاين في Customer 360.</td></tr>
+        </tbody>
+      </table>
+      <div class="result"><b>✅ النتيجة:</b> التذكرة بتظهر بتايم لاين Customer 360، بـ SLA على Command Center، وبطابور Tier-3 أعلى BackOfficeDashboard — بدون Approve مالي، بس <b>Resolve</b> فني.</div>
+
+      <div class="ripple">
+        <div class="rh">🔄 بعد العملية: شو بيتغيّر بالسستم؟</div>
+        <div class="rgrid">
+          <div class="rcell bo">
+            <h4>🛡️ على مستوى الباك أوفيس</h4>
+            <ul>
+              <li>طابور التذاكر <b>أعلى</b> لوحة <code>BackOfficeDashboard</code> — يشمل Open · InProgress · <b>Escalated</b>.</li>
+              <li>بعد Tier-3: التذكرة وطنية — موظف طرطوس يعالجها حتى لو الكول سنتر من حلب.</li>
+              <li>ما في Approve مالي — <b>Resolve</b> + مزامنة HLR إذا لزم.</li>
+            </ul>
+          </div>
+          <div class="rcell ex">
+            <h4>👔 على مستوى الإدارة العليا</h4>
+            <ul>
+              <li>عدد التذاكر المفتوحة ونسبة الـ SLA بالـ Scorecard.</li>
+              <li>تذكرة Critical متأخرة = تنبيه «تجاوز SLA».</li>
+            </ul>
+          </div>
+        </div>
+        <div class="approve-rule"><span class="ar-t">قاعدة الاعتماد (Approve):</span> ما في Approve مالي — معالجة فنية (Resolve). التصعيد Tier-3 = <span class="ayes">Escalate</span> من الكول سنتر فقط (صلاحية <code>TelecomTicketEscalate</code>).</div>
+      </div>
+
+      <div class="scn2">
+        <div class="h">🎬 السيناريو الثاني — RLS + تصعيد (عميل فرعي)</div>
+        <p>تذكرة Seed «طلب تبديل شريحة — معلّق» على <b>عميل BranchId = فرع محلي</b> — موظف باك أوفيس <b>طرطوس</b> ممكن <b>ما يشوفها</b> قبل التصعيد.</p>
+        <p><b>الموجة:</b> <span class="login">st-callcenter@</span> يفتح/يتابع من حلب ← <kbd>Escalate Tier-3</kbd> ← <span class="login">st-backoffice@</span> يشوفها فوراً بالطابور الوطني — هيك بتشرحي للّجنة فصل الفروع + التصعيد.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===================================================================== -->
+  <!-- ====================== EXECUTIVE FINALE ============================= -->
+  <!-- ===================================================================== -->
+  <div class="panel" id="exec" style="border-top:6px solid var(--green-d)">
+    <h2>👔 الفصل الأخير — طيّارة الهليكوبتر للمدير العام</h2>
+    <div class="badge-line">
+      <span class="badge user" style="background:#e7f7ee;color:#0f5132;border:1px solid #bfe6cf">🔑 لوغن: المدير العام (st-mis) — أحمد الشوا</span>
+    </div>
+    <p class="lead">بعد ما خلّصنا كل العمليات بالصالة والباك أوفيس، منعمل لوغن بحساب الإدارة العليا ونفتح <code>/Executive/CommandCenter</code>. هون كل شي اللي عملناه فوق بينعكس لحظياً.</p>
+
+    <h3>التابات الستة بالـ Command Center</h3>
+    <table>
+      <thead><tr><th>#</th><th>التاب</th><th>شو فيه</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Scorecard — نظرة سريعة</td><td>الكروت الكبار: الإيراد، الـ ARPU، الـ Churn، المتصلون الآن، عمليات اليوم، التذاكر المفتوحة، أقوى/أضعف فرع.</td></tr>
+        <tr><td>2</td><td>الشبكة والتكامل</td><td>صحّة تكامل CBS/HLR — نبض النجاح.</td></tr>
+        <tr><td>3</td><td>Financial MIS — المالي</td><td>المدفوعات والتسويات فوق خريطة المحافظات (كاش <b>مازن</b> من ويزارد 3 على <code>0939000002</code>).</td></tr>
+        <tr><td>4</td><td>العمليات</td><td>التفعيلات، العمليات المعلّقة، التذاكر المتأخرة.</td></tr>
+        <tr><td>5</td><td>أداء الموظفين</td><td>إنتاجية الموظفين حسب الدور والفرع.</td></tr>
+        <tr><td>6</td><td>التنبيهات والتدقيق</td><td>الاستثناءات: تجاوز SLA، انخفاض إيراد فرع، تكرار تجاوزات المشرف، تراكم العمليات.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>الأكشن لايف قدام اللجنة 🎯</h3>
+    <div class="scene exec">
+      <span class="label">شريط النطاق العلوي (Sticky Scope Bar)</span>
+      <p>المدير بيفتح الفلتر الجغرافي العلوي، ويحوّل من «كل سوريا» ← «المنطقة الوسطى» ← «فرع دمشق — المزة»... <b>بوم!</b> كل التابات الستة والأرقام بتتحرّك وتنفرز بنعومة <b>بدون ما الصفحة تعمل إعادة تحميل (No Reload)</b> — عمليات سعدون (MGR/VAS/SIM) تحت المزة، ودفعة مازن تظهر ضمن الإيراد الوطني.</p>
+    </div>
+
+    <h3>وملف العميل الموحّد (Customer 360)</h3>
+    <p><b>سعدون الشامي</b> — الرقم الوطني <code>0109988776</code> · خط <code>0939000001</code>. <b>مازن المديون</b> — خط الديون <code>0939000002</code>. نفرجي اللجنة <b>التايم لاين الموحّد</b>:</p>
+    <ul class="tl">
+      <li><b>PAY-</b> ✅ تسديد فاتورة مازن كاش بالصالة — <code>0939000002</code> (سيناريو 3)</li>
+      <li><b>RCN-</b> ✅ فك الحظر المالي لمازن عبر الباك أوفيس (سيناريو 11)</li>
+      <li><b>MGR-</b> ✅ ترحيل باقة سعدون من يا هلا ← ميكس 500 (سيناريو 4)</li>
+      <li><b>VAS-</b> ✅ تفعيل «كاشف الأرقام» لسعدون (سيناريو 5)</li>
+      <li><b>HLR</b> 🟢 إشارة الشبكة نشطة ومطابقة لايف</li>
+      <li><b>SUP / TT-</b> 🟢 تذكرة «شحن كاش والنت واقف» + مسار Tier-3 (الملحق wb2)</li>
+    </ul>
+
+    <div class="result">
+      <b>💡 الخلاصة للّجنة:</b> كل فيلد بكل ويزارد إله سبب — KYC، ربط فني (ICCID/MSISDN)، حوكمة مالية (مرجع الدفع + Approve)، أو تقارير الإدارة. الصالة تنفّذ، الباك أوفيس يعتمد ويعالج التذاكر، الكول سنتر يصعّد، والإدارة تراقب — <b>سعدون</b> لخطوط العرض و<b>مازن</b> لسيناريو الديون، كله مترابط من أول كاش لآخر رقم بـ Command Center.
+    </div>
+  </div>
+
+  <div class="foot">
+    دليل سيناريوهات الديمو — نظام سيريتيل CRM/OSS-BSS · 14 ويزارد + ملحقين · كل البيانات من الـ Seed Data
+  </div>
+
+</div>
+</body>
+</html>

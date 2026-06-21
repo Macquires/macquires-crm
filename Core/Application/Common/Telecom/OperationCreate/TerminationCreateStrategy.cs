@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.Termination;
 using Domain.Enums;
 
@@ -87,7 +88,7 @@ public sealed class TerminationCreateStrategy : IOperationCreateStrategy
 
         if (eligibility.RequiresBackOfficeApproval)
         {
-            entity.ApprovalLevelRequired = "BackOffice";
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
         }
 
         entity.Notes = OperationCreateAuditHelpers.AppendTerminationAudit(entity.Notes, eligibility);

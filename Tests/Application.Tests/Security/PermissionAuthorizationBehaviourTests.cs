@@ -5,6 +5,7 @@ using Application.Common.Services.SecurityManager;
 using Application.Features.SecurityManager.Commands;
 using Application.Features.SecurityManager.Queries;
 using Application.Features.TelecomBackOfficeManager.Commands;
+using Application.Features.TelecomBackOfficeManager.Queries;
 using Application.Features.TelecomManager.Queries;
 using Application.Tests.TestSupport;
 using Domain.Enums;
@@ -99,6 +100,26 @@ public sealed class PermissionAuthorizationBehaviourTests
         var result = await behaviour.Handle(
             new GetChangeGsmTypeKpisRequest(),
             () => Task.FromResult(new GetChangeGsmTypeKpisResult()),
+            CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Contains(PermissionCatalog.BulkImportMonitor, evaluator.CheckedKeys);
+    }
+
+    [Fact]
+    public async Task PendingQueue_Allows_BackOfficeDashboardAccess()
+    {
+        var evaluator = new StubPermissionEvaluator
+        {
+            Granted = [PermissionCatalog.BulkImportMonitor],
+        };
+        var behaviour = new PermissionAuthorizationBehaviour<GetPendingBackOfficeOperationsRequest, GetPendingBackOfficeOperationsResult>(
+            TestOperatorContext.Instance,
+            evaluator);
+
+        var result = await behaviour.Handle(
+            new GetPendingBackOfficeOperationsRequest(),
+            () => Task.FromResult(new GetPendingBackOfficeOperationsResult()),
             CancellationToken.None);
 
         Assert.NotNull(result);

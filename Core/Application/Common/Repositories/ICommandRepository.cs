@@ -17,6 +17,8 @@ public interface ICommandRepository<T> where T : BaseEntity
 
     Task<T?> GetAsync(string id, CancellationToken cancellationToken = default);
 
+    Task<T?> GetBypassingBranchScopeAsync(string id, CancellationToken cancellationToken = default);
+
     T? Get(string id);
 
     IQueryable<T> GetQuery();

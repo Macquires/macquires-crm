@@ -5,6 +5,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Settings;
 using Infrastructure.TelecomIntegrations.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -226,6 +227,25 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
         string? branchId,
         CancellationToken cancellationToken)
     {
+        if (success)
+        {
+            var alreadyLogged = await _logRepository.GetQuery()
+                .AnyAsync(
+                    l => !l.IsDeleted
+                         && l.Success
+                         && l.TelecomOperationRequestId == operationId
+                         && l.IntegrationTarget == target,
+                    cancellationToken);
+            if (alreadyLogged)
+            {
+                _logger.LogInformation(
+                    "Skipping duplicate HLR success log for operation {OperationId} ({Target}).",
+                    operationId,
+                    target);
+                return;
+            }
+        }
+
         await _logRepository.CreateAsync(new BillingIntegrationLog
         {
             TelecomOperationRequestId = operationId,
@@ -234,11 +254,32 @@ public sealed class HlrNetworkProvisioningService : INetworkProvisioningService
             Success = success,
             Message = message,
             IntegrationTarget = target,
-            CorrelationId = correlationId,
+            CorrelationId = BuildHlrLogCorrelationId(correlationId, attempt),
             RequestPayload = requestPayload,
             ResponsePayload = responsePayload
         }, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// HLR logs must not reuse the operation CBS CorrelationId — unique index allows one successful row per id.
+    /// </summary>
+    private static string? BuildHlrLogCorrelationId(string? operationCorrelationId, int attempt)
+    {
+        if (string.IsNullOrWhiteSpace(operationCorrelationId))
+        {
+            return null;
+        }
+
+        const int maxLen = 50;
+        var suffix = $":H{attempt}";
+        var stem = operationCorrelationId.Trim();
+        if (stem.Length + suffix.Length > maxLen)
+        {
+            stem = stem[..(maxLen - suffix.Length)];
+        }
+
+        return stem + suffix;
     }
 
     internal static string OperationNameFor(TelecomOperationKind kind) => kind switch

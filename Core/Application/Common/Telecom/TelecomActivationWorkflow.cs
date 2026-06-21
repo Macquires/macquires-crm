@@ -80,14 +80,7 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
             return TelecomActivationWorkflowSupport.Fail(entity, "يجب رفع الوثائق قبل التأكيد.");
         }
 
-        var allowed = new[]
-        {
-            TelecomOperationStatus.Draft,
-            TelecomOperationStatus.PendingDocuments,
-            TelecomOperationStatus.PendingExternal
-        };
-
-        if (!allowed.Contains(entity.Status))
+        if (!CanConfirmFromCurrentStatus(entity))
         {
             return TelecomActivationWorkflowSupport.Fail(entity, "حالة الطلب لا تسمح بالتأكيد.");
         }
@@ -161,6 +154,17 @@ public sealed class TelecomActivationWorkflow : ITelecomActivationWorkflow
 
         return await _provisioningExecutor.ExecuteAsync(entity, confirmStrategy, actorUserId, cancellationToken);
     }
+
+    private static bool CanConfirmFromCurrentStatus(TelecomOperationRequest entity) =>
+        entity.Status switch
+        {
+            TelecomOperationStatus.Draft
+                or TelecomOperationStatus.PendingDocuments
+                or TelecomOperationStatus.PendingExternal => true,
+            TelecomOperationStatus.Paid_Pending_BackOffice_Clearance =>
+                string.Equals(entity.ApprovalLevelRequired, "BackOffice", StringComparison.OrdinalIgnoreCase),
+            _ => false,
+        };
 
     private IOperationConfirmStrategy RequireConfirmStrategy(TelecomOperationKind kind) =>
         _confirmStrategies.Resolve(kind)

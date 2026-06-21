@@ -30,19 +30,21 @@ public sealed class NavigationPermissionRulesTests
     }
 
     [Fact]
-    public void TechnicalTicketList_AllowsCustomerView_ForCallCenterNav()
+    public void TechnicalTicketList_RequiresEscalateOrTechnicalView_NotCustomerViewAlone()
     {
-        var allowed = NavigationPermissionRules.IsNavUrlAllowed(
+        Assert.False(NavigationPermissionRules.IsNavUrlAllowed(
             "/Telecom/TechnicalTicketList",
-            new HashSet<string> { PermissionCatalog.CustomerView });
+            new HashSet<string> { PermissionCatalog.CustomerView }));
 
-        Assert.True(allowed);
+        Assert.False(NavigationPermissionRules.IsNavUrlAllowed(
+            "/Telecom/TechnicalTicketList",
+            new HashSet<string> { PermissionCatalog.TelecomTicketEscalate }));
     }
 
     [Fact]
-    public void TechnicalTicketList_MatchesBackOfficePermissionSet()
+    public void TechnicalTicketList_AllowsTicketAdminNavKeys()
     {
-        foreach (var key in BackOfficePermissionSets.TechnicalTicketListAny)
+        foreach (var key in CustomerSupportPermissionSets.TicketAdminListNavAny)
         {
             Assert.True(
                 NavigationPermissionRules.IsNavUrlAllowed(
@@ -80,6 +82,30 @@ public sealed class NavigationPermissionRulesTests
             new HashSet<string>());
 
         Assert.True(allowed);
+    }
+
+    [Fact]
+    public void TelecomHub_RequiresHubSurfacePermission_NotProvisioningAlone()
+    {
+        Assert.False(NavigationPermissionRules.IsNavUrlAllowed(
+            "/Telecom/TelecomHub",
+            new HashSet<string> { PermissionCatalog.TelecomCustomerProvisioning }));
+
+        Assert.True(NavigationPermissionRules.IsNavUrlAllowed(
+            "/Telecom/TelecomHub",
+            new HashSet<string> { PermissionCatalog.TelecomHubFrontline }));
+    }
+
+    [Fact]
+    public void MsisdnInventory_RequiresAssetOrActivatePermission()
+    {
+        Assert.False(NavigationPermissionRules.IsNavUrlAllowed(
+            "/Telecom/MsisdnInventory",
+            new HashSet<string> { PermissionCatalog.TelecomCustomerProvisioning }));
+
+        Assert.True(NavigationPermissionRules.IsNavUrlAllowed(
+            "/Telecom/MsisdnInventory",
+            new HashSet<string> { PermissionCatalog.TelecomAssetManage }));
     }
 
     [Fact]

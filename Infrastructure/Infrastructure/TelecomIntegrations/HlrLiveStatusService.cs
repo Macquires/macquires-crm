@@ -37,6 +37,26 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
     {
         _logger.LogInformation("HLR live query for {Msisdn}", msisdn);
 
+        var forcedState = await TryGetCachedHlrStateAsync(msisdn, cancellationToken);
+        if (!string.IsNullOrEmpty(forcedState))
+        {
+            return BuildResult(msisdn, forcedState, crmOperationalStatus, "HLR live query OK (reprovisioned/cached)");
+        }
+
+        // Revenue leakage showcase — only before HLR remediation (no cached override yet).
+        if (TelecomDemoBaselines.IsDebtShowcaseMsisdn(msisdn)
+            && IsCrmSuspended(crmOperationalStatus ?? string.Empty))
+        {
+            return BuildResult(msisdn, "ACTIVE", crmOperationalStatus, "HLR live query OK (Revenue Leakage Demo)");
+        }
+
+        // Paid reconnect completed — CRM Active + HLR ACTIVE (hide desync / leakage UI).
+        if (TelecomDemoBaselines.IsDebtShowcaseMsisdn(msisdn)
+            && IsCrmActive(crmOperationalStatus ?? string.Empty))
+        {
+            return BuildResult(msisdn, "ACTIVE", crmOperationalStatus, "HLR live query OK (debt showcase reconnected)");
+        }
+
         if (_useHttp && _simulator != null)
         {
             try
@@ -60,16 +80,18 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
         string? crmOperationalStatus,
         CancellationToken cancellationToken)
     {
-        var forcedState = await TryGetCachedHlrStateAsync(msisdn, cancellationToken);
-        if (!string.IsNullOrEmpty(forcedState))
-        {
-            return BuildResult(msisdn, forcedState, crmOperationalStatus, "HLR live query OK (reprovisioned/cached)");
-        }
-
-        // Special case: Debt subscriber must be ACTIVE (Revenue Leakage) for BDR scenario
-        if (msisdn == TelecomDemoMsisdn.DebtSubscriber)
+        // Revenue leakage demo: billing-suspended debt line while HLR still serves until back-office clearance.
+        if (TelecomDemoBaselines.IsDebtShowcaseMsisdn(msisdn)
+            && IsCrmSuspended(crmOperationalStatus ?? string.Empty))
         {
             return BuildResult(msisdn, "ACTIVE", crmOperationalStatus, "HLR live query OK (Revenue Leakage Demo)");
+        }
+
+        // After paid reconnect — CRM Active and HLR must read aligned (no remediation banner).
+        if (TelecomDemoBaselines.IsDebtShowcaseMsisdn(msisdn)
+            && IsCrmActive(crmOperationalStatus ?? string.Empty))
+        {
+            return BuildResult(msisdn, "ACTIVE", crmOperationalStatus, "HLR live query OK (debt showcase reconnected)");
         }
 
         // Special case: Fraud demo line must be NOT_PROVISIONED for VAL-09-03 scenario
@@ -209,11 +231,27 @@ public sealed class HlrLiveStatusService : IHLRLiveStatusService
 
     public async Task MarkMockSubscriberSuspendedAsync(string msisdn, CancellationToken cancellationToken = default)
     {
-        if (!string.IsNullOrWhiteSpace(msisdn))
+        if (string.IsNullOrWhiteSpace(msisdn))
         {
-            await TrySetCachedHlrStateAsync(msisdn.Trim(), "SUSPENDED", cancellationToken: cancellationToken);
-            _logger.LogInformation("HLR mock state forced SUSPENDED for {Msisdn}", msisdn);
+            return;
         }
+
+        var normalized = msisdn.Trim();
+        await TrySetCachedHlrStateAsync(normalized, "SUSPENDED", cancellationToken: cancellationToken);
+
+        if (_useHttp && _simulator != null)
+        {
+            try
+            {
+                await _simulator.SuspendSubscriberAsync(normalized, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "HLR simulator suspend skipped for {Msisdn}", normalized);
+            }
+        }
+
+        _logger.LogInformation("HLR mock state forced SUSPENDED for {Msisdn}", msisdn);
     }
 
     public async Task MarkMockSubscriberTerminatedAsync(string msisdn, CancellationToken cancellationToken = default)

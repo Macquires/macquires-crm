@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <MaxCpuCount>1</MaxCpuCount>
+    <TestSessionTimeout>900000</TestSessionTimeout>
+    <EnvironmentVariables>
+      <E2E_HEADLESS>false</E2E_HEADLESS>
+      <DEMO_SLOW_MO>1500</DEMO_SLOW_MO>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

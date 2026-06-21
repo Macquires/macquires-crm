@@ -1,4 +1,5 @@
 using Application.Common.Exceptions;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.DeviceSales;
 using Domain.Enums;
 
@@ -64,7 +65,7 @@ public sealed class DeviceSaleCreateStrategy : IOperationCreateStrategy
         entity.ProvisioningResult = "Pending";
         if (eligibility.RequiresFinanceApproval)
         {
-            entity.ApprovalLevelRequired = eligibility.ApprovalLevelRequired;
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
         }
 
         entity.Notes = string.IsNullOrEmpty(entity.Notes)

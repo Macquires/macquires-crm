@@ -53,6 +53,7 @@ const App = {
         const state = Vue.reactive({
             rows: [],
             loading: true,
+            pageSize: 10,
             filters: { status: '', msisdn: '' },
             aiSim: {
                 msisdn: '0933123456',
@@ -65,6 +66,118 @@ const App = {
         const gridRef = Vue.ref(null);
         const grid = { obj: null };
         let statusDrawer = null;
+
+        const computeTtGridHeight = () => {
+            const shell = document.querySelector('.tt-grid-panel .tt-grid-shell');
+            if (!shell) return 480;
+            const top = shell.getBoundingClientRect().top;
+            const footer = document.querySelector('.adminfooter');
+            const footerH = footer?.getBoundingClientRect().height ?? 44;
+            const pagerReserve = 52;
+            const gap = 36;
+            const available = window.innerHeight - top - footerH - pagerReserve - gap;
+            return Math.max(340, Math.min(available, 640));
+        };
+
+        const getTicketColumns = () => [
+            { field: 'id', isPrimaryKey: true, visible: false },
+            { field: 'createdAtUtc', visible: false, type: 'date', format: 'yyyy-MM-ddTHH:mm:ss' },
+            {
+                field: 'ticketNumber',
+                headerText: ttT('grid.ticketNumber', 'Ticket #'),
+                width: 130,
+                minWidth: 110,
+                allowResizing: true,
+                clipMode: 'EllipsisWithTooltip',
+            },
+            {
+                field: 'customerDisplayName',
+                headerText: ttT('grid.subscriber', 'Subscriber'),
+                width: 140,
+                minWidth: 110,
+                allowResizing: true,
+                clipMode: 'EllipsisWithTooltip',
+            },
+            {
+                field: 'msisdn',
+                headerText: 'MSISDN',
+                width: 118,
+                minWidth: 100,
+                allowResizing: true,
+                clipMode: 'EllipsisWithTooltip',
+            },
+            {
+                field: 'categoryLabelHtml',
+                headerText: ttT('grid.operationType', 'Type'),
+                width: 130,
+                minWidth: 100,
+                allowFiltering: false,
+                allowResizing: true,
+            },
+            {
+                field: 'statusLabel',
+                headerText: ttT('grid.status', 'Status'),
+                width: 120,
+                minWidth: 100,
+                allowFiltering: false,
+                allowResizing: true,
+            },
+            {
+                field: 'priorityLabel',
+                headerText: ttT('grid.priority', 'Priority'),
+                width: 105,
+                minWidth: 90,
+                allowFiltering: false,
+                allowResizing: true,
+            },
+            {
+                field: 'createdByChannel',
+                headerText: ttT('grid.source', 'Source'),
+                width: 150,
+                minWidth: 110,
+                allowFiltering: false,
+                allowResizing: true,
+            },
+            {
+                field: 'createdDisplay',
+                headerText: ttT('grid.createdAt', 'Created'),
+                width: 145,
+                minWidth: 120,
+                allowResizing: true,
+            },
+            {
+                field: 'notes',
+                headerText: ttT('grid.description', 'Description'),
+                width: 280,
+                minWidth: 180,
+                allowResizing: true,
+                allowTextWrap: true,
+                clipMode: 'Clip',
+            },
+            {
+                field: 'resolutionNotes',
+                headerText: ttT('grid.resolutionNotes', 'Resolution'),
+                width: 220,
+                minWidth: 160,
+                allowResizing: true,
+                allowTextWrap: true,
+                clipMode: 'Clip',
+            },
+            {
+                field: 'resolvedDisplay',
+                headerText: ttT('grid.resolvedAt', 'Closed'),
+                width: 145,
+                minWidth: 120,
+                allowResizing: true,
+            },
+        ];
+
+        const syncGridPageSize = () => {
+            if (!grid.obj) return;
+            grid.obj.pageSettings.pageSize = state.pageSize;
+            grid.obj.pageSettings.currentPage = 1;
+            if (typeof grid.obj.goToPage === 'function') grid.obj.goToPage(1);
+        };
 
         const resolveCategory = (r) => {
             const cat = r.ticketCategory ?? r.TicketCategory;
@@ -186,19 +299,14 @@ const App = {
 
         const applyGridHeight = () => {
             if (!grid.obj) return;
-            const h =
-                typeof computeTelecomGridHeight === 'function'
-                    ? computeTelecomGridHeight('.tt-grid-panel')
-                    : 420;
+            const h = computeTtGridHeight();
             grid.obj.height = h;
+            if (typeof grid.obj.refresh === 'function') grid.obj.refresh();
         };
 
         const createGrid = () => {
             if (!gridRef.value || grid.obj) return;
-            const gridHeight =
-                typeof computeTelecomGridHeight === 'function'
-                    ? computeTelecomGridHeight('.tt-grid-panel')
-                    : 420;
+            const gridHeight = computeTtGridHeight();
             grid.obj = new ej.grids.Grid({
                 id: 'TechnicalTicketListGrid',
                 height: gridHeight,
@@ -207,36 +315,48 @@ const App = {
                 allowPaging: true,
                 allowSorting: true,
                 allowFiltering: true,
+                allowResizing: true,
+                allowTextWrap: true,
+                gridLines: 'Horizontal',
+                resizeSettings: { mode: 'Normal' },
                 filterSettings: { type: 'Menu' },
-                pageSettings: { pageSize: 15, pageSizes: [15, 25, 50, 100] },
+                pageSettings: {
+                    currentPage: 1,
+                    pageSize: state.pageSize,
+                    pageSizes: [10, 25, 50, 100],
+                },
                 sortSettings: {
                     columns: [{ field: 'createdAtUtc', direction: 'Descending' }],
                 },
                 recordDoubleClick: (args) => openStatusDrawer(mapRow(args.rowData)),
                 queryCellInfo: paintTicketCells,
-                columns: [
-                    { field: 'id', isPrimaryKey: true, visible: false },
-                    { field: 'createdAtUtc', visible: false, type: 'date', format: 'yyyy-MM-ddTHH:mm:ss' },
-                    { field: 'ticketNumber', headerText: ttT('grid.ticketNumber', 'Ticket #'), width: 120 },
-                    { field: 'customerDisplayName', headerText: ttT('grid.subscriber', 'Subscriber'), width: 130 },
-                    { field: 'msisdn', headerText: 'MSISDN', width: 110 },
-                    { field: 'categoryLabelHtml', headerText: ttT('grid.operationType', 'Type'), width: 130, allowFiltering: false },
-                    { field: 'statusLabel', headerText: ttT('grid.status', 'Status'), width: 120, allowFiltering: false },
-                    { field: 'priorityLabel', headerText: ttT('grid.priority', 'Priority'), width: 100, allowFiltering: false },
-                    { field: 'createdByChannel', headerText: ttT('grid.source', 'Source'), width: 150, allowFiltering: false },
-                    { field: 'createdDisplay', headerText: ttT('grid.createdAt', 'Created'), width: 140 },
-                    { field: 'notes', headerText: ttT('grid.description', 'Description'), width: 220, minWidth: 120 },
-                    { field: 'resolutionNotes', headerText: ttT('grid.resolutionNotes', 'Resolution'), width: 180 },
-                    { field: 'resolvedDisplay', headerText: ttT('grid.resolvedAt', 'Closed'), width: 140 },
-                ],
+                actionComplete: (args) => {
+                    if (args.requestType === 'paging' && grid.obj?.pageSettings?.pageSize) {
+                        const size = Number(grid.obj.pageSettings.pageSize);
+                        if (size > 0 && size !== state.pageSize) state.pageSize = size;
+                    }
+                },
+                columns: getTicketColumns(),
             });
             grid.obj.appendTo(gridRef.value);
+            if (window.MacquiresUiI18n?.getUiLang) {
+                try {
+                    grid.obj.locale = window.MacquiresUiI18n.getUiLang() === 'ar' ? 'ar-SA' : 'en-US';
+                } catch (_) { /* ignore */ }
+            }
         };
 
         const handler = {
             search: async () => {
                 await load();
                 bindGrid();
+            },
+            changePageSize: () => {
+                if (!grid.obj) return;
+                syncGridPageSize();
+                applyGridHeight();
+                if (typeof grid.obj.refresh === 'function') grid.obj.refresh();
+                else if (typeof grid.obj.dataBind === 'function') grid.obj.dataBind();
             },
             simulateAiCall: async () => {
                 const msisdn = (state.aiSim.msisdn || '').trim();
@@ -310,6 +430,7 @@ const App = {
                 searchMsisdn: ttT('searchMsisdn', ''),
                 search: ttT('search', ''),
                 gridHint: ttT('gridHint', ''),
+                pageSizeLabel: ttT('pageSizeLabel', 'Rows per page'),
                 drawer: {
                     subscriber: ttT('drawer.subscriber', ''),
                     msisdn: ttT('drawer.msisdn', 'MSISDN'),
@@ -322,21 +443,9 @@ const App = {
 
         const refreshGridHeaders = () => {
             if (!grid.obj || typeof grid.obj.getColumnByField !== 'function') return;
-            const setH = (field, key, fb) => {
-                const c = grid.obj.getColumnByField(field);
-                if (c) c.headerText = ttT(key, fb);
-            };
-            setH('ticketNumber', 'grid.ticketNumber', 'Ticket #');
-            setH('customerDisplayName', 'grid.subscriber', 'Subscriber');
-            setH('categoryLabelHtml', 'grid.operationType', 'Type');
-            setH('statusLabel', 'grid.status', 'Status');
-            setH('priorityLabel', 'grid.priority', 'Priority');
-            setH('createdByChannel', 'grid.source', 'Source');
-            setH('createdDisplay', 'grid.createdAt', 'Created');
-            setH('notes', 'grid.description', 'Description');
-            setH('resolutionNotes', 'grid.resolutionNotes', 'Resolution');
-            setH('resolvedDisplay', 'grid.resolvedAt', 'Closed');
+            grid.obj.columns = getTicketColumns();
             if (typeof grid.obj.refreshHeader === 'function') grid.obj.refreshHeader();
+            else if (typeof grid.obj.refreshColumns === 'function') grid.obj.refreshColumns();
         };
 
         const refreshPageI18n = async () => {

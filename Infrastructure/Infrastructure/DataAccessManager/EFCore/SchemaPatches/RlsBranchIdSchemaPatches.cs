@@ -2,6 +2,7 @@ using System.Data;
 using Domain.Common;
 using Domain.Entities;
 using Infrastructure.DataAccessManager.EFCore.Contexts;
+using Infrastructure.SeedManager.Demos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -160,7 +161,8 @@ public static class RlsBranchIdSchemaPatches
 
             logger.LogInformation("Schema patch: RLS BranchId columns ensured.");
             BackfillBranchIdFromOrgUnit(connection, logger);
-            BackfillBillingIntegrationLogBranchId(connection, logger);
+            DemoSeedScope.ReconcileBranchScopeAsync(dataContext).GetAwaiter().GetResult();
+            logger.LogInformation("Schema patch: demo branch scope reconciled.");
         }
         finally
         {
@@ -179,26 +181,6 @@ public static class RlsBranchIdSchemaPatches
             UPDATE dbo.Customer
             SET BranchId = OrgUnitId
             WHERE BranchId IS NULL AND OrgUnitId IS NOT NULL;
-            """;
-        cmd.ExecuteNonQuery();
-    }
-
-    private static void BackfillBillingIntegrationLogBranchId(IDbConnection connection, ILogger logger)
-    {
-        logger.LogInformation("Schema patch: backfilling BillingIntegrationLog.BranchId from operations and payments.");
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = """
-            UPDATE bil
-            SET BranchId = op.BranchId
-            FROM dbo.BillingIntegrationLog bil
-            INNER JOIN dbo.TelecomOperationRequest op ON bil.TelecomOperationRequestId = op.Id
-            WHERE bil.BranchId IS NULL AND op.BranchId IS NOT NULL;
-
-            UPDATE bil
-            SET BranchId = pt.BranchId
-            FROM dbo.BillingIntegrationLog bil
-            INNER JOIN dbo.TelecomPaymentTransaction pt ON bil.TelecomPaymentTransactionId = pt.Id
-            WHERE bil.BranchId IS NULL AND pt.BranchId IS NOT NULL;
             """;
         cmd.ExecuteNonQuery();
     }

@@ -70,6 +70,9 @@ public class EscalateTechnicalTicketToTier3Handler
         var notes = request.EscalationNotes.Trim();
         ticket.Status = TechnicalTicketStatus.Escalated;
         ticket.Priority = TechnicalTicketPriority.Critical;
+        ticket.AssignedToGroupId = "Tier-3-CoreNetwork";
+        // Tier-3 is a national engineering queue — clear branch scope so every back-office operator can see it.
+        ticket.BranchId = null;
         ticket.ResolutionNotes = string.IsNullOrWhiteSpace(ticket.ResolutionNotes)
             ? $"[Tier-3] {notes}"
             : $"{ticket.ResolutionNotes}\n[Tier-3] {notes}";

@@ -1,3 +1,68 @@
+const PC_MANAGE_PERMS = ['admin.settings.manage'];
+
+const PC_FALLBACKS_EN = {
+    syriatelBss: 'Official Product Catalog — BSS',
+    catalogTitleAr: 'Syriatel Product Catalog',
+    catalogTitleEn: 'Product Catalog',
+    catalogSubtitle: 'Browse cellular plans, services, and commercial offerings active on the Syriatel network.',
+    searchPlaceholder: 'Search plans, codes, or service types...',
+    all: 'All',
+    prepaid: 'Prepaid',
+    postpaid: 'Postpaid',
+    hybrid: 'Hybrid Mix',
+    dataOnly: 'Data Packages',
+    corporate: 'Business & B2B',
+    addOffering: 'Add New Offering',
+    retry: 'Retry',
+    refreshFail: 'Failed to load catalog offerings.',
+    pageTitle: 'Syriatel product catalog',
+    noDescription: 'No commercial description is currently available for this offering.',
+    viewFullDetails: 'View Offering Details',
+    noOfferingsFound: 'No plans matched your criteria',
+    noOfferingsSubtitle: 'Please modify your search term or selection tabs to find what you need.',
+    resetFilters: 'Reset Filters',
+    close: 'Close',
+    errorTitle: 'Error',
+    detailLoadFail: 'Failed to load details.',
+};
+
+const PC_FALLBACKS_AR = {
+    syriatelBss: 'كتالوج المنتجات الرسمي — BSS',
+    catalogTitleAr: 'كتالوج عروض ومنتجات سيريتل',
+    catalogTitleEn: 'Product Catalog',
+    catalogSubtitle: 'تصفّح الباقات والخدمات والعروض التجارية النشطة على شبكة سيريتل.',
+    searchPlaceholder: 'ابحث عن باقة أو رمز أو نوع خدمة...',
+    all: 'الكل',
+    prepaid: 'مسبق الدفع',
+    postpaid: 'لاحق الدفع',
+    hybrid: 'مختلط',
+    dataOnly: 'باقات إنترنت',
+    corporate: 'شركات B2B',
+    addOffering: 'إضافة عرض جديد',
+    retry: 'إعادة المحاولة',
+    refreshFail: 'تعذّر تحميل كتالوج العروض.',
+    pageTitle: 'كتالوج باقات سيريتل',
+    noDescription: 'لا يوجد وصف تجاري متاح لهذا العرض حالياً.',
+    viewFullDetails: 'عرض تفاصيل الباقة',
+    noOfferingsFound: 'لا توجد باقات مطابقة',
+    noOfferingsSubtitle: 'عدّل البحث أو الفلاتر للعثور على ما تحتاجه.',
+    resetFilters: 'إعادة ضبط الفلاتر',
+    close: 'إغلاق',
+    errorTitle: 'خطأ',
+    detailLoadFail: 'تعذّر تحميل التفاصيل.',
+};
+
+function pcFallbacks() {
+    const lang = window.TelecomI18n?.getLang?.() || document.documentElement.lang || 'en';
+    return String(lang).toLowerCase().startsWith('en') ? PC_FALLBACKS_EN : PC_FALLBACKS_AR;
+}
+
+function pcT(key) {
+    const hit = window.TelecomI18n?.t?.(`productCatalog.${key}`);
+    if (hit) return hit;
+    return pcFallbacks()[key] || key;
+}
+
 const ProductCatalogApp = {
     setup() {
         const localeTick = Vue.ref(0);
@@ -13,7 +78,7 @@ const ProductCatalogApp = {
             contentDir: 'rtl',
             detailModalVisible: false,
             detailLoading: false,
-            isAdmin: true, // Enables full catalog management features (Create, Edit, Delete)
+            isAdmin: false,
             upsertModalVisible: false,
             isEditMode: false,
             upsertForm: {
@@ -50,7 +115,7 @@ const ProductCatalogApp = {
 
         const t = (key) => {
             localeTick.value;
-            return window.TelecomI18n?.t?.(`productCatalog.${key}`) || key;
+            return pcT(key);
         };
 
         const offerDisplayName = (offer) => {
@@ -75,7 +140,9 @@ const ProductCatalogApp = {
             state.loadError = null;
             try {
                 const response = await AxiosManager.get('/ProductOffering/GetProductOfferingList', {});
-                state.offerings = response?.data?.content?.data || [];
+                state.offerings = typeof StorageManager !== 'undefined' && StorageManager.apiList
+                    ? StorageManager.apiList(response)
+                    : (response?.data?.content?.data ?? response?.data?.content?.Data ?? []);
             } catch (error) {
                 console.error("Failed to load product catalog list", error);
                 state.loadError = t('refreshFail');
@@ -261,7 +328,10 @@ const ProductCatalogApp = {
             state.detailLoading = true;
             try {
                 const response = await AxiosManager.get(`/ProductOffering/GetProductOfferingSingle?id=${id}`, {});
-                state.currentOffer = response?.data?.content ?? {
+                const payload = typeof StorageManager !== 'undefined' && StorageManager.apiContent
+                    ? StorageManager.apiContent(response)
+                    : (response?.data?.content ?? null);
+                state.currentOffer = payload ?? {
                     id: '',
                     name: '',
                     nameEn: '',
@@ -354,8 +424,9 @@ const ProductCatalogApp = {
             } catch (_) { /* ignore */ }
             const lang = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
             toggleLanguage(lang);
-            const title = window.TelecomI18n?.t?.('productCatalog.pageTitle');
+            const title = t('pageTitle');
             if (title) document.title = title;
+            localeTick.value++;
         };
 
         const openCreateModal = () => {
@@ -602,16 +673,24 @@ const ProductCatalogApp = {
             document.documentElement.addEventListener('syriatel-locale-changed', onLocaleChanged);
             try {
                 await window.TelecomI18n?.ensureLoaded?.();
+                const perms = typeof StorageManager !== 'undefined' ? StorageManager.getPermissions() : [];
+                state.isAdmin = typeof StorageManager !== 'undefined' && StorageManager.hasAnyPermission
+                    ? StorageManager.hasAnyPermission(perms, PC_MANAGE_PERMS)
+                    : false;
                 const layoutLang = document.documentElement.lang?.toLowerCase().startsWith('en') ? 'en' : 'ar';
                 toggleLanguage(layoutLang);
-                const title = window.TelecomI18n?.t?.('productCatalog.pageTitle');
+                localeTick.value++;
+                const title = t('pageTitle');
                 if (title) document.title = title;
 
-                // Load database offerings
                 await loadCatalog();
                 await loadTechnicalProducts();
             } catch (e) {
                 console.error("Mount error in catalog app", e);
+                state.loading = false;
+                if (!state.loadError) {
+                    state.loadError = t('refreshFail');
+                }
             } finally {
                 if (typeof hideSpinnerAndShowContent === 'function') {
                     hideSpinnerAndShowContent();
@@ -664,4 +743,11 @@ const ProductCatalogApp = {
     }
 };
 
-Vue.createApp(ProductCatalogApp).mount('#app');
+(async function bootProductCatalog() {
+    try {
+        await window.TelecomI18n?.ensureLoaded?.();
+    } catch (e) {
+        console.warn('TelecomI18n preload failed', e);
+    }
+    Vue.createApp(ProductCatalogApp).mount('#app');
+})();

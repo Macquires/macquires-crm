@@ -25,9 +25,8 @@
                         <div class="col-12 col-md-8 col-lg-9">
                             <p class="small text-uppercase text-muted mb-1 font-monospace" style="letter-spacing:0.12em;">{{ t('syriatelBss') }}</p>
                             <h1 class="h3 mb-2 fw-semibold syriatel-catalog-title">
-                                <span class="text-syriatel-red">{{ t('catalogTitleAr') }}</span> 
-                                <span class="text-muted fw-light mx-2">|</span> 
-                                <span class="text-dark-gray text-uppercase font-sans-serif">{{ t('catalogTitleEn') }}</span>
+                                <span v-if="contentLang === 'ar'" class="text-syriatel-red">{{ t('catalogTitleAr') }}</span>
+                                <span v-else class="text-dark-gray text-uppercase font-sans-serif">{{ t('catalogTitleEn') }}</span>
                             </h1>
                             <p class="text-muted mb-0 small lh-lg">
                                 {{ t('catalogSubtitle') }}

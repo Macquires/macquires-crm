@@ -1,5 +1,7 @@
 namespace Infrastructure.TelecomIntegrations;
 
+using Application.Common.Telecom;
+
 /// <summary>Deterministic CBS mock balances when HTTP mode is off — no per-MSISDN mutable state.</summary>
 internal static class CbsMockBalanceResolver
 {
@@ -11,6 +13,11 @@ internal static class CbsMockBalanceResolver
         }
 
         var normalized = msisdn.Trim();
+        if (normalized == TelecomDemoMsisdn.DebtSubscriber)
+        {
+            return TelecomDemoBaselines.DebtOutstandingSyp;
+        }
+
         var hash = Math.Abs(normalized.GetHashCode(StringComparison.Ordinal));
 
         if (normalized.EndsWith("9", StringComparison.Ordinal) || hash % 5 == 0)

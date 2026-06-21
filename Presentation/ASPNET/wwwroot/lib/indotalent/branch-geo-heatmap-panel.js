@@ -63,7 +63,8 @@ const BranchGeoHeatmapPanel = (function () {
 
         const app = Vue.createApp({
             setup() {
-                const formatMoney = (v) => Number(v || 0).toLocaleString('ar-SY') + ' ل.س';
+                const numberLocale = typeof TelecomI18n !== 'undefined' && TelecomI18n.getLang?.() === 'en' ? 'en-US' : 'ar-SY';
+                const formatMoney = (v) => Number(v || 0).toLocaleString(numberLocale) + ' ' + t('currency');
                 const dotStyle = (p) => {
                     const pos = project(Number(p.lat), Number(p.lng));
                     const size = 12 + Math.round((p.heatScore || 0) / 8);

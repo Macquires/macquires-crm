@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo 02 — Frontline Hub Cue Card</title>
+  <style>
+    :root { --bg: #0f1419; --fg: #f8fafc; --accent: #38bdf8; --muted: #94a3b8; --step: #1e293b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 1.25rem; background: var(--bg); color: var(--fg); font-family: "Segoe UI", Tahoma, sans-serif; line-height: 1.55; }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; color: var(--accent); }
+    .sub { color: var(--muted); font-size: 1.1rem; margin-bottom: 1.5rem; }
+    ol { padding: 0; margin: 0; list-style: none; }
+    li { background: var(--step); border-radius: 12px; padding: 1rem 1.15rem; margin-bottom: 1rem; font-size: 1.35rem; font-weight: 600; }
+    .marker { display: block; margin-top: 0.65rem; font-size: 1rem; font-weight: 700; color: #fbbf24; letter-spacing: 0.02em; }
+    .speak { color: #34d399; }
+    code { background: #334155; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.95rem; }
+    .tiles { font-size: 1.15rem; color: #cbd5e1; margin-top: 0.35rem; }
+  </style>
+</head>
+<body>
+  <h1>📱 Demo 02 — Frontline POS Hub Morph</h1>
+  <p class="sub">المستخدم: <code>st-showroom@syriatelecom-demo.local</code> · المسار: <code>/Telecom/TelecomHub</code></p>
+  <ol>
+    <li>
+      سجّلي دخول وكيل المعرض وافتحي Telecom Hub — واجهة نقطة البيع.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      لاحظي تحوّل الواجهة: تظهر فقط بلاطات الخط الأمامي الخمس.
+      <div class="tiles">ACT · SIM · CNR · MGR · PAY</div>
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+    <li>
+      مرّري على كل بلاطة — التفعيل، تبديل الشريحة، تغيير الرقم، الترحيل، الشحن.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+    <li>
+      هنا حجب الصلاحيات التام: العشر بلاطات الإدارية <strong>محذوفة من الـ DOM</strong> عبر <code>v-if</code> — ليست مخفية بـ CSS.
+      <div class="tiles">CGT · TKO · TRM · SUS · BDR · RCN · RFD · DEV · VAS · SUP</div>
+      <span class="marker">[DELAY - PAUSE FOR 2 SECONDS]</span>
+    </li>
+    <li>
+      نقطة البيع ترى ما تحتاجه فقط — أمان تشغيلي بدون ضوضاء إدارية.
+      <span class="marker speak">[SPEAK NOW]</span>
+    </li>
+  </ol>
+</body>
+</html>

@@ -18,6 +18,7 @@ public sealed class RejectBackOfficeTelecomOperationResult
 {
     public TelecomOperationRequest? Data { get; init; }
     public string PipelineState { get; init; } = BackOfficeTelecomPipelineState.Failed;
+    public string? MessageAr { get; init; }
 }
 
 public sealed class RejectBackOfficeTelecomOperationRequest : IRequest<RejectBackOfficeTelecomOperationResult>, IRequireAnyPermission
@@ -98,7 +99,7 @@ public sealed class RejectBackOfficeTelecomOperationHandler
             .FirstOrDefaultAsync(cancellationToken) ?? "—";
 
         operation.DocumentStatus = TelecomDocumentStatus.Rejected;
-        operation.Notes = AppendNote(operation.Notes, $"[BackOfficeRejected] {request.RejectionReason.Trim()}");
+        operation.Notes = AppendNote(operation.Notes, $"{BackOfficeTelecomPipelineState.BackOfficeRejectedNotePrefix} {request.RejectionReason.Trim()}");
         operation.UpdatedById = actorUserId;
 
         // GLOBAL HARDENING: Route B Bypass to Advance - Back-Office Reject (Critical Revenue Assurance)
@@ -149,7 +150,11 @@ public sealed class RejectBackOfficeTelecomOperationHandler
             },
             cancellationToken);
 
-        return new RejectBackOfficeTelecomOperationResult { Data = operation };
+        return new RejectBackOfficeTelecomOperationResult
+        {
+            Data = operation,
+            MessageAr = $"تم رفض الطلب {operation.Number}.",
+        };
     }
 
     private static string AppendNote(string? existing, string line) =>

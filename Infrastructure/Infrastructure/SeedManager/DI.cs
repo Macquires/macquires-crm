@@ -73,7 +73,6 @@ public static class DI
         services.AddScoped<ProductCatalogSeeder>();
         services.AddScoped<TelecomTechnicalTicketSeeder>();
         services.AddScoped<VasCatalogSeeder>();
-        services.AddScoped<TelecomCustomer360EnrichmentSeeder>();
         services.AddScoped<StrategicMisDemoSeeder>();
         services.AddScoped<WorkforceDemoActivitySeeder>();
         services.AddScoped<DeviceInventorySeeder>();
@@ -129,6 +128,14 @@ public static class DI
             serviceProvider.GetRequiredService<DeviceInventorySeeder>().EnsureDemoInventoryAsync().Wait();
             serviceProvider.GetRequiredService<TelecomInHlrProvisioningLogSeeder>().EnsureDemoLogsAsync().Wait();
 
+            DemoSeedScope.ReconcileAllAsync(context).Wait();
+
+            var drift = DemoSeedScope.CountBranchScopeDriftAsync(context).GetAwaiter().GetResult();
+            if (drift > 0)
+            {
+                logger.LogWarning("Demo seed branch-scope drift remaining after reconcile: {DriftCount} rows", drift);
+            }
+
             LogDemoSeedSummary(context, logger);
         });
 
@@ -151,14 +158,20 @@ public static class DI
         var profiles = context.SubscriberProfile.IgnoreQueryFilters().Count(p => !p.IsDeleted);
         var msisdns = context.MsisdnAsset.IgnoreQueryFilters().Count(m => !m.IsDeleted);
         var operations = context.TelecomOperationRequest.IgnoreQueryFilters().Count(o => !o.IsDeleted);
+        var tickets = context.TelecomTechnicalTicket.IgnoreQueryFilters().Count(t => !t.IsDeleted);
         var devices = context.DeviceInventory.IgnoreQueryFilters().Count(d => !d.IsDeleted);
+        var nationalAnchors = context.Customer.IgnoreQueryFilters()
+            .Count(c => !c.IsDeleted && c.BranchId == null && c.PrimaryPhone != null
+                && (c.PrimaryPhone.StartsWith("0939000") || c.DisplayName.Contains("سعدون") || c.DisplayName.Contains("مازن")));
 
         logger.LogInformation(
-            "Demo seed complete — Customers={Customers}, SubscriberProfiles={Profiles}, MsisdnAssets={Msisdns}, Operations={Operations}, DeviceInventory={Devices}",
+            "Demo seed complete — Customers={Customers}, NationalAnchors={NationalAnchors}, SubscriberProfiles={Profiles}, MsisdnAssets={Msisdns}, Operations={Operations}, Tickets={Tickets}, DeviceInventory={Devices}",
             customers,
+            nationalAnchors,
             profiles,
             msisdns,
             operations,
+            tickets,
             devices);
     }
 }

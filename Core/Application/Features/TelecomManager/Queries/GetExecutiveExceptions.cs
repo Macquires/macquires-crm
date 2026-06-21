@@ -229,7 +229,7 @@ public class GetExecutiveExceptionsHandler : IRequestHandler<GetExecutiveExcepti
                 DetailAr = $"{branch.BranchName}: انخفاض {drop:F1}% مقارنة بالفترة السابقة.",
                 BranchId = branch.BranchId,
                 BranchName = branch.BranchName,
-                ActionUrl = "/Dashboards/DefaultDashboard#strategic-analytics",
+                ActionUrl = "/Executive/CommandCenter?tab=mis",
                 OccurredAtUtc = now,
             });
         }

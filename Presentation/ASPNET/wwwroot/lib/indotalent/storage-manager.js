@@ -200,7 +200,7 @@ const StorageManager = {
         BackOffice: '/Telecom/BackOfficeDashboard',
         Executive: '/Executive/CommandCenter?tab=scorecard',
         Retail: '/Telecom/TelecomHub',
-        CallCenter: '/Telecom/TelecomHub',
+        CallCenter: '/Telecom/UnifiedSearch',
     },
 
     PERMISSION_LANDING_RULES: [
@@ -212,7 +212,17 @@ const StorageManager = {
             any: ['bulk.import.upload', 'bulk.import.monitor', 'telecom.asset.manage', 'admin.settings.manage'],
             path: '/Telecom/BackOfficeDashboard',
         },
-        { any: ['customer.view'], path: '/Telecom/TelecomHub' },
+        {
+            any: [
+                'telecom.hub.frontline',
+                'telecom.hub.backoffice',
+                'telecom.hub.supervisor',
+                'telecom.line.activate',
+                'telecom.asset.manage',
+            ],
+            path: '/Telecom/TelecomHub',
+        },
+        { any: ['customer.view'], path: '/Telecom/UnifiedSearch' },
     ],
 
     savePermissions: (keys) => StorageManager.save(STORAGE_KEYS.PERMISSIONS, keys || []),

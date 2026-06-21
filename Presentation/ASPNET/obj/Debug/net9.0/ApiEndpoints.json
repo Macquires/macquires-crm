@@ -2864,6 +2864,32 @@
     ]
   },
   {
+    "ContainingType": "ASPNET.BackEnd.Controllers.TelecomOperationsController",
+    "Method": "ExecutePayAndReconnectAsync",
+    "RelativePath": "api/Telecom/ExecutePayAndReconnect",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Application.Features.TelecomManager.Commands.ExecutePayAndReconnectRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ASPNET.BackEnd.Common.Models.ApiSuccessResult\u00601[[Application.Features.TelecomManager.Commands.ExecutePayAndReconnectResult, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "ASPNET.BackEnd.Controllers.TelecomInventoryController",
     "Method": "ExportInventoryBulkImportErrorsAsync",
     "RelativePath": "api/Telecom/ExportInventoryBulkImportErrors",
@@ -5444,6 +5470,11 @@
       },
       {
         "Name": "IncludeResolved",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "OpenedByCurrentUserOnly",
         "Type": "System.Boolean",
         "IsRequired": false
       },

@@ -75,18 +75,18 @@ const ExecutiveScorecardPanel = (function () {
                     <div v-if="state.loading" class="text-center py-4"><span class="spinner-border text-danger"></span></div>
                     <div v-else class="row g-3 strategic-bento">
                         <div class="col-6 col-lg-3" v-for="card in [
-                            { label: t('revenue'), value: formatMoney(state.data?.totalRevenue), sub: formatPct(state.data?.revenueChangePercent) },
-                            { label: t('arpu'), value: formatMoney(state.data?.arpu), sub: '' },
-                            { label: t('churn30'), value: formatPct(state.data?.churn30), sub: t('churn60') + ': ' + formatPct(state.data?.churn60) },
-                            { label: t('operations'), value: state.data?.operationsToday ?? '—', sub: '' },
-                            { label: t('openTickets'), value: state.data?.openTickets ?? '—', sub: t('sla') + ': ' + formatPct(state.data?.sla) },
-                            { label: t('criticalAlerts'), value: state.data?.criticalAlerts ?? 0, sub: t('warnings') + ': ' + (state.data?.warningAlerts ?? 0) },
-                            { label: t('onlineNow'), value: state.data?.onlineEmployees ?? 0, sub: '' },
-                            { label: t('bestBranch'), value: state.data?.bestBranch?.branchName || '—', sub: formatMoney(state.data?.bestBranch?.revenue) },
+                            { label: t('revenue'), value: formatMoney(state.data?.totalRevenue), sub: formatPct(state.data?.revenueChangePercent), hero: true, cls: 'text-danger' },
+                            { label: t('arpu'), value: formatMoney(state.data?.arpu), sub: '', hero: true, cls: 'text-danger' },
+                            { label: t('churn60'), value: formatPct(state.data?.churn60), sub: t('churn30') + ': ' + formatPct(state.data?.churn30), hero: true, cls: (state.data?.churn60 >= 5 ? 'status-crimson' : 'status-emerald') },
+                            { label: t('onlineNow'), value: state.data?.onlineEmployees ?? 0, sub: '', hero: true, cls: 'status-emerald' },
+                            { label: t('operations'), value: state.data?.operationsToday ?? '—', sub: '', hero: false, cls: '' },
+                            { label: t('openTickets'), value: state.data?.openTickets ?? '—', sub: t('sla') + ': ' + formatPct(state.data?.sla), hero: false, cls: '' },
+                            { label: t('criticalAlerts'), value: state.data?.criticalAlerts ?? 0, sub: t('warnings') + ': ' + (state.data?.warningAlerts ?? 0), hero: false, cls: (state.data?.criticalAlerts > 0 ? 'status-crimson' : 'status-emerald') },
+                            { label: t('bestBranch'), value: state.data?.bestBranch?.branchName || '—', sub: formatMoney(state.data?.bestBranch?.revenue), hero: false, cls: 'status-emerald' },
                         ]" :key="card.label">
-                            <div class="strategic-bento-card h-100">
+                            <div class="strategic-bento-card h-100" :class="{ 'scorecard-hero-card': card.hero }">
                                 <p class="strategic-card-title mb-1">{{ card.label }}</p>
-                                <p class="strategic-metric-xl text-danger mb-0">{{ card.value }}</p>
+                                <p class="strategic-metric-xl mb-0" :class="card.cls">{{ card.value }}</p>
                                 <p v-if="card.sub" class="strategic-metric-sub mb-0">{{ card.sub }}</p>
                             </div>
                         </div>

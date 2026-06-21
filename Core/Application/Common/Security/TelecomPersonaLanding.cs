@@ -11,7 +11,7 @@ public static class TelecomPersonaLanding
     public const string BackOffice = "/Telecom/BackOfficeDashboard";
     public const string Executive = ExecutiveCommandCenter;
     public const string Retail = TelecomHub;
-    public const string CallCenter = TelecomHub;
+    public const string CallCenter = "/Telecom/UnifiedSearch";
     public const string DefaultFallback = TelecomHub;
 
     public static string ResolvePath(TelecomMenuPersona? persona) =>

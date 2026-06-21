@@ -526,7 +526,7 @@ public class SecurityController : BaseApiController
         });
     }
 
-    [RequireAdminUsersManage]
+    [RequireOrgUnitRead]
     [HttpGet("GetOrgUnitList")]
     public async Task<ActionResult<ApiSuccessResult<GetOrgUnitListResult>>> GetOrgUnitListAsync(
         CancellationToken cancellationToken)

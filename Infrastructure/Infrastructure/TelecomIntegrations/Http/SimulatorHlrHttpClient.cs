@@ -57,6 +57,15 @@ public sealed class SimulatorHlrHttpClient
         return new NetworkProvisionResult(true, "Simulator HLR provision OK");
     }
 
+    public async Task SuspendSubscriberAsync(string msisdn, CancellationToken cancellationToken)
+    {
+        var response = await _http.PostAsJsonAsync(
+            $"hlr/subscribers/{Uri.EscapeDataString(msisdn)}/provision",
+            new { command = "SUSPEND", imsi = (string?)null, iccid = (string?)null },
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<HlrLiveStatusResult> QueryLiveStatusAsync(string msisdn, string? crmStatus, CancellationToken cancellationToken)
     {
         var response = await _http.GetAsync($"hlr/subscribers/{Uri.EscapeDataString(msisdn)}/status", cancellationToken);
@@ -77,14 +86,27 @@ public sealed class SimulatorHlrHttpClient
 
     private static bool StatesAligned(string? crm, string hlr)
     {
-        if (string.Equals(crm, "Active", StringComparison.OrdinalIgnoreCase) || crm == "1")
+        var crmNorm = (crm ?? string.Empty).Trim();
+        var hlrNorm = hlr.Trim().ToUpperInvariant();
+
+        if (string.Equals(crmNorm, "Active", StringComparison.OrdinalIgnoreCase) || crmNorm == "1")
         {
-            return hlr == "ACTIVE";
+            return hlrNorm == "ACTIVE";
         }
-        if (string.Equals(crm, "Suspended", StringComparison.OrdinalIgnoreCase))
+
+        if (string.Equals(crmNorm, "Suspended", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(crmNorm, "SuspendedInbound", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(crmNorm, "SuspendedOutbound", StringComparison.OrdinalIgnoreCase))
         {
-            return hlr is "SUSPENDED" or "INACTIVE";
+            return hlrNorm is "SUSPENDED" or "INACTIVE";
         }
+
+        if (string.Equals(crmNorm, "Terminated", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(crmNorm, "Deactivated", StringComparison.OrdinalIgnoreCase))
+        {
+            return hlrNorm is "INACTIVE" or "NOT_PROVISIONED";
+        }
+
         return true;
     }
 }

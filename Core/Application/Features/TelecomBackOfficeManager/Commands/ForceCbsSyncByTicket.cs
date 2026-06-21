@@ -82,13 +82,50 @@ public class ForceCbsSyncByTicketHandler : IRequestHandler<ForceCbsSyncByTicketR
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException("التذكرة غير موجودة.");
 
-        var line = await TechnicalTicketLineResolver.ResolveAsync(
+        var line = await TechnicalTicketLineResolver.ResolveForBackOfficeTicketAsync(
             _query,
             ticket.SubscriberProfileId,
             ticket.Msisdn,
             cancellationToken);
 
         await EnsureTicketLinkedAsync(ticket.Id, line, actorUserId, cancellationToken);
+
+        var priorSuccessLog = await _query.BillingIntegrationLog.AsNoTracking().IsDeletedEqualTo()
+            .Where(l => l.Success && l.CorrelationId == ticket.Id)
+            .OrderByDescending(l => l.CreatedAtUtc)
+            .Select(l => new { l.Message, l.TelecomOperationRequestId })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (priorSuccessLog != null)
+        {
+            var replayBalance = await _billing.GetOutstandingBalanceAsync(line.Msisdn, cancellationToken);
+            var existingOpNumber = priorSuccessLog.TelecomOperationRequestId == null
+                ? null
+                : await _query.TelecomOperationRequest.AsNoTracking().IsDeletedEqualTo()
+                    .Where(o => o.Id == priorSuccessLog.TelecomOperationRequestId)
+                    .Select(o => o.Number)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+            var replayResolved = await AutoResolveTicketAfterCbsAsync(
+                ticket.Id,
+                ticket.TicketNumber,
+                line.Msisdn,
+                priorSuccessLog.Message ?? "CBS already synced for this ticket.",
+                actorUserId,
+                request.IpAddress,
+                cancellationToken);
+
+            return new ForceCbsSyncResult
+            {
+                Success = true,
+                Message = priorSuccessLog.Message ?? "تمت تسوية CBS مسبقاً لهذه التذكرة.",
+                TicketNumber = ticket.TicketNumber,
+                Msisdn = line.Msisdn,
+                OperationNumber = existingOpNumber,
+                BalanceAfterSync = replayBalance,
+                TicketAutoResolved = replayResolved,
+            };
+        }
 
         var (entityName, prefix) = TelecomNumberSequence.ForKind(TelecomOperationKind.ServiceModification);
         var operationNumber = await _numberSequenceService.GenerateNumberAsync(entityName, prefix, "", useDate: false, cancellationToken: cancellationToken);

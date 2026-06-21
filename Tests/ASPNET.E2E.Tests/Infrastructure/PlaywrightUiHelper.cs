@@ -7,14 +7,29 @@ public static class PlaywrightUiHelper
     public const string AdminEmail = "admin@root.com";
     public const string AdminPassword = "123456";
     public const string ShowroomEmail = "st-showroom@syriatelecom-demo.local";
+    public const string BackOfficeEmail = "st-backoffice@syriatelecom-demo.local";
     public const string CallCenterEmail = "st-callcenter@syriatelecom-demo.local";
     public const string ExecutiveMisEmail = "st-mis@syriatelecom-demo.local";
+
+    // Hub supervisor surface (RCN/RFD/DEV/VAS/SUP) is granted to the Management persona.
+    public const string SupervisorEmail = ExecutiveMisEmail;
     public const string RegionalNorthEmail = "st-regional-north@syriatelecom-demo.local";
     public const string BranchMezzehEmail = "st-branch-mezzeh@syriatelecom-demo.local";
     public const string DemoPassword = "123456";
 
-    private const int PresentationSlowMoMs = 2_000;
+    private const int DefaultPresentationSlowMoMs = 500;
     public const int ComprehensiveMasterSlowMoMs = 1_500;
+
+    public static int ResolvePresentationSlowMoMs()
+    {
+        var env = Environment.GetEnvironmentVariable("DEMO_SLOW_MO");
+        if (string.IsNullOrWhiteSpace(env) || !int.TryParse(env, out var slowMo) || slowMo < 0)
+        {
+            return DefaultPresentationSlowMoMs;
+        }
+
+        return slowMo;
+    }
 
     public static async Task EnsureChromiumInstalledAsync()
     {
@@ -27,7 +42,7 @@ public static class PlaywrightUiHelper
 
     public static Task<(IPlaywright Playwright, IBrowser Browser, IBrowserContext Context, IPage Page)> LaunchPresentationPageAsync(
         string baseUrl) =>
-        LaunchPageAsync(baseUrl, headless: false, slowMo: PresentationSlowMoMs);
+        LaunchPageAsync(baseUrl, headless: false, slowMo: ResolvePresentationSlowMoMs());
 
     public static Task<(IPlaywright Playwright, IBrowser Browser, IBrowserContext Context, IPage Page)> LaunchComprehensiveMasterPageAsync(
         string baseUrl) =>
@@ -75,7 +90,7 @@ public static class PlaywrightUiHelper
         ]);
 
         var page = await context.NewPageAsync();
-        page.SetDefaultTimeout(60_000);
+        page.SetDefaultTimeout(slowMo is > 0 ? 90_000 : 60_000);
         return (playwright, browser, context, page);
     }
 
@@ -94,11 +109,12 @@ public static class PlaywrightUiHelper
 
         await page.Locator("#Email").FillAsync(email);
         await page.Locator("#Password").FillAsync(password);
-        await page.Locator("button[type='submit']").ClickAsync();
+        await page.Locator("button[type='submit']").ClickAsync(new LocatorClickOptions { NoWaitAfter = true });
 
+        var loginTimeout = ResolvePresentationSlowMoMs() > 0 ? 120_000 : 60_000;
         await page.WaitForURLAsync(
             url => !url.Contains("/Accounts/Login", StringComparison.OrdinalIgnoreCase),
-            new PageWaitForURLOptions { Timeout = 60_000 });
+            new PageWaitForURLOptions { Timeout = loginTimeout });
 
         cancellationToken.ThrowIfCancellationRequested();
     }

@@ -37,8 +37,8 @@ public class ReconnectEligibilityIntegrationTests
             null);
 
         Assert.True(result.Allowed);
-        Assert.False(result.RequiresBackOfficeApproval);
-        Assert.Equal("PaymentCleared", result.ValidationCode);
+        Assert.True(result.RequiresBackOfficeApproval);
+        Assert.Equal("BackOfficePending", result.ValidationCode);
         Assert.Contains("VAL-09-06", result.MessageAr);
     }
 
@@ -108,7 +108,7 @@ public class ReconnectEligibilityIntegrationTests
     }
 
     [Fact]
-    public async Task ValidateForCreateAsync_throws_when_outstanding_debt_on_payment_clearance()
+    public async Task ValidateForCreateAsync_payment_reference_allows_outstanding_debt_at_showroom()
     {
         await using var ctx = CreateContext();
         var (profileId, assetId, _) = await SeedSuspendedLineAsync(
@@ -126,9 +126,33 @@ public class ReconnectEligibilityIntegrationTests
             false,
             null);
 
+        Assert.True(result.Allowed);
+        Assert.True(result.RequiresBackOfficeApproval);
+        Assert.Equal("BackOfficePending", result.ValidationCode);
+    }
+
+    [Fact]
+    public async Task ValidateForCreateAsync_denies_outstanding_debt_without_payment_reference()
+    {
+        await using var ctx = CreateContext();
+        var (profileId, assetId, _) = await SeedSuspendedLineAsync(
+            ctx,
+            SuspensionWellKnown.Billing,
+            MsisdnPoolStatus.Suspended);
+        var checker = new ReconnectEligibilityChecker(ctx, new StubBilling(-1200m), new StubSettings());
+
+        var result = await checker.ValidateForCreateAsync(
+            profileId,
+            assetId,
+            "Pay",
+            ReconnectWellKnown.Payment,
+            null,
+            false,
+            null);
+
         Assert.False(result.Allowed);
         Assert.Contains("VAL-09-02", result.MessageAr);
-        Assert.Equal("OutstandingDebt", result.ValidationCode);
+        Assert.Equal("PaymentReferenceRequired", result.ValidationCode);
     }
 
     [Fact]

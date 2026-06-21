@@ -47,10 +47,10 @@
                 </div>
             </header>
 
-            <section class="mb-4" :aria-label="t('telecom.quickPathsAria')">
-                <div class="row g-3">
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-new-customer shadow-sm"
+            <section class="mb-4 telecom-hub-tiles-section" :aria-label="t('telecom.quickPathsAria')">
+                <div class="row g-3 telecom-hub-tiles-row">
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubFrontline">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-new-customer shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canOpenSubscriberRegistry }"
                                 :disabled="!hubPermissions.canOpenSubscriberRegistry"
                                 @@click="openCustomerWizard" :aria-label="t('telecom.tiles.newCustomer.aria')">
@@ -59,138 +59,112 @@
                             <small class="opacity-75">{{ t('telecom.tiles.newCustomer.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-activate shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubFrontline">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-activate shadow-sm"
                                 @@click="openWizard('activate')" data-testid="hub-wizard-tile-activate" :aria-label="t('telecom.tiles.activate.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-sim-card"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.activate.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.activate.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-migrate shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubFrontline">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-migrate shadow-sm"
                                 @@click="openWizard('migrate')" data-testid="hub-wizard-tile-migrate" :aria-label="t('telecom.tiles.migrate.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-exchange-alt"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.migrate.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.migrate.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-changeGsm shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubBackOffice">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-changeGsm shadow-sm"
                                 @@click="openWizard('changeGsm')" data-testid="hub-wizard-tile-changeGsm" :aria-label="t('telecom.tiles.changeGsm.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-random"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.changeGsm.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.changeGsm.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-takeover shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubBackOffice">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-takeover shadow-sm"
                                 @@click="openWizard('takeover')" data-testid="hub-wizard-tile-takeover" :aria-label="t('telecom.tiles.takeover.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-user-friends"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.takeover.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.takeover.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-simswap shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubFrontline">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-simswap shadow-sm"
                                 @@click="openWizard('simswap')" data-testid="hub-wizard-tile-simswap" :aria-label="t('telecom.tiles.simswap.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-random"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.simswap.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.simswap.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-changenumber shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubFrontline">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-changenumber shadow-sm"
                                 @@click="openWizard('changeNumber')" data-testid="hub-wizard-tile-changeNumber" :aria-label="t('telecom.tiles.changeNumber.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-phone-alt"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.changeNumber.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.changeNumber.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-termination shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubBackOffice">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-termination shadow-sm"
                                 @@click="openWizard('termination')" data-testid="hub-wizard-tile-termination" :aria-label="t('telecom.tiles.termination.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-phone-slash"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.termination.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.termination.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-suspension shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubBackOffice">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-suspension shadow-sm"
                                 @@click="openWizard('suspension')" data-testid="hub-wizard-tile-suspension" :aria-label="t('telecom.tiles.suspension.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-ban"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.suspension.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.suspension.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-reconnect shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubSupervisor">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-reconnect shadow-sm"
                                 @@click="openWizard('reconnect')" data-testid="hub-wizard-tile-reconnect" :aria-label="t('telecom.tiles.reconnect.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-signal"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.reconnect.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.reconnect.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-refund shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubSupervisor">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-refund shadow-sm"
                                 @@click="openWizard('refund')" data-testid="hub-wizard-tile-refund" :aria-label="t('telecom.tiles.refund.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-hand-holding-usd"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.refund.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.refund.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-bad-debt shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubBackOffice">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-bad-debt shadow-sm"
                                 @@click="openWizard('badDebt')" data-testid="hub-wizard-tile-badDebt" :aria-label="t('telecom.tiles.badDebt.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-coins"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.badDebt.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.badDebt.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-device-sale shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubSupervisor">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-device-sale shadow-sm"
                                 @@click="openWizard('deviceSale')" data-testid="hub-wizard-tile-deviceSale" :aria-label="t('telecom.tiles.deviceSale.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.deviceSale.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.deviceSale.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-package shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubSupervisor">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-package shadow-sm"
                                 @@click="openWizard('addpackage')" data-testid="hub-wizard-tile-addpackage" :aria-label="t('telecom.tiles.addpackage.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-box-open"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.addpackage.title') }}</span>
                             <small class="opacity-75">{{ t('telecom.tiles.addpackage.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-recharge shadow-sm"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubFrontline">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-recharge shadow-sm"
                                 :class="{ 'opacity-50 pe-none': !hubPermissions.canRecharge }"
                                 :disabled="!hubPermissions.canRecharge || rechargeBusy"
                                 @@click="openHubRecharge" :aria-label="t('telecom.tiles.recharge.aria')">
@@ -199,10 +173,8 @@
                             <small class="opacity-75">{{ t('telecom.tiles.recharge.sub') }}</small>
                         </button>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <button type="button" class="btn w-100 py-4 text-white big-tile tile-support shadow-sm"
-                                :class="{ 'opacity-50 pe-none': !hubPermissions.canCreateOps }"
-                                :disabled="!hubPermissions.canCreateOps"
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-2" v-if="hubPermissions.canHubSupervisor">
+                        <button type="button" class="btn w-100 py-3 text-white big-tile tile-support shadow-sm"
                                 @@click="openWizard('support')" data-testid="hub-wizard-tile-support" :aria-label="t('telecom.tiles.support.aria')">
                             <span class="tile-icon d-block mb-1" aria-hidden="true"><i class="fas fa-headset"></i></span>
                             <span class="fs-6 fw-semibold d-block">{{ t('telecom.tiles.support.title') }}</span>
@@ -212,7 +184,7 @@
                 </div>
             </section>
 
-            <section v-if="customerWizard.visible" id="telecomCustomerWizardPanel" class="mb-4 telecom-hub-wizard-anchor" aria-labelledby="customerWizardHeading">
+            <section v-if="hubRouteReady && customerWizard.visible" id="telecomCustomerWizardPanel" class="mb-4 telecom-hub-wizard-anchor" aria-labelledby="customerWizardHeading">
                 <div class="card border-success shadow-sm telecom-wizard-card telecom-customer-wizard-card">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
                         <h2 id="customerWizardHeading" class="h6 mb-0 fw-semibold text-white">{{ t('telecom.customerWizard.heading') }}</h2>
@@ -503,7 +475,7 @@
                 </div>
             </section>
 
-            <section v-if="wizard.visible" id="telecomOpsWizardPanel" class="mb-4 telecom-hub-wizard-anchor" aria-labelledby="wizardHeading">
+            <section v-if="hubRouteReady && wizard.visible" id="telecomOpsWizardPanel" class="mb-4 telecom-hub-wizard-anchor" aria-labelledby="wizardHeading">
                 <div class="card border-primary shadow-sm telecom-wizard-card">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
                         <h2 id="wizardHeading" class="h6 mb-0 fw-semibold text-white">{{ t('telecom.wizard.heading', { title: wizardTitle }) }}</h2>
@@ -740,7 +712,7 @@
                                     <p v-if="wizard.simLostOrStolen" class="small text-warning">{{ t('telecom.simSwap.lostOrStolenHint') }}</p>
                                     <template v-if="simShowsLostStolenFields">
                                         <label class="form-label small">{{ t('telecom.bss.policeReportNumber') }} *</label>
-                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssSecurityTicketId" dir="ltr" placeholder="POL-2026-XXXX" />
+                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssSecurityTicketId" dir="ltr" :placeholder="t('telecom.bss.policeReportPh')" />
                                         <label class="form-label small">{{ t('telecom.simSwap.identityRequired') }} *</label>
                                         <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                                     </template>
@@ -807,11 +779,11 @@
                                     </div>
                                     <template v-if="trmShowsPayment">
                                         <label class="form-label small">{{ t('telecom.bss.paymentReference') }} *</label>
-                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssPaymentReference" dir="ltr" placeholder="e.g. PAY-2026-XXXX" />
+                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssPaymentReference" dir="ltr" :placeholder="t('telecom.bss.paymentReferencePh')" />
                                     </template>
                                     <template v-if="trmShowsFraud">
                                         <label class="form-label small">{{ t('telecom.bss.securityTicketId') }} *</label>
-                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" data-testid="hub-trm-fraud-ticket" />
+                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssSecurityTicketId" dir="ltr" :placeholder="t('telecom.bss.securityTicketPh')" data-testid="hub-trm-fraud-ticket" />
                                     </template>
                                     <template v-if="trmShowsRegulatory">
                                         <label class="form-label small">{{ t('telecom.bss.regulatoryDocumentNumber') }} *</label>
@@ -927,11 +899,11 @@
                                     <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnReconnectReason" @@blur="onRcnClearanceChange" />
                                     <template v-if="rcnShowsPaymentRef">
                                         <label class="form-label small">{{ t('telecom.reconnect.paymentReference') }} *</label>
-                                        <input id="hubRcnPaymentReference" type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnPaymentReference" dir="ltr" placeholder="e.g. REC-2026-XXXX" data-testid="telecom-rcn-payment-ref" @@blur="onRcnClearanceChange" />
+                                        <input id="hubRcnPaymentReference" type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnPaymentReference" dir="ltr" :placeholder="t('telecom.reconnect.paymentReferencePh')" data-testid="telecom-rcn-payment-ref" @@blur="onRcnClearanceChange" />
                                     </template>
                                     <template v-if="rcnShowsFraudFields">
                                         <label class="form-label small">{{ t('telecom.reconnect.securityTicketId') }} *</label>
-                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" @@blur="onRcnClearanceChange" />
+                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.rcnSecurityTicketId" dir="ltr" :placeholder="t('telecom.bss.securityTicketPh')" @@blur="onRcnClearanceChange" />
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" id="rcnFraudDual" v-model="wizard.rcnFraudClearanceConfirmed" @@change="onRcnClearanceChange" />
                                             <label class="form-check-label small" for="rcnFraudDual">{{ t('telecom.reconnect.fraudSupervisorApproval') }}</label>
@@ -1057,7 +1029,7 @@
                                     <input v-if="wizard.cnRequiresBackOffice && cnShowsInternalPool" type="number" min="0" step="1" class="form-control form-control-sm mb-2" v-model="wizard.cnPremiumFeeAmount" />
                                     <template v-if="cnShowsPremiumPayment">
                                         <label class="form-label small">{{ t('telecom.bss.paymentReference') }} *</label>
-                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssPaymentReference" dir="ltr" placeholder="e.g. PAY-2026-XXXX" />
+                                        <input type="text" class="form-control form-control-sm mb-2" v-model="wizard.bssPaymentReference" dir="ltr" :placeholder="t('telecom.bss.paymentReferencePh')" />
                                     </template>
                                     <div v-if="wizard.cnRequiresBackOffice" class="mb-2">
                                         <label class="form-label small">{{ t('telecom.changeNumber.paymentDocHint') }} <span class="text-danger">*</span></label>
@@ -1192,10 +1164,12 @@
                                 <p class="mb-2 small"><strong>{{ t('telecom.wizard.opNumber') }}</strong> {{ wizard.createdOperationNumber }}</p>
                                 <p class="mb-3 small text-muted">{{ t('telecom.wizard.opId') }} {{ wizard.createdOperationId }}</p>
                                 <div v-if="wizardNeedsIdentityUpload && !wizard.documentMarkedUploaded" class="mb-3">
-                                    <label class="form-label small fw-semibold">{{ wizard.kind === 'termination' ? t('telecom.termination.identityRequired') : wizard.kind === 'changeNumber' ? t('telecom.changeNumber.paymentDocHint') : wizard.kind === 'simswap' ? t('telecom.simSwap.identityRequired') : wizard.kind === 'refund' ? t('telecom.refund.identityRequired', 'هوية المشترك / وثيقة الاسترداد') : wizard.kind === 'suspension' ? t('telecom.suspension.kycDocument') : wizard.kind === 'badDebt' ? t('telecom.badDebt.identityRequired', 'وثيقة التحصيل') : t('telecom.takeOver.identityRequired') }} *</label>
+                                    <label class="form-label small fw-semibold">{{ wizard.kind === 'reconnect' ? t('telecom.suspension.kycDocument') : wizard.kind === 'termination' ? t('telecom.termination.identityRequired') : wizard.kind === 'changeNumber' ? t('telecom.changeNumber.paymentDocHint') : wizard.kind === 'simswap' ? t('telecom.simSwap.identityRequired') : wizard.kind === 'refund' ? t('telecom.refund.identityRequired', 'هوية المشترك / وثيقة الاسترداد') : wizard.kind === 'suspension' ? t('telecom.suspension.kycDocument') : wizard.kind === 'badDebt' ? t('telecom.badDebt.identityRequired', 'وثيقة التحصيل') : t('telecom.takeOver.identityRequired') }} *</label>
+                                    <p class="small text-muted mb-2">{{ t('telecom.suspension.kycDocumentHint', '') }}</p>
                                     <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
+                                    <p v-if="!wizard.identityFile" class="small text-danger mb-0 mt-1">{{ t('telecom.suspension.kycRequired', 'Upload document') }}</p>
                                 </div>
-                                <button v-if="!wizard.documentMarkedUploaded && wizard.kind !== 'activate'" type="button" class="btn btn-success btn-sm" :disabled="wizardUploadBusy || (wizard.kind === 'suspension' && susRequiresStep2Identity && !wizard.identityFile)" @@click="submitMarkDocumentUploaded">
+                                <button v-if="!wizard.documentMarkedUploaded && wizard.kind !== 'activate'" type="button" class="btn btn-success btn-sm" :disabled="wizardUploadBusy || (wizardNeedsIdentityUpload && !wizard.identityFile)" @@click="submitMarkDocumentUploaded">
                                     <span v-if="wizardUploadBusy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
                                     {{ wizardAwaitBackOffice ? t('telecom.wizard.uploadBtnTakeOver') : t('telecom.wizard.uploadBtn') }}
                                 </button>
@@ -1203,6 +1177,7 @@
                                     <i class="fas fa-check-circle me-1"></i>{{ t('telecom.wizard.kycUpload.linked') }}
                                 </p>
                                 <p v-if="wizardAwaitBackOffice && wizard.documentMarkedUploaded" class="small text-muted mb-2">{{ wizard.kind === 'termination' ? t('telecom.termination.pendingBackOffice') : wizard.kind === 'changeNumber' ? t('telecom.changeNumber.pendingBackOffice') : wizard.kind === 'simswap' ? t('telecom.simSwap.pendingBackOffice') : wizard.kind === 'takeover' ? t('telecom.takeOver.pendingBackOffice') : t('telecom.wizardUi.awaitBo', 'بانتظار اعتماد الباك أوفيس') }}</p>
+                                <p v-else-if="!wizardShowsConfirmCbs && wizard.documentMarkedUploaded && !wizard.confirmed && wizard.kind !== 'activate' && wizard.kind !== 'changeGsm'" class="small text-muted mb-2">{{ t('telecom.wizardUi.awaitBo', 'بانتظار اعتماد الباك أوفيس') }}</p>
                                 <p v-else-if="wizard.documentMarkedUploaded && !wizard.confirmed" class="mb-0 small text-success">
                                     <i class="fas fa-check-circle me-1"></i>
                                     {{ t('telecom.wizard.uploaded') }}
@@ -1284,7 +1259,7 @@
                 </div>
             </section>
 
-            <section class="row g-3 mb-4" aria-label="KPIs">
+            <section class="row g-3 mb-4" aria-label="KPIs" v-if="hubPermissions.canSeeOperationalKpis">
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
@@ -1311,8 +1286,8 @@
                 </div>
             </section>
 
-            <div class="row g-3 mb-4">
-                <div class="col-lg-6">
+            <div class="row g-3 mb-4" v-if="hubPermissions.canSeeNetworkMap">
+                <div class="col-12">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom fw-semibold py-3">{{ t('telecom.map.title') }}</div>
                         <div class="card-body">
@@ -1326,26 +1301,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom fw-semibold py-3">
-                            {{ t('telecom.branch.title') }}
-                            <span class="fw-normal small text-muted ms-1">{{ t('telecom.branch.revenueHint') }}</span>
-                        </div>
-                        <div class="card-body p-0">
-                            <ul v-if="kpis.branchHeat && kpis.branchHeat.length" class="list-group list-group-flush">
-                                <li v-for="b in kpis.branchHeat" :key="b.branchName" class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <span>{{ b.branchName }}</span>
-                                    <span class="fw-semibold text-nowrap">{{ formatMoney(b.revenueDemo) }}</span>
-                                </li>
-                            </ul>
-                            <p v-else class="text-muted small mb-0 p-4 text-center">{{ t('telecom.branch.empty') }}</p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-4" v-if="hubPermissions.canSeeOperationsQueue">
                 <div class="col-lg-7">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
@@ -1361,8 +1319,9 @@
                                     <span v-if="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                     <span v-else>{{ t('telecom.ops.refresh') }}</span>
                                 </button>
-                                <button class="btn btn-outline-primary" type="button" v-if="hubPermissions.canConfirmCbs"
-                                        @@click="confirmFirstReadyDraft" :disabled="loading">{{ t('telecom.ops.cbs') }}</button>
+                                <a v-if="pendingSecureOpCount > 0 && hubPermissions.canHubBackOffice"
+                                   class="btn btn-outline-warning btn-sm"
+                                   href="/Telecom/BackOfficeDashboard">{{ t('telecom.ops.backOfficeQueueLink') }}</a>
                             </div>
                         </div>
                         <div class="card-body p-0 table-responsive">
@@ -1374,12 +1333,11 @@
                                         <th scope="col">{{ t('telecom.ops.thSub') }}</th>
                                         <th scope="col">{{ t('telecom.ops.thStatus') }}</th>
                                         <th scope="col">{{ t('telecom.ops.thDocs') }}</th>
-                                        <th scope="col" v-if="hubPermissions.canConfirmCbs">{{ t('telecom.ops.thOffer') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-if="loading && (!operations || operations.length === 0)">
-                                        <td :colspan="hubPermissions.canConfirmCbs ? 6 : 5" class="text-center text-muted py-5">
+                                        <td colspan="5" class="text-center text-muted py-5">
                                             <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
                                             <span class="ms-2">{{ t('telecom.ops.loading') }}</span>
                                         </td>
@@ -1407,16 +1365,9 @@
                                             </span>
                                         </td>
                                         <td>{{ o.documentStatusName }}</td>
-                                        <td v-if="hubPermissions.canConfirmCbs">
-                                            <button v-if="isSecureOpPendingReview(o)" type="button" class="btn btn-success btn-sm"
-                                                    @@click="openSecureOpApproval(o)">
-                                                {{ secureOpApproveLabel(o) }}
-                                            </button>
-                                            <span v-else class="text-muted small">{{ t('telecom.ops.dash') }}</span>
-                                        </td>
                                     </tr>
                                     <tr v-if="!loading && (!operations || operations.length === 0)">
-                                        <td :colspan="hubPermissions.canConfirmCbs ? 6 : 5" class="text-center text-muted py-5">{{ t('telecom.ops.empty') }}</td>
+                                        <td colspan="5" class="text-center text-muted py-5">{{ t('telecom.ops.empty') }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1441,227 +1392,56 @@
                 </div>
             </div>
 
-            <div class="modal fade" id="takeOverApprovalModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-                    <div class="modal-content border-0 shadow">
-                        <div class="modal-header border-0">
-                            <h5 class="modal-title fw-bold text-success">
-                                <i class="fas fa-user-shield me-2"></i>{{ secureApprovalModalTitle }} — {{ takeOverApproval.number }}
-                            </h5>
-                            <button type="button" class="btn-close" :aria-label="t('telecom.takeOverModal.close')" @@click="closeTakeOverApproval"></button>
-                        </div>
-                        <div class="modal-body pt-0">
-                            <div v-if="takeOverApproval.busy" class="text-center py-4 text-muted">
-                                <span class="spinner-border text-success"></span>
-                            </div>
-                            <template v-else-if="takeOverApproval.detail">
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.line') }}</p>
-                                        <p class="fw-semibold font-monospace mb-0" dir="ltr">{{ takeOverApproval.detail.msisdn || t('telecom.ops.dash') }}</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.status') }}</p>
-                                        <p class="mb-0">{{ takeOverApproval.detail.statusLabelAr }}</p>
-                                    </div>
-                                    <div class="col-md-6" v-if="takeOverApproval.detail.scheduledEffectiveDateUtc">
-                                        <p class="small text-muted mb-1">{{ t('telecom.ops.scheduledEffective') }}</p>
-                                        <p class="mb-0 fw-semibold text-primary" dir="ltr">{{ formatOpEffectiveDate(takeOverApproval.detail) }} UTC</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.currentOwner') }}</p>
-                                        <p class="mb-0">{{ takeOverApproval.detail.currentOwnerName || t('telecom.ops.dash') }}</p>
-                                    </div>
-                                    <div class="col-md-6" v-if="takeOverApproval.kind === 2">
-                                        <p class="small text-muted mb-1">{{ t('telecom.takeOverModal.newOwner') }}</p>
-                                        <p class="mb-0 fw-semibold text-success">{{ takeOverApproval.detail.newOwnerName || t('telecom.ops.dash') }}</p>
-                                    </div>
-                                    <template v-if="takeOverApproval.kind === 8">
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.suspensionType">
-                                            <p class="small text-muted mb-1">{{ t('telecom.suspensionModal.type') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.suspensionType }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.suspensionReason">
-                                            <p class="small text-muted mb-1">{{ t('telecom.suspensionModal.reason') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.suspensionReason }}</p>
-                                        </div>
-                                    </template>
-                                    <template v-if="takeOverApproval.kind === 12">
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.collectionActionLabelAr || takeOverApproval.detail.collectionAction">
-                                            <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.action') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.collectionActionLabelAr || takeOverApproval.detail.collectionAction }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.outstandingBalanceSnapshot != null">
-                                            <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.balance') }}</p>
-                                            <p class="mb-0 fw-semibold text-danger">{{ takeOverApproval.detail.outstandingBalanceSnapshot }} {{ t('telecom.common.currencySuffix') }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.writeOffAmount">
-                                            <p class="small text-muted mb-1">{{ t('telecom.badDebtModal.writeOff') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.writeOffAmount }} {{ t('telecom.common.currencySuffix') }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.paymentReference">
-                                            <p class="small text-muted mb-1">{{ t('telecom.badDebt.paymentReference') }}</p>
-                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.paymentReference }}</p>
-                                        </div>
-                                    </template>
-                                    <template v-if="takeOverApproval.kind === 9">
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.clearanceTypeLabelAr || takeOverApproval.detail.clearanceType">
-                                            <p class="small text-muted mb-1">{{ t('telecom.reconnectModal.clearance') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.clearanceTypeLabelAr || takeOverApproval.detail.clearanceType }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.reconnectReason">
-                                            <p class="small text-muted mb-1">{{ t('telecom.reconnectModal.reason') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.reconnectReason }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.sourceSuspensionTypeLabelAr">
-                                            <p class="small text-muted mb-1">{{ t('telecom.reconnectModal.sourceSuspension') }}</p>
-                                            <p class="mb-0 fw-semibold text-danger">{{ takeOverApproval.detail.sourceSuspensionTypeLabelAr }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.paymentReference">
-                                            <p class="small text-muted mb-1">{{ t('telecom.reconnect.paymentReference') }}</p>
-                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.paymentReference }}</p>
-                                        </div>
-                                    </template>
-                                    <template v-if="takeOverApproval.kind === 7">
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.terminationType">
-                                            <p class="small text-muted mb-1">{{ t('telecom.terminationModal.type') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.terminationType }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.terminationReason">
-                                            <p class="small text-muted mb-1">{{ t('telecom.terminationModal.reason') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.terminationReason }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.finalBillAmount">
-                                            <p class="small text-muted mb-1">{{ t('telecom.terminationModal.finalBill') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.finalBillAmount }}</p>
-                                        </div>
-                                    </template>
-                                    <template v-if="takeOverApproval.kind === 5">
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.numberChangeMode">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumber.modeLabel') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.numberChangeMode === 'PortIn' ? t('telecom.changeNumber.modePortIn') : t('telecom.changeNumber.modeInternal') }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.priorMsisdn">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumberModal.priorMsisdn') }}</p>
-                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.priorMsisdn }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.portInMsisdn">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumber.portInMsisdn') }}</p>
-                                            <p class="mb-0 font-monospace text-success" dir="ltr">{{ takeOverApproval.detail.portInMsisdn }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-else-if="takeOverApproval.detail.targetMsisdn">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumberModal.targetMsisdn') }}</p>
-                                            <p class="mb-0 font-monospace text-success" dir="ltr">{{ takeOverApproval.detail.targetMsisdn }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.donorOperatorCode">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumber.donorOperator') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.donorOperatorCode }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.agencyReference">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumber.portInReference') }}</p>
-                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.agencyReference }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.numberChangeReason">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumber.changeReason') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.numberChangeReason }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.premiumFeeAmount">
-                                            <p class="small text-muted mb-1">{{ t('telecom.changeNumberModal.premiumFee') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.premiumFeeAmount }}</p>
-                                        </div>
-                                    </template>
-                                    <template v-if="takeOverApproval.kind === 3">
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.replacementReason">
-                                            <p class="small text-muted mb-1">{{ t('telecom.simSwap.replacementReason') }}</p>
-                                            <p class="mb-0">{{ takeOverApproval.detail.replacementReason }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.priorSimIccid">
-                                            <p class="small text-muted mb-1">{{ t('telecom.simSwapModal.priorIccid') }}</p>
-                                            <p class="mb-0 font-monospace" dir="ltr">{{ takeOverApproval.detail.priorSimIccid }}</p>
-                                        </div>
-                                        <div class="col-md-6" v-if="takeOverApproval.detail.newSimIccid">
-                                            <p class="small text-muted mb-1">{{ t('telecom.simSwapModal.newIccid') }}</p>
-                                            <p class="mb-0 font-monospace text-success" dir="ltr">{{ takeOverApproval.detail.newSimIccid }}</p>
-                                        </div>
-                                    </template>
-                                    <div class="col-md-6" v-if="takeOverApproval.kind === 2 && takeOverApproval.detail.transferReason">
-                                        <p class="small text-muted mb-1">{{ t('telecom.takeOver.transferReason') }}</p>
-                                        <p class="mb-0">{{ takeOverApproval.detail.transferReason }}</p>
-                                    </div>
-                                    <div class="col-md-6" v-if="takeOverApproval.detail.depositTransferPolicyLabelAr">
-                                        <p class="small text-muted mb-1">{{ t('telecom.takeOver.depositPolicy') }}</p>
-                                        <p class="mb-0">{{ takeOverApproval.detail.depositTransferPolicyLabelAr }}</p>
-                                    </div>
-                                </div>
-                                <div class="border rounded p-2 mb-3 bg-light" style="min-height: 220px;">
-                                    <p class="small fw-semibold mb-2">{{ t('telecom.takeOverModal.document') }}</p>
-                                    <iframe v-if="takeOverApproval.documentUrl" :src="takeOverApproval.documentUrl"
-                                            class="w-100 rounded border-0" style="min-height: 200px;" :title="t('telecom.takeOverModal.document')"></iframe>
-                                    <p v-else class="small text-muted mb-0 py-4 text-center">{{ t('telecom.takeOverModal.noDocument') }}</p>
-                                </div>
-                                <p v-if="takeOverApproval.detail.notes" class="small text-muted">{{ takeOverApproval.detail.notes }}</p>
-                            </template>
-                        </div>
-                        <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-outline-secondary" @@click="closeTakeOverApproval" :disabled="takeOverApproval.approveBusy">{{ t('telecom.takeOverModal.cancel') }}</button>
-                            <button type="button" class="btn btn-success" @@click="approveSecureOpOnNetwork"
-                                    :disabled="takeOverApproval.approveBusy || !takeOverApproval.operationId || !canApproveSecureOp">
-                                <span v-if="takeOverApproval.approveBusy" class="spinner-border spinner-border-sm me-1"></span>
-                                {{ secureApprovalApproveLabel }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <teleport to="body">
-            <div v-if="wizard.activateMsisdnModalOpen" class="modal fade show d-block activate-msisdn-picker-host" tabindex="-1" role="dialog" aria-modal="true" @@keydown.esc="closeActivateMsisdnModal">
+            <div v-if="hubRouteReady && wizard.activateMsisdnModalOpen" class="modal fade show d-block activate-msisdn-picker-host" tabindex="-1" role="dialog" :aria-label="t('telecom.wizard.msisdnPicker.dialogAria')" aria-modal="true" @@keydown.esc="closeActivateMsisdnModal">
                 <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
                     <div class="modal-content border-0 shadow msisdn-picker-modal">
                         <div class="modal-header border-0 pb-0">
                             <div>
-                                <h5 class="modal-title fw-bold">
-                                    <i class="bi bi-telephone-plus me-2 text-danger"></i>{{ t('telecom.wizard.msisdnPicker.title') }}
+                                <h5 class="modal-title fw-bold" id="activateMsisdnPickerTitle">
+                                    <i class="bi bi-telephone-plus me-2 text-danger" aria-hidden="true"></i>{{ t('telecom.wizard.msisdnPicker.title') }}
                                 </h5>
                                 <p class="small text-muted mb-0">{{ t('telecom.wizard.msisdnPicker.subtitle') }}</p>
                                 <p v-if="activationLineTypeLabel" class="small text-success mb-0 mt-1">
-                                    <i class="bi bi-funnel-fill me-1"></i>{{ t('telecom.wizard.lineType.selectedHint', { type: activationLineTypeLabel }) }}
+                                    <i class="bi bi-funnel-fill me-1" aria-hidden="true"></i>{{ t('telecom.wizard.lineType.selectedHint', { type: activationLineTypeLabel }) }}
                                 </p>
                             </div>
-                            <button type="button" class="btn-close" :aria-label="t('telecom.wizard.closeAria')" @@click="closeActivateMsisdnModal"></button>
+                            <button type="button" class="btn-close" :aria-label="t('telecom.wizard.msisdnPicker.closeAria')" @@click="closeActivateMsisdnModal"></button>
                         </div>
                         <div class="modal-body pt-3">
-                            <div v-if="wizard.activateMsisdnModalPrefix" class="alert alert-light border py-2 small mb-3">
-                                <i class="bi bi-funnel me-1"></i>
+                            <div v-if="wizard.activateMsisdnModalPrefix" class="alert alert-light border py-2 small mb-3" role="status">
+                                <i class="bi bi-funnel me-1" aria-hidden="true"></i>
                                 {{ t('telecom.wizard.msisdnPicker.prefixFilter') }}:
                                 <strong class="font-monospace" dir="ltr">{{ wizard.activateMsisdnModalPrefix }}</strong>
                             </div>
-                            <ul class="nav nav-pills gap-2 mb-3 flex-wrap msisdn-tier-tabs">
-                                <li class="nav-item" v-for="tab in MSISDN_CATEGORY_TABS" :key="tab.id">
-                                    <button type="button" class="nav-link py-1 px-3 small"
+                            <ul class="nav nav-pills gap-2 mb-3 flex-wrap msisdn-tier-tabs" role="tablist" :aria-label="t('telecom.wizard.msisdnPicker.colTier')">
+                                <li class="nav-item" v-for="tab in MSISDN_CATEGORY_TABS" :key="tab.id" role="presentation">
+                                    <button type="button" class="nav-link py-1 px-3 small" role="tab"
                                             :class="{ active: wizard.activateMsisdnCategoryTab === tab.id }"
+                                            :aria-selected="wizard.activateMsisdnCategoryTab === tab.id"
                                             @@click="setActivateMsisdnCategoryTab(tab.id)">
                                         {{ t('telecom.wizard.msisdnPicker.categories.' + tab.i18n) }}
                                     </button>
                                 </li>
                             </ul>
-                            <div v-if="wizard.activateMsisdnPoolBusy" class="text-center py-5 text-muted">
-                                <span class="spinner-border text-danger"></span>
+                            <div v-if="wizard.activateMsisdnPoolBusy" class="text-center py-5 text-muted" role="status" aria-live="polite">
+                                <span class="spinner-border text-danger" role="status" :aria-label="t('telecom.wizard.msisdnPicker.loading')"></span>
                                 <p class="small mt-2 mb-0">{{ t('telecom.wizard.msisdnPicker.loading') }}</p>
                             </div>
-                            <div v-else-if="activateMsisdnPoolDisplay.length === 0" class="text-center py-5 text-muted small">
-                                <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                            <div v-else-if="activateMsisdnPoolDisplay.length === 0" class="text-center py-5 text-muted small" role="status">
+                                <i class="bi bi-inbox display-6 d-block mb-2 opacity-50" aria-hidden="true"></i>
                                 <span v-if="activateMsisdnPoolEmptyDueToLineType">{{ t('telecom.wizard.msisdnPicker.emptyFiltered') }}</span>
                                 <span v-else>{{ t('telecom.wizard.msisdnPicker.empty') }}</span>
                             </div>
                             <div v-else class="table-responsive msisdn-picker-table-wrap">
                                 <table class="table table-sm table-hover align-middle mb-0">
+                                    <caption class="visually-hidden">{{ t('telecom.wizard.msisdnPicker.title') }}</caption>
                                     <thead class="table-light sticky-top">
                                         <tr>
-                                            <th>{{ t('telecom.wizard.msisdnPicker.colMsisdn') }}</th>
-                                            <th>{{ t('telecom.wizard.msisdnPicker.colTier') }}</th>
-                                            <th class="d-none d-md-table-cell">ICCID</th>
-                                            <th class="text-end">{{ t('telecom.wizard.msisdnPicker.colAction') }}</th>
+                                            <th scope="col">{{ t('telecom.wizard.msisdnPicker.colMsisdn') }}</th>
+                                            <th scope="col">{{ t('telecom.wizard.msisdnPicker.colTier') }}</th>
+                                            <th scope="col" class="d-none d-md-table-cell">{{ t('telecom.wizard.msisdnPicker.colIccid') }}</th>
+                                            <th scope="col" class="text-end">{{ t('telecom.wizard.msisdnPicker.colAction') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1674,7 +1454,8 @@
                                             </td>
                                             <td class="font-monospace small text-muted d-none d-md-table-cell" dir="ltr">{{ row.iccid || row.Iccid || '—' }}</td>
                                             <td class="text-end">
-                                                <button type="button" class="btn btn-sm btn-danger" @@click="selectWizardActivateMsisdn(row)">
+                                                <button type="button" class="btn btn-sm btn-danger" :aria-label="t('telecom.wizard.msisdnPicker.selectBtn') + ' ' + (row.msisdn || row.Msisdn)"
+                                                        @@click="selectWizardActivateMsisdn(row)">
                                                     {{ t('telecom.wizard.msisdnPicker.selectBtn') }}
                                                 </button>
                                             </td>
@@ -1683,23 +1464,24 @@
                                 </table>
                             </div>
                             <p v-if="activateMsisdnPoolTruncated" class="small text-muted mt-2 mb-0">
-                                {{ t('telecom.wizard.msisdnPicker.truncated') }}
-                                <strong>100</strong> / {{ filteredActivateMsisdnPool.length }}
+                                {{ t('telecom.wizard.msisdnPicker.truncated', { shown: activateMsisdnPoolDisplayLimit, total: filteredActivateMsisdnPool.length }) }}
                             </p>
                             <p v-else-if="activateMsisdnPoolDisplay.length" class="small text-muted mt-2 mb-0">
                                 {{ t('telecom.wizard.msisdnPicker.total') }}: <strong>{{ filteredActivateMsisdnPool.length }}</strong>
                             </p>
                         </div>
                         <div class="modal-footer border-0 pt-0">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" @@click="loadActivateMsisdnPool" :disabled="wizard.activateMsisdnPoolBusy">
-                                <i class="bi bi-arrow-clockwise me-1"></i>{{ t('telecom.wizard.msisdnPicker.refresh') }}
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @@click="loadActivateMsisdnPool" :disabled="wizard.activateMsisdnPoolBusy"
+                                    :aria-label="t('telecom.wizard.msisdnPicker.refresh')">
+                                <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>{{ t('telecom.wizard.msisdnPicker.refresh') }}
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm" @@click="closeActivateMsisdnModal">{{ t('telecom.wizard.closeAria') }}</button>
+                            <button type="button" class="btn btn-secondary btn-sm" @@click="closeActivateMsisdnModal"
+                                    :aria-label="t('telecom.wizard.msisdnPicker.closeAria')">{{ t('telecom.wizard.msisdnPicker.closeBtn') }}</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <div v-if="wizard.activateMsisdnModalOpen" class="modal-backdrop fade show"></div>
+            <div v-if="hubRouteReady && wizard.activateMsisdnModalOpen" class="modal-backdrop fade show"></div>
             </teleport>
 
             <nav class="d-flex flex-wrap gap-2 pb-4" aria-label="Shortcuts">
@@ -1713,20 +1495,63 @@
 
 @section styles {
     <style>
-        .telecom-hub-root { max-width: 1400px; margin-inline: auto; }
+        .telecom-hub-root { max-width: 1320px; margin-inline: auto; }
         .telecom-hero { background: linear-gradient(180deg, var(--sys-card-bg) 0%, var(--sys-bg) 100%); }
-        .telecom-search-group .form-control:focus { box-shadow: none; border-color: var(--sys-border); }
-        .telecom-search-group:focus-within { box-shadow: 0 0 0 0.2rem var(--sys-brand-red-ring); border-radius: var(--sys-radius); }
-        .big-tile { border: none; border-radius: var(--sys-radius); min-height: 118px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .big-tile:hover { transform: translateY(-2px); box-shadow: var(--sys-shadow-card-hover) !important; }
-        .big-tile:focus-visible { outline: 3px solid color-mix(in srgb, var(--sys-card-bg) 85%, transparent); outline-offset: 3px; }
-        .tile-icon { font-size: 1.35rem; opacity: 0.95; }
+        .telecom-hero .card-body { padding: 1.25rem 1.35rem !important; }
+        .telecom-hub-tiles-row {
+            --bs-gutter-x: 0.75rem;
+            --bs-gutter-y: 0.75rem;
+        }
+        .telecom-hub-tiles-row > [class*="col-"] {
+            display: flex;
+        }
+        .telecom-hub-tiles-row .big-tile {
+            min-height: 100px;
+            height: 100%;
+            padding: 0.75rem 0.5rem !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.25;
+        }
+        .telecom-hub-tiles-row .tile-icon {
+            font-size: 1.125rem;
+            margin-bottom: 0.25rem !important;
+        }
+        .telecom-hub-tiles-row .big-tile .fs-6 {
+            font-size: 0.8125rem !important;
+        }
+        .telecom-hub-tiles-row .big-tile small {
+            font-size: 0.6875rem;
+            line-height: 1.2;
+            display: block;
+            margin-top: 0.125rem;
+        }
+        .telecom-hub-root > section.mb-4,
+        .telecom-hub-root > .row.mb-4 {
+            margin-bottom: 1.25rem !important;
+        }
+        .telecom-hub-root .card-body:not(.p-0) {
+            padding: 1rem 1.15rem;
+        }
+        .telecom-hub-root .card-header.py-3 {
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.75rem !important;
+        }
+        .telecom-kpi-value { font-size: clamp(1.35rem, 3vw, 1.85rem); line-height: 1.2; }
         .tile-bad-debt {
             background: linear-gradient(145deg, #9a3412 0%, #c2410c 100%) !important;
             color: var(--sys-card-bg, #fff) !important;
         }
+        .telecom-search-group .form-control:focus { box-shadow: none; border-color: var(--sys-border); }
+        .telecom-search-group:focus-within { box-shadow: 0 0 0 0.2rem var(--sys-brand-red-ring); border-radius: var(--sys-radius); }
+        .big-tile { border: none; border-radius: var(--sys-radius); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .big-tile:hover { transform: translateY(-2px); box-shadow: var(--sys-shadow-card-hover) !important; }
+        .big-tile:focus-visible { outline: 3px solid color-mix(in srgb, var(--sys-card-bg) 85%, transparent); outline-offset: 3px; }
+        .tile-icon { opacity: 0.95; }
         .map-mock { overflow: hidden; }
-        .telecom-kpi-value { font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.2; }
         .telecom-step { border: 1px solid var(--sys-border); }
         .telecom-step-active { background: var(--sys-brand-red); color: var(--sys-card-bg); border-color: var(--sys-brand-red); font-weight: 600; }
         .telecom-step-muted { background: var(--sys-bg); color: var(--sys-text-muted); }
@@ -1781,9 +1606,9 @@
                 line-height: 1.35;
             }
             .big-tile {
-                min-height: 96px;
-                padding-top: 0.75rem !important;
-                padding-bottom: 0.75rem !important;
+                min-height: 88px;
+                padding-top: 0.65rem !important;
+                padding-bottom: 0.65rem !important;
             }
             .big-tile .fs-6 {
                 font-size: 0.9rem !important;
@@ -1843,6 +1668,7 @@
     <script src="~/lib/indotalent/activation-channel-ui.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-reconnect-clearance.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-bss-wizard-clearance.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-wizard-confirm.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-vas-toggle.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-recharge-flow.js" asp-append-version="true"></script>
     <script src="~/FrontEnd/Pages/Telecom/TelecomHub.cshtml.js" asp-append-version="true"></script>

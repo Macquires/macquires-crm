@@ -311,12 +311,12 @@
                         <button v-if="can.supportTicket" type="button" class="btn btn-outline-light btn-sm" @@click="openSupportTicketC360">
                             <i class="bi bi-headset me-1"></i> {{ telecomT('lineActions.openSupport', 'Support ticket') }}
                         </button>
-                        <button type="button" class="btn btn-purple-glow btn-sm" @@click="openAiWizard">
+                        <button v-if="!isSupportAgent" type="button" class="btn btn-purple-glow btn-sm" @@click="openAiWizard">
                             <i class="bi bi-robot me-1"></i> {{ ui.hero.aiAgent }}
                         </button>
                         <a href="/Telecom/UnifiedSearch" class="btn btn-light btn-sm"><i class="bi bi-search me-1"></i>{{ ui.hero.search }}</a>
-                        <a :href="'/Customers/CustomerList?customerId=' + encodeURIComponent(state.customerId)" class="btn btn-outline-light btn-sm">{{ ui.hero.crmRegistry }}</a>
-                        <a href="/Telecom/TelecomHub" class="btn btn-outline-light btn-sm">{{ ui.hero.opsHub }}</a>
+                        <a v-if="!isSupportAgent" :href="'/Customers/CustomerList?customerId=' + encodeURIComponent(state.customerId)" class="btn btn-outline-light btn-sm">{{ ui.hero.crmRegistry }}</a>
+                        <a v-if="!isSupportAgent" href="/Telecom/TelecomHub" class="btn btn-outline-light btn-sm">{{ ui.hero.opsHub }}</a>
                     </div>
                 </div>
             </div>
@@ -500,7 +500,19 @@
                 </div>
             </div>
 
-            <div v-if="selectedHlrNeedsRemediation" class="c360-hlr-remediation p-3 mb-4">
+            <div v-if="isSupportAgent && can.supportTicket" class="telecom-bento-card mb-4 border-danger border-2">
+                <div class="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h2 class="h6 fw-bold text-danger mb-1"><i class="bi bi-headset me-2"></i>{{ telecomT('supportAgent.primaryAction', 'Customer complaint?') }}</h2>
+                        <p class="small text-muted mb-0">{{ telecomT('supportAgent.primaryHint', 'Open a SUP ticket — routed to technical teams automatically.') }}</p>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-lg px-4" @@click="openSupportTicketC360">
+                        <i class="bi bi-ticket-detailed me-2"></i>{{ telecomT('lineActions.openSupport', 'Create SUP ticket') }}
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="selectedHlrNeedsRemediation && !isSupportAgent" class="c360-hlr-remediation p-3 mb-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                     <div>
                         <h2 class="h6 fw-bold text-danger mb-1"><i class="bi bi-exclamation-triangle me-2"></i>{{ t360('hlrRemediation.title', 'HLR desync') }}</h2>
@@ -564,7 +576,7 @@
                 </li>
             </ul>
 
-            <div class="mb-4 position-relative" :class="{ 'c360-actions-lock': state.isProvisioningInFlight }">
+            <div class="mb-4 position-relative" v-if="!isSupportAgent" :class="{ 'c360-actions-lock': state.isProvisioningInFlight }">
                 <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>{{ ui.actions.provisioningHub }}</h2>
                 <div class="c360-actions-grid">
                     <button type="button" class="c360-action-card border-0"
@@ -778,6 +790,10 @@
                                         <span v-if="state.hlrBusy === sub.id" class="spinner-border spinner-border-sm"></span>
                                         <span v-else><i class="bi bi-broadcast me-1"></i>{{ t360('lineActions.checkHlr', 'Query HLR') }}</span>
                                     </button>
+                                    <button v-if="canPayAndReconnect(sub)" type="button" class="btn btn-success btn-sm mt-2 ms-2" :disabled="state.payAndReconnectBusy === sub.id" @@click="executePayAndReconnect(sub)">
+                                        <span v-if="state.payAndReconnectBusy === sub.id" class="spinner-border spinner-border-sm"></span>
+                                        <span v-else><i class="bi bi-cash-coin me-1"></i>{{ t360('lineActions.payAndReconnect', 'Pay & Reconnect') }}</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -861,15 +877,17 @@
                             {{ ui.timeline.noEvents }}
                         </div>
                         <ul v-else class="list-group list-group-flush">
-                            <li v-for="(ev, idx) in mappedTimeline" :key="idx" class="list-group-item px-0 py-3 bg-transparent">
-                                <div class="d-flex flex-wrap justify-content-between gap-2">
-                                    <div>
-                                        <strong>{{ ev.title }}</strong>
-                                        <span v-if="ev.status" class="badge bg-light text-dark border ms-2">{{ ev.status }}</span>
-                                        <p class="small text-muted mb-0 mt-1">{{ ev.subtitle }}</p>
-                                        <span v-if="ev.referenceId" class="small font-monospace text-muted">{{ ev.referenceId }}</span>
+                            <li v-for="(ev, idx) in mappedTimeline" :key="idx" class="list-group-item px-0 py-3 bg-transparent border-bottom">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                            <span class="badge" :class="ev.kindBadge">{{ ev.kindLabel }}</span>
+                                            <strong>{{ ev.title }}</strong>
+                                            <span v-if="ev.status" class="badge bg-light text-dark border">{{ ev.status }}</span>
+                                        </div>
+                                        <p class="small text-muted mb-0">{{ ev.detail }}</p>
                                     </div>
-                                    <div class="text-end">
+                                    <div class="text-end text-nowrap">
                                         <span class="small text-muted d-block">{{ ev.display }}</span>
                                         <a v-if="ev.actionUrl" :href="ev.actionUrl" class="btn btn-sm btn-outline-danger mt-1">{{ ui.timeline.open }}</a>
                                     </div>
@@ -909,6 +927,10 @@
                             </div>
                             <p class="small mb-1"><span class="text-muted">MSISDN:</span> <span class="font-monospace" dir="ltr">{{ t.msisdn }}</span> · {{ t.issueLabel }}</p>
                             <p class="small text-muted mb-3">{{ t.notes || '—' }}</p>
+                            <p v-if="t.isEscalated" class="small alert alert-dark py-2 mb-3">
+                                <i class="bi bi-arrow-up-circle me-1"></i>{{ ui.ticketsTab.escalatedFollowUp }}
+                                <span v-if="t.resolutionNotes" class="d-block mt-1 text-muted">{{ t.resolutionNotes }}</span>
+                            </p>
                             <div class="d-flex flex-wrap gap-2" v-if="t.canOperate">
                                 <button v-if="can.cbs" type="button" class="btn btn-outline-warning btn-sm"
                                     :disabled="isTicketBusy(t.id, 'cbs')" @@click="forceCbs(t)">
@@ -920,7 +942,7 @@
                                     <span v-if="isTicketBusy(t.id, 'hlr')" class="spinner-border spinner-border-sm"></span>
                                     <span v-else><i class="bi bi-broadcast me-1"></i>{{ ui.ticketsTab.hlrSync }}</span>
                                 </button>
-                                <button v-if="can.escalate" type="button" class="btn btn-outline-dark btn-sm"
+                                <button v-if="can.escalate && t.canEscalate" type="button" class="btn btn-outline-dark btn-sm"
                                     :disabled="isTicketBusy(t.id, 'escalate')" @@click="escalateTicket(t)">
                                     <span v-if="isTicketBusy(t.id, 'escalate')" class="spinner-border spinner-border-sm"></span>
                                     <span v-else><i class="bi bi-arrow-up-circle me-1"></i>{{ ui.ticketsTab.escalate }}</span>
@@ -1094,11 +1116,11 @@
                             </div>
                             <template v-if="trmShowsPayment">
                                 <label class="form-label small fw-semibold">{{ t360('bss.paymentReference', 'Payment ref') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" placeholder="e.g. PAY-2026-XXXX" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" :placeholder="t360('bss.paymentReferencePh', '')" />
                             </template>
                             <template v-if="trmShowsFraud">
                                 <label class="form-label small fw-semibold">{{ t360('bss.securityTicketId', 'Ticket') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" data-testid="c360-trm-fraud-ticket" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" :placeholder="t360('bss.securityTicketPh', '')" data-testid="c360-trm-fraud-ticket" />
                             </template>
                             <template v-if="trmShowsRegulatory">
                                 <label class="form-label small fw-semibold">{{ t360('bss.regulatoryDocumentNumber', 'Doc #') }} *</label>
@@ -1153,7 +1175,7 @@
                             <input v-if="state.wizard.cnRequiresBackOffice && cnShowsInternalPool" type="number" min="0" step="1" class="form-control form-control-sm mb-2" v-model="state.wizard.cnPremiumFeeAmount" />
                             <template v-if="cnShowsPremiumPayment">
                                 <label class="form-label small fw-semibold">{{ t360('bss.paymentReference', 'Payment ref') }} <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" placeholder="e.g. PAY-2026-XXXX" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssPaymentReference" dir="ltr" :placeholder="t360('bss.paymentReferencePh', '')" />
                             </template>
                             <div v-if="state.wizard.cnRequiresBackOffice" class="mb-2">
                                 <label class="form-label small">{{ t360('changeNumber.paymentDocHint', 'Receipt') }} <span class="text-danger">*</span></label>
@@ -1244,7 +1266,7 @@
                             <template v-if="susShowsFraud">
                                 <div data-testid="c360-sus-fraud-clearance">
                                 <label class="form-label small fw-semibold">{{ t360('bss.securityTicketId', 'Ticket') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" :placeholder="t360('bss.securityTicketPh', '')" />
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" id="c360SusSupervisor" v-model="state.wizard.bssSupervisorConfirmed" />
                                     <label class="form-check-label small" for="c360SusSupervisor">{{ t360('bss.supervisorConfirmation', 'Supervisor confirmation') }} <span class="text-danger">*</span></label>
@@ -1288,11 +1310,11 @@
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnReconnectReason" @@blur="onRcnClearanceChange" />
                             <template v-if="rcnShowsPaymentRef">
                                 <label class="form-label small fw-semibold">{{ t360('reconnect.paymentReference', 'Ref') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnPaymentReference" dir="ltr" placeholder="e.g. REC-2026-XXXX" data-testid="c360-rcn-payment-ref" @@blur="onRcnClearanceChange" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnPaymentReference" dir="ltr" :placeholder="t360('reconnect.paymentReferencePh', '')" data-testid="c360-rcn-payment-ref" @@blur="onRcnClearanceChange" />
                             </template>
                             <template v-if="rcnShowsFraudFields">
                                 <label class="form-label small fw-semibold">{{ t360('reconnect.securityTicketId', 'Security ticket') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnSecurityTicketId" dir="ltr" placeholder="TT-2026-XXXX" @@blur="onRcnClearanceChange" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rcnSecurityTicketId" dir="ltr" :placeholder="t360('bss.securityTicketPh', '')" @@blur="onRcnClearanceChange" />
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" id="c360RcnFraud" v-model="state.wizard.rcnFraudClearanceConfirmed" @@change="onRcnClearanceChange" />
                                     <label class="form-check-label small" for="c360RcnFraud">{{ t360('reconnect.fraudSupervisorApproval', '') }}</label>
@@ -1353,7 +1375,7 @@
                             <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.rfdRefundReason" />
                             <template v-if="rfdShowsOriginalTxRef">
                                 <label class="form-label small fw-semibold">{{ t360('bss.originalTransactionRef', 'Original ref') }} *</label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssOriginalTransactionRef" dir="ltr" placeholder="ACT-2026-XXXX" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssOriginalTransactionRef" dir="ltr" :placeholder="t360('bss.originalTransactionRefPh', '')" />
                             </template>
                             <template v-if="rfdShowsPayoutDestination">
                                 <label class="form-label small fw-semibold">{{ t360(rfdPayoutLabelKey, 'Payout') }} *</label>
@@ -1455,7 +1477,7 @@
                             <p v-if="state.wizard.simLostOrStolen" class="small text-warning">{{ t360('simSwap.lostOrStolenHint', '') }}</p>
                             <template v-if="simShowsLostStolenFields">
                                 <label class="form-label small fw-semibold">{{ t360('bss.policeReportNumber', 'Police report') }} <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" placeholder="POL-2026-XXXX" />
+                                <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.bssSecurityTicketId" dir="ltr" :placeholder="t360('bss.policeReportPh', '')" />
                                 <label class="form-label small">{{ t360('simSwap.identityRequired', 'ID') }} <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
                             </template>
@@ -1577,13 +1599,13 @@
                         </div>
                         <div v-else class="border rounded p-3 bg-light">
                             <p class="mb-2 small"><strong>{{ ui.wizardUi.opNumber }}</strong> {{ state.wizard.createdOperationNumber }}</p>
-                            <div v-if="state.wizard.kind === 'suspension'" class="mb-3 border rounded p-3 bg-white">
-                                <label class="form-label small fw-semibold">{{ t360('suspension.kycDocument', 'KYC document') }} *</label>
+                            <div v-if="wizardRequiresStep2Identity && !state.wizard.documentMarkedUploaded" class="mb-3 border rounded p-3 bg-white">
+                                <label class="form-label small fw-semibold">{{ t360('suspension.kycDocument', 'Subscriber ID') }} *</label>
                                 <p class="small text-muted mb-2">{{ t360('suspension.kycDocumentHint', '') }}</p>
                                 <input type="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.webp" @@change="onWizardIdentityFileChange" />
-                                <p v-if="!state.wizard.identityFile" class="small text-danger mb-0 mt-2">{{ t360('suspension.kycRequired', '') }}</p>
+                                <p v-if="!state.wizard.identityFile" class="small text-danger mb-0 mt-2">{{ t360('suspension.kycRequired', 'Upload document') }}</p>
                             </div>
-                            <button v-if="!state.wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="state.wizard.uploadBusy || (state.wizard.kind === 'suspension' && susRequiresStep2Identity && !state.wizard.identityFile)" @@click="submitWizardMarkDocument">
+                            <button v-if="!state.wizard.documentMarkedUploaded" type="button" class="btn btn-success btn-sm" :disabled="state.wizard.uploadBusy || (wizardRequiresStep2Identity && !state.wizard.identityFile)" @@click="submitWizardMarkDocument">
                                 <span v-if="state.wizard.uploadBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.markDocument }}
                             </button>
                             <p v-else class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>{{ ui.wizardUi.documentDone }}</p>
@@ -1630,10 +1652,13 @@
                                 <input type="text" class="form-control form-control-sm mb-2" v-model="state.wizard.devPaymentReference" :placeholder="ui.wizardUi.paymentRefPh" />
                                 <button type="button" class="btn btn-outline-danger btn-sm" :disabled="state.wizard.paymentBusy" @@click="recordDeviceDownPaymentC360">{{ t360('deviceSale.recordPayment', 'Record') }}</button>
                             </div>
-                            <button v-if="state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'takeover' && !(state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) && !(state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) && !(state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) && !(state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) && !(state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) && !(state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) && !(state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) && !(state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance)" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy || (state.wizard.kind === 'activate' && activateRequiredDeposit > 0 && !state.wizard.paymentRecorded) || (state.wizard.kind === 'deviceSale' && state.wizard.devSaleType === 'Installment' && !state.wizard.documentMarkedUploaded)" @@click="submitWizardConfirmCbs">
+                            <button v-if="wizardShowsConfirmCbs" type="button" class="btn btn-primary btn-sm" :disabled="state.wizard.confirmBusy || (state.wizard.kind === 'activate' && activateRequiredDeposit > 0 && !state.wizard.paymentRecorded) || (state.wizard.kind === 'deviceSale' && state.wizard.devSaleType === 'Installment' && !state.wizard.documentMarkedUploaded)" @@click="submitWizardConfirmCbs">
                                 <span v-if="state.wizard.confirmBusy" class="spinner-border spinner-border-sm me-1"></span>{{ ui.wizardUi.confirmCbs }}
                             </button>
-                            <p v-if="(state.wizard.kind === 'takeover' || (state.wizard.kind === 'simswap' && state.wizard.simLostOrStolen) || (state.wizard.kind === 'changeNumber' && state.wizard.cnRequiresBackOffice) || (state.wizard.kind === 'termination' && state.wizard.trmRequiresBackOffice) || (state.wizard.kind === 'suspension' && state.wizard.susRequiresBackOffice) || (state.wizard.kind === 'reconnect' && state.wizard.rcnRequiresBackOffice) || (state.wizard.kind === 'refund' && state.wizard.rfdRequiresBackOffice) || (state.wizard.kind === 'badDebt' && state.wizard.bdrRequiresBackOffice) || (state.wizard.kind === 'deviceSale' && state.wizard.devRequiresFinance)) && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
+                            <p v-if="wizardAwaitBackOffice && state.wizard.documentMarkedUploaded" class="small text-muted mb-0">
+                                {{ ui.wizardUi.awaitBo }}
+                            </p>
+                            <p v-else-if="!wizardShowsConfirmCbs && state.wizard.documentMarkedUploaded && !state.wizard.confirmed && state.wizard.kind !== 'addpackage' && state.wizard.kind !== 'support' && state.wizard.kind !== 'changeGsm'" class="small text-muted mb-0">
                                 {{ ui.wizardUi.awaitBo }}
                             </p>
                             <p v-if="state.wizard.confirmed" class="small mb-0" :class="state.wizard.confirmScheduled ? 'text-info' : 'text-success'">{{ state.wizard.confirmStatusHint || (state.wizard.confirmScheduled ? ui.wizardUi.scheduledConfirmed : ui.wizardUi.confirmed) }}</p>
@@ -1661,6 +1686,7 @@
     <script src="~/lib/indotalent/activation-channel-ui.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-reconnect-clearance.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-bss-wizard-clearance.js" asp-append-version="true"></script>
+    <script src="~/lib/indotalent/telecom-wizard-confirm.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-vas-toggle.js" asp-append-version="true"></script>
     <script src="~/lib/indotalent/telecom-recharge-flow.js" asp-append-version="true"></script>
     <script src="~/FrontEnd/Pages/Telecom/Customer360Profile.cshtml.js" asp-append-version="true"></script>

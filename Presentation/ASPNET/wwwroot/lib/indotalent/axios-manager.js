@@ -121,6 +121,11 @@ const AxiosManager = (() => {
                         error.config.__personaLandingRedirect = true;
                         window.location.replace(landing);
                     }
+                } else if (
+                    status === 403
+                    && errData?.error?.name === 'UnauthorizedPermissionException'
+                ) {
+                    /* Caller handles optional/forbidden endpoints — avoid blocking the whole UI. */
                 } else if (errData && errData.message) {
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({

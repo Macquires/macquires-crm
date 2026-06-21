@@ -1,4 +1,5 @@
 using Application.Common.Integrations;
+using Application.Common.Telecom;
 using Domain.Enums;
 
 namespace Infrastructure.TelecomIntegrations;
@@ -26,11 +27,22 @@ public sealed class CashierSystemMockIntegration : IPosCashierIntegration
                 null);
         }
 
+        if (TelecomDemoBaselines.IsDebtFullPaymentReceipt(reference))
+        {
+            var debtAmount = TelecomDemoBaselines.DebtFullPaymentAmountSyp;
+            return new CashierPaymentResultDto(
+                true,
+                $"تم جلب وصل الدفع التجريبي — {debtAmount:N0} ل.س (مطابق لذمة مازن).",
+                reference,
+                debtAmount,
+                PaymentChannel.Cash);
+        }
+
         if (!reference.StartsWith("REC-", StringComparison.OrdinalIgnoreCase))
         {
             return new CashierPaymentResultDto(
                 false,
-                "إيصال الكاشير غير معروف — يجب أن يبدأ بـ REC- (Sandbox).",
+                "إيصال الكاشير غير معروف — يجب أن يبدأ بـ REC- أو استخدم RCPT-2002 (Sandbox).",
                 reference,
                 null,
                 null);

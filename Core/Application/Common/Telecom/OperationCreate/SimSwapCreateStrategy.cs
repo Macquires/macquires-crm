@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.SimSwap;
 using Domain.Enums;
 
@@ -75,8 +76,7 @@ public sealed class SimSwapCreateStrategy : IOperationCreateStrategy
         entity.PriorSimInventoryId = eligibility.PriorSimInventoryId;
         if (request.IsLostOrStolenReport)
         {
-            entity.ApprovalLevelRequired = "BackOffice";
-            entity.Status = TelecomOperationStatus.PendingDocuments;
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
             entity.AgencyReference = string.IsNullOrWhiteSpace(request.AgencyReference)
                 ? null
                 : request.AgencyReference.Trim();

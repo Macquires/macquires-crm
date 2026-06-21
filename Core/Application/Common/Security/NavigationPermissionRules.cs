@@ -10,9 +10,10 @@ public static class NavigationPermissionRules
                 DashboardPermissionSets.ReadAny,
                 DashboardPermissionSets.AdminAny,
                 [PermissionCatalog.AdminRolesManage]),
+            ["/Executive/CommandCenter"] = [PermissionCatalog.TelecomReportsMis],
             ["/Dashboards/DashboardWidgetList"] = Keys(DashboardPermissionSets.AdminAny),
             ["/Telecom/BackOfficeDashboard"] = Keys(BackOfficeDashboardPermissionSets.AccessAny),
-            ["/Telecom/TelecomHub"] = Keys(TelecomOperationPermissionSets.CreateAny),
+            ["/Telecom/TelecomHub"] = Keys(HubPermissionSets.NavAny),
             ["/Telecom/BillingIntegration"] = Merge(
                 DashboardPermissionSets.ReadAny,
                 [PermissionCatalog.TelecomLineSimSwap, PermissionCatalog.TelecomLineMigrate]),
@@ -24,9 +25,14 @@ public static class NavigationPermissionRules
                 [PermissionCatalog.TelecomLineSimSwap, PermissionCatalog.TelecomLineMigrate]),
             ["/Telecom/IntegrationMonitor"] = [PermissionCatalog.AdminIntegrationMonitor],
             ["/Telecom/BulkImportMonitor"] = Keys(BulkImportPermissionSets.MonitorAny),
-            ["/Telecom/MsisdnInventory"] = Keys(TelecomOperationPermissionSets.ReserveMsisdnAny),
+            ["/Telecom/MsisdnInventory"] =
+            [
+                PermissionCatalog.TelecomAssetManage,
+                PermissionCatalog.TelecomLineActivate,
+                PermissionCatalog.AdminSettingsManage,
+            ],
             ["/Telecom/DeviceInventory"] = [PermissionCatalog.TelecomDeviceInventoryManage],
-            ["/Telecom/TechnicalTicketList"] = Keys(BackOfficePermissionSets.TechnicalTicketListAny),
+            ["/Telecom/TechnicalTicketList"] = Keys(CustomerSupportPermissionSets.TicketAdminListNavAny),
             ["/Telecom/BackOfficeAuditList"] = Keys(BackOfficePermissionSets.OperationsAny),
             ["/Telecom/UnifiedSearch"] = Keys(DashboardPermissionSets.UnifiedSearchAny),
             ["/Telecom/Customer360Profile"] = Keys(CustomerPermissionSets.ViewAny),

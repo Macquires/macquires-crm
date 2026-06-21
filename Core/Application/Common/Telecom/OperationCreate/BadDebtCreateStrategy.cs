@@ -1,6 +1,7 @@
 using Application.Common.Exceptions;
 using Application.Common.Security;
 using Application.Common.Settings;
+using Application.Common.Telecom.BackOffice;
 using Application.Common.Telecom.BadDebt;
 using Domain.Enums;
 
@@ -98,8 +99,7 @@ public sealed class BadDebtCreateStrategy : IOperationCreateStrategy
 
         if (eligibility.RequiresBackOfficeApproval)
         {
-            entity.ApprovalLevelRequired = "BackOffice";
-            entity.Status = TelecomOperationStatus.PendingDocuments;
+            BackOfficeTelecomPipelineState.ApplyBackOfficeRouting(entity);
 
             var slaMinutes = await _globalSettings.GetIntAsync(
                 GlobalSettingKeys.TelecomBdrTicketSlaMinutes,

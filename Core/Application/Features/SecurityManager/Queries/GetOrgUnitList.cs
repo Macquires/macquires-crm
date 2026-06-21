@@ -28,7 +28,7 @@ public class GetOrgUnitListResult
 
 public class GetOrgUnitListRequest : IRequest<GetOrgUnitListResult>, IRequireAnyPermission
 {
-    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.UsersManageAny;
+    public IReadOnlyList<string> PermissionKeys => AdminPermissionSets.OrgUnitReadAny;
 }
 
 public class GetOrgUnitListValidator : AbstractValidator<GetOrgUnitListRequest>
